@@ -111,8 +111,14 @@ class _LateAttribute(Generic[_T]):
 
 
 class Crawler:
-    #: Running instance of :class:`~scrapy.core.engine.ExecutionEngine`.
     engine: _LateAttribute[ExecutionEngine] = _LateAttribute()
+    """The execution engine, which coordinates the core crawling logic between
+    the scheduler, downloader and spiders.
+
+    Some extensions may want to access the Scrapy engine to inspect or modify
+    the downloader and scheduler behaviour, although this is an advanced use
+    and this API is not yet stable.
+    """
     extensions: _LateAttribute[ExtensionManager] = _LateAttribute()
     logformatter: _LateAttribute[LogFormatter] = _LateAttribute()
     """The log formatter of this crawler.
