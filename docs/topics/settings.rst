@@ -317,7 +317,6 @@ These settings are:
 
 -   :setting:`ADDONS`
 -   :setting:`COMMANDS_MODULE`
--   :setting:`FORCE_CRAWLER_PROCESS`
 -   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
     spider loader class, e.g. :setting:`SPIDER_MODULES` and
     :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
@@ -1573,33 +1572,6 @@ Default: ``""``
 
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
 For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://docs.cloud.google.com/storage/docs/access-control/lists>`_.
-
-.. setting:: FORCE_CRAWLER_PROCESS
-
-FORCE_CRAWLER_PROCESS
----------------------
-
-Default: ``False``
-
-If ``False``, :ref:`Scrapy commands that need a CrawlerProcess
-<topics-commands-crawlerprocess>`, when :setting:`TWISTED_REACTOR_ENABLED`
-is set to ``True``, will decide between using
-:class:`scrapy.crawler.AsyncCrawlerProcess` and
-:class:`scrapy.crawler.CrawlerProcess` based on the value of the
-:setting:`TWISTED_REACTOR` setting, but ignoring its value in :ref:`per-spider
-settings <spider-settings>`.
-
-If ``True``, these commands will always use
-:class:`~scrapy.crawler.CrawlerProcess` when :setting:`TWISTED_REACTOR_ENABLED`
-is set to ``True``.
-
-When :setting:`TWISTED_REACTOR_ENABLED` is set to ``False``,
-:class:`~scrapy.crawler.AsyncCrawlerProcess` will be used in all cases.
-
-Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
-non-default value in :ref:`per-spider settings <spider-settings>`.
-
-.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. reqmeta:: ftp_passive
 .. setting:: FTP_PASSIVE_MODE
