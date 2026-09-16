@@ -1619,6 +1619,28 @@ A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
 
+.. setting:: JOBDIR_SYNC_EVERY
+
+JOBDIR_SYNC_EVERY
+-----------------
+
+.. versionadded:: VERSION
+
+Default: ``0``
+
+Number of changes to the crawl state kept in :setting:`JOBDIR` after which
+that state is written to disk while the crawl runs, in addition to when it
+stops. ``0`` writes it only when the crawl stops. ``1`` writes every change,
+so that a crawl killed before it can stop cleanly resumes from its latest
+state. Higher values trade some of that safety for fewer writes, which matters
+in broad crawls, where the state grows with the number of active domains.
+
+Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`.
+For a killed crawl to resume, the scheduler queues must survive the kill too,
+which requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
+:setting:`SCHEDULER_START_DISK_QUEUE`.
+
+
 .. setting:: LOG_COLOR
 
 LOG_COLOR
