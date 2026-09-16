@@ -19,6 +19,7 @@ from scrapy import Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import FeedExporter, S3FeedStorage
 from scrapy.settings import Settings
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
@@ -262,7 +263,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter(crawler)
+            build_from_crawler(FeedExporter, crawler)
 
     @coroutine_test
     async def test_export_no_items_not_store_empty(self):
@@ -420,7 +421,6 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(total=2, mockserver=self.mockserver)
-        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
@@ -496,7 +496,6 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs:
             stub.assert_no_pending_responses()
-        assert crawler.stats
         assert (
             "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
         )

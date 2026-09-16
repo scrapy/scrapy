@@ -5,7 +5,7 @@
    :alt: Scrapy
    :width: 480px
 
-|version| |python_version| |ubuntu| |macos| |windows| |coverage| |conda| |deepwiki|
+|version| |python_version| |tests| |coverage| |conda| |deepwiki|
 
 .. |version| image:: https://img.shields.io/pypi/v/Scrapy.svg
    :target: https://pypi.org/pypi/Scrapy
@@ -15,17 +15,9 @@
    :target: https://pypi.org/pypi/Scrapy
    :alt: Supported Python Versions
 
-.. |ubuntu| image:: https://github.com/scrapy/scrapy/workflows/Ubuntu/badge.svg
-   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AUbuntu
-   :alt: Ubuntu
-
-.. |macos| image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
-   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
-   :alt: macOS
-
-.. |windows| image:: https://github.com/scrapy/scrapy/workflows/Windows/badge.svg
-   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AWindows
-   :alt: Windows
+.. |tests| image:: https://img.shields.io/github/check-runs/scrapy/scrapy/master?label=tests
+   :target: https://github.com/scrapy/scrapy/actions?query=branch%3Amaster
+   :alt: Tests
 
 .. |coverage| image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
    :target: https://codecov.io/github/scrapy/scrapy?branch=master

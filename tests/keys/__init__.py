@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from ipaddress import IPv4Address
 from pathlib import Path
 
 from cryptography.hazmat.backends import default_backend
@@ -12,6 +13,7 @@ from cryptography.hazmat.primitives.serialization import (
 from cryptography.x509 import (
     CertificateBuilder,
     DNSName,
+    IPAddress,
     Name,
     NameAttribute,
     SubjectAlternativeName,
@@ -53,7 +55,9 @@ def generate_keys():
         .not_valid_before(datetime.now(tz=timezone.utc))
         .not_valid_after(datetime.now(tz=timezone.utc) + timedelta(days=10))
         .add_extension(
-            SubjectAlternativeName([DNSName("localhost")]),
+            SubjectAlternativeName(
+                [DNSName("localhost"), IPAddress(IPv4Address("127.0.0.1"))]
+            ),
             critical=False,
         )
         .sign(key, SHA256(), default_backend())

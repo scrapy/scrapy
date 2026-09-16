@@ -12,7 +12,9 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     _parallel_asyncio,
+    call_later,
     is_asyncio_available,
+    sleep,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -24,6 +26,15 @@ if TYPE_CHECKING:
 async def test_is_asyncio_available(reactor_pytest: str) -> None:
     # the result should depend only on the pytest --reactor argument
     assert is_asyncio_available() == (reactor_pytest != "default")
+
+
+@coroutine_test
+async def test_sleep() -> None:
+    events: list[str] = []
+    call_later(0.05, events.append, "call_later")
+    await sleep(0.1)
+    events.append("sleep")
+    assert events == ["call_later", "sleep"]
 
 
 @pytest.mark.only_asyncio

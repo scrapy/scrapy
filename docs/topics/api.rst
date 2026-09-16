@@ -19,7 +19,6 @@ components, and it is the only way for components to access them and hook their
 functionality into Scrapy.
 
 .. module:: scrapy.crawler
-   :synopsis: The Scrapy crawler
 
 The Extension Manager is responsible for loading and keeping track of installed
 extensions and it's configured through the :setting:`EXTENSIONS` setting which
@@ -34,6 +33,13 @@ how you :ref:`configure the downloader middlewares
     The Crawler object must be instantiated with a
     :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
+
+    The :attr:`engine`, :attr:`extensions`, :attr:`logformatter`,
+    :attr:`request_fingerprinter` and :attr:`stats` attributes get their value
+    when the crawl starts, and raise :exc:`RuntimeError` when read before that.
+
+    .. versionchanged:: 2.18.0
+        Those attributes used to be ``None`` before getting their value.
 
     .. attribute:: request_fingerprinter
 
@@ -74,6 +80,8 @@ how you :ref:`configure the downloader middlewares
         For an introduction on stats collection see :ref:`topics-stats`.
 
         For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
+
+    .. autoattribute:: logformatter
 
     .. attribute:: extensions
 
@@ -129,7 +137,6 @@ Settings API
 ============
 
 .. module:: scrapy.settings
-   :synopsis: Settings manager
 
 .. attribute:: SETTINGS_PRIORITIES
 
@@ -157,6 +164,8 @@ Settings API
 
 .. autofunction:: get_settings_priority
 
+.. autofunction:: scrapy.utils.project.get_project_settings
+
 .. autoclass:: Settings
    :show-inheritance:
    :members:
@@ -170,7 +179,6 @@ SpiderLoader API
 ================
 
 .. module:: scrapy.spiderloader
-   :synopsis: The spider loader
 
 Custom spider loaders can be employed by specifying their path in the
 :setting:`SPIDER_LOADER_CLASS` project setting. They must implement
@@ -190,7 +198,6 @@ Signals API
 ===========
 
 .. automodule:: scrapy.signalmanager
-    :synopsis: The signal manager
     :members:
     :undoc-members:
 
@@ -205,7 +212,6 @@ Collector API defined by the :class:`~scrapy.statscollectors.StatsCollector`
 class (which they all inherit from).
 
 .. module:: scrapy.statscollectors
-   :synopsis: Stats Collectors
 
 .. class:: StatsCollector
 
@@ -262,4 +268,4 @@ Engine API
 ==========
 
 .. autoclass:: scrapy.core.engine.ExecutionEngine()
-   :members: needs_backout
+   :members: needs_backout, scheduler

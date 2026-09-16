@@ -85,6 +85,7 @@ class TestCrawl:
         url = self.mockserver.url("/status?n=200")
         crawler = get_crawler(SingleRequestSpider)
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.request.url == url
 
@@ -94,6 +95,7 @@ class TestCrawl:
             url = self.mockserver.url(f"/status?n={status}")
             crawler = get_crawler(SingleRequestSpider)
             yield crawler.crawl(seed=url, mockserver=self.mockserver)
+            assert isinstance(crawler.spider, SingleRequestSpider)
             failure = crawler.spider.meta["failure"]
             response = failure.value.response
             assert failure.request.url == url
@@ -111,6 +113,7 @@ class TestCrawl:
             },
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         failure = crawler.spider.meta["failure"]
         assert failure.request.url == url
         assert isinstance(failure.value, ZeroDivisionError)
@@ -178,6 +181,7 @@ class TestCrawl:
             },
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.body == b"Caught ZeroDivisionError"
         assert response.request.url == OVERRIDDEN_URL
@@ -201,6 +205,7 @@ class TestCrawl:
             },
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.body == b"Caught ZeroDivisionError"
         assert response.request.url == url
