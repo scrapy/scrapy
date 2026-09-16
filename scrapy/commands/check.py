@@ -13,7 +13,9 @@ from twisted.python.failure import Failure
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
-from scrapy.utils.conf import build_component_list
+from scrapy.exceptions import UsageError
+from scrapy.settings import SETTINGS_PRIORITIES
+from scrapy.utils.conf import arglist_to_dict, build_component_list
 from scrapy.utils.misc import load_object, set_environ
 
 
@@ -109,6 +111,32 @@ class Command(ScrapyCommand):
             action="store_true",
             help="print contract tests for all spiders",
         )
+        parser.add_argument(
+            "-a",
+            dest="spargs",
+            action="append",
+            default=[],
+            metavar="NAME=VALUE",
+            help="set spider argument (may be repeated)",
+        )
+
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        super().process_options(args, opts)
+        try:
+            opts.spargs = arglist_to_dict(opts.spargs)
+        except ValueError:
+            raise UsageError(
+                "Invalid -a value, use -a NAME=VALUE", print_help=False
+            ) from None
+        assert self.settings is not None
+        # Contracts discard the output of callbacks, so item pipelines and
+        # feed exports get no items, and opening them only causes side
+        # effects, such as an empty output file. The priority is above spider
+        # custom settings, which also define them, and below the command line,
+        # which can hence set them back.
+        priority = (SETTINGS_PRIORITIES["spider"] + SETTINGS_PRIORITIES["cmdline"]) // 2
+        self.settings.set("ITEM_PIPELINES", {}, priority=priority)
+        self.settings.set("FEEDS", {}, priority=priority)
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
@@ -140,7 +168,7 @@ class Command(ScrapyCommand):
                     for method in tested_methods:
                         contract_reqs[spidercls.name].append(method)
                 elif tested_methods:
-                    crawl = self.crawler_process.crawl(spidercls)
+                    crawl = self.crawler_process.crawl(spidercls, **opts.spargs)
                     _report_crawl_errors(crawl, spidercls.name, result)
 
             # start checks
@@ -160,4 +188,6 @@ class Command(ScrapyCommand):
 
                 result.printErrors()
                 result.printSummary(start_time, stop)
-                self.exitcode = int(not result.wasSuccessful())
+                self.exitcode = int(
+                    not result.wasSuccessful() or self.crawler_process.bootstrap_failed
+                )
