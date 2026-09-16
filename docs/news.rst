@@ -546,7 +546,7 @@ Deprecations
     delay for specific domains, instead.
 
     The ``max_concurrent_requests`` spider attribute, deprecated since Scrapy
-    2.13.0, now sets the :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting,
+    2.14.0, now sets the :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting,
     which is what it always mapped to, and warns accordingly.
 
     Both attributes are ignored, with a different warning, when the
