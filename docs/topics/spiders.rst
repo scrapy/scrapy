@@ -35,7 +35,6 @@ below.
 scrapy.Spider
 =============
 
-.. class:: scrapy.spiders.Spider
 .. autoclass:: scrapy.Spider
 
    .. attribute:: name

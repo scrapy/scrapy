@@ -86,7 +86,7 @@ Get all stats:
 Available Stats Collectors
 ==========================
 
-.. currentmodule:: scrapy.statscollectors
+.. module:: scrapy.statscollectors
 
 Besides the basic :class:`StatsCollector` there are other Stats Collectors
 available in Scrapy which extend the basic Stats Collector. You can select
