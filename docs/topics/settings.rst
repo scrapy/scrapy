@@ -137,6 +137,10 @@ Scrapy projects include a settings module, usually a file called
 ``settings.py``, where you should populate most settings that apply to all your
 spiders.
 
+:func:`scrapy.utils.project.get_project_settings` returns these settings, e.g.
+to pass them to :class:`~scrapy.crawler.AsyncCrawlerProcess` when :ref:`running
+Scrapy from a script <run-from-script>`.
+
 .. seealso:: :ref:`topics-settings-module-envvar`
 
 .. _addon-settings:
@@ -330,6 +334,12 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
+.. versionchanged:: VERSION
+   :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
+   :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
+   instead of being read from the project settings and ignored in
+   :ref:`per-spider settings <spider-settings>`.
+
 Because only 1 reactor can be used per process, these settings cannot use a
 different value per spider when :ref:`running multiple spiders in the same
 process <run-multiple-spiders>`.
@@ -359,11 +369,10 @@ These settings are applied when starting the reactor:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
-They are read from the settings of the
-:class:`~scrapy.crawler.CrawlerProcess` or
-:class:`~scrapy.crawler.AsyncCrawlerProcess` object, so setting them from a
-spider or an :ref:`add-on <topics-addons>` has no effect. They are ignored
-altogether when using :class:`~scrapy.crawler.CrawlerRunner` or
+They can also be :ref:`set from a spider <spider-settings>`, but only the
+values from the first spider that runs are used; if a later spider defines a
+different value, a warning is issued. They are ignored altogether when using
+:class:`~scrapy.crawler.CrawlerRunner` or
 :class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
 
 There is an additional restriction for :setting:`TWISTED_REACTOR` and
@@ -397,12 +406,14 @@ value per spider when :ref:`running multiple spiders in the same process
 
 These settings are:
 
+-   :setting:`LOG_COLOR`
 -   :setting:`LOG_DATEFORMAT`
 -   :setting:`LOG_ENABLED`
 -   :setting:`LOG_ENCODING`
 -   :setting:`LOG_FILE`
 -   :setting:`LOG_FILE_APPEND`
 -   :setting:`LOG_FORMAT`
+-   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
@@ -487,7 +498,7 @@ Endpoint URL used for S3-like storage, for example Minio or s3.scality.
 AWS_MAX_POOL_CONNECTIONS
 ------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``None``
 
@@ -959,8 +970,8 @@ every 10 seconds:
 
     DOWNLOAD_DELAY = 2.5
 
-This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting, which is enabled by default.
+This setting is also affected by the :setting:`DOWNLOAD_DELAY_JITTER` setting,
+which randomizes delays by ±50% by default.
 
 Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
 concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
@@ -972,6 +983,25 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
+
+It is possible to change this setting per domain by using
+:setting:`DOWNLOAD_SLOTS`.
+
+.. setting:: DOWNLOAD_DELAY_JITTER
+
+DOWNLOAD_DELAY_JITTER
+---------------------
+
+.. versionadded:: 2.19.0
+
+Default: ``0.5``
+
+Magnitude of the random variation applied to :setting:`DOWNLOAD_DELAY`, e.g.
+``0.2`` spreads delays between 80% and 120% of :setting:`DOWNLOAD_DELAY`. ``0``
+disables randomization.
+
+Randomizing delays makes the time between requests less uniform, resulting in a
+more natural crawling pattern.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
@@ -1056,8 +1086,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": None,
     }
@@ -1082,6 +1112,7 @@ handler (without replacement), place this in your ``settings.py``:
     :ref:`security-local-resources`
 
 
+.. reqmeta:: download_slot
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
@@ -1094,8 +1125,8 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "jitter": 0},
+            "books.toscrape.com": {"delay": 3, "jitter": 0.2},
         }
 
 .. note::
@@ -1104,7 +1135,15 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
 
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+    -   :setting:`DOWNLOAD_DELAY_JITTER`: ``jitter``
+
+Requests are assigned to a slot based on their URL domain. To assign a request
+to a specific slot instead, set the name of the slot as the ``download_slot``
+:attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
+slot, that key holds the name of the slot.
+
+Since that key is kept on redirects, a redirected request stays in the slot of
+the request it comes from, even when it points to a different domain.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1377,6 +1416,7 @@ Default:
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
+        "scrapy.extensions.remote_control.RemoteControl": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -1434,6 +1474,7 @@ non-default value in :ref:`per-spider settings <spider-settings>`.
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
+.. reqmeta:: ftp_passive
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -1441,7 +1482,8 @@ FTP_PASSIVE_MODE
 
 Default: ``True``
 
-Whether or not to use passive mode when initiating FTP transfers.
+Whether or not to use passive mode when initiating FTP transfers, unless there
+is an ``"ftp_passive"`` key in ``Request`` meta.
 
 .. note::
 
@@ -1513,6 +1555,28 @@ Default: ``None``
 
 The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
+.. setting:: HTTP2_MAX_FRAME_SIZE
+
+HTTP2_MAX_FRAME_SIZE
+--------------------
+
+.. versionadded:: 2.18.0
+
+Default: ``16384``
+
+Maximum `frame size`_, in bytes, that servers may send, between ``16384`` and
+``16777215``. Connections to servers that send a larger frame fail.
+
+Raise it for servers that send larger frames regardless of this value. Note
+that :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` are checked
+once per received frame, so a higher value allows a response to exceed them by
+more before being caught.
+
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` ignores
+this setting, as ``httpx`` does not allow configuring the frame size.
+
+.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
@@ -1543,6 +1607,20 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+.. setting:: ITEM_PROCESSOR
+
+ITEM_PROCESSOR
+--------------
+
+Default: ``"scrapy.pipelines.ItemPipelineManager"``
+
+The :ref:`component <topics-components>` that builds the :ref:`item pipeline
+<topics-item-pipeline>` from :setting:`ITEM_PIPELINES` and runs scraped items
+through it. It must implement :class:`~scrapy.pipelines.ItemProcessorProtocol`.
+
+.. autoclass:: scrapy.pipelines.ItemProcessorProtocol
+    :members:
+
 
 .. setting:: JOBDIR
 
@@ -1554,6 +1632,24 @@ Default: ``None``
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
+
+.. setting:: LOG_COLOR
+
+LOG_COLOR
+---------
+
+.. versionadded:: 2.19.0
+
+Default: ``True``
+
+Whether to colorize log output by log level when logging to a terminal.
+Requires the ``color`` extra:
+
+.. code-block:: bash
+
+    pip install scrapy[color]
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_ENABLED
 
@@ -1635,6 +1731,22 @@ LOG_FORMATTER
 Default: :class:`scrapy.logformatter.LogFormatter`
 
 The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
+
+.. setting:: LOG_INSTALL_ROOT_HANDLER
+
+LOG_INSTALL_ROOT_HANDLER
+------------------------
+
+.. versionadded:: 2.19.0
+
+Default: ``True``
+
+Whether to install a handler for the root logger, configured according to the
+other :ref:`logging settings <logging-settings>`. Set this to ``False`` to
+manage the root logger yourself, e.g. from a custom command or from a
+:file:`settings.py` module executed before Scrapy configures logging.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_LEVEL
 
@@ -1792,29 +1904,6 @@ Example:
 
     NEWSPIDER_MODULE = "mybot.spiders_dev"
 
-.. setting:: RANDOMIZE_DOWNLOAD_DELAY
-
-RANDOMIZE_DOWNLOAD_DELAY
-------------------------
-
-Default: ``True``
-
-If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
-website.
-
-This randomization decreases the chance of the crawler being detected (and
-subsequently blocked) by sites which analyze requests looking for statistically
-significant similarities in the time between their requests.
-
-The randomization policy is the same used by `wget`_ ``--random-wait`` option.
-
-If :setting:`DOWNLOAD_DELAY` is zero this option has no effect.
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
-.. _wget: https://www.gnu.org/software/wget/manual/wget.html
-
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
 REACTOR_THREADPOOL_MAXSIZE
@@ -1918,10 +2007,21 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
+.. versionadded:: 2.19.0
+   The ``SQLite`` queue types.
+
 Type of disk queue that will be used by the scheduler. Other available types
 are ``scrapy.squeues.PickleFifoDiskQueue``,
 ``scrapy.squeues.MarshalFifoDiskQueue``,
-``scrapy.squeues.MarshalLifoDiskQueue``.
+``scrapy.squeues.MarshalLifoDiskQueue``,
+``scrapy.squeues.PickleFifoSQLiteQueue``,
+``scrapy.squeues.PickleLifoSQLiteQueue``,
+``scrapy.squeues.MarshalFifoSQLiteQueue`` and
+``scrapy.squeues.MarshalLifoSQLiteQueue``.
+
+The ``SQLite`` types store requests in an SQLite database, which makes writes
+slower but keeps the queue usable after an unclean shutdown. See
+:ref:`security-job-state`.
 
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
@@ -2166,7 +2266,7 @@ Default: ``templates`` dir inside scrapy module
 
 The directory where to look for templates when creating new projects with
 :command:`startproject` command and new spiders with :command:`genspider`
-command.
+command. See :ref:`spider-templates`.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
@@ -2383,13 +2483,15 @@ modifying generator function source code during runtime, skip AST parsing of
 callback functions, or improve performance in auto-reloading development
 environments.
 
-Settings documented elsewhere:
-------------------------------
+.. only:: html
 
-The following settings are documented elsewhere, please check each specific
-case to see how to enable and use them.
+    Settings documented elsewhere:
+    ------------------------------
 
-.. settingslist::
+    The following settings are documented elsewhere, please check each specific
+    case to see how to enable and use them.
+
+    .. settingslist::
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _Google Cloud Storage: https://cloud.google.com/storage/

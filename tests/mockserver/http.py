@@ -13,6 +13,7 @@ from .http_resources import (
     ArbitraryLengthPayloadResource,
     BadHeader,
     BaseResource,
+    Books,
     BrokenChunkedResource,
     BrokenDownloadResource,
     ChunkedResource,
@@ -26,6 +27,12 @@ from .http_resources import (
     EmptyContentTypeHeaderResource,
     Follow,
     ForeverTakingResource,
+    H2DataAndReset,
+    H2GoAway,
+    H2NoSupport,
+    H2Push,
+    H2Raw,
+    H2ResetStream,
     HostHeaderResource,
     LargeChunkedFileResource,
     NoMetaRefreshRedirect,
@@ -49,6 +56,7 @@ class Root(BaseResource):
         super().__init__()
         put_child(self, b"status", Status())
         put_child(self, b"follow", Follow())
+        put_child(self, b"books", Books())
         put_child(self, b"delay", Delay())
         put_child(self, b"partial", Partial())
         put_child(self, b"drop", Drop())
@@ -95,6 +103,12 @@ class Root(BaseResource):
         put_child(self, b"response-headers", ResponseHeadersResource())
         put_child(self, b"set-cookie", SetCookie())
         put_child(self, b"uri", UriResource())
+        put_child(self, b"h2-reset-stream", H2ResetStream())
+        put_child(self, b"h2-data-and-reset", H2DataAndReset())
+        put_child(self, b"h2-goaway", H2GoAway())
+        put_child(self, b"h2-raw", H2Raw())
+        put_child(self, b"h2-no-support", H2NoSupport())
+        put_child(self, b"h2-push", H2Push())
 
     def getChild(self, path: bytes, request: Request) -> Root:
         return self
