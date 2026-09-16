@@ -47,7 +47,7 @@ Additionally, they may also implement the following methods:
 
    This method is called when the spider is opened.
 
-   .. versionchanged:: VERSION
+   .. versionchanged:: 2.18.0
       Added support for :exc:`~scrapy.exceptions.CloseSpider`.
 
    It may raise :exc:`~scrapy.exceptions.CloseSpider` to close the spider before

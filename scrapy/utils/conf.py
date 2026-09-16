@@ -93,7 +93,9 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
     be able to locate the project module.
     """
     cfg = get_config()
-    if cfg.has_option("settings", project):
+    if "SCRAPY_SETTINGS_MODULE" not in os.environ and cfg.has_option(
+        "settings", project
+    ):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
     closest = closest_scrapy_cfg()
     if closest:
@@ -126,7 +128,7 @@ def get_sources(use_closest: bool = True) -> list[str]:
 
 
 def feed_complete_default_values_from_settings(
-    feed: dict[str, Any], settings: BaseSettings
+    feed: dict[str, Any], settings: BaseSettings, uri: str | None = None
 ) -> dict[str, Any]:
     out = feed.copy()
     if "overwrite" in out:
@@ -148,6 +150,8 @@ def feed_complete_default_values_from_settings(
         # Kept for feed storages that were written before the mode feed option
         # existed and hence only look for the overwrite feed option.
         out["overwrite"] = out["mode"] == "overwrite"
+    if uri is not None:
+        out.setdefault("format", Path(uri).suffix.removeprefix("."))
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getdictorlist("FEED_EXPORT_FIELDS") or None)
@@ -216,3 +220,12 @@ def feed_process_params_from_cli(
     result.update(settings.getdict("FEEDS"))
 
     return result
+
+
+def _job_dir(settings: BaseSettings) -> str | None:
+    path: str | None = settings["JOBDIR"]
+    if not path:
+        return None
+    if not Path(path).exists():
+        Path(path).mkdir(parents=True)
+    return path

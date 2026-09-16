@@ -1482,14 +1482,14 @@ class TestFeedMode:
     async def test_unset_mode(self) -> None:
         path = self._path()
         with pytest.warns(ScrapyDeprecationWarning, match="FEED_MODE"):
-            await self._crawl(path)
+            await self._crawl(path, settings={"FEED_MODE": None})
         assert path.read_bytes() == b'{"foo": "bar"}\n'
 
     @coroutine_test
     async def test_unset_mode_existing_target(self) -> None:
         path = self._path(b"old content\n")
         with pytest.warns(ScrapyDeprecationWarning, match="FEED_MODE"):
-            await self._crawl(path)
+            await self._crawl(path, settings={"FEED_MODE": None})
         # The legacy behavior is kept.
         assert path.read_bytes() == b'old content\n{"foo": "bar"}\n'
 
@@ -1610,8 +1610,12 @@ class TestFeedModeInit:
         settings = {
             "FEEDS": {"file:///tmp/items.json": {"format": "json"}},
             "FEED_STORAGES": {"file": "tests.test_feedexport.LegacyFileStorage"},
+            "FEED_MODE": None,
         }
-        with caplog.at_level(logging.WARNING):
+        with (
+            caplog.at_level(logging.WARNING),
+            pytest.warns(ScrapyDeprecationWarning, match="FEED_MODE"),
+        ):
             get_crawler(settings_dict=settings)
         assert "does not declare which feed modes it supports" not in caplog.text
 
@@ -1663,6 +1667,27 @@ class TestFeedExportInit:
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
             build_from_crawler(FeedExporter, crawler)
+
+    def test_format_inferred_from_uri(self):
+        settings: dict[str, Any] = {
+            "FEEDS": {
+                "output.json": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = build_from_crawler(FeedExporter, crawler)
+        assert exporter.feeds["output.json"]["format"] == "json"
+
+    def test_format_missing_and_not_inferable(self, caplog: pytest.LogCaptureFixture):
+        settings: dict[str, Any] = {
+            "FEEDS": {
+                "stdout:": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
+            build_from_crawler(FeedExporter, crawler)
+        assert "Feed format not set" in caplog.text
 
     def test_absolute_pathlib_as_uri(self):
         with tempfile.NamedTemporaryFile(suffix="json") as tmp:
