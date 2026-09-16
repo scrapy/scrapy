@@ -61,6 +61,10 @@ Additionally, they may also implement the following methods:
 
 Any of these methods may be defined as a coroutine function (``async def``).
 
+:meth:`open_spider` and :meth:`close_spider` run concurrently on all enabled
+item pipelines; only :meth:`process_item` follows the :setting:`ITEM_PIPELINES`
+order.
+
 
 Item pipeline example
 =====================
