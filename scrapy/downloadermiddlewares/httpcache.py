@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from email.utils import formatdate
 from typing import TYPE_CHECKING
 
@@ -28,6 +29,9 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
+logger = logging.getLogger(__name__)
+
+
 class HttpCacheMiddleware:
     DOWNLOAD_EXCEPTIONS = (
         ConnectionDone,
@@ -51,7 +55,6 @@ class HttpCacheMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        assert crawler.stats
         o = cls(crawler.settings, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
@@ -77,9 +80,20 @@ class HttpCacheMiddleware:
             return None
 
         # Look for cached response and check if expired
-        cachedresponse: Response | None = self.storage.retrieve_response(
-            self.crawler.spider, request
-        )
+        cachedresponse: Response | None
+        try:
+            cachedresponse = self.storage.retrieve_response(
+                self.crawler.spider, request
+            )
+        except Exception:
+            self.stats.inc_value("httpcache/retrieve_error")
+            logger.warning(
+                f"Could not read the cache entry for {request}, treating it as a "
+                f"cache miss.",
+                exc_info=True,
+                extra={"spider": self.crawler.spider},
+            )
+            cachedresponse = None
         if cachedresponse is None:
             self.stats.inc_value("httpcache/miss")
             if self.ignore_missing:
@@ -125,9 +139,13 @@ class HttpCacheMiddleware:
 
         if self.policy.is_cached_response_valid(cachedresponse, response, request):
             self.stats.inc_value("httpcache/revalidate")
+            if response.status == 304:
+                self._freshen_cached_response(cachedresponse, response)
+                self._cache_response(cachedresponse, request)
             return cachedresponse
 
         self.stats.inc_value("httpcache/invalidate")
+        request.meta.pop("cache_timestamp", None)
         self._cache_response(response, request)
         return response
 
@@ -142,6 +160,22 @@ class HttpCacheMiddleware:
             self.stats.inc_value("httpcache/errorrecovery")
             return cachedresponse
         return None
+
+    def _freshen_cached_response(
+        self, cachedresponse: Response, response: Response
+    ) -> None:
+        # RFC 7234, section 4.3.4: update the stored response with the
+        # header fields from a successful revalidation (304) response.
+        warnings = [
+            warning
+            for warning in cachedresponse.headers.getlist(b"Warning")
+            if warning.split(None, 1)[0].startswith(b"2")
+        ]
+        cachedresponse.headers.update(response.headers)
+        if warnings:
+            cachedresponse.headers[b"Warning"] = warnings
+        else:
+            cachedresponse.headers.pop(b"Warning", None)
 
     def _cache_response(self, response: Response, request: Request) -> None:
         if self.policy.should_cache_response(response, request):

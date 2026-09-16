@@ -1,3 +1,15 @@
 scrapy/core/downloader/handlers/http.py
 scrapy/extensions/statsmailer.py
+scrapy/interfaces.py
 scrapy/mail.py
+scrapy/utils/benchserver.py
+scrapy/utils/console.py
+scrapy/utils/display.py
+scrapy/utils/ftp.py
+scrapy/utils/gz.py
+scrapy/utils/job.py
+scrapy/utils/ossignal.py
+scrapy/utils/sitemap.py
+scrapy/utils/ssl.py
+scrapy/utils/template.py
+scrapy/utils/versions.py

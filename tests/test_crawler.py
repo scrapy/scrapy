@@ -3,26 +3,21 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import signal
+import threading
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
+from unittest.mock import MagicMock, patch
 
 import pytest
-from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
 from scrapy import Spider
-from scrapy.crawler import (
-    AsyncCrawlerProcess,
-    AsyncCrawlerRunner,
-    Crawler,
-    CrawlerProcess,
-    CrawlerRunner,
-    CrawlerRunnerBase,
-)
+from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
-from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
+from scrapy.utils.defer import _DEFER_DELAY, maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
     configure_logging,
@@ -30,7 +25,12 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
+from tests.spiders import NoRequestsSpider
+from tests.utils import assert_option_is_default
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 BASE_SETTINGS: dict[str, Any] = {}
 
@@ -46,14 +46,7 @@ def get_raw_crawler(
     return Crawler(spidercls or DefaultSpider, settings)
 
 
-class TestBaseCrawler:
-    @staticmethod
-    def assertOptionIsDefault(settings: Settings, key: str) -> None:
-        assert isinstance(settings, Settings)
-        assert settings[key] == getattr(default_settings, key)
-
-
-class TestCrawler(TestBaseCrawler):
+class TestCrawler:
     def test_populate_spidercls_settings(self) -> None:
         spider_settings: dict[str, Any] = {
             "TEST1": "spider",
@@ -81,14 +74,72 @@ class TestCrawler(TestBaseCrawler):
         assert not settings.frozen
         assert crawler.settings.frozen
 
+    @pytest.mark.parametrize(
+        "attr",
+        ["extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_before_apply_settings(self, attr: str) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        with pytest.raises(RuntimeError, match=rf"Crawler\.{attr} is not set yet"):
+            getattr(crawler, attr)
+        crawler._apply_settings()
+        assert getattr(crawler, attr) is not None
+
+    @pytest.mark.parametrize(
+        "attr",
+        ["engine", "extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_on_class(self, attr: str) -> None:
+        # Introspection tools such as help() read these off the class.
+        assert getattr(Crawler, attr) is getattr(Crawler, attr)
+
+    def test_late_attr_engine_before_crawl(self) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        crawler._apply_settings()
+        with pytest.raises(RuntimeError, match=r"Crawler\.engine is not set yet"):
+            _ = crawler.engine
+
+    @pytest.mark.parametrize(
+        ("attr", "setting"),
+        [
+            ("download_delay", "DOWNLOAD_DELAY"),
+            ("max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"),
+        ],
+    )
+    def test_deprecated_spider_attr(self, attr: str, setting: str) -> None:
+        crawler = get_raw_crawler(type("_Spider", (DefaultSpider,), {attr: 2}))
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=f"The {attr!r} spider attribute is deprecated. Use the {setting} ",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getint(setting) == 2
+
+    @pytest.mark.parametrize(
+        ("attr", "setting"),
+        [
+            ("download_delay", "DOWNLOAD_DELAY"),
+            ("max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"),
+        ],
+    )
+    def test_deprecated_spider_attr_ignored(self, attr: str, setting: str) -> None:
+        crawler = get_raw_crawler(type("_Spider", (DefaultSpider,), {attr: 2}))
+        crawler.settings.set(setting, 3, priority="spider")
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=f"The {attr!r} spider attribute is deprecated. It is also being ",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getint(setting) == 3
+
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"
-        self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
+        assert_option_is_default(crawler.settings, "RETRY_ENABLED")
 
     def test_crawler_accepts_None(self) -> None:
         crawler = Crawler(DefaultSpider)
-        self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
+        assert_option_is_default(crawler.settings, "RETRY_ENABLED")
 
     def test_crawler_rejects_spider_objects(self) -> None:
         with pytest.raises(ValueError, match="spidercls argument must be a class"):
@@ -485,7 +536,6 @@ class TestSpiderSettings:
             custom_settings = {"AUTOTHROTTLE_ENABLED": True}
 
         crawler = get_crawler(MySpider)
-        assert crawler.extensions
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         assert AutoThrottle in enabled_exts
 
@@ -549,7 +599,6 @@ class TestCrawlerLogging:
         assert "info message" in logged
         assert "warning message" in logged
         assert "error message" in logged
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
         assert crawler.stats.get_value("log_count/WARNING") == 1
         assert info_count == 1
@@ -579,215 +628,216 @@ class TestCrawlerLogging:
         assert "debug message" in logged
 
 
-class SpiderLoaderWithWrongInterface:
-    def unneeded_method(self) -> None:
-        pass
+class TestAsyncCrawlerProcessReactorlessHelpers:
+    """Unit tests for the reactorless shutdown helpers of AsyncCrawlerProcess.
 
-
-class TestCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            CrawlerRunner(settings)
-
-    def test_crawler_runner_accepts_dict(self) -> None:
-        runner = CrawlerRunner({"foo": "bar"})
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    def test_crawler_runner_accepts_None(self) -> None:
-        runner = CrawlerRunner()
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-
-class TestAsyncCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            AsyncCrawlerRunner(settings)
-
-    def test_crawler_runner_accepts_dict(self) -> None:
-        runner = AsyncCrawlerRunner({"foo": "bar"})
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    def test_crawler_runner_accepts_None(self) -> None:
-        runner = AsyncCrawlerRunner()
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-
-class TestCrawlerProcess(TestBaseCrawler):
-    def test_crawler_process_accepts_dict(self) -> None:
-        runner = CrawlerProcess({"foo": "bar"}, install_root_handler=False)
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    def test_crawler_process_accepts_None(self) -> None:
-        runner = CrawlerProcess(install_root_handler=False)
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-
-@pytest.mark.only_asyncio
-class TestAsyncCrawlerProcess(TestBaseCrawler):
-    def test_crawler_process_accepts_dict(self, reactor_pytest: str) -> None:
-        runner = AsyncCrawlerProcess(
-            {"foo": "bar", "TWISTED_REACTOR_ENABLED": reactor_pytest != "none"},
-            install_root_handler=False,
-        )
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    @pytest.mark.requires_reactor  # can't pass TWISTED_REACTOR_ENABLED=False
-    def test_crawler_process_accepts_None(self) -> None:
-        runner = AsyncCrawlerProcess(install_root_handler=False)
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-
-@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
-def test_runner_settings_applied_to_crawler_instance(
-    runner_cls: type[CrawlerRunnerBase],
-) -> None:
-    runner = runner_cls({"FOO": "runner"})
-    crawler = Crawler(DefaultSpider)
-    result = runner.create_crawler(crawler)
-    assert result is crawler
-    assert result.settings["FOO"] == "runner"
-
-
-@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
-def test_spider_custom_settings_override_runner(
-    runner_cls: type[CrawlerRunnerBase],
-) -> None:
-    class MySpider(DefaultSpider):
-        custom_settings = {"FOO": "spider"}
-
-    runner = runner_cls({"FOO": "runner"})
-    crawler = Crawler(MySpider)
-    runner.create_crawler(crawler)
-    assert crawler.settings["FOO"] == "spider"
-
-
-def test_create_crawler_instance_consistent_with_spider_class() -> None:
-    runner = AsyncCrawlerRunner({"FOO": "runner"})
-
-    crawler_from_class = runner.create_crawler(DefaultSpider)
-
-    pre_built = Crawler(DefaultSpider)
-    runner.create_crawler(pre_built)
-
-    assert crawler_from_class.settings["FOO"] == "runner"
-    assert pre_built.settings["FOO"] == "runner"
-
-
-class ExceptionSpider(scrapy.Spider):
-    name = "exception"
-
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        raise ValueError("Exception in from_crawler method")
-
-
-class NoRequestsSpider(scrapy.Spider):
-    name = "no_request"
-
-    async def start(self):
-        return
-        yield
-
-
-@pytest.mark.requires_reactor  # CrawlerRunner requires a reactor
-class TestCrawlerRunnerHasSpider:
-    @pytest.fixture
-    def runner(self) -> CrawlerRunnerBase:
-        return CrawlerRunner(get_reactor_settings())
+    These cover defensive branches that guard against shutdown races and that
+    are not reachable through a full process run.
+    """
 
     @staticmethod
-    async def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> None:
-        await ensure_awaitable(runner.crawl(spider))
+    def _bare_process(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> tuple[AsyncCrawlerProcess, list[Any]]:
+        # AsyncCrawlerProcess.__init__ has global side effects (it installs a
+        # reactor import hook and an asyncio event loop), so build a bare
+        # instance and set only the attributes these helpers read. The shutdown
+        # handlers installed by these helpers are recorded for assertions
+        # instead of touching the real process-wide signal handlers.
+        installed_handlers: list[Any] = []
+        monkeypatch.setattr(
+            "scrapy.crawler.install_shutdown_handlers",
+            lambda handler, *args, **kwargs: installed_handlers.append(handler),
+        )
+        return AsyncCrawlerProcess.__new__(AsyncCrawlerProcess), installed_handlers
 
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_successful(
-        self, runner: CrawlerRunnerBase
+    @staticmethod
+    def _run_in_thread(target: Callable[[], None]) -> None:
+        # Run target in a dedicated thread so its event loop is not nested
+        # inside the event loop that may already be running the test session.
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join()
+
+    def test_signal_shutdown_reactorless_without_loop(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        await self._crawl(runner, NoRequestsSpider)
-        assert not runner.bootstrap_failed
+        process, installed_handlers = self._bare_process(monkeypatch)
+        process._reactorless_loop = None
+        # No loop to schedule the shutdown task on, so it returns early, but it
+        # must still escalate the handler so a second signal forces a fast
+        # shutdown.
+        process._signal_shutdown_reactorless(signal.SIGINT, None)
+        assert installed_handlers == [process._signal_fast_shutdown_reactorless]
 
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_successful_for_several(
-        self, runner: CrawlerRunnerBase
+    def test_signal_kill_reactorless_without_loop(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        await self._crawl(runner, NoRequestsSpider)
-        await self._crawl(runner, NoRequestsSpider)
-        assert not runner.bootstrap_failed
+        process, installed_handlers = self._bare_process(monkeypatch)
+        process._reactorless_loop = None
+        process._reactorless_main_task = None
+        # No loop to cancel the main task on, so it returns early, but it must
+        # still ignore any further signals.
+        process._signal_kill_reactorless(signal.SIGINT, None)
+        assert installed_handlers == [signal.SIG_IGN]
 
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_failed(
-        self, runner: CrawlerRunnerBase
+    def test_signal_kill_reactorless_without_main_task(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        try:
-            await self._crawl(runner, ExceptionSpider)
-        except ValueError:
-            pass
-        else:
-            pytest.fail("Exception should be raised from spider")
+        process, installed_handlers = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        process._reactorless_main_task = None
+        # No main task to cancel, only the log message is scheduled.
+        process._signal_kill_reactorless(signal.SIGINT, None)
+        assert installed_handlers == [signal.SIG_IGN]
+        loop.call_soon_threadsafe.assert_called_once_with(
+            process._log_kill, signal.SIGINT
+        )
 
-        assert runner.bootstrap_failed
-
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_failed_for_several(
-        self, runner: CrawlerRunnerBase
+    def test_signal_shutdown_reactorless_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        try:
-            await self._crawl(runner, ExceptionSpider)
-        except ValueError:
-            pass
-        else:
-            pytest.fail("Exception should be raised from spider")
+        process, _ = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_shutdown", log_calls.append)
+        # A signal can land while the interrupted code is itself writing to
+        # the log stream, so logging from the handler would reenter that
+        # write; it must be scheduled on the loop instead of called directly.
+        process._signal_shutdown_reactorless(signal.SIGINT, None)
+        assert log_calls == []
+        loop.call_soon_threadsafe.assert_any_call(process._log_shutdown, signal.SIGINT)
 
-        await self._crawl(runner, NoRequestsSpider)
-
-        assert runner.bootstrap_failed
-
-    @coroutine_test
-    async def test_crawler_runner_asyncio_enabled_true(
-        self, reactor_pytest: str
+    def test_signal_kill_reactorless_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        if reactor_pytest != "asyncio":
-            runner = CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
-            with pytest.raises(
-                Exception,
-                match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
-            ):
-                await self._crawl(runner, NoRequestsSpider)
-        else:
-            runner = CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
-            await self._crawl(runner, NoRequestsSpider)
+        process, _ = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        process._reactorless_main_task = MagicMock()
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_kill", log_calls.append)
+        process._signal_kill_reactorless(signal.SIGINT, None)
+        assert log_calls == []
+        loop.call_soon_threadsafe.assert_any_call(process._log_kill, signal.SIGINT)
+        # The cancellation itself is delayed, giving the log line above a
+        # moment to actually reach its output before the process exits.
+        loop.call_later.assert_any_call(
+            _DEFER_DELAY, process._reactorless_main_task.cancel
+        )
+
+    def test_shutdown_reactorless_main_task_already_done(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        process._stop_after_crawl = False
+
+        async def noop(*args: Any, **kwargs: Any) -> None:
+            return None
+
+        monkeypatch.setattr(process, "stop", noop)
+        monkeypatch.setattr(process, "join", noop)
+
+        def run() -> None:
+            loop = asyncio.new_event_loop()
+            try:
+                main_task: asyncio.Future[None] = loop.create_future()
+                main_task.set_result(None)
+                process._reactorless_main_task = main_task
+                # The main task is already done, so it is not cancelled.
+                loop.run_until_complete(process._shutdown_reactorless(mode="graceful"))
+                assert not main_task.cancelled()
+            finally:
+                loop.close()
+
+        self._run_in_thread(run)
+
+    def test_cancel_all_tasks_logs_task_exception(self) -> None:
+        contexts: list[dict[str, Any]] = []
+        task_was_cancelled: list[bool] = []
+
+        def run() -> None:
+            loop = asyncio.new_event_loop()
+            loop.set_exception_handler(lambda _loop, context: contexts.append(context))
+
+            async def fail_on_cancel() -> None:
+                try:
+                    await asyncio.sleep(10)
+                except asyncio.CancelledError:
+                    raise RuntimeError("boom")
+
+            try:
+                task = loop.create_task(fail_on_cancel())
+                # Let the task start and suspend on the sleep so the
+                # cancellation is raised inside its body and turned into a
+                # RuntimeError rather than cancelling the task cleanly.
+                loop.run_until_complete(asyncio.sleep(0))
+                AsyncCrawlerProcess._cancel_all_tasks(loop)
+                task_was_cancelled.append(task.cancelled())
+            finally:
+                loop.close()
+
+        self._run_in_thread(run)
+
+        # The task raised instead of being cancelled, so its exception is
+        # reported to the loop exception handler.
+        assert task_was_cancelled == [False]
+        assert any(
+            context.get("message")
+            == "unhandled exception during AsyncCrawlerProcess shutdown"
+            for context in contexts
+        )
 
 
-@pytest.mark.only_asyncio
-class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
-    @pytest.fixture
-    def runner(self) -> CrawlerRunnerBase:
-        return AsyncCrawlerRunner(get_reactor_settings())
+class TestCrawlerProcessBaseSignalHandlers:
+    """Unit tests for the Twisted-reactor shutdown handlers shared by
+    CrawlerProcess and AsyncCrawlerProcess.
+    """
 
-    def test_crawler_runner_asyncio_enabled_true(self) -> None:  # type: ignore[override]
-        pytest.skip("This test is only for CrawlerRunner")
+    @staticmethod
+    def _bare_process(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> tuple[CrawlerProcess, list[Any]]:
+        installed_handlers: list[Any] = []
+        monkeypatch.setattr(
+            "scrapy.crawler.install_shutdown_handlers",
+            lambda handler, *args, **kwargs: installed_handlers.append(handler),
+        )
+        return CrawlerProcess.__new__(CrawlerProcess), installed_handlers
+
+    def test_signal_shutdown_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        reactor = MagicMock()
+        # No reactor may be installed yet in the test process, so
+        # twisted.internet may not have a "reactor" attribute to patch over.
+        monkeypatch.setattr("twisted.internet.reactor", reactor, raising=False)
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_shutdown", log_calls.append)
+        # A signal can land while the interrupted code is itself writing to
+        # the log stream, so logging from the handler would reenter that
+        # write and raise, aborting the handler before it schedules the
+        # graceful stop; it must be scheduled on the reactor instead.
+        process._signal_shutdown(signal.SIGINT, None)
+        assert log_calls == []
+        reactor.callFromThread.assert_any_call(process._log_shutdown, signal.SIGINT)
+        reactor.callFromThread.assert_any_call(process._graceful_stop_reactor)
+
+    def test_signal_kill_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        reactor = MagicMock()
+        monkeypatch.setattr("twisted.internet.reactor", reactor, raising=False)
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_kill", log_calls.append)
+        process._signal_kill(signal.SIGINT, None)
+        assert log_calls == []
+        reactor.callFromThread.assert_any_call(process._log_kill, signal.SIGINT)
+        reactor.callLater.assert_any_call(_DEFER_DELAY, process._stop_reactor)
 
 
 @pytest.mark.parametrize(
@@ -802,7 +852,7 @@ def test_log_scrapy_info(
     settings: dict[str, Any], items: list[str] | None, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level("INFO"):
-        CrawlerProcess(settings, install_root_handler=False)
+        CrawlerProcess({**settings, "LOG_INSTALL_ROOT_HANDLER": False})
     assert (
         caplog.records[0].getMessage()
         == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
@@ -826,3 +876,282 @@ async def test_deprecated_crawler_stop() -> None:
         ScrapyDeprecationWarning, match=r"Crawler.stop\(\) is deprecated"
     ):
         await maybe_deferred_to_future(crawler.stop())
+
+
+@coroutine_test
+async def test_crawler_stop_async_invalid_mode() -> None:
+    crawler = get_crawler(DefaultSpider)
+    with pytest.raises(ValueError, match=r"Unknown stop mode"):
+        await crawler.stop_async(mode="invalid")  # type: ignore[arg-type]
+
+
+@coroutine_test
+async def test_crawler_graceful_stop_non_running_engine_is_noop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = False
+        called = False
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called = True
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    await crawler.stop_async(mode="graceful")
+
+    assert dummy_engine.called is False
+
+
+@coroutine_test
+async def test_crawler_force_stop_falls_back_to_fast(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    crawler = get_crawler(DefaultSpider)
+
+    class DummyEngine:
+        called_mode: str | None = None
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called_mode = mode
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    with caplog.at_level(logging.WARNING):
+        await crawler.stop_async(mode="force")
+
+    assert dummy_engine.called_mode == "fast"
+    assert "Falling back to fast stop" in caplog.text
+
+
+@coroutine_test
+async def test_crawler_force_stop_uses_force_callback() -> None:
+    crawler = get_crawler(DefaultSpider)
+    called = False
+
+    def force_stop_callback() -> None:
+        nonlocal called
+        called = True
+
+    crawler._set_force_stop_callback(force_stop_callback)
+    await crawler.stop_async(mode="force")
+    assert called
+
+
+@coroutine_test
+async def test_crawler_stop_async_without_engine_is_noop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    await crawler.stop_async(mode="graceful")
+
+    assert crawler.crawling is False
+
+
+@coroutine_test
+async def test_crawler_stop_async_ignores_engine_not_running_runtime_error() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = True
+        called = False
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called = True
+            raise RuntimeError("Engine not running")
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    await crawler.stop_async(mode="graceful")
+
+    assert dummy_engine.called is True
+
+
+@coroutine_test
+async def test_crawler_stop_async_reraises_other_runtime_errors() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = True
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            raise RuntimeError("different runtime error")
+
+    crawler.engine = DummyEngine()  # type: ignore[assignment]
+
+    with pytest.raises(RuntimeError, match="different runtime error"):
+        await crawler.stop_async(mode="graceful")
+
+
+@pytest.mark.requires_reactor
+@coroutine_test
+async def test_crawler_process_force_stop_via_public_crawler_api() -> None:
+    crawler_process = CrawlerProcess({"LOG_INSTALL_ROOT_HANDLER": False})
+    called = False
+
+    def stop_reactor(_: Any = None) -> None:
+        nonlocal called
+        called = True
+
+    crawler_process._stop_reactor = stop_reactor  # type: ignore[method-assign]
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert called
+
+
+@pytest.mark.only_asyncio
+@pytest.mark.requires_reactor
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactor_enabled_via_public_crawler_api() -> (
+    None
+):
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": True, "LOG_INSTALL_ROOT_HANDLER": False},
+    )
+    called = False
+
+    def stop_reactor(_: Any = None) -> None:
+        nonlocal called
+        called = True
+
+    crawler_process._stop_reactor = stop_reactor  # type: ignore[method-assign]
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert called
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_without_main_task(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False, "LOG_INSTALL_ROOT_HANDLER": False},
+    )
+    assert crawler_process._reactorless_loop is not None
+    assert crawler_process._reactorless_main_task is None
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_without_loop(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False, "LOG_INSTALL_ROOT_HANDLER": False},
+    )
+    crawler_process._reactorless_loop = None
+    crawler_process._reactorless_main_task = None
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_with_task(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False, "LOG_INSTALL_ROOT_HANDLER": False},
+    )
+
+    class DummyLoop:
+        callback = None
+
+        def call_soon_threadsafe(self, callback) -> None:
+            self.callback = callback
+
+    class DummyTask:
+        called = False
+
+        def cancel(self) -> None:
+            self.called = True
+
+    loop = DummyLoop()
+    task = DummyTask()
+    crawler_process._reactorless_loop = cast("asyncio.AbstractEventLoop", loop)
+    crawler_process._reactorless_main_task = cast("asyncio.Future[None]", task)
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert loop.callback is not None
+    loop.callback()
+    assert task.called is True
+
+
+def test_async_crawler_process_schedule_reactorless_shutdown_without_loop() -> None:
+    crawler_process = object.__new__(AsyncCrawlerProcess)
+    crawler_process._reactorless_loop = None
+
+    crawler_process._schedule_reactorless_shutdown(
+        mode="graceful", signum=signal.SIGINT
+    )
+
+
+def test_async_crawler_process_schedule_reactorless_shutdown_runtime_error() -> None:
+    crawler_process = object.__new__(AsyncCrawlerProcess)
+
+    class DummyLoop:
+        scheduled = False
+        create_task_called = False
+
+        def call_soon_threadsafe(self, callback, *args) -> None:
+            self.scheduled = True
+            callback(*args)
+
+        def create_task(self, coro) -> None:
+            self.create_task_called = True
+            raise RuntimeError("event loop is closing")
+
+    class DummyCoro:
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    loop = DummyLoop()
+    coro = DummyCoro()
+    called_mode: str | None = None
+
+    def shutdown_reactorless(*, mode: str) -> DummyCoro:
+        nonlocal called_mode
+        called_mode = mode
+        return coro
+
+    crawler_process._reactorless_loop = cast("asyncio.AbstractEventLoop", loop)
+    with patch.object(
+        crawler_process, "_shutdown_reactorless", new=shutdown_reactorless
+    ):
+        crawler_process._schedule_reactorless_shutdown(
+            mode="graceful", signum=signal.SIGINT
+        )
+
+    assert called_mode == "graceful"
+
+    assert loop.scheduled
+    assert loop.create_task_called
+    assert coro.closed

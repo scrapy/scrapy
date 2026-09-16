@@ -1,8 +1,8 @@
 """
 Mail sending helpers
-
-See documentation in docs/topics/email.rst
 """
+
+# pragma: no file cover
 
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import pytest
@@ -34,6 +34,9 @@ from scrapy.spidermiddlewares.referer import (
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class TestRefererMiddleware:
@@ -236,7 +239,7 @@ class MixinSameOrigin:
         ("https://example.com/page.html", "http://not.example.com/", None),
         ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
         ("ftp://example.com/urls.zip", "http://example.com/not-page.html", None),
-        ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
+        ("ftps://example.com/urls.zip", "http://example.com/not-page.html", None),
         # test for user/password stripping
         (
             "https://user:password@example.com/page.html",
@@ -392,7 +395,7 @@ class MixinOriginWhenCrossOrigin:
         ),
         (
             "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
+            "http://example4.com/not-page.html",
             b"ftps://example4.com/",
         ),
         # test for user/password stripping
@@ -503,9 +506,9 @@ class MixinStrictOriginWhenCrossOrigin:
             b"ftps://example4.com/",
         ),
         (
-            "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
-            b"ftps://example4.com/",
+            "ftp://example4.com/urls.zip",
+            "http://example4.com/not-page.html",
+            b"ftp://example4.com/",
         ),
         # test for user/password stripping
         (
@@ -1031,7 +1034,7 @@ async def test_response_policy_only_supports_policy_names():
     crawler = get_crawler(settings_dict={"REFERRER_POLICY": "no-referrer"})
     mw = build_from_crawler(RefererMiddleware, crawler)
 
-    async def input_result():
+    async def input_result() -> AsyncIterator[Any]:
         yield Request("https://example.com/")
 
     response = Response(
@@ -1079,7 +1082,7 @@ async def test_referer_policies_setting():
     )
     mw = build_from_crawler(RefererMiddleware, crawler)
 
-    async def input_result():
+    async def input_result() -> AsyncIterator[Any]:
         yield Request("https://example.com/")
 
     # "no-referrer-when-downgrade": None,

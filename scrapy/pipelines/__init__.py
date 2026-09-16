@@ -1,14 +1,14 @@
 """
 Item pipeline
 
-See documentation in docs/item-pipeline.rst
+See documentation in docs/topics/item-pipeline.rst
 """
 
 from __future__ import annotations
 
 import asyncio
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from twisted.internet.defer import Deferred, DeferredList, FirstError
 
@@ -26,6 +26,23 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
     from scrapy.settings import Settings
+
+
+class ItemProcessorProtocol(Protocol):
+    """Protocol for item processor implementations.
+
+    See :setting:`ITEM_PROCESSOR`.
+    """
+
+    async def open_spider_async(self) -> None:
+        """Get the item processor ready to process items."""
+
+    async def process_item_async(self, item: Any) -> Any:
+        """Return the processed *item*, or raise
+        :exc:`~scrapy.exceptions.DropItem` to drop it."""
+
+    async def close_spider_async(self) -> None:
+        """Release any resource that the item processor is using."""
 
 
 class ItemPipelineManager(MiddlewareManager):

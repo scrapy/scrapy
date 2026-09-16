@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy.utils.misc import build_from_crawler
@@ -92,9 +94,10 @@ class ScrapyPriorityQueue:
     -   The :data:`~scrapy.Request.priority` of the request.
 
     For each combination of the above seen, this class creates an instance of
-    *downstream_queue_cls* with *key* set to a subdirectory of the persistence
-    directory, named as the request priority (e.g. ``1``), with an ``s`` suffix
-    in case of a start request (e.g. ``1s``).
+    *downstream_queue_cls* (or *start_queue_cls* for start requests if it was
+    passed) with *key* set to a subdirectory of the persistence directory,
+    named as the negated request priority (e.g. ``-1``), with an ``s`` suffix
+    in case of a start request (e.g. ``-1s``).
     """
 
     @classmethod
@@ -262,7 +265,6 @@ class ScrapyPriorityQueue:
 
 class DownloaderInterface:
     def __init__(self, crawler: Crawler):
-        assert crawler.engine
         self.downloader: Downloader = crawler.engine.downloader
 
     def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:
@@ -408,6 +410,12 @@ class DownloaderAwarePriorityQueue:
         request = queue.pop()
         if len(queue) == 0:
             del self.pqueues[slot]
+            queue.close()
+            if self.key:
+                # Reclaim the slot directory; rmdir leaves it alone if the
+                # downstream queues did not remove all their files.
+                with suppress(OSError):
+                    Path(self.key, _path_safe(slot)).rmdir()
         return request
 
     def push(self, request: Request) -> None:

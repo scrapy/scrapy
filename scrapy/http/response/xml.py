@@ -1,6 +1,7 @@
 """
-This module implements the XmlResponse class which adds encoding
-discovering through XML encoding declarations to the TextResponse class.
+This module implements the :class:`XmlResponse` class which is used as a
+content type marker by :class:`~scrapy.selector.Selector` and can be used in
+``isinstance()`` checks.
 
 See documentation in docs/topics/request-response.rst
 """

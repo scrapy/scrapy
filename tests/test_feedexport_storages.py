@@ -1,50 +1,36 @@
 from __future__ import annotations
 
+import logging
 import os
 import string
+import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from ssl import SSLCertVerificationError
 from typing import IO, Any
 from unittest import mock
 from urllib.parse import quote
 
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import path_to_file_uri
-from zope.interface.verify import verifyObject
 
 import scrapy
+from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import (
     BlockingFeedStorage,
     FileFeedStorage,
     FTPFeedStorage,
     GCSFeedStorage,
-    IFeedStorage,
     S3FeedStorage,
     StdoutFeedStorage,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
+from tests.utils.cloud import mock_google_cloud_storage
 from tests.utils.decorators import coroutine_test
-
-
-def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
-    """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
-    classes and set their proper return values.
-    """
-    from google.cloud.storage import Blob, Bucket, Client  # noqa: PLC0415
-
-    client_mock = mock.create_autospec(Client)
-
-    bucket_mock = mock.create_autospec(Bucket)
-    client_mock.get_bucket.return_value = bucket_mock
-
-    blob_mock = mock.create_autospec(Blob)
-    bucket_mock.blob.return_value = blob_mock
-
-    return (client_mock, bucket_mock, blob_mock)
 
 
 class TestFileFeedStorage:
@@ -70,11 +56,6 @@ class TestFileFeedStorage:
             self._assert_stores(FileFeedStorage(str(path)), path)
         finally:
             os.chdir(old_cwd)
-
-    def test_interface(self, tmp_path):
-        path = tmp_path / "file.txt"
-        st = FileFeedStorage(str(path))
-        verifyObject(IFeedStorage, st)
 
     @staticmethod
     def _store(path: Path, feed_options: dict[str, Any] | None = None) -> None:
@@ -116,28 +97,35 @@ class TestFileFeedStorage:
         assert storage.path == path
 
 
+def get_test_spider(settings: dict[str, Any] | None = None) -> scrapy.Spider:
+    class TestSpider(scrapy.Spider):
+        name = "test_spider"
+
+    crawler = get_crawler(settings_dict=settings)
+    return TestSpider.from_crawler(crawler)
+
+
 class TestFTPFeedStorage:
-    def get_test_spider(self, settings=None):
-        class TestSpider(scrapy.Spider):
-            name = "test_spider"
-
-        crawler = get_crawler(settings_dict=settings)
-        return TestSpider.from_crawler(crawler)
-
-    async def _store(self, uri, content, feed_options=None, settings=None):
+    async def _store(
+        self,
+        uri: str,
+        content: bytes,
+        feed_options: dict[str, Any] | None = None,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         crawler = get_crawler(settings_dict=settings or {})
-        storage = FTPFeedStorage.from_crawler(
+        storage = build_from_crawler(
+            FTPFeedStorage,
             crawler,
             uri,
             feed_options=feed_options,
         )
-        verifyObject(IFeedStorage, storage)
-        spider = self.get_test_spider()
+        spider = get_test_spider()
         file = storage.open(spider)
         file.write(content)
         await maybe_deferred_to_future(storage.store(file))
 
-    def _assert_stored(self, path: Path, content):
+    def _assert_stored(self, path: Path, content: bytes) -> None:
         assert path.exists()
         try:
             assert path.read_bytes() == content
@@ -184,11 +172,42 @@ class TestFTPFeedStorage:
             await self._store(url, b"bar", settings=settings)
             self._assert_stored(ftp_server.path / filename, b"bar")
 
+    @coroutine_test
+    async def test_missing_parent_directories(self):
+        with MockFTPServer() as ftp_server:
+            path = "missing/parent/dirs/file"
+            await self._store(ftp_server.url(path), b"foo")
+            self._assert_stored(ftp_server.path / path, b"foo")
+
+    @coroutine_test
+    async def test_tls(self, monkeypatch):
+        monkeypatch.setenv(
+            "SSL_CERT_FILE", str(Path(__file__).parent / "keys" / "localhost.crt")
+        )
+        with MockFTPServer(tls=True) as ftp_server:
+            filename = "file"
+            await self._store(ftp_server.url(filename), b"foo")
+            self._assert_stored(ftp_server.path / filename, b"foo")
+
+    @coroutine_test
+    async def test_tls_untrusted_certificate(self):
+        with (
+            MockFTPServer(tls=True) as ftp_server,
+            pytest.raises(SSLCertVerificationError),
+        ):
+            await self._store(ftp_server.url("file"), b"foo")
+
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe="")
-        st = FTPFeedStorage(f"ftp://foo:{pw_quoted}@example.com/some_path", {})
+        st = FTPFeedStorage(f"ftp://foo:{pw_quoted}@example.com/some_path")
         assert st.password == string.punctuation
+
+    def test_uri_without_hostname(self):
+        with pytest.raises(
+            ValueError, match="Got a storage URI without a hostname: ftp:///some_path"
+        ):
+            FTPFeedStorage("ftp:///some_path")
 
 
 class MyBlockingFeedStorage(BlockingFeedStorage):
@@ -197,36 +216,36 @@ class MyBlockingFeedStorage(BlockingFeedStorage):
 
 
 class TestBlockingFeedStorage:
-    def get_test_spider(self, settings=None):
-        class TestSpider(scrapy.Spider):
-            name = "test_spider"
-
-        crawler = get_crawler(settings_dict=settings)
-        return TestSpider.from_crawler(crawler)
-
     def test_default_temp_dir(self):
         b = MyBlockingFeedStorage()
 
-        storage_file = b.open(self.get_test_spider())
-        storage_dir = Path(storage_file.name).parent
+        with b.open(get_test_spider()) as storage_file:
+            storage_dir = Path(storage_file.name).parent
         assert str(storage_dir) == tempfile.gettempdir()
 
     def test_temp_file(self, tmp_path):
         b = MyBlockingFeedStorage()
 
-        spider = self.get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
-        storage_file = b.open(spider)
-        storage_dir = Path(storage_file.name).parent
+        spider = get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
+        with b.open(spider) as storage_file:
+            storage_dir = Path(storage_file.name).parent
         assert storage_dir == tmp_path
 
     def test_invalid_folder(self, tmp_path):
         b = MyBlockingFeedStorage()
 
         invalid_path = tmp_path / "invalid_path"
-        spider = self.get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
+        spider = get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
 
         with pytest.raises(OSError, match="Not a Directory:"):
             b.open(spider=spider)
+
+
+def test_s3_without_boto3(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "boto3", None)
+    monkeypatch.setitem(sys.modules, "boto3.session", None)
+    with pytest.raises(NotConfigured, match="missing boto3 library"):
+        S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
 
 
 @pytest.mark.requires_boto3
@@ -239,7 +258,8 @@ class TestS3FeedStorage:
         }
         crawler = get_crawler(settings_dict=aws_credentials)
         # Instantiate with crawler
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -274,8 +294,7 @@ class TestS3FeedStorage:
         crawler = get_crawler(settings_dict=settings)
         bucket = "mybucket"
         key = "export.csv"
-        storage = S3FeedStorage.from_crawler(crawler, f"s3://{bucket}/{key}")
-        verifyObject(IFeedStorage, storage)
+        storage = build_from_crawler(S3FeedStorage, crawler, f"s3://{bucket}/{key}")
 
         file = mock.MagicMock()
 
@@ -321,7 +340,7 @@ class TestS3FeedStorage:
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
         assert storage.region_name == region_name
-        assert storage.s3_client._client_config.region_name == region_name
+        assert storage.s3_client._client_config.region_name == region_name  # type: ignore[attr-defined]
 
     def test_from_crawler_without_acl(self):
         settings = {
@@ -329,7 +348,8 @@ class TestS3FeedStorage:
             "AWS_SECRET_ACCESS_KEY": "secret_key",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -343,7 +363,8 @@ class TestS3FeedStorage:
             "AWS_SECRET_ACCESS_KEY": "secret_key",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -357,13 +378,14 @@ class TestS3FeedStorage:
             "AWS_SECRET_ACCESS_KEY": "secret_key",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
-        assert storage.s3_client._client_config.region_name == "us-east-1"
+        assert storage.s3_client._client_config.region_name == "us-east-1"  # type: ignore[attr-defined]
 
     def test_from_crawler_with_acl(self):
         settings = {
@@ -372,7 +394,8 @@ class TestS3FeedStorage:
             "FEED_STORAGE_S3_ACL": "custom-acl",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -387,7 +410,7 @@ class TestS3FeedStorage:
             "AWS_ENDPOINT_URL": "https://example.com",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
         assert storage.endpoint_url == "https://example.com"
@@ -400,11 +423,46 @@ class TestS3FeedStorage:
             "AWS_REGION_NAME": region_name,
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
         assert storage.region_name == region_name
-        assert storage.s3_client._client_config.region_name == region_name
+        assert storage.s3_client._client_config.region_name == region_name  # type: ignore[attr-defined]
+
+    def test_init_without_max_pool_connections(self) -> None:
+        storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
+        assert storage.max_pool_connections is None
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == 10
+
+    def test_init_with_max_pool_connections(self) -> None:
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            max_pool_connections=30,
+        )
+        assert storage.max_pool_connections == 30
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == 30
+
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, 10),
+            ({"REACTOR_THREADPOOL_MAXSIZE": 20}, 20),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30}, 30),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30, "REACTOR_THREADPOOL_MAXSIZE": 20}, 30),
+        ],
+    )
+    def test_from_crawler_max_pool_connections(
+        self, settings: dict[str, Any], expected: int
+    ) -> None:
+        crawler = get_crawler(settings_dict=settings)
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
+        assert storage.max_pool_connections == expected
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == expected
 
     @coroutine_test
     async def test_store_without_acl(self):
@@ -440,62 +498,57 @@ class TestS3FeedStorage:
         acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
         assert acl == "custom-acl"
 
-    def test_overwrite_default(self):
-        with LogCapture() as log:
-            S3FeedStorage(
-                "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
-            )
-        assert "S3 does not support appending to files" not in str(log)
+    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture) -> None:
+        S3FeedStorage(
+            "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
+        )
+        assert "S3 does not support appending to files" not in caplog.text
 
-    def test_overwrite_false(self):
-        with LogCapture() as log:
-            S3FeedStorage(
-                "s3://mybucket/export.csv",
-                "access_key",
-                "secret_key",
-                "custom-acl",
-                feed_options={"overwrite": False},
-            )
-        assert "S3 does not support appending to files" in str(log)
+    def test_overwrite_false(self, caplog: pytest.LogCaptureFixture) -> None:
+        S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            "custom-acl",
+            feed_options={"overwrite": False},
+        )
+        assert "S3 does not support appending to files" in caplog.text
 
 
 class TestGCSFeedStorage:
     def test_parse_settings(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": "publicRead"}
         crawler = get_crawler(settings_dict=settings)
-        storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
+        storage = build_from_crawler(
+            GCSFeedStorage, crawler, "gs://mybucket/export.csv"
+        )
         assert storage.project_id == "123"
         assert storage.acl == "publicRead"
         assert storage.bucket_name == "mybucket"
         assert storage.blob_name == "export.csv"
 
     def test_parse_empty_acl(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
-        settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
+        settings: dict[str, Any] = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
         crawler = get_crawler(settings_dict=settings)
-        storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
+        storage = build_from_crawler(
+            GCSFeedStorage, crawler, "gs://mybucket/export.csv"
+        )
         assert storage.acl is None
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": None}
         crawler = get_crawler(settings_dict=settings)
-        storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
+        storage = build_from_crawler(
+            GCSFeedStorage, crawler, "gs://mybucket/export.csv"
+        )
         assert storage.acl is None
 
     @coroutine_test
     async def test_store(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         uri = "gs://mybucket/export.csv"
         project_id = "myproject-123"
@@ -510,17 +563,14 @@ class TestGCSFeedStorage:
 
             f.seek.assert_called_once_with(0)
             m.assert_called_once_with(project=project_id)
-            client_mock.get_bucket.assert_called_once_with("mybucket")
+            client_mock.bucket.assert_called_once_with("mybucket")
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
 
     @coroutine_test
     async def test_store_closes_file_on_upload_error(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         uri = "gs://mybucket/export.csv"
         project_id = "myproject-123"
@@ -537,25 +587,25 @@ class TestGCSFeedStorage:
 
             f.seek.assert_called_once_with(0)
             m.assert_called_once_with(project=project_id)
-            client_mock.get_bucket.assert_called_once_with("mybucket")
+            client_mock.bucket.assert_called_once_with("mybucket")
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
 
-    def test_overwrite_default(self):
-        with LogCapture() as log:
+    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             GCSFeedStorage("gs://mybucket/export.csv", "myproject-123", "custom-acl")
-        assert "GCS does not support appending to files" not in str(log)
+        assert "GCS does not support appending to files" not in caplog.text
 
-    def test_overwrite_false(self):
-        with LogCapture() as log:
+    def test_overwrite_false(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             GCSFeedStorage(
                 "gs://mybucket/export.csv",
                 "myproject-123",
                 "custom-acl",
                 feed_options={"overwrite": False},
             )
-        assert "GCS does not support appending to files" in str(log)
+        assert "GCS does not support appending to files" in caplog.text
 
 
 class TestStdoutFeedStorage:
@@ -567,17 +617,18 @@ class TestStdoutFeedStorage:
         storage.store(file)
         assert out.getvalue() == b"content"
 
-    def test_overwrite_default(self):
-        with LogCapture() as log:
+    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             StdoutFeedStorage("stdout:")
         assert (
             "Standard output (stdout) storage does not support overwriting"
-            not in str(log)
+            not in caplog.text
         )
 
-    def test_overwrite_true(self):
-        with LogCapture() as log:
+    def test_overwrite_true(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             StdoutFeedStorage("stdout:", feed_options={"overwrite": True})
-        assert "Standard output (stdout) storage does not support overwriting" in str(
-            log
+        assert (
+            "Standard output (stdout) storage does not support overwriting"
+            in caplog.text
         )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from contextlib import suppress
 from enum import Enum
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
@@ -12,9 +13,11 @@ from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
-from scrapy.exceptions import DownloadCancelledError
+from scrapy import signals
+from scrapy.exceptions import DownloadCancelledError, StopDownload
 from scrapy.http.headers import Headers
 from scrapy.utils._download_handlers import (
+    check_stop_download,
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
@@ -24,7 +27,8 @@ from scrapy.utils.httpobj import urlparse_cached
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from scrapy.core.http2.protocol import H2ClientProtocol
+    from scrapy.core._http2.protocol import H2ClientProtocol
+    from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
 
 
@@ -37,22 +41,22 @@ class InactiveStreamClosed(ConnectionClosed):
     streams to close and connection is lost."""
 
     def __init__(self, request: Request) -> None:
+        super().__init__(
+            f"Connection was closed without sending the request {request!r}"
+        )
         self.request = request
-
-    def __str__(self) -> str:
-        return f"InactiveStreamClosed: Connection was closed without sending the request {self.request!r}"
 
 
 class InvalidHostname(H2Error):
     def __init__(
         self, request: Request, expected_hostname: str, expected_netloc: str
     ) -> None:
+        super().__init__(
+            f"Expected {expected_hostname} or {expected_netloc} in {request}"
+        )
         self.request = request
         self.expected_hostname = expected_hostname
         self.expected_netloc = expected_netloc
-
-    def __str__(self) -> str:
-        return f"InvalidHostname: Expected {self.expected_hostname} or {self.expected_netloc} in {self.request}"
 
 
 class StreamCloseReason(Enum):
@@ -82,6 +86,9 @@ class StreamCloseReason(Enum):
     # Actual response body size is more than allowed limit
     MAXSIZE_EXCEEDED_ACTUAL = 8
 
+    # A signal handler raised StopDownload
+    STOP_DOWNLOAD = 9
+
 
 class Stream:
     """Represents a single HTTP/2 Stream.
@@ -99,6 +106,7 @@ class Stream:
         stream_id: int,
         request: Request,
         protocol: H2ClientProtocol,
+        crawler: Crawler,
         download_maxsize: int = 0,
         download_warnsize: int = 0,
     ) -> None:
@@ -107,10 +115,13 @@ class Stream:
             stream_id -- Unique identifier for the stream within a single HTTP/2 connection
             request -- The HTTP request associated to the stream
             protocol -- Parent H2ClientProtocol instance
+            crawler -- The crawler the request belongs to
         """
         self.stream_id: int = stream_id
         self._request: Request = request
         self._protocol: H2ClientProtocol = protocol
+        self._crawler: Crawler = crawler
+        self._stop_download: StopDownload | None = None
 
         self._download_maxsize = self._request.meta.get(
             "download_maxsize", download_maxsize
@@ -165,9 +176,6 @@ class Stream:
             self.reset_stream(StreamCloseReason.CANCELLED)
         else:
             self.close(StreamCloseReason.CANCELLED)
-
-    def __repr__(self) -> str:
-        return f"Stream(id={self.stream_id!r})"
 
     @property
     def _log_warnsize(self) -> bool:
@@ -274,14 +282,7 @@ class Stream:
 
         If the content length is 0 initially then we end the stream immediately and
         wait for response data.
-
-        Warning: Only call this method when stream not closed from client side
-           and has initiated request already by sending HEADER frame. If not then
-           stream will raise ProtocolError (raise by h2 state machine).
         """
-        if self.metadata["stream_closed_local"]:
-            raise StreamClosedError(self.stream_id)
-
         # Firstly, check what the flow control window is for current stream.
         window_size = self._protocol.conn.local_flow_control_window(
             stream_id=self.stream_id
@@ -315,7 +316,7 @@ class Stream:
             0, self.metadata["remaining_content_length"]
         )
 
-        # End the stream if no more data needs to be send
+        # End the stream if no more data needs to be sent
         if self.metadata["remaining_content_length"] == 0:
             self._protocol.conn.end_stream(self.stream_id)
 
@@ -337,6 +338,13 @@ class Stream:
     def receive_data(self, data: bytes, flow_controlled_length: int) -> None:
         self._response["body"].write(data)
         self._response["flow_controlled_size"] += flow_controlled_length
+
+        if stop_download := check_stop_download(
+            signals.bytes_received, self._crawler, self._request, data=data
+        ):
+            self._stop_download = stop_download
+            self.reset_stream(StreamCloseReason.STOP_DOWNLOAD)
+            return
 
         # We check maxsize here in case the Content-Length header was not received
         if (
@@ -369,8 +377,20 @@ class Stream:
             else:
                 self._response["headers"].appendlist(name, value)
 
-        # Check if we exceed the allowed max data size which can be received
         expected_size = int(self._response["headers"].get(b"Content-Length", -1))
+
+        if stop_download := check_stop_download(
+            signals.headers_received,
+            self._crawler,
+            self._request,
+            headers=self._response["headers"],
+            body_length=expected_size if expected_size >= 0 else None,
+        ):
+            self._stop_download = stop_download
+            self.reset_stream(StreamCloseReason.STOP_DOWNLOAD)
+            return
+
+        # Check if we exceed the allowed max data size which can be received
         if self._download_maxsize and expected_size > self._download_maxsize:
             self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED)
             return
@@ -384,14 +404,18 @@ class Stream:
 
     def reset_stream(self, reason: StreamCloseReason = StreamCloseReason.RESET) -> None:
         """Close this stream by sending a RST_FRAME to the remote peer"""
-        if self.metadata["stream_closed_local"]:
-            raise StreamClosedError(self.stream_id)
-
-        # Clear buffer earlier to avoid keeping data in memory for a long time
-        self._response["body"].truncate(0)
+        # The data received so far is the body of the response built for a
+        # stopped download, otherwise the buffer is cleared early to avoid
+        # keeping data in memory for a long time
+        if reason is not StreamCloseReason.STOP_DOWNLOAD:
+            self._response["body"].truncate(0)
 
         self.metadata["stream_closed_local"] = True
-        self._protocol.conn.reset_stream(self.stream_id, ErrorCodes.REFUSED_STREAM)
+        # The remote peer may have ended the stream already, e.g. because the
+        # whole response arrived within the data that triggered this reset, in
+        # which case there is nothing left to reset
+        with suppress(StreamClosedError):
+            self._protocol.conn.reset_stream(self.stream_id, ErrorCodes.REFUSED_STREAM)
         self.close(reason)
 
     def close(
@@ -401,14 +425,6 @@ class Stream:
         from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case."""
-        if self.metadata["stream_closed_server"]:
-            raise StreamClosedError(self.stream_id)
-
-        if not isinstance(reason, StreamCloseReason):
-            raise TypeError(
-                f"Expected StreamCloseReason, received {reason.__class__.__qualname__}"
-            )
-
         # Have default value of errors as an empty list as
         # some cases can add a list of exceptions
         errors = errors or ()
@@ -444,7 +460,7 @@ class Stream:
             logger.error(error_msg)
             self._deferred_response.errback(DownloadCancelledError(error_msg))
 
-        elif reason is StreamCloseReason.ENDED:
+        elif reason in {StreamCloseReason.ENDED, StreamCloseReason.STOP_DOWNLOAD}:
             self._fire_response_deferred()
 
         # Stream was abruptly ended here
@@ -495,13 +511,18 @@ class Stream:
         and fires the response deferred callback with the
         generated response instance"""
 
-        response = make_response(
-            url=self._request.url,
-            status=self._response["status"],
-            headers=self._response["headers"],
-            body=self._response["body"].getvalue(),
-            certificate=self._protocol.metadata["certificate"],
-            ip_address=self._protocol.metadata["ip_address"],
-            protocol="h2",
-        )
-        self._deferred_response.callback(response)
+        try:
+            response = make_response(
+                url=self._request.url,
+                status=self._response["status"],
+                headers=self._response["headers"],
+                body=self._response["body"].getvalue(),
+                certificate=self._protocol.metadata["certificate"],
+                ip_address=self._protocol.metadata["ip_address"],
+                protocol="h2",
+                stop_download=self._stop_download,
+            )
+        except StopDownload as exc:
+            self._deferred_response.errback(exc)
+        else:
+            self._deferred_response.callback(response)

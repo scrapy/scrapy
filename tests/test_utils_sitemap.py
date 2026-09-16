@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
 
 
 def test_sitemap():
@@ -37,6 +39,21 @@ def test_sitemap():
             "changefreq": "weekly",
         },
     ]
+
+
+def test_sitemap_str():
+    xmltext = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
+<url><loc>http://www.example.com/</loc></url>
+</urlset>"""
+
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Passing `str` type as `xmltext` is deprecated",
+    ):
+        s = Sitemap(xmltext)
+    assert s.type == "urlset"
+    assert list(s) == [{"loc": "http://www.example.com/"}]
 
 
 def test_sitemap_index():
@@ -311,3 +328,14 @@ def test_xml_entity_expansion():
     """
     )
     assert list(s) == [{"loc": "http://127.0.0.1:8000/"}]
+
+
+def test_sitemap_non_string_tag():
+    """With recover=True and resolve_entities=False, libxml2 >= 2.14.6 (used
+    by lxml >= 6.1.1) preserves undeclared entity reference nodes whose
+    .tag is a non-string ``Cython function`` object instead of a ``str``.
+    _get_tag_name must handle this gracefully instead of raising
+    AttributeError.
+    """
+    results = list(Sitemap(b"<url>&k;"))
+    assert results == []

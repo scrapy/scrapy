@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tests.test_commands import TestProjectBase
+from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:
@@ -23,6 +23,18 @@ class TestCrawlCommand(TestProjectBase):
         _, _, stderr = self.crawl(code, proj_path, args=args)
         return stderr
 
+    def test_no_spider(self, proj_path: Path) -> None:
+        returncode, out, _ = proc("crawl", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
+
+    def test_multiple_spiders(self, proj_path: Path) -> None:
+        returncode, _, err = proc("crawl", "myspider", "myspider2", cwd=proj_path)
+        assert returncode == 2
+        assert (
+            "running 'scrapy crawl' with more than one spider is not supported" in err
+        )
+
     def test_no_output(self, proj_path: Path) -> None:
         spider_code = """
 import scrapy
@@ -35,13 +47,14 @@ class MySpider(scrapy.Spider):
         return
         yield
 """
-        log = self.get_log(spider_code, proj_path)
+        returncode, _, log = self.crawl(spider_code, proj_path)
         assert "[myspider] DEBUG: It works!" in log
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
         assert "Spider closed (finished)" in log
+        assert returncode == 0
 
     def test_output(self, proj_path: Path) -> None:
         spider_code = """
@@ -104,6 +117,22 @@ class MySpider(scrapy.Spider):
         assert (
             "error: Please use only one of -o/--output and -O/--overwrite-output" in log
         )
+
+    def test_errorcount_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {'CLOSESPIDER_ERRORCOUNT': 1}
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (closespider_errorcount)" in err
+        assert returncode != 0
 
     def test_default_reactor(self, proj_path: Path) -> None:
         spider_code = """

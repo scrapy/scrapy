@@ -54,9 +54,9 @@ class CookieJar:
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
             if "." not in req_host:
-                hosts.append(req_host + ".local")
+                hosts += potential_domain_matches(req_host + ".local")
         else:
-            hosts = [req_host]
+            hosts = [req_host, "." + req_host]
 
         cookies = []
         for host in hosts:
@@ -136,9 +136,9 @@ class _DummyLock:
 
 
 class WrappedRequest:
-    """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
-
-    see http://docs.python.org/library/urllib2.html#urllib2.Request
+    """Wraps a :class:`scrapy.Request` class with methods defined by
+    the :class:`urllib.request.Request` class to interact with
+    the :class:`http.cookiejar.CookieJar` class.
     """
 
     def __init__(self, request: Request):
@@ -154,14 +154,11 @@ class WrappedRequest:
         return urlparse_cached(self.request).scheme
 
     def is_unverifiable(self) -> bool:
-        """Unverifiable should indicate whether the request is unverifiable, as defined by RFC 2965.
-
-        It defaults to False. An unverifiable request is one whose URL the user did not have the
-        option to approve. For example, if the request is for an image in an
-        HTML document, and the user had no option to approve the automatic
-        fetching of the image, this should be true.
+        """Return ``False``, as Scrapy does not track whether the user had the
+        option to approve the URL of a request, which is what makes a request
+        unverifiable as defined by :rfc:`2965`.
         """
-        return cast("bool", self.request.meta.get("is_unverifiable", False))
+        return False
 
     @property
     def full_url(self) -> str:
