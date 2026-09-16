@@ -81,9 +81,8 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
     (for genuinely invalid certificates or bugs in verification code).
 
     Same as Twisted's private _sslverify.ClientTLSOptions,
-    except that VerificationError, CertificateError and ValueError
-    exceptions are caught, so that the connection is not closed, only
-    logging warnings.
+    except that VerificationError and CertificateError exceptions are caught,
+    so that the connection is not closed, only logging warnings.
 
     Instances of this class are returned from
     :class:`._ScrapyClientContextFactory`.
@@ -103,13 +102,6 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
             except (CertificateError, VerificationError) as e:
                 logger.warning(
                     'Remote certificate is not valid for hostname "%s"; %s',
-                    self._hostnameASCII,
-                    e,
-                )
-            except ValueError as e:
-                logger.warning(
-                    "Ignoring error while verifying certificate "
-                    'from host "%s" (exception: %r)',
                     self._hostnameASCII,
                     e,
                 )
@@ -170,13 +162,6 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
             except (CertificateError, VerificationError) as e:
                 logger.warning(
                     'Remote certificate is not valid for hostname "%s"; %s',
-                    hostnameASCII,
-                    e,
-                )
-            except ValueError as e:
-                logger.warning(
-                    "Ignoring error while verifying certificate "
-                    'from host "%s" (exception: %r)',
                     hostnameASCII,
                     e,
                 )

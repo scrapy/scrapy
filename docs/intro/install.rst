@@ -46,7 +46,7 @@ Things that are good to know
 Scrapy is written in pure Python and depends on a few key Python packages (among others):
 
 * `lxml`_, an efficient XML and HTML parser
-* `parsel`_, an HTML/XML data extraction library written on top of lxml,
+* `parsel`_, an HTML/XML data extraction library written on top of lxml
 * `w3lib`_, a multi-purpose helper for dealing with URLs and web page encodings
 * `twisted`_, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
@@ -64,14 +64,14 @@ Using a virtual environment (recommended)
 TL;DR: We recommend installing Scrapy inside a virtual environment
 on all platforms.
 
-Python packages can be installed either globally (a.k.a system wide),
-or in user-space. We do not recommend installing Scrapy system wide.
+Python packages can be installed either globally (a.k.a. system-wide), or in
+user-space. We do not recommend installing Scrapy system-wide.
 
-Instead, we recommend that you install Scrapy within a so-called
-"virtual environment" (:mod:`venv`).
-Virtual environments allow you to not conflict with already-installed Python
-system packages (which could break some of your system tools and scripts),
-and still install packages normally with ``pip`` (without ``sudo`` and the likes).
+Instead, we recommend that you install Scrapy within a so-called "virtual
+environment" (:mod:`venv`). Virtual environments allow you to avoid conflicts
+with already-installed Python system packages (which could break some of your
+system tools and scripts), and still install packages normally with ``pip``
+(without ``sudo`` or similar tools).
 
 See :ref:`tut-venv` on how to create your virtual environment.
 
@@ -100,8 +100,8 @@ The following extras are available:
      - Provides
    * - ``bpython``
      - :ref:`bpython shell <shell-config>`
-   * - ``brotli``
-     - :ref:`Brotli response decompression <http-compression>`
+   * - ``color``
+     - :setting:`LOG_COLOR`
    * - ``gcs``
      - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
        :ref:`feed exports <topics-feed-exports>` and
@@ -125,14 +125,12 @@ The following extras are available:
      - :ref:`twisted-http2-handler`
    * - ``uvloop``
      - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
-   * - ``zstd``
-     - :ref:`Zstandard response decompression <http-compression>`
 
 
 .. _install-notes:
 .. _intro-install-platform-notes:
 
-Platform specific installation notes
+Platform-specific installation notes
 ====================================
 
 .. _install-windows:

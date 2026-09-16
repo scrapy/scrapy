@@ -118,7 +118,7 @@ My Scrapy crawler has memory leaks. What can I do?
 
 See :ref:`topics-leaks`.
 
-Also, Python has a builtin memory leak issue which is described in
+Also, Python has a built-in memory leak issue which is described in
 :ref:`topics-leaks-without-leaks`.
 
 How can I make Scrapy consume less memory?
@@ -136,12 +136,12 @@ middleware with a :ref:`custom downloader middleware
 <topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
-    instead of joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
-    a complex regular expression.
+    instead of joining the strings in :attr:`~scrapy.Spider.allowed_domains`
+    into a complex regular expression.
 
 -   If you can meet the installation requirements, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
-    :issue:`1908`.
+    :gh:`1908`.
 
 See also `other suggestions at StackOverflow
 <https://stackoverflow.com/q/36440681>`__.
@@ -242,6 +242,10 @@ often, more useful than plain old ``pdb.set_trace()``.
 
 For more info see :ref:`topics-shell-inspect-response`.
 
+You can also :ref:`connect to live crawls <connect-live-crawl>`, which is the
+best way to debug running spiders without adding breakpoints to their code in
+advance.
+
 Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 -------------------------------------------------------------------
 
@@ -276,8 +280,8 @@ Parsing big feeds with XPath selectors can be problematic since they need to
 build the DOM of the entire feed in memory, and this can be quite slow and
 consume a lot of memory.
 
-In order to avoid parsing all the entire feed at once in memory, you can use
-the :func:`~scrapy.utils.iterators.xmliter_lxml` and
+In order to avoid parsing the entire feed at once in memory, you can use the
+:func:`~scrapy.utils.iterators.xmliter_lxml` and
 :func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
 :class:`~scrapy.spiders.XMLFeedSpider` and
 :class:`~scrapy.spiders.CSVFeedSpider` use.
@@ -292,7 +296,7 @@ Does Scrapy manage cookies automatically?
 Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them
 back on subsequent requests, like any regular web browser does.
 
-For more info see :ref:`topics-request-response` and :ref:`cookies-mw`.
+For more info see :ref:`cookies`.
 
 How can I see the cookies being sent and received from Scrapy?
 --------------------------------------------------------------
@@ -314,8 +318,8 @@ Should I use spider arguments or settings to configure my spider?
 -----------------------------------------------------------------
 
 Both :ref:`spider arguments <spiderargs>` and :ref:`settings <topics-settings>`
-can be used to configure your spider. There is no strict rule that mandates to
-use one or the other, but settings are more suited for parameters that, once
+can be used to configure your spider. There is no strict rule that mandates
+using one or the other, but settings are more suited for parameters that, once
 set, don't change much, while spider arguments are meant to change more often,
 even on each spider run and sometimes are required for the spider to run at all
 (for example, to set the start url of a spider).
@@ -419,7 +423,7 @@ Running ``runspider`` I get ``error: No spider found in file: <filename>``
 This may happen if your Scrapy project has a spider module with a name that
 conflicts with the name of one of the `Python standard library modules`_, such
 as ``csv.py`` or ``os.py``, or any `Python package`_ that you have installed.
-See :issue:`2680`.
+See :gh:`2680`.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
