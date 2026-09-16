@@ -9,9 +9,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
-from scrapy.utils._compression import _DecompressionMaxSizeExceeded
-from scrapy.utils.gz import gunzip, gzip_magic_number
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils._compression import (
+    _DecompressionMaxSizeExceeded,
+    gunzip,
+    gzip_magic_number,
+)
+from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
