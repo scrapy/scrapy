@@ -6,8 +6,8 @@ Requests and Responses
 
 .. module:: scrapy.http
 
-Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
-sites.
+Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling
+websites.
 
 Typically, :class:`~scrapy.Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
@@ -926,9 +926,11 @@ download_latency
 ----------------
 
 The amount of time spent to fetch the response, since the request has been
-started, i.e. HTTP message sent over the network. This meta key only becomes
-available when the response has been downloaded. While most other meta keys are
-used to control Scrapy behavior, this one is supposed to be read-only.
+started, i.e. HTTP message sent over the network. It covers the time until
+Scrapy reads the response, which your own code can delay, see
+:ref:`optimize-blocking`. This meta key only becomes available when the
+response has been downloaded. While most other meta keys are used to control
+Scrapy behavior, this one is supposed to be read-only.
 
 .. reqmeta:: download_fail_on_dataloss
 
