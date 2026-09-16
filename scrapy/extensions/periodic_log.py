@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
@@ -38,6 +39,7 @@ class PeriodicLog:
     ):
         self.stats: StatsCollector = stats
         self.interval: float = interval
+        self._multiplier: float = 60.0 / interval
         self.task: AsyncioLoopingCall | LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
@@ -55,6 +57,24 @@ class PeriodicLog:
             ext_delta.get("exclude", ()) if ext_delta else ()
         )
         self.ext_timing_enabled: bool = ext_timing_enabled
+
+    @property
+    def multiplier(self) -> float:
+        warnings.warn(
+            "The PeriodicLog.multiplier attribute is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._multiplier
+
+    @multiplier.setter
+    def multiplier(self, value: float) -> None:
+        warnings.warn(
+            "The PeriodicLog.multiplier attribute is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self._multiplier = value
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

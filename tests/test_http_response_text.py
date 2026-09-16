@@ -144,15 +144,15 @@ class TestTextResponse(TestResponseBase):
         assert r9._declared_encoding() is None
         self._assert_response_encoding(r5, "utf-8")
         self._assert_response_encoding(r8, "utf-8")
-        self._assert_response_encoding(r9, "cp1252")
         assert r4._body_inferred_encoding() is not None
         assert r4._body_inferred_encoding() != "ascii"
+        assert r9._body_inferred_encoding() is not None
+        assert r9._body_inferred_encoding() != "ascii"
         self._assert_response_values(r1, "utf-8", "\xa3")
         self._assert_response_values(r2, "utf-8", "\xa3")
         self._assert_response_values(r3, "iso-8859-1", "\xa3")
         self._assert_response_values(r6, "gb18030", "\u2015")
         self._assert_response_values(r7, "gb18030", "\u2015")
-        self._assert_response_values(r9, "cp1252", "€")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         with pytest.raises(TypeError):
@@ -167,6 +167,13 @@ class TestTextResponse(TestResponseBase):
         )
         assert r._declared_encoding() is None
         self._assert_response_values(r, "utf-8", "\xa3")
+
+    def test_body_inferred_encoding_of_undeclared_legacy_page(self):
+        body = "ICD10 国際疾病分類第10版2013年版 病名マスター".encode("shift-jis")
+        r = self.response_class("http://www.example.com", body=body)
+        assert r._declared_encoding() is None
+        assert r.encoding in {"shift_jis", "cp932"}
+        assert r.text == body.decode(r.encoding)
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""

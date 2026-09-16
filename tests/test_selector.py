@@ -1,14 +1,10 @@
 import weakref
 
-import parsel
 import pytest
-from packaging import version
 
-from scrapy.http import HtmlResponse, TextResponse, XmlResponse
+from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
-
-PARSEL_VERSION = version.parse(getattr(parsel, "__version__", "0.0"))
-PARSEL_18_PLUS = PARSEL_VERSION >= version.parse("1.8.0")
+from scrapy.utils._deps_compat import PARSEL_SUPPORTS_JMESPATH
 
 
 class TestSelector:
@@ -60,6 +56,34 @@ class TestSelector:
             '<div><img src="a.jpg"><p>Hello</p></div>'
         ]
 
+    @pytest.mark.skipif(
+        not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support json"
+    )
+    def test_flavor_detection_json(self) -> None:
+        response = JsonResponse(
+            "http://example.com", body=b'{"a": "b"}', encoding="utf-8"
+        )
+        assert Selector(response).type == "json"
+        assert response.jmespath("a").get() == "b"
+
+    @pytest.mark.skipif(
+        not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support json"
+    )
+    def test_flavor_detection_json_with_html_body(self) -> None:
+        body = b"<div><p>Hello</p></div>"
+        response = JsonResponse("http://example.com", body=body, encoding="utf-8")
+        assert Selector(response).type == "json"
+
+        html_response = response.replace(cls=HtmlResponse)
+        assert Selector(html_response).type == "html"
+        assert html_response.css("p::text").get() == "Hello"
+
+    def test_flavor_detection_text(self) -> None:
+        response = TextResponse(
+            "http://example.com", body=b"<div><p>Hello</p></div>", encoding="utf-8"
+        )
+        assert Selector(response).type == "html"
+
     def test_http_header_encoding_precedence(self):
         # '\xa3'     = pound symbol in unicode
         # '\xc2\xa3' = pound symbol in utf-8
@@ -104,7 +128,9 @@ class TestSelector:
             Selector(TextResponse(url="http://example.com", body=b""), text="")
 
 
-@pytest.mark.skipif(not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath")
+@pytest.mark.skipif(
+    not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support jmespath"
+)
 class TestJMESPath:
     def test_json_has_html(self) -> None:
         """Sometimes the information is returned in a json wrapper"""
@@ -141,7 +167,7 @@ class TestJMESPath:
         )
         assert resp.jmespath("html").xpath("//div/a/text()").getall() == ["a", "b", "d"]
         assert resp.jmespath("html").css("div > b").getall() == ["<b>f</b>"]
-        assert resp.jmespath("content").jmespath("name.age").get() == "18"
+        assert resp.jmespath("content").jmespath("name.age").get() == 18  # type: ignore[comparison-overlap]
 
     def test_html_has_json(self) -> None:
         body = """
@@ -186,7 +212,7 @@ class TestJMESPath:
             "C",
             "D",
         ]
-        assert resp.xpath("//div/content").jmespath("total").get() == "4"
+        assert resp.xpath("//div/content").jmespath("total").get() == 4  # type: ignore[comparison-overlap]
 
     def test_jmestpath_with_re(self) -> None:
         body = """
@@ -241,7 +267,7 @@ class TestJMESPath:
         ) == ["18", "32", "22", "25"]
 
 
-@pytest.mark.skipif(PARSEL_18_PLUS, reason="parsel >= 1.8 supports jmespath")
+@pytest.mark.skipif(PARSEL_SUPPORTS_JMESPATH, reason="parsel >= 1.8 supports jmespath")
 def test_jmespath_not_available() -> None:
     body = """
     {

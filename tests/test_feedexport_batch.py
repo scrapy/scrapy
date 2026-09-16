@@ -420,7 +420,6 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(total=2, mockserver=self.mockserver)
-        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
@@ -491,7 +490,6 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs:
             stub.assert_no_pending_responses()
-        assert crawler.stats
         assert (
             "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
         )

@@ -4,9 +4,10 @@ from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
+from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
+from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
 from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
@@ -35,17 +36,16 @@ class H2DownloadHandler(BaseDownloadHandler):
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
+        _install_twisted_idna_fallbacks()
         super().__init__(crawler)
         self._crawler = crawler
 
-        from twisted.internet import reactor
-
-        self._pool = H2ConnectionPool(reactor, crawler)
+        self._pool = H2ConnectionPool(crawler)
         self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
-        if urlparse_cached(request).scheme == "http":  # pragma: no cover
+        if urlparse_cached(request).scheme == "http":
             raise UnsupportedURLSchemeError(
                 f"{type(self).__name__} doesn't support plain HTTP."
             )
@@ -83,7 +83,7 @@ class _ScrapyH2Agent:
     def _get_agent(self, request: Request, timeout: float | None) -> H2Agent:
         from twisted.internet import reactor
 
-        if request.meta.get("proxy"):  # pragma: no cover
+        if request.meta.get("proxy"):
             raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
         bind_address = request.meta.get("bindaddress") or self._bind_address
         bind_address = normalize_bind_address(bind_address)
