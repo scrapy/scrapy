@@ -9,7 +9,8 @@ own custom functionality into Scrapy.
 
 Unlike other components, extensions do not have a specific role in Scrapy. They
 are “wildcard” components that can be used for anything that does not fit the
-role of any other type of component.
+role of any other type of component, such as collecting stats or enforcing a
+memory limit; see :ref:`concepts` for a rundown of other alternatives.
 
 Loading and activating extensions
 =================================
@@ -118,20 +119,14 @@ General purpose extensions
 Log Stats extension
 ~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.logstats
-   :synopsis: Basic stats logging
-
-.. class:: LogStats
+.. class:: scrapy.extensions.logstats.LogStats
 
 Log basic stats like crawled pages and scraped items.
 
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.corestats
-   :synopsis: Core stats collection
-
-.. class:: CoreStats
+.. class:: scrapy.extensions.corestats.CoreStats
 
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
@@ -144,37 +139,14 @@ The following stats are collected: :stat:`elapsed_time_seconds`,
 Log Count extension
 ~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.logcount
-   :synopsis: Basic stats logging
-
-.. autoclass:: LogCount
-
-.. _topics-extensions-ref-telnetconsole:
-
-Telnet console extension
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.extensions.telnet
-   :synopsis: Telnet console
-
-.. class:: TelnetConsole
-
-Provides a telnet console for getting into a Python interpreter inside the
-currently running Scrapy process, which can be very useful for debugging.
-
-The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
-setting, and the server will listen in the port specified in
-:setting:`TELNETCONSOLE_PORT`.
+.. autoclass:: scrapy.extensions.logcount.LogCount
 
 .. _topics-extensions-ref-memusage:
 
 Memory usage extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.memusage
-   :synopsis: Memory usage extension
-
-.. class:: MemoryUsage
+.. class:: scrapy.extensions.memusage.MemoryUsage
 
 .. note:: This extension does not work in Windows.
 
@@ -195,10 +167,7 @@ can be configured with the following settings:
 Memory debugger extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.memdebug
-   :synopsis: Memory debugger extension
-
-.. class:: MemoryDebugger
+.. class:: scrapy.extensions.memdebug.MemoryDebugger
 
 An extension for debugging memory usage. It collects information about:
 
@@ -214,10 +183,7 @@ info will be stored in the :stat:`memdebug/gc_garbage_count` and
 Spider state extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.spiderstate
-   :synopsis: Spider state extension
-
-.. class:: SpiderState
+.. class:: scrapy.extensions.spiderstate.SpiderState
 
 Manages spider state data by loading it before a crawl and saving it after.
 
@@ -238,10 +204,7 @@ For an example, see :ref:`topics-keeping-persistent-state-between-batches`.
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.closespider
-   :synopsis: Close spider extension
-
-.. class:: CloseSpider
+.. class:: scrapy.extensions.closespider.CloseSpider
 
 Closes a spider automatically when some conditions are met, using a specific
 closing reason for each condition.
@@ -334,13 +297,10 @@ closing the spider. If the spider generates more than that number of errors,
 it will be closed with the reason ``closespider_errorcount``. If zero (or non
 set), spiders won't be closed by number of errors.
 
-.. module:: scrapy.extensions.periodic_log
-   :synopsis: Periodic stats logging
-
 Periodic log extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: PeriodicLog
+.. class:: scrapy.extensions.periodic_log.PeriodicLog
 
 This extension periodically logs rich stat data as a JSON object::
 
@@ -374,8 +334,8 @@ This extension periodically logs rich stat data as a JSON object::
             "elapsed": 360.008903,
             "log_interval": 60.0,
             "log_interval_real": 60.006694,
-            "start_time": "2023-08-03 23:24:57",
-            "utcnow": "2023-08-03 23:30:57"
+            "start_time": "2023-08-03T23:24:57.148903+00:00",
+            "utcnow": "2023-08-03T23:30:57.157806+00:00"
         }
     }
 
@@ -453,11 +413,10 @@ Default: ``False``
 Debugging extensions
 --------------------
 
-.. module:: scrapy.extensions.debug
-   :synopsis: Extensions for debugging Scrapy
-
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.debug
 
 .. class:: StackTraceDump
 
@@ -495,3 +454,94 @@ signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
+
+.. currentmodule:: None
+
+.. _topics-extensions-ref-telnetconsole:
+
+Telnet console extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. class:: scrapy.extensions.telnet.TelnetConsole
+
+Provides a telnet console for getting into a Python interpreter inside the
+currently running Scrapy process, which can be very useful for debugging.
+
+The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
+setting, and the server will listen in the port specified in
+:setting:`TELNETCONSOLE_PORT`.
+
+Remote control extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 2.19.0
+
+.. module:: scrapy.extensions.remote_control
+
+.. autoclass:: RemoteControl
+
+.. setting:: REMOTE_CONTROL_ENABLED
+
+REMOTE_CONTROL_ENABLED
+""""""""""""""""""""""
+
+Default: ``True``
+
+Whether to enable the :class:`RemoteControl` extension.
+
+.. setting:: REMOTE_CONTROL_JOBS_DIR
+
+REMOTE_CONTROL_JOBS_DIR
+"""""""""""""""""""""""
+
+Default: ``None``
+
+The directory for storing :class:`RemoteControl` job files. When this is set to
+``None``, a ``scrapy/job_files`` subdirectory in
+:func:`platformdirs.user_state_dir` is used.
+
+As job files contain authentication tokens necessary to connect to Scrapy
+processes, this directory should not be exposed to untrusted environments.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_DEFAULT
+
+REMOTE_CONTROL_TIMEOUT_DEFAULT
+""""""""""""""""""""""""""""""
+
+Default: ``30.0``
+
+The default timeout in seconds for running a single code snippet sent to the
+:class:`RemoteControl` ``/execute`` endpoint. You can override it for a single
+request via the ``timeout_sec`` request field.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_MAX
+
+REMOTE_CONTROL_TIMEOUT_MAX
+""""""""""""""""""""""""""
+
+Default: ``600.0``
+
+The maximum allowed value for the ``timeout_sec`` field of
+:class:`RemoteControl` ``/execute`` endpoint requests. Higher values will be
+clamped to this value.
+
+.. setting:: REMOTE_CONTROL_OUTPUT_MAX_BYTES
+
+REMOTE_CONTROL_OUTPUT_MAX_BYTES
+"""""""""""""""""""""""""""""""
+
+Default: ``65536``
+
+The maximum size of the ``output`` field in responses of :class:`RemoteControl`
+``/execute`` endpoint requests. Longer ones will be truncated.
+
+.. setting:: REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+
+REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+""""""""""""""""""""""""""""""""""
+
+Default: ``16384``
+
+The maximum size of the ``traceback`` field in responses of
+:class:`RemoteControl` ``/execute`` endpoint requests. Longer ones will be
+truncated.

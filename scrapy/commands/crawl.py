@@ -25,10 +25,4 @@ class Command(BaseRunSpiderCommand):
             raise UsageError(
                 "running 'scrapy crawl' with more than one spider is not supported"
             )
-        spname = args[0]
-
-        assert self.crawler_process
-        self.crawler_process.crawl(spname, **opts.spargs)
-        self.crawler_process.start()
-        if self.crawler_process.bootstrap_failed:
-            self.exitcode = 1
+        self._run_crawler(args[0], opts)

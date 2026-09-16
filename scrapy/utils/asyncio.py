@@ -13,7 +13,7 @@ from twisted.internet.task import LoopingCall, deferLater
 from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
-from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
+from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_installed
 
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
@@ -31,6 +31,20 @@ _P = ParamSpec("_P")
 logger = logging.getLogger(__name__)
 
 
+def _has_running_loop() -> bool:
+    """Check if there is a running asyncio event loop in the current thread.
+
+    Can't easily check for an installed but not running one, and if we
+    checked that there could be false positives due to some 3rd-party code
+    installing it as a side effect (e.g. by calling get_event_loop()).
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return True
+
+
 def is_asyncio_available() -> bool:
     """Check if it's possible to call asyncio code that relies on the asyncio event loop.
 
@@ -45,8 +59,8 @@ def is_asyncio_available() -> bool:
 
     Code that doesn't directly require a Twisted reactor should use this
     function while code that requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` should use
-    :func:`~scrapy.utils.reactor.is_asyncio_reactor_installed`.
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` should
+    also use :func:`~scrapy.utils.reactor.is_reactor_installed`.
 
     When this returns ``True``, an asyncio loop is installed and used by
     Scrapy. It's possible to call functions that require it, such as
@@ -70,15 +84,7 @@ def is_asyncio_available() -> bool:
         loop, even if no Twisted reactor is installed.
     """
 
-    # Check if there is a running asyncio loop.
-    # Can't easily check for an installed but not running one, and if we
-    # checked that there could be false positives due to some 3rd-party code
-    # installing it as a side effect (e.g. by calling get_event_loop()).
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        pass
-    else:
+    if _has_running_loop():
         return True
 
     # Check if there is an installed asyncio reactor (it doesn't need to be
@@ -89,7 +95,18 @@ def is_asyncio_available() -> bool:
             " or running asyncio loop."
         )
 
-    return is_asyncio_reactor_installed()
+    return _is_asyncio_reactor_installed()
+
+
+class _QueueEnd:
+    """Marks the end of the work queue of :func:`_parallel_asyncio`.
+
+    A dedicated type is needed because any value, ``None`` included, can be an
+    item of the iterable being worked on.
+    """
+
+
+_QUEUE_END = _QueueEnd()
 
 
 async def _parallel_asyncio(
@@ -107,12 +124,12 @@ async def _parallel_asyncio(
     assumes that neither *callable* nor iterating *iterable* will raise an
     exception.
     """
-    queue: asyncio.Queue[_T | None] = asyncio.Queue(count * 2)
+    queue: asyncio.Queue[_T | _QueueEnd] = asyncio.Queue(count * 2)
 
     async def worker() -> None:
         while True:
             item = await queue.get()
-            if item is None:
+            if isinstance(item, _QueueEnd):
                 break
             try:
                 await callable_(item, *args, **kwargs)
@@ -123,7 +140,7 @@ async def _parallel_asyncio(
         async for item in as_async_generator(iterable):
             await queue.put(item)
         for _ in range(count):
-            await queue.put(None)
+            await queue.put(_QUEUE_END)
 
     fill_task = asyncio.create_task(fill_queue())
     work_tasks = [asyncio.create_task(worker()) for _ in range(count)]
@@ -296,7 +313,7 @@ class CallLaterResult:
 async def sleep(seconds: float) -> None:
     """Sleep for *seconds*.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.18.0
 
     This uses either :func:`asyncio.sleep` or
     :func:`~twisted.internet.task.deferLater`, depending on whether asyncio

@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.deprecate import create_deprecated_class, update_classpath
+from scrapy.utils.deprecate import attribute, create_deprecated_class, update_classpath
 
 
 class MyWarning(UserWarning):
@@ -252,6 +252,11 @@ class TestWarnWhenSubclassed:
         ):
             create_deprecated_class("DeprecatedName", NewName)
 
+    def test_unknown_parent_module(self):
+        with mock.patch("inspect.getmodule", return_value=None):
+            cls = create_deprecated_class("DeprecatedName", NewName)
+        assert cls.__module__ == "scrapy.utils.deprecate"
+
 
 @mock.patch(
     "scrapy.utils.deprecate.DEPRECATION_RULES",
@@ -284,3 +289,20 @@ class TestUpdateClassPath:
     def test_returns_nonstring(self):
         for notastring in [None, True, [1, 2, 3], object()]:
             assert update_classpath(notastring) == notastring
+
+
+class TestAttribute:
+    class MyClass:
+        pass
+
+    def test_default_version(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"MyClass\.old attribute is deprecated and will be no longer "
+            r"supported in Scrapy 0\.12, use MyClass\.new attribute instead",
+        ):
+            attribute(self.MyClass(), "old", "new")
+
+    def test_custom_version(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="in Scrapy 3.0"):
+            attribute(self.MyClass(), "old", "new", "3.0")
