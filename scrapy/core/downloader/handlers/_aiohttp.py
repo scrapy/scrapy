@@ -25,8 +25,43 @@ from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from aiohttp.client_proto import ResponseHandler
+    from aiohttp.client_reqrep import ClientRequest
+    from aiohttp.tracing import Trace
+
     from scrapy import Request
     from scrapy.crawler import Crawler
+
+
+class _TCPConnector(aiohttp.TCPConnector):
+    """Counts idle connections toward the connection limit, closing the least
+    recently used one when a new connection would otherwise exceed it."""
+
+    async def _create_connection(
+        self, req: ClientRequest, traces: list[Trace], timeout: aiohttp.ClientTimeout
+    ) -> ResponseHandler:
+        # the connection about to be created is already counted in _acquired
+        while (
+            self._limit
+            and len(self._acquired) + sum(map(len, self._conns.values())) > self._limit
+            and self._evict()
+        ):
+            pass
+        return await super()._create_connection(req, traces, timeout)
+
+    def _evict(self) -> bool:
+        oldest = min(
+            ((conns[0][1], key) for key, conns in self._conns.items() if conns),
+            default=None,
+        )
+        if oldest is None:
+            return False
+        _, key = oldest
+        protocol, _ = self._conns[key].popleft()
+        if not self._conns[key]:
+            del self._conns[key]
+        protocol.close()
+        return True
 
 
 class _ClientResponse(aiohttp.ClientResponse):
@@ -56,12 +91,13 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
         self._ssl_context: ssl.SSLContext = _make_ssl_context(crawler.settings)
-        connector = aiohttp.TCPConnector(
+        connector = _TCPConnector(
             local_addr=self._bind_address,
-            # hard limit on simultaneous connections
             limit=self._pool_size_total,
             # hard limit on simultaneous connections per host
             limit_per_host=self._pool_size_per_host,
+            keepalive_timeout=self._keepalive_timeout or None,
+            force_close=not self._keepalive_timeout,
         )
         self._session: aiohttp.ClientSession = aiohttp.ClientSession(
             connector=connector,
