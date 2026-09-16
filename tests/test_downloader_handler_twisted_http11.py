@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from twisted.internet.defer import DeferredList
 from twisted.internet.protocol import Factory, Protocol
 
 try:
@@ -24,7 +23,7 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     NotConfigured,
 )
-from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -49,7 +48,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
-    from tests.mockserver.http import MockServer
 
 
 pytestmark = pytest.mark.requires_reactor  # HTTP11DownloadHandler requires a reactor
@@ -125,32 +123,6 @@ async def test_connection_limit_auto_without_file_descriptor_limit(
     monkeypatch.setattr(resource, "getrlimit", lambda _: (infinity, infinity))
     async with _get_dh({}) as dh:
         assert dh._pool._limit == 0
-
-
-@coroutine_test
-async def test_connection_limit_with_several_connections_per_host(
-    mockserver: MockServer,
-) -> None:
-    url = mockserver.url("/connection-id")
-    slow_url = mockserver.url("/connection-id?delay=0.5")
-    other_url = url.replace("127.0.0.1", "localhost")
-    async with _get_dh({"CONCURRENT_CONNECTIONS_PER_HANDLER": 2}) as dh:
-        results = await maybe_deferred_to_future(
-            DeferredList(
-                [
-                    deferred_from_coro(dh.download_request(Request(slow_url)))
-                    for _ in range(2)
-                ],
-                fireOnOneErrback=True,
-            )
-        )
-        ids = {response.text for _, response in results}
-        assert len(ids) == 2
-        # only one of the two connections to the host makes room for the
-        # connection to the other host, so the other one stays reusable
-        await dh.download_request(Request(other_url))
-        reused = await dh.download_request(Request(url))
-    assert reused.text in ids
 
 
 @coroutine_test

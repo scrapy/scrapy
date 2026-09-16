@@ -175,6 +175,33 @@ class TestHttpBase(ABC):
         assert len(ids) == 2
 
     @coroutine_test
+    async def test_connection_limit_with_several_connections_per_host(
+        self, mockserver: MockServer
+    ) -> None:
+        if self.http2:
+            pytest.skip("HTTP/2 uses a single connection per host")
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        slow_url = mockserver.url("/connection-id?delay=0.5", is_secure=self.is_secure)
+        other_url = self._other_host(url)
+        async with self.get_dh({"CONCURRENT_CONNECTIONS_PER_HANDLER": 2}) as dh:
+            results = await maybe_deferred_to_future(
+                DeferredList(
+                    [
+                        deferred_from_coro(dh.download_request(Request(slow_url)))
+                        for _ in range(2)
+                    ],
+                    fireOnOneErrback=True,
+                )
+            )
+            ids = {response.text for _, response in results}
+            assert len(ids) == 2
+            # only one of the two connections to the host makes room for the
+            # connection to the other host, so the other one stays reusable
+            await dh.download_request(Request(other_url))
+            reused = await dh.download_request(Request(url))
+        assert reused.text in ids
+
+    @coroutine_test
     async def test_unsupported_scheme(self) -> None:
         request = Request("unsupp://unsupported.scheme")
         async with self.get_dh() as download_handler:

@@ -44,24 +44,16 @@ class _TCPConnector(aiohttp.TCPConnector):
         while (
             self._limit
             and len(self._acquired) + sum(map(len, self._conns.values())) > self._limit
-            and self._evict()
         ):
-            pass
+            self._evict()
         return await super()._create_connection(req, traces, timeout)
 
-    def _evict(self) -> bool:
-        oldest = min(
-            ((conns[0][1], key) for key, conns in self._conns.items() if conns),
-            default=None,
-        )
-        if oldest is None:
-            return False
-        _, key = oldest
+    def _evict(self) -> None:
+        _, key = min((conns[0][1], key) for key, conns in self._conns.items())
         protocol, _ = self._conns[key].popleft()
         if not self._conns[key]:
             del self._conns[key]
         protocol.close()
-        return True
 
 
 class _ClientResponse(aiohttp.ClientResponse):
