@@ -1027,13 +1027,19 @@ class TestGCSFilesStore:
     def test_update_stores(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(GCSFilesStore, "GCS_PROJECT_ID", None)
         monkeypatch.setattr(GCSFilesStore, "POLICY", None)
+        monkeypatch.setattr(GCSFilesStore, "GCS_UPLOAD_TIMEOUT", None)
 
         settings = Settings(
-            {"GCS_PROJECT_ID": "my-project", "FILES_STORE_GCS_ACL": "publicRead"}
+            {
+                "GCS_PROJECT_ID": "my-project",
+                "FILES_STORE_GCS_ACL": "publicRead",
+                "GCS_UPLOAD_TIMEOUT": 300,
+            }
         )
         FilesPipeline._update_stores(settings)
         assert GCSFilesStore.GCS_PROJECT_ID == "my-project"
         assert GCSFilesStore.POLICY == "publicRead"
+        assert GCSFilesStore.GCS_UPLOAD_TIMEOUT == 300
 
         # An empty FILES_STORE_GCS_ACL is normalised to None.
         settings = Settings({"GCS_PROJECT_ID": "my-project", "FILES_STORE_GCS_ACL": ""})
@@ -1077,6 +1083,17 @@ class TestGCSFilesStore:
             predefined_acl=store.POLICY,
         )
         assert blob.metadata == {}
+
+    @coroutine_test
+    async def test_persist_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(GCSFilesStore, "GCS_UPLOAD_TIMEOUT", 300)
+        store, _, blob = self.build_gcs_files_store()
+        await maybe_deferred_to_future(
+            store.persist_file(
+                "full/filename", BytesIO(b"hello"), info=DUMMY_SPIDER_INFO
+            )
+        )
+        assert blob.upload_from_string.call_args.kwargs["timeout"] == 300
 
     @coroutine_test
     async def test_stat(self) -> None:

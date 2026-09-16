@@ -279,10 +279,12 @@ The feeds are stored on `Google Cloud Storage`_.
 
 For more information about authentication, please refer to `Google Cloud documentation <https://docs.cloud.google.com/docs/authentication>`_.
 
-You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
+You can set a *Project ID*, an *Access Control List (ACL)* and an upload
+timeout through the following settings:
 
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
+-   :setting:`GCS_UPLOAD_TIMEOUT`
 
 The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.

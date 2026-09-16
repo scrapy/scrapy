@@ -374,6 +374,9 @@ policy:
 
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
+Use :setting:`GCS_UPLOAD_TIMEOUT` to change how long an upload may take before
+it is given up on.
+
 .. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
 Usage example

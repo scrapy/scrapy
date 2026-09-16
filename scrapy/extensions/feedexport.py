@@ -304,9 +304,11 @@ class GCSFeedStorage(BlockingFeedStorage):
         acl: str | None,
         *,
         feed_options: dict[str, Any] | None = None,
+        timeout: float | None = None,
     ):
         self.project_id: str | None = project_id
         self.acl: str | None = acl
+        self.timeout: float | None = timeout
         u = urlparse(uri)
         assert u.hostname
         self.bucket_name: str = u.hostname
@@ -332,6 +334,7 @@ class GCSFeedStorage(BlockingFeedStorage):
             crawler.settings["GCS_PROJECT_ID"],
             crawler.settings["FEED_STORAGE_GCS_ACL"] or None,
             feed_options=feed_options,
+            timeout=crawler.settings.getfloat("GCS_UPLOAD_TIMEOUT") or None,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -342,7 +345,8 @@ class GCSFeedStorage(BlockingFeedStorage):
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
             blob = bucket.blob(self.blob_name)
-            blob.upload_from_file(file, predefined_acl=self.acl)
+            kwargs = {} if self.timeout is None else {"timeout": self.timeout}
+            blob.upload_from_file(file, predefined_acl=self.acl, **kwargs)
         finally:
             file.close()
 

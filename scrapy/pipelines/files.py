@@ -293,6 +293,7 @@ class S3FilesStore:
 
 class GCSFilesStore:
     GCS_PROJECT_ID = None
+    GCS_UPLOAD_TIMEOUT: float | None = None
 
     CACHE_CONTROL = "max-age=172800"
 
@@ -360,12 +361,15 @@ class GCSFilesStore:
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in meta.items()} if meta else {}
+        timeout = self.GCS_UPLOAD_TIMEOUT
+        kwargs = {} if timeout is None else {"timeout": timeout}
         return deferred_from_coro(
             run_in_thread(
                 blob.upload_from_string,
                 data=buf.getvalue(),
                 content_type=self._get_content_type(headers),
                 predefined_acl=self.POLICY,
+                **kwargs,
             )
         )
 
@@ -538,6 +542,7 @@ class FilesPipeline(MediaPipeline):
         )
         gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
         gcs_store.POLICY = settings["FILES_STORE_GCS_ACL"] or None
+        gcs_store.GCS_UPLOAD_TIMEOUT = settings.getfloat("GCS_UPLOAD_TIMEOUT") or None
 
         ftp_store: type[FTPFilesStore] = cast(
             "type[FTPFilesStore]", cls.STORE_SCHEMES["ftp"]

@@ -1541,6 +1541,26 @@ Default: ``None``
 
 The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
+.. setting:: GCS_UPLOAD_TIMEOUT
+
+GCS_UPLOAD_TIMEOUT
+------------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Number of seconds that uploads to `Google Cloud Storage`_, such as those of the
+:ref:`GCS feed storage backend <topics-feed-storage-gcs>` and of the :ref:`GCS
+media pipeline storage backend <media-pipeline-gcs>`, wait for a response
+before giving up.
+
+If ``None``, the `default timeout of the google-cloud-storage library
+<https://docs.cloud.google.com/python/docs/reference/storage/latest/retry_timeout#configuring-timeouts>`_
+is used.
+
+Raise it if large uploads fail over a slow connection.
+
 .. setting:: HTTP2_MAX_FRAME_SIZE
 
 HTTP2_MAX_FRAME_SIZE
