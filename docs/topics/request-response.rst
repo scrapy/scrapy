@@ -1024,8 +1024,9 @@ the proxy to consume them instead of passing them on to the target server.
     Handling of this metadata key needs to be implemented inside the
     :ref:`download handler <topics-download-handlers>`, so it's not guaranteed
     to be supported by all 3rd-party handlers. Among the built-in handlers,
-    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`,
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
     support it for HTTP and HTTPS proxies.
 
 .. reqmeta:: verbatim_url
