@@ -19,6 +19,7 @@ from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.engine import get_engine_status
+from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from twisted.internet.task import LoopingCall
@@ -57,7 +58,7 @@ class MemoryUsage:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            self.mail = MailSender.from_crawler(crawler)
+            self.mail = build_from_crawler(MailSender, crawler)
 
         self.limit: int = crawler.settings.getint("MEMUSAGE_LIMIT_MB") * 1024 * 1024
         self.warning: int = crawler.settings.getint("MEMUSAGE_WARNING_MB") * 1024 * 1024

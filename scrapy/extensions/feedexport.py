@@ -27,11 +27,11 @@ from zope.interface import Interface
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
+from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
 from scrapy.utils.boto import _get_max_pool_connections
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
-from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
@@ -363,6 +363,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.username: str = u.username or ""
         self.password: str = unquote(u.password or "")
         self.path: str = u.path
+        self.tls: bool = u.scheme == "ftps"
         self.use_active_mode: bool = use_active_mode
         self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
@@ -390,6 +391,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             password=self.password,
             use_active_mode=self.use_active_mode,
             overwrite=self.overwrite,
+            tls=self.tls,
         )
 
 
@@ -504,7 +506,7 @@ class FeedExporter:
             uri = str(uri.absolute()) if isinstance(uri, Path) else str(uri)
             feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
-                feed_options, self.settings
+                feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
@@ -518,7 +520,7 @@ class FeedExporter:
                 else str(settings_uri)
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
-                feed_options, self.settings
+                feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
 
@@ -710,7 +712,13 @@ class FeedExporter:
     def _exporter_supported(self, format_: str) -> bool:
         if format_ in self.exporters:
             return True
-        logger.error("Unknown feed format: %(format)s", {"format": format_})
+        if format_:
+            logger.error("Unknown feed format: %(format)s", {"format": format_})
+        else:
+            logger.error(
+                "Feed format not set and it could not be inferred from the "
+                "feed URI; set it explicitly with the 'format' key"
+            )
         return False
 
     def _settings_are_valid(self) -> bool:

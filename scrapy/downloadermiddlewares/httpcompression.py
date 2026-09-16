@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from importlib.util import find_spec
 from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
@@ -15,10 +14,10 @@ from scrapy.utils._compression import (
     _inflate,
     _unbrotli,
     _unzstd,
+    gunzip,
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
-from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -30,10 +29,7 @@ if TYPE_CHECKING:
 
 logger = getLogger(__name__)
 
-ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate", b"br"]
-
-if find_spec("zstandard") is not None:
-    ACCEPTED_ENCODINGS.append(b"zstd")
+ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate", b"br", b"zstd"]
 
 
 class HttpCompressionMiddleware:
@@ -181,10 +177,7 @@ class HttpCompressionMiddleware:
         self, response: Response, encodings: list[bytes]
     ) -> None:
         encodings_str = b",".join(encodings).decode()
-        msg = (
+        logger.warning(
             f"{self.__class__.__name__} cannot decode the response for {response.url} "
             f"from unsupported encoding(s) '{encodings_str}'."
         )
-        if b"zstd" in encodings:
-            msg += " You need to install zstandard to decode 'zstd'."
-        logger.warning(msg)

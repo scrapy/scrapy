@@ -6,6 +6,7 @@ import pytest
 
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.memdebug import MemoryDebugger
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from scrapy.utils.trackref import object_ref
@@ -14,12 +15,12 @@ from tests.utils.decorators import coroutine_test
 
 def test_disabled_by_default() -> None:
     with pytest.raises(NotConfigured):
-        MemoryDebugger.from_crawler(get_crawler())
+        build_from_crawler(MemoryDebugger, get_crawler())
 
 
 def test_spider_closed_sets_stats() -> None:
     crawler = get_crawler(settings_dict={"MEMDEBUG_ENABLED": True})
-    ext = MemoryDebugger.from_crawler(crawler)
+    ext = build_from_crawler(MemoryDebugger, crawler)
 
     class TrackedObject(object_ref):
         pass
@@ -30,9 +31,8 @@ def test_spider_closed_sets_stats() -> None:
     tracked = [TrackedObject(), TrackedObject()]
     CollectedObject()
 
-    ext.spider_closed(DefaultSpider(), "finished")
+    ext.spider_closed(DefaultSpider.from_crawler(crawler), "finished")
 
-    assert crawler.stats
     assert crawler.stats.get_value("memdebug/gc_garbage_count") == len(gc.garbage)
     assert crawler.stats.get_value("memdebug/live_refs/TrackedObject") == len(tracked)
     assert crawler.stats.get_value("memdebug/live_refs/CollectedObject") is None
@@ -46,6 +46,5 @@ async def test_crawl_sets_stats() -> None:
 
     crawler = get_crawler(MemDebugSpider, settings_dict={"MEMDEBUG_ENABLED": True})
     await crawler.crawl_async()
-    assert crawler.stats
     assert crawler.stats.get_value("memdebug/gc_garbage_count") is not None
     assert crawler.stats.get_value("memdebug/live_refs/MemDebugSpider") == 1

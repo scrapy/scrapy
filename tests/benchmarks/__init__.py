@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class NullDownloadHandler:
-    """Download handler that returns an empty response without doing any I/O.
+    """Download handler that returns a response without doing any I/O.
 
     It lets benchmarks measure the engine, the scheduler and the middlewares
     without also measuring HTTP parsing and socket handling, and reach as many
@@ -36,13 +36,16 @@ class NullDownloadHandler:
 
     async def download_request(self, request: Request) -> Response:
         self._active += 1
-        assert self._crawler.stats
         self._crawler.stats.max_value("benchmark/peak_concurrency", self._active)
         try:
             await asyncio.sleep(0)
-            return Response(request.url, request=request)
+            return self.response(request)
         finally:
             self._active -= 1
+
+    def response(self, request: Request) -> Response:
+        """Return the response to serve for *request*, empty unless overridden."""
+        return Response(request.url, request=request)
 
     async def close(self) -> None:
         pass

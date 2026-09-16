@@ -59,7 +59,7 @@ class CloseSpider(Exception):
     """Raised from a :ref:`spider callback <topics-spiders>`, or while the
     spider is starting, to request the spider to be closed/stopped.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
        Added support for raising it while the spider is starting.
 
     *reason* is a string with the reason for closing.

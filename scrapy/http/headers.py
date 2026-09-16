@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from w3lib.http import headers_dict_to_raw
 
-from scrapy.utils.datatypes import CaseInsensitiveDict, CaselessDict
+from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
@@ -18,9 +18,7 @@ if TYPE_CHECKING:
 _RawValue: TypeAlias = bytes | str | int
 
 
-# isn't fully compatible typing-wise with either dict or CaselessDict,
-# but it needs refactoring anyway, see also https://github.com/scrapy/scrapy/pull/5146
-class Headers(CaselessDict):
+class Headers(dict):  # type: ignore[type-arg]
     """Case insensitive http headers dictionary"""
 
     def __init__(
@@ -32,7 +30,32 @@ class Headers(CaselessDict):
         encoding: str = "utf-8",
     ):
         self.encoding: str = encoding
-        super().__init__(seq)
+        super().__init__()
+        if seq:
+            self.update(seq)
+
+    def __setitem__(self, key: str | bytes, value: Any) -> None:
+        dict.__setitem__(self, self.normkey(key), self.normvalue(value))
+
+    def __delitem__(self, key: str | bytes) -> None:
+        dict.__delitem__(self, self.normkey(key))
+
+    def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
+        return dict.__contains__(self, self.normkey(key))
+
+    has_key = __contains__
+
+    def setdefault(self, key: str | bytes, def_val: Any = None) -> Any:
+        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
+
+    @classmethod
+    def fromkeys(  # type: ignore[override]
+        cls, keys: Iterable[str | bytes], value: Any = None
+    ) -> Self:
+        return cls((k, value) for k in keys)
+
+    def pop(self, key: str | bytes, *args: Any) -> Any:
+        return dict.pop(self, self.normkey(key), *args)
 
     def update(  # type: ignore[override]
         self,
@@ -44,7 +67,7 @@ class Headers(CaselessDict):
         iseq: dict[bytes, list[bytes]] = {}
         for k, v in seq:
             iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
-        super().update(iseq)
+        dict.update(self, iseq)
 
     def normkey(self, key: str | bytes) -> bytes:
         """Normalize key to bytes"""
@@ -75,19 +98,22 @@ class Headers(CaselessDict):
 
     def __getitem__(self, key: str | bytes) -> bytes | None:
         try:
-            return cast("list[bytes]", super().__getitem__(key))[-1]
+            return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))[-1]
         except IndexError:
             return None
 
     def get(self, key: str | bytes, def_val: Any = None) -> bytes | None:
         try:
-            return cast("list[bytes]", super().get(key, def_val))[-1]
+            return cast(
+                "list[bytes]",
+                dict.get(self, self.normkey(key), self.normvalue(def_val)),
+            )[-1]
         except IndexError:
             return None
 
     def getlist(self, key: str | bytes, def_val: Any = None) -> list[bytes]:
         try:
-            return cast("list[bytes]", super().__getitem__(key))
+            return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))
         except KeyError:
             if def_val is not None:
                 return self.normvalue(def_val)

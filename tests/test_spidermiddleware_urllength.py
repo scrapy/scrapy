@@ -31,13 +31,12 @@ def crawler() -> Crawler:
 
 @pytest.fixture
 def stats(crawler: Crawler) -> StatsCollector:
-    assert crawler.stats is not None
     return crawler.stats
 
 
 @pytest.fixture
 def mw(crawler: Crawler) -> UrlLengthMiddleware:
-    return UrlLengthMiddleware.from_crawler(crawler)
+    return build_from_crawler(UrlLengthMiddleware, crawler)
 
 
 def process_spider_output(mw: UrlLengthMiddleware) -> list[Request]:

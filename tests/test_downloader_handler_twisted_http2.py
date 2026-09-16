@@ -11,8 +11,13 @@ from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
-from scrapy.exceptions import DownloadFailedError, NotConfigured
+from scrapy.exceptions import (
+    DownloadFailedError,
+    NotConfigured,
+    UnsupportedURLSchemeError,
+)
 from scrapy.http import Request
+from scrapy.utils.misc import build_from_crawler
 from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
@@ -66,7 +71,7 @@ def test_not_configured_without_reactor() -> None:
 
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
-        H2DownloadHandler.from_crawler(crawler)
+        build_from_crawler(H2DownloadHandler, crawler)
 
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
@@ -142,7 +147,7 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
                 response = await download_handler.download_request(request)
         assert response.text == actual_content_length
         assert (
-            "scrapy.core.http2.stream",
+            "scrapy.core._http2.stream",
             logging.WARNING,
             f"Ignoring bad Content-Length header "
             f"{bad_content_length!r} of request {request}, sending "
@@ -155,6 +160,41 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
         async with self.get_dh() as download_handler:
             with pytest.raises(DownloadFailedError):
                 await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_405_data(self, mockserver: MockServer) -> None:
+        """Servers without HTTP/2 support answer the connection preface with a
+        405 status line, which this handler reports as a download failure
+        instead of waiting for frames that never arrive."""
+        request = Request(mockserver.url("/h2-no-support", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError, match="405 Method Not Allowed"):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_plain_http(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/text"))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(UnsupportedURLSchemeError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_proxy(self, mockserver: MockServer) -> None:
+        request = Request(
+            mockserver.url("/text", is_secure=self.is_secure),
+            meta={"proxy": "https://example.com:8080"},
+        )
+        async with self.get_dh() as download_handler:
+            with pytest.raises(NotImplementedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_pushed_stream(self, mockserver: MockServer) -> None:
+        """Pushed responses are ignored."""
+        request = Request(mockserver.url("/h2-push", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
 
 
 class TestSimpleHttp2(H2DownloadHandlerMixin, TestSimpleHttpsBase):
