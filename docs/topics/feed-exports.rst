@@ -290,6 +290,12 @@ storage backend is: ``True``.
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
      previous version of your data.
 
+Appending (``overwrite: False``) turns the feed into a `composite object`_,
+which has a CRC32C checksum but no MD5 hash.
+
+.. versionadded:: VERSION
+   Appending support.
+
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
 
@@ -536,7 +542,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-s3`: ``True`` (appending is not supported)
 
-    -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
+    -   :ref:`topics-feed-storage-gcs`: ``True``
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
@@ -821,4 +827,5 @@ source spider in the feed URI:
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
+.. _composite object: https://docs.cloud.google.com/storage/docs/composite-objects
 .. _Google Cloud Storage: https://cloud.google.com/storage/
