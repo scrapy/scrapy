@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 import re
+import warnings
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
 from scrapy.utils._compression import (
@@ -69,6 +71,28 @@ class SitemapSpider(Spider):
         """
         yield from entries
 
+    def sitemap_request(
+        self, loc: str, callback: CallbackT, entry: dict[str, Any]
+    ) -> Request:
+        """Return the request for the *loc* URL of the sitemap *entry*, to be
+        parsed with *callback*.
+
+        .. versionadded:: VERSION
+
+        Override this method to build those requests differently, e.g. to make
+        sitemap data available to *callback*:
+
+        .. code-block:: python
+
+            def sitemap_request(self, loc, callback, entry):
+                return Request(loc, callback, meta={"lastmod": entry.get("lastmod")})
+
+        *entry* is the sitemap entry that *loc* comes from, as described in
+        :meth:`sitemap_filter`. When :attr:`sitemap_alternate_links` is
+        enabled, the same entry is used for every alternate URL.
+        """
+        return Request(loc, callback=callback)
+
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
@@ -86,14 +110,21 @@ class SitemapSpider(Spider):
         s = Sitemap(body)
 
         if s.type == "sitemapindex":
-            urls = list(self._get_urls_from_sitemapindex(self.sitemap_filter(s)))
-            return (Request(loc, callback=self._parse_sitemap) for loc in urls)
+            index_entries = list(
+                self._get_urls_from_sitemapindex(self.sitemap_filter(s))
+            )
+            return (
+                self.sitemap_request(loc, self._parse_sitemap, entry)
+                for loc, entry in index_entries
+            )
 
         if s.type == "urlset":
-            url_callback_pairs = list(
+            urlset_entries = list(
                 self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
             )
-            return (Request(loc, callback=c) for loc, c in url_callback_pairs)
+            return (
+                self.sitemap_request(loc, c, entry) for loc, c, entry in urlset_entries
+            )
 
         logger.warning(
             "Ignoring invalid sitemap: %(response)s",
@@ -105,18 +136,18 @@ class SitemapSpider(Spider):
 
     def _get_urls_from_sitemapindex(
         self, it: Iterable[dict[str, Any]]
-    ) -> Iterable[str]:
-        for loc in iterloc(it, self.sitemap_alternate_links):
+    ) -> Iterable[tuple[str, dict[str, Any]]]:
+        for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
             if any(x.search(loc) for x in self._follow):
-                yield loc
+                yield loc, entry
 
     def _get_urls_and_callbacks_from_urlset(
         self, it: Iterable[dict[str, Any]]
-    ) -> Iterable[tuple[str, CallbackT]]:
-        for loc in iterloc(it, self.sitemap_alternate_links):
+    ) -> Iterable[tuple[str, CallbackT, dict[str, Any]]]:
+        for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
             for r, c in self._cbs:
                 if r.search(loc):
-                    yield loc, c
+                    yield loc, c, entry
                     break
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
@@ -160,10 +191,22 @@ def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
 
 
 def iterloc(it: Iterable[dict[str, Any]], alt: bool = False) -> Iterable[str]:
+    warnings.warn(
+        "scrapy.spiders.sitemap.iterloc() is deprecated.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return (loc for loc, _ in _iterlocs(it, alt))
+
+
+def _iterlocs(
+    it: Iterable[dict[str, Any]], alt: bool = False
+) -> Iterable[tuple[str, dict[str, Any]]]:
     for d in it:
         if loc := d["loc"]:
-            yield loc
+            yield loc, d
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
         if alt and (alt_list := d.get("alternate")):
-            yield from alt_list
+            for loc in alt_list:
+                yield loc, d

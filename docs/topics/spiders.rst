@@ -926,6 +926,8 @@ SitemapSpider
         If you omit this method, all entries found in sitemaps will be
         processed, observing other attributes and their settings.
 
+    .. automethod:: sitemap_request
+
 
 SitemapSpider examples
 ~~~~~~~~~~~~~~~~~~~~~~
