@@ -23,6 +23,11 @@ class DataAction(argparse.Action):
     ) -> None:
         value = str(values)
         value = value.removeprefix("$")
+        # curl merges repeated -d/--data/--data-raw options into a single body
+        # joined with "&"; mirror that instead of keeping only the last one.
+        previous = getattr(namespace, self.dest, None)
+        if previous is not None:
+            value = f"{previous}&{value}"
         setattr(namespace, self.dest, value)
 
 
@@ -60,7 +65,12 @@ def _parse_headers_and_cookies(
     headers: list[tuple[str, bytes]] = []
     cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
-        name, val = header.split(":", 1)
+        if ":" in header:
+            name, val = header.split(":", 1)
+        elif header.endswith(";") and header[:-1].strip():
+            name, val = header[:-1], ""
+        else:
+            continue
         name = name.strip()
         val = val.strip()
         if name.title() == "Cookie":
@@ -78,7 +88,7 @@ def _parse_headers_and_cookies(
             cookies[name] = morsel.value
 
     if parsed_args.auth:
-        user, password = parsed_args.auth.split(":", 1)
+        user, _, password = parsed_args.auth.partition(":")
         headers.append(("Authorization", basic_auth_header(user, password)))
 
     return headers, cookies
@@ -98,7 +108,7 @@ def curl_to_request_kwargs(
 
     curl_args = split(curl_command)
 
-    if curl_args[0] != "curl":
+    if not curl_args or curl_args[0] != "curl":
         raise ValueError('A curl command must start with "curl"')
 
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])

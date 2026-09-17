@@ -38,7 +38,7 @@ class Command(BaseRunSpiderCommand):
         return "[options] <spider_file>"
 
     def short_desc(self) -> str:
-        return "Run a self-contained spider (without creating a project)"
+        return "Run a spider from a Python file, no project required"
 
     def long_desc(self) -> str:
         return "Run the spider defined in the given file"
@@ -56,11 +56,4 @@ class Command(BaseRunSpiderCommand):
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
             raise UsageError(f"No spider found in file: {filename}\n")
-        spidercls = spclasses.pop()
-
-        assert self.crawler_process
-        self.crawler_process.crawl(spidercls, **opts.spargs)
-        self.crawler_process.start()
-
-        if self.crawler_process.bootstrap_failed:
-            self.exitcode = 1
+        self._run_crawler(spclasses.pop(), opts)

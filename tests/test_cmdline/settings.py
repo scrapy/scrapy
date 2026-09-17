@@ -1,7 +1,7 @@
 from pathlib import Path
 
 EXTENSIONS = {
-    "tests.test_cmdline.extensions.TestExtension": 0,
+    "tests.test_cmdline.extensions.DummyExtension": 0,
 }
 
 TEST1 = "default"

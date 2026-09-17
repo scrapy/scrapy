@@ -19,12 +19,11 @@ components, and it is the only way for components to access them and hook their
 functionality into Scrapy.
 
 .. module:: scrapy.crawler
-   :synopsis: The Scrapy crawler
 
 The Extension Manager is responsible for loading and keeping track of installed
-extensions and it's configured through the :setting:`EXTENSIONS` setting which
-contains a dictionary of all available extensions and their order similar to
-how you :ref:`configure the downloader middlewares
+extensions, and it's configured through the :setting:`EXTENSIONS` setting,
+which contains a dictionary of all available extensions and their order similar
+to how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
 .. autoclass:: Crawler
@@ -34,6 +33,13 @@ how you :ref:`configure the downloader middlewares
     The Crawler object must be instantiated with a
     :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
+
+    The :attr:`engine`, :attr:`extensions`, :attr:`logformatter`,
+    :attr:`request_fingerprinter` and :attr:`stats` attributes get their value
+    when the crawl starts, and raise :exc:`RuntimeError` when read before that.
+
+    .. versionchanged:: 2.18.0
+        Those attributes used to be ``None`` before getting their value.
 
     .. attribute:: request_fingerprinter
 
@@ -75,6 +81,8 @@ how you :ref:`configure the downloader middlewares
 
         For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
 
+    .. autoattribute:: logformatter
+
     .. attribute:: extensions
 
         The extension manager that keeps track of enabled extensions.
@@ -89,7 +97,7 @@ how you :ref:`configure the downloader middlewares
         The execution engine, which coordinates the core crawling logic
         between the scheduler, downloader and spiders.
 
-        Some extension may want to access the Scrapy engine, to inspect  or
+        Some extensions may want to access the Scrapy engine to inspect or
         modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 
@@ -129,7 +137,6 @@ Settings API
 ============
 
 .. module:: scrapy.settings
-   :synopsis: Settings manager
 
 .. attribute:: SETTINGS_PRIORITIES
 
@@ -157,6 +164,8 @@ Settings API
 
 .. autofunction:: get_settings_priority
 
+.. autofunction:: scrapy.utils.project.get_project_settings
+
 .. autoclass:: Settings
    :show-inheritance:
    :members:
@@ -170,48 +179,16 @@ SpiderLoader API
 ================
 
 .. module:: scrapy.spiderloader
-   :synopsis: The spider loader
 
-.. class:: SpiderLoader
+Custom spider loaders can be employed by specifying their path in the
+:setting:`SPIDER_LOADER_CLASS` project setting. They must implement
+:class:`SpiderLoaderProtocol`.
 
-    This class is in charge of retrieving and handling the spider classes
-    defined across the project.
+.. autoclass:: SpiderLoaderProtocol
+    :members:
 
-    Custom spider loaders can be employed by specifying their path in the
-    :setting:`SPIDER_LOADER_CLASS` project setting. They must fully implement
-    the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
-    errorless execution.
-
-    .. method:: from_settings(settings)
-
-       This class method is used by Scrapy to create an instance of the class.
-       It's called with the current project settings, and it loads the spiders
-       found recursively in the modules of the :setting:`SPIDER_MODULES`
-       setting.
-
-       :param settings: project settings
-       :type settings: :class:`~scrapy.settings.Settings` instance
-
-    .. method:: load(spider_name)
-
-       Get the Spider class with the given name. It'll look into the previously
-       loaded spiders for a spider class with name ``spider_name`` and will raise
-       a KeyError if not found.
-
-       :param spider_name: spider class name
-       :type spider_name: str
-
-    .. method:: list()
-
-       Get the names of the available spiders in the project.
-
-    .. method:: find_by_request(request)
-
-       List the spiders' names that can handle the given request. Will try to
-       match the request's url against the domains of the spiders.
-
-       :param request: queried request
-       :type request: :class:`~scrapy.Request` instance
+.. autoclass:: SpiderLoader
+    :members:
 
 .. autoclass:: DummySpiderLoader
 
@@ -221,7 +198,6 @@ Signals API
 ===========
 
 .. automodule:: scrapy.signalmanager
-    :synopsis: The signal manager
     :members:
     :undoc-members:
 
@@ -235,62 +211,8 @@ There are several Stats Collectors available under the
 Collector API defined by the :class:`~scrapy.statscollectors.StatsCollector`
 class (which they all inherit from).
 
-.. module:: scrapy.statscollectors
-   :synopsis: Stats Collectors
-
-.. class:: StatsCollector
-
-    .. method:: get_value(key, default=None)
-
-        Return the value for the given stats key or default if it doesn't exist.
-
-    .. method:: get_stats()
-
-        Get all stats from the currently running spider as a dict.
-
-    .. method:: set_value(key, value)
-
-        Set the given value for the given stats key.
-
-    .. method:: set_stats(stats)
-
-        Override the current stats with the dict passed in ``stats`` argument.
-
-    .. method:: inc_value(key, count=1, start=0)
-
-        Increment the value of the given stats key, by the given count,
-        assuming the start value given (when it's not set).
-
-    .. method:: max_value(key, value)
-
-        Set the given value for the given key only if current value for the
-        same key is lower than value. If there is no current value for the
-        given key, the value is always set.
-
-    .. method:: min_value(key, value)
-
-        Set the given value for the given key only if current value for the
-        same key is greater than value. If there is no current value for the
-        given key, the value is always set.
-
-    .. method:: clear_stats()
-
-        Clear all stats.
-
-    The following methods are not part of the stats collection api but instead
-    used when implementing custom stats collectors:
-
-    .. method:: open_spider()
-
-        Open the spider for stats collection.
-
-    .. method:: close_spider()
-
-        Close the spider. After this is called, no more specific stats
-        can be accessed or collected.
-
 Engine API
 ==========
 
 .. autoclass:: scrapy.core.engine.ExecutionEngine()
-   :members: needs_backout
+   :members: needs_backout, scheduler

@@ -1,7 +1,6 @@
 # pragma: no file cover
 import warnings
 
-from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler as HTTPDownloadHandler,
 )
@@ -16,6 +15,5 @@ warnings.warn(
 )
 
 __all__ = [
-    "HTTP10DownloadHandler",
     "HTTPDownloadHandler",
 ]

@@ -13,7 +13,7 @@ from w3lib.url import is_url
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
-from scrapy.utils import display
+from scrapy.utils import _colorize
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import _schedule_coro, aiter_errback, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
@@ -41,7 +41,7 @@ class Command(BaseRunSpiderCommand):
     spider: Spider | None = None
     items: ClassVar[dict[int, list[Any]]] = {}
     requests: ClassVar[dict[int, list[Request]]] = {}
-    spidercls: type[Spider] | None
+    spidercls: type[Spider] | None = None
 
     first_response = None
 
@@ -144,17 +144,16 @@ class Command(BaseRunSpiderCommand):
     def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
 
     def iterate_spider_output(self, result: Any) -> Iterable[Any] | Deferred[Any]:
+        d: Deferred[Any]
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
                 collect_asyncgen(aiter_errback(result, self.handle_exception))
             )
-            d.addCallback(self.iterate_spider_output)
-            return d
+            return d.addCallback(self.iterate_spider_output)
+        d = deferred_from_coro(result)
         if inspect.iscoroutine(result):
-            d = deferred_from_coro(result)
-            d.addCallback(self.iterate_spider_output)
-            return d
-        return arg_to_iter(deferred_from_coro(result))
+            return d.addCallback(self.iterate_spider_output)
+        return arg_to_iter(d)
 
     def add_items(self, lvl: int, new_items: list[Any]) -> None:
         old_items = self.items.get(lvl, [])
@@ -171,7 +170,7 @@ class Command(BaseRunSpiderCommand):
             items = self.items.get(lvl, [])
 
         print("# Scraped Items ", "-" * 60)
-        display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
+        _colorize.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
     def print_requests(self, lvl: int | None = None, colour: bool = True) -> None:
         if lvl is not None:
@@ -182,7 +181,7 @@ class Command(BaseRunSpiderCommand):
             requests = []
 
         print("# Requests ", "-" * 65)
-        display.pprint(requests, colorize=colour)
+        _colorize.pprint(requests, colorize=colour)
 
     def print_results(self, opts: argparse.Namespace) -> None:
         colour = not opts.nocolour
@@ -267,9 +266,11 @@ class Command(BaseRunSpiderCommand):
     def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
         assert self.crawler_process
         assert self.spidercls
-        self.crawler_process.crawl(self.spidercls, **opts.spargs)
-        self.pcrawler = next(iter(self.crawler_process.crawlers))
+        self.pcrawler = self._create_crawler(self.spidercls)
+        self.crawler_process.crawl(self.pcrawler, **opts.spargs)
         self.crawler_process.start()
+        if self.crawler_process.bootstrap_failed:
+            self.exitcode = 1
 
         if not self.first_response:
             logger.error("No response downloaded for: %(url)s", {"url": url})
@@ -282,7 +283,6 @@ class Command(BaseRunSpiderCommand):
     ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
-            assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
                 for item in items:
@@ -347,6 +347,8 @@ class Command(BaseRunSpiderCommand):
                 self.first_response = response
 
             cb = self._get_callback(spider=spider, opts=opts, response=response)
+            assert response.request
+            response.request.callback = cb
 
             # parse items and requests
             depth: int = response.meta["_depth"]

@@ -35,7 +35,8 @@ def inline_callbacks_test(
         async def wrapper_coro(*args: _P.args, **kwargs: _P.kwargs) -> None:
             await deferred_to_future(inlineCallbacks(f)(*args, **kwargs))
 
-        return wrapper_coro
+        # Likely https://github.com/python/mypy/issues/17171
+        return wrapper_coro  # type: ignore[no-any-return]
 
     @wraps(f)
     @inlineCallbacks

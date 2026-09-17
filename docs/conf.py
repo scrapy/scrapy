@@ -28,13 +28,16 @@ author = "Scrapy developers"
 extensions = [
     "notfound.extension",
     "scrapydocs",
-    "sphinx.ext.autodoc",
+    "sphinx_scrapy",
     "scrapyfixautodoc",  # Must be after "sphinx.ext.autodoc"
     "sphinx.ext.coverage",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.viewcode",
+    "sphinx_reredirects",
     "sphinx_rtd_dark_mode",
 ]
+
+redirects = {
+    "topics/broad-crawls": "optimize.html#broad-crawls",
+}
 
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
@@ -143,26 +146,56 @@ coverage_ignore_pyobjects = [
     r"^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor",
 ]
 
+# -- Options for the autodoc extension ----------------------------------------
+autodoc_member_order = "bysource"
 
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
 
-intersphinx_mapping = {
-    "attrs": ("https://www.attrs.org/en/stable/", None),
-    "coverage": ("https://coverage.readthedocs.io/en/latest", None),
-    "cryptography": ("https://cryptography.io/en/latest/", None),
-    "cssselect": ("https://cssselect.readthedocs.io/en/latest", None),
-    "itemloaders": ("https://itemloaders.readthedocs.io/en/latest/", None),
-    "parsel": ("https://parsel.readthedocs.io/en/latest/", None),
-    "pytest": ("https://docs.pytest.org/en/latest", None),
-    "python": ("https://docs.python.org/3", None),
-    "sphinx": ("https://www.sphinx-doc.org/en/master", None),
-    "tox": ("https://tox.wiki/en/latest/", None),
-    "twisted": ("https://docs.twisted.org/en/stable/", None),
-    "twistedapi": ("https://docs.twisted.org/en/stable/api/", None),
-    "w3lib": ("https://w3lib.readthedocs.io/en/latest", None),
-}
 intersphinx_disabled_reftypes: Sequence[str] = []
+
+# sphinx-scrapy ---------------------------------------------------------------
+
+scrapy_intersphinx_enable = [
+    "attrs",
+    "coverage",
+    "cryptography",
+    "cssselect",
+    "form2request",
+    "itemloaders",
+    "parsel",
+    "platformdirs",
+    "pytest",
+    "pypug",
+    "scrapy-lint",
+    "sphinx",
+    "tox",
+    "twisted",
+    "twistedapi",
+    "w3lib",
+]
+
+# sphinx_llms_txt -------------------------------------------------------------
+
+llms_txt_exclude = [
+    # Changelog, not useful for an LLM answering "how do I use Scrapy"
+    # questions, and the largest single contributor to llms-full.txt size.
+    "news.rst",
+    "news/*",
+    "contributing.rst",
+]
+
+
+def _exclude_llms_txt_docs_from_llms_full_txt(app):
+    # llms-full.txt is the output of the singlemarkdown builder.
+    if app.builder.name != "singlemarkdown":
+        return
+    app.config.exclude_patterns.extend(llms_txt_exclude)
+
+
+def setup(app):
+    app.connect("builder-inited", _exclude_llms_txt_docs_from_llms_full_txt)
+
 
 # -- Other options ------------------------------------------------------------
 default_dark_mode = False

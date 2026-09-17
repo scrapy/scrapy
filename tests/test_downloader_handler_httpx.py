@@ -3,61 +3,85 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any
+from importlib.util import find_spec
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import pytest
 
 from scrapy import Request
-from tests.test_downloader_handlers_http_base import (
-    TestHttp11Base,
+from scrapy.core.downloader.handlers._httpx import (  # type: ignore[attr-defined]
+    HAS_HTTP2,
+    HAS_SOCKS,
+    HttpxDownloadHandler,
+    httpx,
+)
+from scrapy.exceptions import DownloadFailedError
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
+from tests import IDNA_REJECTED_HOSTNAMES
+from tests.utils.bases.download_handlers_http import (
+    TestHttpBase,
     TestHttpProxyBase,
-    TestHttps11Base,
+    TestHttpsBase,
     TestHttpsCustomCiphersBase,
+    TestHttpsDefaultCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
+    TestHttpsTLSVersionBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
+    TestMitmProxyBase,
+    TestRealWebsiteBase,
     TestSimpleHttpsBase,
 )
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
+    from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
 
 pytestmark = pytest.mark.only_asyncio
 
-pytest.importorskip("httpx")
+if find_spec("httpx2") is None and find_spec("httpx") is None:
+    pytest.skip("Neither httpx2 nor httpx are installed", allow_module_level=True)
+
+# httpx2 < 2.4.0 reads URL.host through idna.decode() without display=True when
+# building the Host header, which raises for punycode labels that IDNA 2008
+# rejects. https://github.com/pydantic/httpx2/pull/1018
+# This check can be dropped once the httpx2 requirement is bumped to >= 2.4.0.
+try:
+    for _hostname in IDNA_REJECTED_HOSTNAMES:
+        _ = httpx.URL(f"http://{_hostname}").host
+except Exception:
+    HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES = False
+else:
+    HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES = True
 
 
 class HttpxDownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        # the import will fail if httpx is not installed
-        from scrapy.core.downloader.handlers._httpx import (  # noqa: PLC0415
-            HttpxDownloadHandler,
-        )
-
         return HttpxDownloadHandler
 
+    @property
+    def settings_dict(self) -> dict[str, Any] | None:
+        return {
+            "DOWNLOAD_HANDLERS": {
+                "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+                "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+            }
+        }
 
-class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
-    @coroutine_test
-    async def test_unsupported_bindaddress(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        meta = {"bindaddress": ("127.0.0.2", 0)}
-        request = Request(mockserver.url("/text"), meta=meta)
-        async with self.get_dh() as download_handler:
-            response = await download_handler.download_request(request)
-        assert response.body == b"Works"
-        assert (
-            "The 'bindaddress' request meta key is not supported by HttpxDownloadHandler"
-            in caplog.text
-        )
 
-    # skip macOS tests
+class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
+    handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
+    handler_supports_idna_rejected_hostnames = HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES
+
     @pytest.mark.skipif(
         sys.platform == "darwin",
         reason="127.0.0.2 is not available on macOS by default",
@@ -75,76 +99,165 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
         assert "DOWNLOAD_BIND_ADDRESS specifies a port (12345)" in caplog.text
         assert "Ignoring the port" in caplog.text
 
-    @coroutine_test
-    async def test_unsupported_proxy(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        meta = {"proxy": "127.0.0.2"}
-        request = Request(mockserver.url("/text"), meta=meta)
-        async with self.get_dh() as download_handler:
-            response = await download_handler.download_request(request)
-        assert response.body == b"Works"
-        assert (
-            "The 'proxy' request meta key is not supported by HttpxDownloadHandler"
-            in caplog.text
-        )
 
-
-class TestHttps11(HttpxDownloadHandlerMixin, TestHttps11Base):
+class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
+    handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
+    handler_supports_idna_rejected_hostnames = HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
     @pytest.mark.skip(reason="The check is Twisted-specific")
-    def test_verify_certs_deprecated(self):
+    def test_verify_certs_deprecated(self) -> None:  # type: ignore[override]
         pass
+
+
+@pytest.mark.skipif(not HAS_HTTP2, reason="No HTTP/2 support in HttpxDownloadHandler")
+class TestHttp2(TestHttps):
+    http2 = True
+    handler_supports_http2_dataloss = False
+
+    default_handler_settings: ClassVar[dict[str, Any]] = {
+        "HTTPX_HTTP2_ENABLED": True,
+    }
+
+    @coroutine_test
+    async def test_protocol(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/host", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.protocol == "HTTP/2"
+
+    @coroutine_test
+    async def test_data_loss_handling(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
 
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):
     pass
 
 
-class TestHttps11WrongHostname(HttpxDownloadHandlerMixin, TestHttpsWrongHostnameBase):
+class TestHttpsWrongHostname(HttpxDownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class TestHttps11InvalidDNSId(HttpxDownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttpsInvalidDNSId(HttpxDownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class TestHttps11InvalidDNSPattern(
+class TestHttpsInvalidDNSPattern(
     HttpxDownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
 ):
     pass
 
 
-class TestHttps11CustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttpsCustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 
-class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
-    @property
-    def settings_dict(self) -> dict[str, Any] | None:
-        return {
-            "DOWNLOAD_HANDLERS": {
-                "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-                "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-            }
-        }
+class TestHttpsDefaultCiphers(HttpxDownloadHandlerMixin, TestHttpsDefaultCiphersBase):
+    pass
 
 
-class TestHttps11WithCrawler(TestHttp11WithCrawler):
+class TestHttpsTLSVersion(HttpxDownloadHandlerMixin, TestHttpsTLSVersionBase):
+    pass
+
+
+class TestHttpWithCrawler(HttpxDownloadHandlerMixin, TestHttpWithCrawlerBase):
+    pass
+
+
+class TestHttpsWithCrawler(TestHttpWithCrawler):
     is_secure = True
 
-    @pytest.mark.skip(reason="response.certificate is not implemented")
+
+class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
+    expected_http_proxy_request_body = b"http://example.com/"
+
+
+class TestHttpsProxy(TestHttpProxy):
+    is_secure = True
+
     @coroutine_test
-    async def test_response_ssl_certificate(self, mockserver: MockServer) -> None:
-        pass
+    async def test_keylog(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        proxy_mockserver: ProxyEchoMockServer,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        http_proxy = proxy_mockserver.url("", is_secure=True)
+        request = Request("http://example.com", meta={"proxy": http_proxy})
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == self.expected_http_proxy_request_body
+        assert keylog_file.read_text()
 
 
-@pytest.mark.skip(reason="Proxy support is not implemented yet")
-class TestHttp11Proxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
+@pytest.mark.requires_mitmproxy
+class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
+    handler_supports_socks = HAS_SOCKS
+
+
+@pytest.mark.requires_internet
+class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
 
 
-@pytest.mark.skip(reason="Proxy support is not implemented yet")
-class TestHttps11Proxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
-    is_secure = True
+@pytest.mark.parametrize(("concurrency", "expected"), [(16, 16), (0, None)])
+@coroutine_test
+async def test_pool_limits(concurrency: int, expected: int | None) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+    handler = build_from_crawler(HttpxDownloadHandler, crawler)
+    try:
+        assert handler._limits.max_connections == expected
+        assert handler._limits.max_keepalive_connections == expected
+    finally:
+        await handler.close()
+
+
+@coroutine_test
+async def test_experimental_warning(caplog: pytest.LogCaptureFixture) -> None:
+    class StableHandler(HttpxDownloadHandler):
+        experimental = False
+
+    crawler = get_crawler()
+    for handler_cls, expected in ((HttpxDownloadHandler, True), (StableHandler, False)):
+        caplog.clear()
+        handler = build_from_crawler(handler_cls, crawler)
+        await handler.close()
+        assert ("is experimental" in caplog.text) is expected
+
+
+@coroutine_test
+async def test_proxies_not_supported() -> None:
+    class NoProxyHandler(HttpxDownloadHandler):
+        supports_proxies = False
+
+    crawler = get_crawler()
+    handler = build_from_crawler(NoProxyHandler, crawler)
+    request = Request("http://example.com", meta={"proxy": "http://proxy.example:8080"})
+    try:
+        with pytest.raises(NotImplementedError, match="doesn't support proxies"):
+            await handler.download_request(request)
+    finally:
+        await handler.close()
+
+
+@coroutine_test
+async def test_non_basic_proxy_auth() -> None:
+    crawler = get_crawler()
+    handler = build_from_crawler(HttpxDownloadHandler, crawler)
+    request = Request(
+        "http://example.com",
+        meta={"proxy": "http://proxy.example:8080"},
+        headers={"Proxy-Authorization": "Digest deadbeef"},
+    )
+    try:
+        with pytest.raises(ValueError, match="got Digest"):
+            await handler.download_request(request)
+    finally:
+        await handler.close()

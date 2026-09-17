@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Any
 
 
-class DummyDB(dict):
+class DummyDB(dict):  # type: ignore[type-arg]
     """Provide dummy DBM-like interface."""
 
     def close(self):

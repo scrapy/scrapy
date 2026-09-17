@@ -14,15 +14,15 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 
 Both pipelines implement these features:
 
-* Avoid re-downloading media that was downloaded recently
-* Specifying where to store the media (filesystem directory, FTP server, Amazon S3 bucket,
-  Google Cloud Storage bucket)
+* Avoid re-downloading media that have been downloaded recently
+* Specify where to store the media (filesystem directory, FTP server, Amazon S3
+  bucket, Google Cloud Storage bucket)
 
 The Images Pipeline has a few extra functions for processing images:
 
-* Convert all downloaded images to a common format (JPG) and mode (RGB)
+* Convert all downloaded images to a common format (JPEG) and mode (RGB)
 * Thumbnail generation
-* Check images width/height to make sure they meet a minimum constraint
+* Check images' width/height to make sure they meet a minimum constraint
 
 The pipelines also keep an internal queue of those media URLs which are currently
 being scheduled for download, and connect those responses that arrive containing
@@ -41,18 +41,17 @@ this:
 2. The item is returned from the spider and goes to the item pipeline.
 
 3. When the item reaches the :class:`FilesPipeline`, the URLs in the
-   ``file_urls`` field are scheduled for download using the standard
-   Scrapy scheduler and downloader (which means the scheduler and downloader
-   middlewares are reused), but with a higher priority, processing them before other
-   pages are scraped. The item remains "locked" at that particular pipeline stage
-   until the files have finish downloading (or fail for some reason).
+   ``file_urls`` field are downloaded using the standard Scrapy downloader
+   (which means the downloader middlewares are used, but the spider middlewares
+   aren't). The item remains "locked" at that particular pipeline stage until
+   the files have finished downloading (or failed for some reason).
 
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
    about the downloaded files, such as the downloaded path, the original
-   scraped url (taken from the ``file_urls`` field), the file checksum and the file status.
-   The files in the list of the ``files`` field will retain the same order of
-   the original ``file_urls`` field. If some file failed downloading, an
+   scraped URL (taken from the ``file_urls`` field), the file checksum and the
+   file status. The files in the ``files`` field will retain the same order as
+   in the original ``file_urls`` field. If some file failed downloading, an
    error will be logged and the file won't be present in the ``files`` field.
 
 
@@ -60,6 +59,8 @@ this:
 
 Using the Images Pipeline
 =========================
+
+.. note:: Requires the :ref:`images <extras>` extra.
 
 Using the :class:`ImagesPipeline` is a lot like using the :class:`FilesPipeline`,
 except the default field names used are different: you use ``image_urls`` for
@@ -70,19 +71,10 @@ The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
 
-The Images Pipeline requires Pillow_ 8.3.2 or greater. It is used for
-thumbnailing and normalizing images to JPEG/RGB format.
-
-.. _Pillow: https://github.com/python-pillow/Pillow
-
-
 .. _topics-media-pipeline-enabling:
 
 Enabling your Media Pipeline
 ============================
-
-.. setting:: IMAGES_STORE
-.. setting:: FILES_STORE
 
 To enable your media pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting.
@@ -102,6 +94,8 @@ For Files Pipeline, use:
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
+.. setting:: IMAGES_STORE
+.. setting:: FILES_STORE
 
 Then, configure the target storage setting to a valid value that will be used
 for storing the downloaded images. Otherwise the pipeline will remain disabled,
@@ -184,6 +178,67 @@ By overriding ``file_path`` like this:
 
 For more information about the ``file_path`` method, see :ref:`topics-media-pipeline-override`.
 
+.. _file-naming-response:
+
+Naming files after the response
+-------------------------------
+
+``file_path`` also receives the ``response``, which allows naming files after
+response data. For example, to determine the file extension from the
+``Content-Type`` header, for URLs that do not end in a file name:
+
+.. code-block:: python
+
+    import mimetypes
+
+    from scrapy.pipelines.files import FilesPipeline
+
+
+    class ContentTypeFilesPipeline(FilesPipeline):
+        def file_path(self, request, response=None, info=None, *, item=None):
+            path = super().file_path(request, response, info, item=item)
+            if response is None:
+                return path
+            content_type = response.headers["Content-Type"].decode()
+            return path + (mimetypes.guess_extension(content_type) or "")
+
+This requires setting :setting:`FILES_EXPIRES` to ``0``. To find out whether a
+file has already been downloaded, Scrapy calls ``file_path`` before the
+download, with ``response`` set to ``None``, and checks the age of the file at
+the resulting path. A path that depends on the response can never match that
+check, and :setting:`FILES_EXPIRES` set to ``0`` disables it, at the cost of
+downloading every file on every run.
+
+.. _media-request-headers:
+
+Setting request headers
+-----------------------
+
+Media requests are built from the item, not from the response that yielded
+it, so features like :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware`
+do not apply to them. To send a header such as ``Referer``, store the value
+on the item in your spider, and read it back from the item in
+``get_media_requests`` of your custom media pipeline:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+    from scrapy.pipelines.files import FilesPipeline
+
+
+    class MySpider(Spider):
+        def parse(self, response):
+            yield {
+                "file_urls": response.css("a.file::attr(href)").getall(),
+                "referrer": response.url,
+            }
+
+
+    class MyFilesPipeline(FilesPipeline):
+        def get_media_requests(self, item, info):
+            for file_url in item["file_urls"]:
+                yield Request(file_url, headers={"Referer": item["referrer"]})
+
 .. _topics-supported-storage:
 
 Supported Storage
@@ -233,12 +288,13 @@ set the :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 Amazon S3 storage
 -----------------
 
+.. note:: Requires the :ref:`s3 <extras>` extra.
+
 .. setting:: FILES_STORE_S3_ACL
 .. setting:: IMAGES_STORE_S3_ACL
 
-If botocore_ >= 1.13.45 is installed, :setting:`FILES_STORE` and
-:setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will
-automatically upload the files to the bucket.
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent an Amazon S3
+bucket. Scrapy will automatically upload the files to the bucket.
 
 For example, this is a valid :setting:`IMAGES_STORE` value:
 
@@ -259,8 +315,8 @@ policy:
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
-`Zenko CloudServer`_. All you need to do is set endpoint option in you Scrapy
-settings:
+`Zenko CloudServer`_. All you need to do is set the endpoint option in your
+Scrapy settings:
 
 .. code-block:: python
 
@@ -273,7 +329,9 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_USE_SSL = False  # or True (None by default)
     AWS_VERIFY = False  # or True (None by default)
 
-.. _botocore: https://github.com/boto/botocore
+To reuse connections for as many files as you check or upload in parallel, set
+:setting:`AWS_MAX_POOL_CONNECTIONS` accordingly.
+
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
@@ -284,13 +342,13 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
 Google Cloud Storage
 ---------------------
 
+.. note:: Requires the :ref:`gcs <extras>` extra.
+
 .. setting:: FILES_STORE_GCS_ACL
 .. setting:: IMAGES_STORE_GCS_ACL
 
-:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage
-bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )
-
-.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud
+Storage bucket. Scrapy will automatically upload the files to the bucket.
 
 For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings:
 
@@ -301,7 +359,7 @@ For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_I
 
 For information about authentication, see this `documentation`_.
 
-.. _documentation: https://cloud.google.com/docs/authentication
+.. _documentation: https://docs.cloud.google.com/docs/authentication
 
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_GCS_ACL` and
@@ -316,7 +374,7 @@ policy:
 
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
-.. _Predefined ACLs: https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
+.. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
 Usage example
 =============
@@ -337,17 +395,18 @@ respectively), the pipeline will put the results under the respective field
 When using :ref:`item types <item-types>` for which fields are defined beforehand,
 you must define both the URLs field and the results field. For example, when
 using the images pipeline, items must define both the ``image_urls`` and the
-``images`` field. For instance, using the :class:`~scrapy.Item` class:
+``images`` field. For instance, using a dataclass:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
 
 
-    class MyItem(scrapy.Item):
+    @dataclass
+    class MyItem:
         # ... other item fields ...
-        image_urls = scrapy.Field()
-        images = scrapy.Field()
+        image_urls: list[str] = field(default_factory=list)
+        images: list[dict] = field(default_factory=list)
 
 If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it.
@@ -371,11 +430,12 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
 
-If you have multiple image pipelines inheriting from ImagePipeline and you want
-to have different settings in different pipelines you can set setting keys
-preceded with uppercase name of your pipeline class. E.g. if your pipeline is
-called MyPipeline and you want to have custom IMAGES_URLS_FIELD you define
-setting MYPIPELINE_IMAGES_URLS_FIELD and your custom settings will be used.
+If you have multiple image pipelines inheriting from :class:`ImagesPipeline`
+and you want to have different settings in different pipelines you can set
+setting keys preceded with uppercase name of your pipeline class. E.g. if your
+pipeline is called ``MyPipeline`` and you want to have custom
+:setting:`IMAGES_URLS_FIELD` you define setting
+``MYPIPELINE_IMAGES_URLS_FIELD`` and your custom settings will be used.
 
 
 Additional features
@@ -404,13 +464,14 @@ specifies the delay in number of days:
 
 The default value for both settings is 90 days.
 
-If you have pipeline that subclasses FilesPipeline and you'd like to have
-different setting for it you can set setting keys preceded by uppercase
-class name. E.g. given pipeline class called MyPipeline you can set setting key:
+If you have a pipeline that subclasses FilesPipeline and you'd like to have a
+different setting for it, you can set setting keys preceded by the uppercase
+class name. For example, given a pipeline class called MyPipeline you can set
+the setting key:
 
     MYPIPELINE_FILES_EXPIRES = 180
 
-and pipeline class MyPipeline will have expiration time set to 180.
+and the pipeline class MyPipeline will have an expiration time set to 180.
 
 The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.
@@ -470,7 +531,9 @@ When using the Images Pipeline, you can drop images which are too small, by
 specifying the minimum allowed size in the :setting:`IMAGES_MIN_HEIGHT` and
 :setting:`IMAGES_MIN_WIDTH` settings.
 
-For example::
+For example:
+
+.. code-block:: python
 
    IMAGES_MIN_HEIGHT = 110
    IMAGES_MIN_WIDTH = 110
@@ -493,7 +556,9 @@ Allowing redirections
 By default media pipelines ignore redirects, i.e. an HTTP redirection
 to a media file URL request will mean the media download is considered failed.
 
-To handle media redirections, set this setting to ``True``::
+To handle media redirections, set this setting to ``True``:
+
+.. code-block:: python
 
     MEDIA_ALLOW_REDIRECTS = True
 
@@ -503,7 +568,6 @@ Extending the Media Pipelines
 =============================
 
 .. module:: scrapy.pipelines.files
-   :synopsis: Files Pipeline
 
 See here the methods that you can override in your custom Files Pipeline:
 
@@ -540,17 +604,16 @@ See here the methods that you can override in your custom Files Pipeline:
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item
-      property.
+      property, or the ``response``, see :ref:`file-naming-response`.
 
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
    .. method:: FilesPipeline.get_media_requests(item, info)
 
-      As seen on the workflow, the pipeline will get the URLs of the images to
-      download from the item. In order to do this, you can override the
-      :meth:`~get_media_requests` method and return a Request for each
-      file URL:
+      As seen on the workflow, the pipeline will get the requests for the files
+      to download from the item by calling this method. You can override it to
+      change what requests are returned:
 
       .. code-block:: python
 
@@ -561,6 +624,8 @@ See here the methods that you can override in your custom Files Pipeline:
              adapter = ItemAdapter(item)
              for file_url in adapter["file_urls"]:
                  yield scrapy.Request(file_url)
+
+      You can also use it to set request headers, see :ref:`media-request-headers`.
 
       Those requests will be processed by the pipeline and, when they have finished
       downloading, the results will be sent to the
@@ -590,8 +655,9 @@ See here the methods that you can override in your custom Files Pipeline:
           * ``downloaded`` - file was downloaded.
           * ``uptodate`` - file was not downloaded, as it was downloaded recently,
             according to the file expiration policy.
-          * ``cached`` - file was already scheduled for download, by another item
-            sharing the same file.
+          * ``cached`` - file was taken from a cache (the response has a
+            ``"cached"`` flag, e.g. from
+            :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
 
       The list of tuples received by :meth:`~item_completed` is
       guaranteed to retain the same order of the requests returned from the
@@ -617,9 +683,6 @@ See here the methods that you can override in your custom Files Pipeline:
               ),
               (False, Failure(...)),
           ]
-
-      By default the :meth:`get_media_requests` method returns ``None`` which
-      means there are no files to download for the item.
 
    .. method:: FilesPipeline.item_completed(results, item, info)
 
@@ -653,7 +716,6 @@ See here the methods that you can override in your custom Files Pipeline:
 
 
 .. module:: scrapy.pipelines.images
-   :synopsis: Images Pipeline
 
 See here the methods that you can override in your custom Images Pipeline:
 
@@ -693,7 +755,7 @@ See here the methods that you can override in your custom Images Pipeline:
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item
-      property.
+      property, or the ``response``, see :ref:`file-naming-response`.
 
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
@@ -737,6 +799,49 @@ See here the methods that you can override in your custom Images Pipeline:
       By default, the :meth:`item_completed` method returns the item.
 
 
+.. _media-pipeline-failed-downloads:
+
+Accessing the response of a failed download
+===========================================
+
+When a download fails, :meth:`~item_completed` receives it as a
+:exc:`~twisted.python.failure.Failure` whose ``value`` is the exception
+raised from :meth:`~media_downloaded`. For a non-2xx response, that
+exception is a :exc:`~scrapy.pipelines.media.FileException` built from just
+a message, without a reference to the response. To access the response, for
+example to record its ``status`` on the item, override
+:meth:`~media_downloaded` to attach it to a custom exception:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline
+    from scrapy.pipelines.media import FileException
+
+
+    class ResponseFileException(FileException):
+        def __init__(self, response):
+            super().__init__(f"download-error ({response.status})")
+            self.response = response
+
+
+    class MyFilesPipeline(FilesPipeline):
+        async def media_downloaded(self, response, request, info, *, item=None):
+            try:
+                return await super().media_downloaded(response, request, info, item=item)
+            except FileException:
+                raise ResponseFileException(response)
+
+        def item_completed(self, results, item, info):
+            errors = [
+                value.value.response.status
+                for ok, value in results
+                if not ok and value.check(ResponseFileException)
+            ]
+            if errors:
+                item["download_errors"] = errors
+            return super().item_completed(results, item, info)
+
+
 .. _media-pipeline-example:
 
 Custom Images pipeline example
@@ -774,4 +879,28 @@ To enable your custom media pipeline component you must add its class import pat
 
    ITEM_PIPELINES = {"myproject.pipelines.MyImagesPipeline": 300}
 
+Content-based image filtering pipeline
+--------------------------------------
+
+This example overrides ``get_images()`` to filter images using a classifier,
+such as a TensorFlow_ model. Override ``is_valid_image()`` with your
+classification logic:
+
+.. code-block:: python
+
+    from scrapy.pipelines.images import ImagesPipeline, ImageException
+
+
+    class ImageClassifierPipeline(ImagesPipeline):
+        def is_valid_image(self, image):
+            raise NotImplementedError
+
+        def get_images(self, response, request, info, *, item=None):
+            for path, image, buf in super().get_images(response, request, info, item=item):
+                if not self.is_valid_image(image):
+                    raise ImageException("Image does not match criteria")
+                yield path, image, buf
+
+
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
+.. _TensorFlow: https://tensorflow.org

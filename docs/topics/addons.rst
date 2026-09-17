@@ -4,7 +4,7 @@
 Add-ons
 =======
 
-Scrapy's add-on system is a framework which unifies managing and configuring
+Scrapy's add-on system is a framework that unifies managing and configuring
 components that extend Scrapy's core functionality, such as middlewares,
 extensions, or pipelines. It provides users with a plug-and-play experience in
 Scrapy extension management, and grants extensive configuration control to
@@ -21,10 +21,14 @@ The ``ADDONS`` setting is a dict in which every key is an add-on class or its
 import path and the value is its priority.
 
 This is an example where two add-ons are enabled in a project's
-``settings.py``::
+``settings.py``:
+
+.. skip: next
+
+.. code-block:: python
 
     ADDONS = {
-        'path.to.someaddon': 0,
+        "path.to.someaddon": 0,
         SomeAddonClass: 1,
     }
 
@@ -56,7 +60,9 @@ the following methods:
     :type settings: :class:`~scrapy.settings.BaseSettings`
 
 The settings set by the add-on should use the ``addon`` priority (see
-:ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`)::
+:ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`):
+
+.. code-block:: python
 
     class MyAddon:
         def update_settings(self, settings):
@@ -71,7 +77,7 @@ usually best to leave its priority unchanged. For example, when editing a
 
 If the ``update_settings`` method raises
 :exc:`scrapy.exceptions.NotConfigured`, the add-on will be skipped. This makes
-it easy to enable an add-on only when some conditions are met.
+it easy to enable an add-on only when certain conditions are met.
 
 Fallbacks
 ---------
@@ -98,9 +104,9 @@ recommend that such custom components should be written in the following way:
    (``MY_FALLBACK_DOWNLOAD_HANDLER`` mentioned earlier) and set the default
    setting to the component provided by the add-on (e.g.
    ``MyDownloadHandler``). If the fallback setting is already set by the user,
-   they shouldn't change it.
+   it should not be changed.
 3. This way, if there are several add-ons that want to modify the same setting,
-   all of them will fallback to the component from the previous one and then to
+   all of them will fall back to the component from the previous one and then to
    the Scrapy default. The order of that depends on the priority order in the
    ``ADDONS`` setting.
 
@@ -166,8 +172,7 @@ Use a fallback component:
 
 .. code-block:: python
 
-    from scrapy.utils.misc import build_from_crawler
-
+    from scrapy.utils.misc import build_from_crawler, load_object
 
     FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
 

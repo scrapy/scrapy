@@ -5,9 +5,8 @@ based on different criteria.
 
 from __future__ import annotations
 
-from io import StringIO
+from importlib.resources import files
 from mimetypes import MimeTypes
-from pkgutil import get_data
 from typing import TYPE_CHECKING, ClassVar
 
 from scrapy.http import Response
@@ -39,19 +38,13 @@ class ResponseTypes:
     def __init__(self) -> None:
         self.classes: dict[str, type[Response]] = {}
         self.mimetypes: MimeTypes = MimeTypes()
-        mimedata = get_data("scrapy", "mime.types")
-        if not mimedata:
-            raise ValueError(
-                "The mime.types file is not found in the Scrapy installation"
-            )
-        self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
+        with files("scrapy").joinpath("mime.types").open(encoding="utf8") as f:
+            self.mimetypes.readfp(f)
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
     def from_mimetype(self, mimetype: str) -> type[Response]:
         """Return the most appropriate Response class for the given mimetype"""
-        if mimetype is None:
-            return Response
         if mimetype in self.classes:
             return self.classes[mimetype]
         basetype = f"{mimetype.split('/', maxsplit=1)[0]}/*"

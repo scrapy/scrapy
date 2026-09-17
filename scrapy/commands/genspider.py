@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 import string
 from importlib import import_module
@@ -10,12 +9,14 @@ from urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
+from scrapy.commands.edit import _edit_file
 from scrapy.exceptions import UsageError
 from scrapy.spiderloader import get_spider_loader
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils._template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
     import argparse
+    import os
 
 
 def sanitize_module_name(module_name: str) -> str:
@@ -31,10 +32,7 @@ def sanitize_module_name(module_name: str) -> str:
 
 def extract_domain(url: str) -> str:
     """Extract domain name from URL string"""
-    o = urlparse(url)
-    if o.scheme == "" and o.netloc == "":
-        o = urlparse("//" + url.lstrip("/"))
-    return o.netloc
+    return urlparse(url).netloc
 
 
 def verify_url_scheme(url: str) -> str:
@@ -83,7 +81,7 @@ class Command(ScrapyCommand):
             "--template",
             dest="template",
             default="basic",
-            help="Uses a custom template.",
+            help="Uses a custom template, given by name or by path to a .tmpl file.",
         )
         parser.add_argument(
             "--force",
@@ -118,9 +116,11 @@ class Command(ScrapyCommand):
 
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, name, url, opts.template, template_file)
+            spider_file = self._genspider(
+                module, name, url, opts.template, template_file
+            )
             if opts.edit:
-                self.exitcode = os.system(f'scrapy edit "{name}"')  # noqa: S605
+                self.exitcode = _edit_file(self.settings["EDITOR"], spider_file)
 
     def _generate_template_variables(
         self,
@@ -147,8 +147,8 @@ class Command(ScrapyCommand):
         name: str,
         url: str,
         template_name: str,
-        template_file: str | os.PathLike,
-    ) -> None:
+        template_file: str | os.PathLike[str],
+    ) -> Path:
         """Generate the spider module, based on the given template"""
         assert self.settings is not None
         tvars = self._generate_template_variables(module, name, url, template_name)
@@ -168,20 +168,28 @@ class Command(ScrapyCommand):
         )
         if spiders_module:
             print(f"in module:\n  {spiders_module.__name__}.{module}")
+        return Path(spider_file)
 
     def _find_template(self, template: str) -> Path | None:
-        template_file = Path(self.templates_dir, f"{template}.tmpl")
-        if template_file.exists():
-            return template_file
-        print(f"Unable to find template: {template}\n")
-        print('Use "scrapy genspider --list" to see all available templates.')
+        filename = template if template.endswith(".tmpl") else f"{template}.tmpl"
+        for template_file in (Path(filename), Path(self.templates_dir, filename)):
+            if template_file.exists():
+                return template_file
+        print(
+            f"Unable to find template: {template}\n",
+            'Use "scrapy genspider --list" to see all available templates.',
+        )
         return None
 
     def _list_templates(self) -> None:
-        print("Available templates:")
-        for file in sorted(Path(self.templates_dir).iterdir()):
-            if file.suffix == ".tmpl":
-                print(f"  {file.stem}")
+        print(
+            "Available templates:\n",
+            "\n".join(
+                f"  {file.stem}"
+                for file in sorted(Path(self.templates_dir).iterdir())
+                if file.suffix == ".tmpl"
+            ),
+        )
 
     def _spider_exists(self, name: str) -> bool:
         assert self.settings is not None
@@ -200,8 +208,10 @@ class Command(ScrapyCommand):
             pass
         else:
             # if spider with same name exists
-            print(f"Spider {name!r} already exists in module:")
-            print(f"  {spidercls.__module__}")
+            print(
+                f"Spider {name!r} already exists in module:\n",
+                f"  {spidercls.__module__}",
+            )
             return True
 
         # a file with the same name exists in the target directory

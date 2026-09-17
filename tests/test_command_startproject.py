@@ -79,7 +79,7 @@ class TestStartprojectCommand:
 
 
 def get_permissions_dict(
-    path: str | os.PathLike, renamings=None, ignore=None
+    path: str | os.PathLike[str], renamings=None, ignore=None
 ) -> dict[str, str]:
     def get_permissions(path: Path) -> str:
         return oct(path.stat().st_mode)
@@ -257,7 +257,7 @@ class TestStartprojectTemplates:
 
         assert actual_permissions == expected_permissions
 
-    def test_startproject_permissions_umask_022(self, tmp_path: Path) -> None:
+    def test_startproject_permissions_umask_002(self, tmp_path: Path) -> None:
         """Check that generated files have the right permissions when the
         system uses a umask value that causes new files to have different
         permissions than those from the template folder."""

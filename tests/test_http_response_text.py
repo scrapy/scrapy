@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import codecs
+from typing import cast
 from unittest import mock
 
 import pytest
@@ -8,13 +9,26 @@ import pytest
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import to_unicode
-from tests.test_http_response import TestResponse
+from tests.utils.bases.http_response import TestResponseBase
 
 
-class TestTextResponse(TestResponse):
+class TestTextResponse(TestResponseBase):
     response_class = TextResponse
 
-    def test_replace(self):
+    def _links_response(self) -> TextResponse:
+        return cast("TextResponse", super()._links_response())
+
+    def _links_response_no_href(self) -> TextResponse:
+        return cast("TextResponse", super()._links_response_no_href())
+
+    def test_follow_None_encoding(self):
+        # unlike the base Response, TextResponse.follow() falls back to the
+        # response encoding when encoding is None instead of raising
+        r = self.response_class("http://example.com", body=b"hello", encoding="cp1252")
+        req = r.follow("foo", encoding=None)
+        assert req.encoding == "cp1252"
+
+    def test_replace(self) -> None:
         super().test_replace()
         r1 = self.response_class(
             "http://www.example.com", body="hello", encoding="cp852"
@@ -130,15 +144,15 @@ class TestTextResponse(TestResponse):
         assert r9._declared_encoding() is None
         self._assert_response_encoding(r5, "utf-8")
         self._assert_response_encoding(r8, "utf-8")
-        self._assert_response_encoding(r9, "cp1252")
         assert r4._body_inferred_encoding() is not None
         assert r4._body_inferred_encoding() != "ascii"
+        assert r9._body_inferred_encoding() is not None
+        assert r9._body_inferred_encoding() != "ascii"
         self._assert_response_values(r1, "utf-8", "\xa3")
         self._assert_response_values(r2, "utf-8", "\xa3")
         self._assert_response_values(r3, "iso-8859-1", "\xa3")
         self._assert_response_values(r6, "gb18030", "\u2015")
         self._assert_response_values(r7, "gb18030", "\u2015")
-        self._assert_response_values(r9, "cp1252", "€")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         with pytest.raises(TypeError):
@@ -154,14 +168,22 @@ class TestTextResponse(TestResponse):
         assert r._declared_encoding() is None
         self._assert_response_values(r, "utf-8", "\xa3")
 
+    def test_body_inferred_encoding_of_undeclared_legacy_page(self):
+        body = "ICD10 国際疾病分類第10版2013年版 病名マスター".encode("shift-jis")
+        r = self.response_class("http://www.example.com", body=body)
+        assert r._declared_encoding() is None
+        assert r.encoding in {"shift_jis", "cp932"}
+        assert r.text == body.decode(r.encoding)
+
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
+        body = b"\xff\xfeh\x00i\x00"
         r = self.response_class(
             "http://www.example.com",
-            body=b"\xff\xfeh\x00i\x00",
+            body=body,
             encoding="utf-16",
         )
-        self._assert_response_values(r, "utf-16", "hi")
+        self._assert_response_values(r, "utf-16", body)
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(
@@ -178,7 +200,6 @@ class TestTextResponse(TestResponse):
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,
         # this test tries to ensure that calling response.encoding and
-        # response.text in indistinct order doesn't affect final
         # response.text in indistinct order doesn't affect final
         # values for encoding and decoded body.
         url = "http://example.com"
@@ -308,11 +329,12 @@ class TestTextResponse(TestResponse):
             "http://example.com/sample3.html#foo",
             "http://www.google.com/something",
             "http://example.com/innertag.html",
+            "http://example.com/page%204.html",
         ]
 
         # select <a> elements
         for sellist in [resp.css("a"), resp.xpath("//a")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # select <link> elements
@@ -324,7 +346,7 @@ class TestTextResponse(TestResponse):
 
         # href attributes should work
         for sellist in [resp.css("a::attr(href)"), resp.xpath("//a/@href")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # non-a elements are not supported
@@ -336,7 +358,7 @@ class TestTextResponse(TestResponse):
     def test_follow_selector_list(self):
         resp = self._links_response()
         with pytest.raises(ValueError, match="SelectorList"):
-            resp.follow(resp.css("a"))
+            resp.follow(resp.css("a"))  # type: ignore[arg-type]
 
     def test_follow_selector_invalid(self):
         resp = self._links_response()
@@ -376,12 +398,12 @@ class TestTextResponse(TestResponse):
             encoding="utf8",
             body='<html><body><a href="foo?привет">click me</a></body></html>'.encode(),
         )
-        req = self._assert_followed_url(
+        self._assert_followed_url(
             resp1.css("a")[0],
             "http://example.com/foo?%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82",
             response=resp1,
+            encoding="utf8",
         )
-        assert req.encoding == "utf8"
 
         resp2 = self.response_class(
             "http://example.com",
@@ -390,28 +412,12 @@ class TestTextResponse(TestResponse):
                 "cp1251"
             ),
         )
-        req = self._assert_followed_url(
+        self._assert_followed_url(
             resp2.css("a")[0],
             "http://example.com/foo?%EF%F0%E8%E2%E5%F2",
             response=resp2,
+            encoding="cp1251",
         )
-        assert req.encoding == "cp1251"
-
-    def test_follow_flags(self):
-        res = self.response_class("http://example.com/")
-        fol = res.follow("http://example.com/", flags=["cached", "allowed"])
-        assert fol.flags == ["cached", "allowed"]
-
-    def test_follow_all_flags(self):
-        re = self.response_class("http://www.example.com/")
-        urls = [
-            "http://www.example.com/",
-            "http://www.example.com/2",
-            "http://www.example.com/foo",
-        ]
-        fol = re.follow_all(urls, flags=["cached", "allowed"])
-        for req in fol:
-            assert req.flags == ["cached", "allowed"]
 
     def test_follow_all_css(self):
         expected = [
@@ -481,6 +487,22 @@ class TestTextResponse(TestResponse):
             ValueError, match=r"(Expecting value|Unexpected '<'): line 1"
         ):
             text_response.json()
+
+    def test_json_response_non_utf8(self):
+        response = self.response_class(
+            "http://www.example.com",
+            body='{"message": "café"}'.encode("cp1252"),
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.json() == {"message": "café"}
+
+    def test_json_response_wrong_charset(self):
+        response = self.response_class(
+            "http://www.example.com",
+            body='{"message": "café"}'.encode(),
+            headers={"Content-Type": "application/json; charset=iso-8859-1"},
+        )
+        assert response.json() == {"message": "café"}
 
     def test_cache_json_response(self):
         json_valid_bodies = [b"""{"ip": "109.187.217.200"}""", b"""null"""]
@@ -624,7 +646,7 @@ class CustomResponse(TextResponse):
 class TestCustomResponse(TestTextResponse):
     response_class = CustomResponse
 
-    def test_copy(self):
+    def test_copy(self) -> None:
         super().test_copy()
         r1 = self.response_class(
             url="https://example.org",
@@ -640,7 +662,7 @@ class TestCustomResponse(TestTextResponse):
         assert r1.lost == "lost"
         assert r2.lost is None
 
-    def test_replace(self):
+    def test_replace(self) -> None:
         super().test_replace()
         r1 = self.response_class(
             url="https://example.org",

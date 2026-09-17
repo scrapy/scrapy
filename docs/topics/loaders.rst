@@ -5,20 +5,20 @@ Item Loaders
 ============
 
 .. module:: scrapy.loader
-   :synopsis: Item Loader class
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`items
-<topics-items>`. Even though items can be populated directly, Item Loaders provide a
-much more convenient API for populating them from a scraping process, by automating
-some common tasks like parsing the raw extracted data before assigning it.
+<topics-items>`. Even though items can be populated directly, Item Loaders
+provide a more convenient API for populating them from a scraping process by
+automating common tasks like parsing the raw extracted data before assigning
+it.
 
 In other words, :ref:`items <topics-items>` provide the *container* of
 scraped data, while Item Loaders provide the mechanism for *populating* that
 container.
 
 Item Loaders are designed to provide a flexible, efficient and easy mechanism
-for extending and overriding different field parsing rules, either by spider,
-or by source format (HTML, XML, etc) without becoming a nightmare to maintain.
+for extending and overriding different field parsing rules, either by spider or
+by source format (HTML, XML, etc.) without becoming a nightmare to maintain.
 
 .. note:: Item Loaders are an extension of the itemloaders_ library that make it
     easier to work with Scrapy by adding support for
@@ -76,13 +76,13 @@ data that will be assigned to the ``name`` field later.
 
 Afterwards, similar calls are used for ``price`` and ``stock`` fields
 (the latter using a CSS selector with the :meth:`~ItemLoader.add_css` method),
-and finally the ``last_update`` field is populated directly with a literal value
+and finally the ``last_updated`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
-called which actually returns the item populated with the data
-previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
-:meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
+called, which returns the item populated with the data previously extracted and
+collected with the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
+and :meth:`~ItemLoader.add_value` calls.
 
 
 .. _topics-loaders-dataclass:
@@ -102,14 +102,13 @@ One approach to overcome this is to define items using the
 .. code-block:: python
 
     from dataclasses import dataclass, field
-    from typing import Optional
 
 
     @dataclass
     class InventoryItem:
-        name: Optional[str] = field(default=None)
-        price: Optional[float] = field(default=None)
-        stock: Optional[int] = field(default=None)
+        name: str | None = field(default=None)
+        price: float | None = field(default=None)
+        stock: int | None = field(default=None)
 
 
 .. _topics-loaders-processors:
@@ -118,15 +117,15 @@ Input and Output processors
 ===========================
 
 An Item Loader contains one input processor and one output processor for each
-(item) field. The input processor processes the extracted data as soon as it's
-received (through the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css` or
-:meth:`~ItemLoader.add_value` methods) and the result of the input processor is
-collected and kept inside the ItemLoader. After collecting all data, the
-:meth:`ItemLoader.load_item` method is called to populate and get the populated
-:ref:`item object <topics-items>`.  That's when the output processor is
-called with the data previously collected (and processed using the input
-processor). The result of the output processor is the final value that gets
-assigned to the item.
+field. The input processor processes the extracted data as soon as it's
+received (through the :meth:`~ItemLoader.add_xpath`,
+:meth:`~ItemLoader.add_css`, or :meth:`~ItemLoader.add_value` methods), and the
+result of the input processor is collected and kept inside the Item Loader.
+After collecting all data, :meth:`ItemLoader.load_item` is called to populate
+and return the populated :ref:`item object <topics-items>`. That's when the
+output processor is called with the data previously collected and processed by
+the input processor. The result of the output processor is the final value that
+gets assigned to the item.
 
 Let's see an example to illustrate how the input and output processors are
 called for a particular field (the same applies for any other field):
@@ -152,33 +151,32 @@ So what happens is:
    data collected in (1) (if any).
 
 3. This case is similar to the previous ones, except that the data is extracted
-   from the ``css`` CSS selector, and passed through the same *input
-   processor* used in (1) and (2). The result of the input processor is appended to the
+   from the ``css`` CSS selector and passed through the same *input processor*
+   used in (1) and (2). The result of the input processor is appended to the
    data collected in (1) and (2) (if any).
 
 4. This case is also similar to the previous ones, except that the value to be
    collected is assigned directly, instead of being extracted from a XPath
-   expression or a CSS selector.
-   However, the value is still passed through the input processors. In this
-   case, since the value is not iterable it is converted to an iterable of a
-   single element before passing it to the input processor, because input
-   processor always receive iterables.
+   expression or a CSS selector. However, the value is still passed through the
+   input processors. In this case, since the value is not iterable it is
+   converted to an iterable of a single element before passing it to the input
+   processor because input processors always receive iterables.
 
 5. The data collected in steps (1), (2), (3) and (4) is passed through
    the *output processor* of the ``name`` field.
    The result of the output processor is the value assigned to the ``name``
    field in the item.
 
-It's worth noticing that processors are just callable objects, which are called
-with the data to be parsed, and return a parsed value. So you can use any
+It's worth noting that processors are just callable objects that are called
+with the data to be parsed and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
 accept one (and only one) positional argument, which will be an iterable.
 
 .. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
-   input processors will be appended to an internal list (in the Loader)
-   containing the collected values (for that field). The result of the output
-   processors is the value that will be finally assigned to the item.
+   input processors will be appended to an internal list (in the loader)
+   containing the collected values for that field. The result of the output
+   processors is the value that will be assigned to the item.
 
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
@@ -228,7 +226,8 @@ metadata. Here is an example:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
+
     from itemloaders.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
 
@@ -238,14 +237,21 @@ metadata. Here is an example:
             return value
 
 
-    class Product(scrapy.Item):
-        name = scrapy.Field(
-            input_processor=MapCompose(remove_tags),
-            output_processor=Join(),
+    @dataclass
+    class Product:
+        name: str | None = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags),
+                "output_processor": Join(),
+            },
         )
-        price = scrapy.Field(
-            input_processor=MapCompose(remove_tags, filter_price),
-            output_processor=TakeFirst(),
+        price: str | None = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags, filter_price),
+                "output_processor": TakeFirst(),
+            },
         )
 
 
@@ -257,7 +263,7 @@ metadata. Here is an example:
     >>> il.add_value("name", ["Welcome to my", "<strong>website</strong>"])
     >>> il.add_value("price", ["&euro;", "<span>1000</span>"])
     >>> il.load_item()
-    {'name': 'Welcome to my website', 'price': '1000'}
+    Product(name='Welcome to my website', price='1000')
 
 .. skip: end
 
@@ -266,8 +272,8 @@ The precedence order, for both input and output processors, is as follows:
 1. Item Loader field-specific attributes: ``field_in`` and ``field_out`` (most
    precedence)
 2. Field metadata (``input_processor`` and ``output_processor`` key)
-3. Item Loader defaults: :meth:`ItemLoader.default_input_processor` and
-   :meth:`ItemLoader.default_output_processor` (least precedence)
+3. Item Loader defaults: :attr:`ItemLoader.default_input_processor` and
+   :attr:`ItemLoader.default_output_processor` (least precedence)
 
 See also: :ref:`topics-loaders-extending`.
 
@@ -316,8 +322,8 @@ There are several ways to modify Item Loader context values:
       loader = ItemLoader(product, unit="cm")
 
 3. On Item Loader declaration, for those input/output processors that support
-   instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
-   them:
+   instantiating them with an Item Loader context.
+   :class:`~itemloaders.processors.MapCompose` is one of them:
 
    .. code-block:: python
 
@@ -343,7 +349,9 @@ When parsing related values from a subsection of a document, it can be
 useful to create nested loaders.  Imagine you're extracting details from
 a footer of a page that looks something like:
 
-Example::
+Example:
+
+.. code-block:: html
 
     <footer>
         <a class="social" href="https://facebook.com/whatever">Like Us</a>
@@ -452,4 +460,3 @@ organization of your Loaders collection - that's up to you and your project's
 needs.
 
 .. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
-.. _processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html

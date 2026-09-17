@@ -7,9 +7,10 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    # Twisted pinned until Scrapy is updated for its internal TLS API changes
-    "Twisted>=21.7.0,<=25.5.0",
-    "cryptography>=37.0.0",
+    "Twisted>=21.7.0",
+    "aiohttp>=3.13.3",
+    "charset-normalizer>=3.4.0",
+    "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
     "itemadapter>=0.1.0",
@@ -17,16 +18,20 @@ dependencies = [
     "lxml>=4.6.4",
     "packaging",
     "parsel>=1.5.0",
+    "platformdirs>=2.0.0",
     "protego>=0.1.15",
-    "pyOpenSSL>=22.0.0",
-    "queuelib>=1.4.2",
-    "service_identity>=18.1.0",
+    "pyOpenSSL>=24.3.0",
+    "queuelib>=1.6.1",
+    "service_identity>=24.2.0",
     "tldextract",
-    "w3lib>=1.17.0",
+    "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'backports.zstd>=1.3.0; python_version < "3.14"',
+    'brotli>=1.2.0; implementation_name != "pypy"',
+    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -40,6 +45,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
@@ -59,6 +66,21 @@ Documentation = "https://docs.scrapy.org/"
 Source = "https://github.com/scrapy/scrapy"
 Tracker = "https://github.com/scrapy/scrapy/issues"
 "Release notes" = "https://docs.scrapy.org/en/latest/news.html"
+
+[project.optional-dependencies]
+bpython = ["bpython>=0.7.1"]
+color = ["colorlog>=6.6.0"]
+gcs = ["google-cloud-storage>=1.29.0"]
+httpx = ["httpx2[http2,socks]>=2.0.0"]
+images = ["Pillow>=8.3.2"]
+ipython = ["ipython>=8.15.0"]
+ptpython = ["ptpython>=3.0.23"]
+robotparser = ["robotexclusionrulesparser>=1.6.2"]
+s3 = ["boto3>=1.20.0"]
+twisted-http2 = ["Twisted[http2]>=21.7.0"]
+uvloop = [
+    "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+]
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
@@ -86,18 +108,15 @@ pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 strict = true
-allow_any_generics = true # 67 errors
 extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
 ]
-warn_return_any = false # 37 errors
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 allow_untyped_defs = true
-allow_incomplete_defs = true # 48 errors
-check_untyped_defs = false
+allow_incomplete_defs = true # 59 errors
 
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
@@ -117,44 +136,24 @@ follow_imports = "skip"
 module = "twisted"
 implicit_reexport = true
 
-# TODO
-[[tool.mypy.overrides]]
-module = "scrapy.settings.default_settings"
-ignore_errors = true
-
-# deprecated modules
-[[tool.mypy.overrides]]
-module = [
-    "scrapy.core.downloader.webclient",
-    "scrapy.spiders.init",
-    "scrapy.utils.testsite",
-    "tests.test_webclient",
-]
-allow_any_generics = true
-allow_untyped_calls = true
-allow_untyped_defs = true
-check_untyped_defs = false
-warn_return_any = false
-
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
-#    "IPython.*",
     "bpython",
     "brotli",
     "brotlicffi",
     "google.*",
+    "ipdb",
     "pydispatch.*",
     "pyftpdlib.*",
     "pytest_twisted",
     "robotexclusionrulesparser",
-    "testfixtures",
     "zope.interface.*",
 ]
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.14.2"
+current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -174,12 +173,18 @@ parse = """(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)"""
 serialize = ["{major}.{minor}"]
 
 [tool.coverage.run]
+# sysmon, default on 3.14, is too slow: https://github.com/coveragepy/coveragepy/issues/2172
+core = "ctrace"
 branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
+# Starting a coverage session in every spawned interpreter is what covers the
+# code paths of the command-line interface. It is also the bulk of the run time
+# of the tests that spawn one, so SCRAPY_COVERAGE_PATCH switches it for a cheap
+# patch where that cost is not worth paying; see tox.ini.
 patch = [
-    "subprocess",
+    "${SCRAPY_COVERAGE_PATCH-subprocess}",
 ]
 
 [tool.coverage.paths]
@@ -200,6 +205,7 @@ jobs = 1          # >1 hides results
 extension-pkg-allow-list=[
     "lxml",
 ]
+load-plugins = ["pylint_per_file_ignores"]
 
 [tool.pylint."MESSAGES CONTROL"]
 enable = [
@@ -241,8 +247,10 @@ disable = [
     "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-return-statements",
+    "undefined-variable",
     "unused-argument",
     "unused-variable",
+    "use-implicit-booleaness-not-comparison",
     "useless-import-alias",  # used as a hint to mypy
     "useless-return",  # https://github.com/pylint-dev/pylint/issues/6530
     "wrong-import-position",
@@ -259,15 +267,13 @@ disable = [
     "unused-import",
 
     # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
-    "abstract-method",
     "arguments-differ",
-    "arguments-renamed",
-    "dangerous-default-value",
     "keyword-arg-before-vararg",
-    "pointless-statement",
-    "raise-missing-from",
-    "unnecessary-dunder-call",
-    "used-before-assignment",
+]
+# requires `pylint_per_file_ignores` plugin
+per-file-ignores = [
+    # Extended list of ones that we may want to address, only for tests
+    "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unidiomatic-typecheck,unnecessary-dunder-call,used-before-assignment",
 ]
 
 [tool.pytest.ini_options]
@@ -283,10 +289,52 @@ markers = [
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
-    "requires_mitmproxy: marks tests that need mitmproxy",
+    "requires_mitmproxy: marks tests that need a mitmdump executable",
+    "requires_internet: marks tests that need real Internet access",
+    "walltime: marks benchmarks that need CodSpeed's walltime mode to be meaningful",
 ]
 filterwarnings = [
+    # Envs with pinned old dependencies opt out of this, see tox.ini.
+    "error",
     "ignore::DeprecationWarning:twisted.web.static",
+    # Twisted leaves the listening socket open after a failed bind
+    # (CannotListenError): https://github.com/twisted/twisted/issues/6108
+    # The asyncio reactor likewise leaves client sockets and transports open on
+    # teardown. These surface as unraisable exceptions during finalization when
+    # collected outside any warnings-catching block, or as a plain
+    # ResourceWarning, re-emitted by pytest.warns() with the outer filters
+    # applied, when GC instead runs while a pytest.warns() block for an
+    # unrelated warning is active, failing that unrelated test. The message
+    # wording varies across Python implementations and versions (PyPy leaves
+    # the prefix empty), so match on the object repr.
+    "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed <socket\\.socket fd=:ResourceWarning",
+    "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed transport <:ResourceWarning",
+    # These are triggered by garbage collecting an unclosed AiohttpDownloadHandler.
+    "ignore:.*<function (ClientSession|BaseConnector)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:Unclosed (client session|connector) <aiohttp\\.:ResourceWarning",
+    # PyDispatcher iterates its connection registry while a weakref callback
+    # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
+    # can die within a single collection.
+    "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
+    # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
+    # files and SQLite connections open; see the comment above about the two
+    # forms this can surface as. sqlite3's warning message has no path to
+    # match on, so it cannot be scoped to queuelib's temporary directories the
+    # way the file one is.
+    "ignore:.*<_io\\.\\w+ name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed file <_io\\.\\w+ name=.*queuelib-tests-:ResourceWarning",
+    "ignore:.*<sqlite3\\.Connection object at:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed database in <sqlite3\\.Connection object at:ResourceWarning",
+    # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
+    "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
+    # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.
+    "ignore:The async(hat|ore) module is deprecated:DeprecationWarning",
+    # CI runs without coverage pass --no-cov, which pytest-cov reports. Matched
+    # by message because some tox envs do not install pytest-cov, and pytest
+    # warns when a filter names a module it cannot import.
+    "ignore:Coverage disabled via --no-cov switch!",
 ]
 
 [tool.ruff.lint]
@@ -464,3 +512,6 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.sphinx-scrapy]
+python-version = "3.14"  # Keep in sync with .github/workflows/ci.yml.

@@ -12,8 +12,8 @@ There are 3 numbers in a Scrapy version: *A.B.C*
 * *A* is the major version. This will rarely change and will signify very
   large changes.
 * *B* is the release number. This will include many changes including features
-  and things that possibly break backward compatibility, although we strive to
-  keep these cases at a minimum.
+  and things that may break backward compatibility, although we strive to keep
+  these cases to a minimum.
 * *C* is the bugfix release number.
 
 Backward-incompatibilities are explicitly mentioned in the :ref:`release notes <news>`,
@@ -23,7 +23,7 @@ Development releases do not follow 3-numbers version and are generally
 released as ``dev`` suffixed versions, e.g. ``1.3dev``.
 
 .. note::
-    With Scrapy 0.* series, Scrapy used `odd-numbered versions for development releases`_.
+    With Scrapy 0.* series, Scrapy used odd-numbered versions for development releases.
     This is not the case anymore from Scrapy 1.0 onwards.
 
     Starting with Scrapy 1.0, all releases should be considered production-ready.
@@ -39,8 +39,8 @@ API stability
 
 API stability was one of the major goals for the *1.0* release.
 
-Methods or functions that start with a single dash (``_``) are private and
-should never be relied as stable.
+Methods or functions that start with a single underscore (``_``) are private
+and should never be relied upon as stable.
 
 Also, keep in mind that stable doesn't mean complete: stable APIs could grow
 new methods or functionality but the existing methods should keep working the
@@ -63,6 +63,3 @@ feature.
 
 All deprecated features removed in a Scrapy release are explicitly mentioned in
 the :ref:`release notes <news>`.
-
-
-.. _odd-numbered versions for development releases: https://en.wikipedia.org/wiki/Software_versioning#Odd-numbered_versions_for_development_releases

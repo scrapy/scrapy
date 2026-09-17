@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy.utils.misc import build_from_crawler
@@ -92,9 +94,10 @@ class ScrapyPriorityQueue:
     -   The :data:`~scrapy.Request.priority` of the request.
 
     For each combination of the above seen, this class creates an instance of
-    *downstream_queue_cls* with *key* set to a subdirectory of the persistence
-    directory, named as the request priority (e.g. ``1``), with an ``s`` suffix
-    in case of a start request (e.g. ``1s``).
+    *downstream_queue_cls* (or *start_queue_cls* for start requests if it was
+    passed) with *key* set to a subdirectory of the persistence directory,
+    named as the negated request priority (e.g. ``-1``), with an ``s`` suffix
+    in case of a start request (e.g. ``-1s``).
     """
 
     @classmethod
@@ -141,10 +144,14 @@ class ScrapyPriorityQueue:
             q = self.qfactory(priority)
             if q:
                 self.queues[priority] = q
+            else:
+                q.close()
             if self._start_queue_cls:
                 q = self._sqfactory(priority)
                 if q:
                     self._start_queues[priority] = q
+                else:
+                    q.close()
 
         self.curprio = min(startprios)
 
@@ -258,7 +265,6 @@ class ScrapyPriorityQueue:
 
 class DownloaderInterface:
     def __init__(self, crawler: Crawler):
-        assert crawler.engine
         self.downloader: Downloader = crawler.engine.downloader
 
     def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:
@@ -350,9 +356,37 @@ class DownloaderAwarePriorityQueue:
         self.crawler: Crawler = crawler
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
+        self._last_selected_slot: str | None = None
         if slot_startprios:
             for slot, startprios in slot_startprios.items():
                 self.pqueues[slot] = self.pqfactory(slot, startprios)
+
+    def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
+        last = self._last_selected_slot
+        min_active: int | None = None
+        best_slot: str | None = None
+        best_slot_after_last: str | None = None
+        for active, slot in stats:
+            if min_active is None or active < min_active:
+                min_active = active
+                best_slot = slot
+                best_slot_after_last = None
+                if last is not None and slot > last:
+                    best_slot_after_last = slot
+            elif active == min_active:
+                if best_slot is None or slot < best_slot:
+                    best_slot = slot
+                if (
+                    last is not None
+                    and slot > last
+                    and (best_slot_after_last is None or slot < best_slot_after_last)
+                ):
+                    best_slot_after_last = slot
+        assert best_slot is not None
+        slot = best_slot_after_last if best_slot_after_last is not None else best_slot
+        if update_state:
+            self._last_selected_slot = slot
+        return slot
 
     def pqfactory(
         self, slot: str, startprios: Iterable[int] = ()
@@ -371,11 +405,17 @@ class DownloaderAwarePriorityQueue:
         if not stats:
             return None
 
-        slot = min(stats)[1]
+        slot = self._next_slot(stats, update_state=True)
         queue = self.pqueues[slot]
         request = queue.pop()
         if len(queue) == 0:
             del self.pqueues[slot]
+            queue.close()
+            if self.key:
+                # Reclaim the slot directory; rmdir leaves it alone if the
+                # downstream queues did not remove all their files.
+                with suppress(OSError):
+                    Path(self.key, _path_safe(slot)).rmdir()
         return request
 
     def push(self, request: Request) -> None:
@@ -395,7 +435,7 @@ class DownloaderAwarePriorityQueue:
         stats = self._downloader_interface.stats(self.pqueues)
         if not stats:
             return None
-        slot = min(stats)[1]
+        slot = self._next_slot(stats, update_state=False)
         queue = self.pqueues[slot]
         return queue.peek()
 

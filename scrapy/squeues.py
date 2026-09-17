@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 def _with_mkdir(queue_class: type[queue.BaseQueue]) -> type[queue.BaseQueue]:
     class DirectoriesCreated(queue_class):  # type: ignore[valid-type,misc]
-        def __init__(self, path: str | PathLike, *args: Any, **kwargs: Any):
+        def __init__(self, path: str | PathLike[str], *args: Any, **kwargs: Any):
             dirname = Path(path).parent
             if not dirname.exists():
                 dirname.mkdir(parents=True, exist_ok=True)
@@ -166,11 +166,39 @@ _MarshalLifoSerializationDiskQueue = _serializable_queue(
     marshal.dumps,
     marshal.loads,
 )
+_PickleFifoSerializationSQLiteQueue = _serializable_queue(
+    _with_mkdir(queue.FifoSQLiteQueue),  # type: ignore[arg-type]
+    _pickle_serialize,
+    pickle.loads,
+)
+_PickleLifoSerializationSQLiteQueue = _serializable_queue(
+    _with_mkdir(queue.LifoSQLiteQueue),  # type: ignore[arg-type]
+    _pickle_serialize,
+    pickle.loads,
+)
+_MarshalFifoSerializationSQLiteQueue = _serializable_queue(
+    _with_mkdir(queue.FifoSQLiteQueue),  # type: ignore[arg-type]
+    marshal.dumps,
+    marshal.loads,
+)
+_MarshalLifoSerializationSQLiteQueue = _serializable_queue(
+    _with_mkdir(queue.LifoSQLiteQueue),  # type: ignore[arg-type]
+    marshal.dumps,
+    marshal.loads,
+)
 
 # public queue classes
 PickleFifoDiskQueue = _scrapy_serialization_queue(_PickleFifoSerializationDiskQueue)
 PickleLifoDiskQueue = _scrapy_serialization_queue(_PickleLifoSerializationDiskQueue)
 MarshalFifoDiskQueue = _scrapy_serialization_queue(_MarshalFifoSerializationDiskQueue)
 MarshalLifoDiskQueue = _scrapy_serialization_queue(_MarshalLifoSerializationDiskQueue)
+PickleFifoSQLiteQueue = _scrapy_serialization_queue(_PickleFifoSerializationSQLiteQueue)
+PickleLifoSQLiteQueue = _scrapy_serialization_queue(_PickleLifoSerializationSQLiteQueue)
+MarshalFifoSQLiteQueue = _scrapy_serialization_queue(
+    _MarshalFifoSerializationSQLiteQueue
+)
+MarshalLifoSQLiteQueue = _scrapy_serialization_queue(
+    _MarshalLifoSerializationSQLiteQueue
+)
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)  # type: ignore[arg-type]
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)  # type: ignore[arg-type]

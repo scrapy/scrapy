@@ -6,7 +6,7 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check that you are reading the most recent version of this document
+    Double-check that you are reading the most recent version of this document
     at https://docs.scrapy.org/en/master/contributing.html
 
     By participating in this project you agree to abide by the terms of our
@@ -149,6 +149,31 @@ If you decide to work on something without an open issue, please:
     test coverage, tests should be written for real scenarios, with minimum
     mocking. We usually prefer end-to-end tests.
 
+.. _dev-setup:
+
+Setting up a development environment
+====================================
+
+Before you can write a patch, you need a local copy of the Scrapy code base
+that you can run and modify:
+
+#.  Follow GitHub’s `contributing to a project`_ guide to fork the Scrapy
+    repository, clone your fork and create a branch for your changes.
+
+#.  Install your clone, ideally inside :ref:`a virtual environment
+    <intro-using-virtualenv>`, so that ``scrapy`` runs your code:
+
+    .. code-block:: bash
+
+        pip install -e .
+
+#.  Set up :ref:`pre-commit <scrapy-pre-commit>`, and install :doc:`tox
+    <tox:index>`, which is what :ref:`runs the tests <running-tests>`:
+
+    .. code-block:: bash
+
+        pip install tox
+
 .. _writing-patches:
 
 Writing patches
@@ -216,14 +241,13 @@ has been validated and proven useful. Alternatively, you can start a
 conversation in the `Scrapy subreddit`_ to discuss your idea first.
 
 Sometimes there is an existing pull request for the problem you'd like to
-solve, which is stalled for some reason. Often the pull request is in a
-right direction, but changes are requested by Scrapy maintainers, and the
-original pull request author hasn't had time to address them.
-In this case consider picking up this pull request: open
-a new pull request with all commits from the original pull request, as well as
-additional changes to address the raised issues. Doing so helps a lot; it is
-not considered rude as long as the original author is acknowledged by keeping
-his/her commits.
+solve, which is stalled for some reason. Often the pull request is in the right
+direction, but changes are requested by Scrapy maintainers, and the original
+pull request author hasn't had time to address them. In this case consider
+picking up this pull request: open a new pull request with all commits from the
+original pull request, as well as additional changes to address the raised
+issues. Doing so helps a lot; it is not considered rude as long as the original
+author is acknowledged by keeping their commits.
 
 You can pull an existing pull request to a local branch
 by running ``git fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE``
@@ -233,9 +257,9 @@ with a name of the branch you want to create locally).
 See also: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally.
 
 When writing GitHub pull requests, try to keep titles short but descriptive.
-E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
-prefer "Fix hanging when exception occurs in start_requests (#411)"
-instead of "Fix for #411". Complete titles make it easy to skim through
+For example, for bug #411: "Scrapy hangs if an exception raises in
+start_requests" prefer "Fix hanging when exception occurs in start_requests
+(#411)" instead of "Fix for #411". Complete titles make it easy to skim through
 the issue tracker.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
@@ -258,7 +282,7 @@ Scrapy:
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
-  See https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git
+  See https://docs.github.com/en/get-started/git-basics/setting-your-username-in-git
   for setup instructions.
 
 .. _scrapy-pre-commit:
@@ -271,7 +295,7 @@ commit.
 
 .. _pre-commit: https://pre-commit.com/
 
-After your create a local clone of your fork of the Scrapy repository:
+After you create a local clone of your fork of the Scrapy repository:
 
 #.  `Install pre-commit <https://pre-commit.com/#installation>`_.
 
@@ -323,9 +347,10 @@ deprecation removals are documented in the :ref:`release notes <news>`.
 Tests
 =====
 
-Tests are implemented using the :doc:`Twisted unit-testing framework
-<twisted:development/test-standard>`. Running tests requires
-:doc:`tox <tox:index>`.
+Tests are implemented using pytest_. Running tests requires :doc:`tox
+<tox:index>`.
+
+.. _pytest: https://pytest.org
 
 .. _running-tests:
 
@@ -371,6 +396,21 @@ To see coverage report install :doc:`coverage <coverage:index>`
 
 see output of ``coverage --help`` for more options like html or xml report.
 
+Some tests need a ``mitmdump`` executable (from mitmproxy_) to test against a
+fully featured proxy server; they are skipped when one cannot be found
+(``mitmproxy`` is intentionally not a test dependency that would be installed
+into test venvs, as that sometimes leads to various dependency conflicts).
+To run these tests, make ``mitmdump`` available in one of these ways:
+
+* install ``mitmproxy`` so that ``mitmdump`` is on your ``PATH``, e.g. with
+  pipx_ (``pipx install mitmproxy``) or uv_ (``uv tool install mitmproxy``);
+
+* have uv_ installed, in which case the tests will run
+  ``uvx --from mitmproxy mitmdump``;
+
+* set the ``MITMDUMP`` environment variable to the path of a ``mitmdump``
+  executable.
+
 Writing tests
 -------------
 
@@ -389,9 +429,9 @@ And their unit-tests are in::
     tests/test_loader.py
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
+.. _contributing to a project: https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
-.. _Scrapy subreddit: https://reddit.com/r/scrapy
-.. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
+.. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _PEP 257: https://peps.python.org/pep-0257/
@@ -399,3 +439,6 @@ And their unit-tests are in::
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist
 .. _help wanted issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
 .. _test coverage: https://app.codecov.io/gh/scrapy/scrapy
+.. _mitmproxy: https://mitmproxy.org/
+.. _pipx: https://pipx.pypa.io/
+.. _uv: https://docs.astral.sh/uv/

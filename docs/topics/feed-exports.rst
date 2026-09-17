@@ -5,9 +5,9 @@ Feed exports
 ============
 
 One of the most frequently required features when implementing scrapers is
-being able to store the scraped data properly and, quite often, that means
-generating an "export file" with the scraped data (commonly called "export
-feed") to be consumed by other systems.
+properly storing the scraped data and, quite often, that means generating an
+"export file" with the scraped data (commonly called an "export feed") to be
+consumed by other systems.
 
 Scrapy provides this functionality out of the box with the Feed Exports, which
 allows you to generate feeds with the scraped items, using multiple
@@ -31,7 +31,7 @@ For serializing the scraped data, the feed exports use the :ref:`Item exporters
 -   :ref:`topics-feed-format-csv`
 -   :ref:`topics-feed-format-xml`
 
-But you can also extend the supported format through the
+But you can also extend the supported formats through the
 :setting:`FEED_EXPORTERS` setting.
 
 .. _topics-feed-format-json:
@@ -92,28 +92,27 @@ Marshal
 -   Value for the ``format`` key in the :setting:`FEEDS` setting: ``marshal``
 -   Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
 
-
 .. _topics-feed-storage:
 
 Storages
 ========
 
-When using the feed exports you define where to store the feed using one or multiple URIs_
-(through the :setting:`FEEDS` setting). The feed exports supports multiple
-storage backend types which are defined by the URI scheme.
+When using the feed exports you define where to store the feed using one or
+multiple URIs_ (through the :setting:`FEEDS` setting). The feed exports support
+multiple storage backend types that are defined by the URI scheme.
 
 The storages backends supported out of the box are:
 
 -   :ref:`topics-feed-storage-fs`
--   :ref:`topics-feed-storage-ftp`
--   :ref:`topics-feed-storage-s3` (requires boto3_)
--   :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
+-   :ref:`feed-storage-ftp`
+-   :ref:`feed-storage-ftps`
+-   :ref:`topics-feed-storage-s3` (requires the :ref:`s3 <extras>` extra)
+-   :ref:`topics-feed-storage-gcs` (requires the :ref:`gcs <extras>` extra)
 -   :ref:`topics-feed-storage-stdout`
 
-Some storage backends may be unavailable if the required external libraries are
-not available. For example, the S3 backend is only available if the boto3_
-library is installed.
-
+Some storage backends may be unavailable if the required :ref:`extras <extras>`
+are not installed. For example, the S3 backend requires the :ref:`s3 <extras>`
+extra.
 
 .. _topics-feed-uri-params:
 
@@ -126,8 +125,8 @@ being created. These parameters are:
 -   ``%(time)s`` - gets replaced by a timestamp when the feed is being created
 -   ``%(name)s`` - gets replaced by the spider name
 
-Any other named parameter gets replaced by the spider attribute of the same
-name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
+Any other named parameter is replaced by the spider attribute of the same name.
+For example, ``%(site_id)s`` would be replaced by the ``spider.site_id``
 attribute the moment the feed is being created.
 
 Here are some examples to illustrate:
@@ -142,6 +141,11 @@ Here are some examples to illustrate:
 
 .. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
           they can also be used as storage URI parameters.
+
+.. note:: Only ``%(...)s`` parameters are replaced. Any other percent
+          character is kept as-is, so percent-encoded URIs (e.g. ``%20`` for a
+          space or percent-encoded FTP credentials) and :class:`pathlib.Path`
+          keys containing ``%(...)s`` parameters both work as expected.
 
 
 .. _topics-feed-storage-backends:
@@ -160,20 +164,24 @@ The feeds are stored in the local filesystem.
 -   Example URI: ``file:///tmp/export.csv``
 -   Required external libraries: none
 
-Note that for the local filesystem storage (only) you can omit the scheme if
-you specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
-Alternatively you can also use a :class:`pathlib.Path` object.
+Note that for the local filesystem storage you can omit the scheme if you
+specify a path (e.g. ``/tmp/export.csv``). Alternatively, you can use a
+:class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
+.. _feed-storage-ftp:
 
 FTP
 ---
 
-The feeds are stored in a FTP server.
+The feeds are stored on an FTP server.
 
 -   URI scheme: ``ftp``
 -   Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
 -   Required external libraries: none
+
+FTP sends credentials and data in cleartext. Use :ref:`feed-storage-ftps`
+instead where possible.
 
 FTP supports two different connection modes: `active or passive
 <https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
@@ -187,6 +195,28 @@ storage backend is: ``True``.
      previous version of your data.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+
+.. _feed-storage-ftps:
+
+FTPS
+----
+
+The feeds are stored in a FTP server, over a TLS connection, with the
+certificate of the server verified.
+
+.. versionadded:: 2.18.0
+
+-   URI scheme: ``ftps``
+-   Example URI: ``ftps://user:pass@ftp.example.com/path/to/export.csv``
+-   Required external libraries: none
+
+See :ref:`feed-storage-ftp` for connection modes, the ``overwrite`` default and
+file delivery.
+
+.. note:: For SFTP, an unrelated protocol built on SSH, use
+          `scrapy-feedexporter-sftp
+          <https://github.com/scrapy-plugins/scrapy-feedexporter-sftp>`_.
 
 
 .. _topics-feed-storage-s3:
@@ -204,7 +234,7 @@ The feeds are stored on `Amazon S3`_.
 
     -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
--   Required external libraries: `boto3`_ >= 1.20.0
+-   Required extras: :ref:`s3 <extras>`
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -215,12 +245,13 @@ passed through the following settings:
 
 .. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
-You can also define a custom ACL, custom endpoint, and region name for exported
-feeds using these settings:
+You can also define a custom ACL, custom endpoint, region name and connection
+pool size for exported feeds using these settings:
 
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`AWS_ENDPOINT_URL`
 -   :setting:`AWS_REGION_NAME`
+-   :setting:`AWS_MAX_POOL_CONNECTIONS`
 
 The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
@@ -244,9 +275,9 @@ The feeds are stored on `Google Cloud Storage`_.
 
     -   ``gs://mybucket/path/to/export.csv``
 
--   Required external libraries: `google-cloud-storage`_.
+-   Required extras: :ref:`gcs <extras>`
 
-For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication>`_.
+For more information about authentication, please refer to `Google Cloud documentation <https://docs.cloud.google.com/docs/authentication>`_.
 
 You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
 
@@ -261,7 +292,6 @@ storage backend is: ``True``.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
-.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 
 .. _topics-feed-storage-stdout:
@@ -412,8 +442,6 @@ These are the settings used for configuring the feed exports:
 -   :setting:`FEED_EXPORTERS`
 -   :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
 
-.. currentmodule:: scrapy.extensions.feedexport
-
 .. setting:: FEEDS
 
 FEEDS
@@ -429,33 +457,37 @@ This setting is required for enabling the feed export feature.
 
 See :ref:`topics-feed-storage-backends` for supported URI schemes.
 
-For instance::
+For instance:
+
+.. skip: next
+
+.. code-block:: python
 
     {
-        'items.json': {
-            'format': 'json',
-            'encoding': 'utf8',
-            'store_empty': False,
-            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
-            'fields': None,
-            'indent': 4,
-            'item_export_kwargs': {
-               'export_empty_fields': True,
+        "items.json": {
+            "format": "json",
+            "encoding": "utf8",
+            "store_empty": False,
+            "item_classes": [MyItemClass1, "myproject.items.MyItemClass2"],
+            "fields": None,
+            "indent": 4,
+            "item_export_kwargs": {
+                "export_empty_fields": True,
             },
         },
-        '/home/user/documents/items.xml': {
-            'format': 'xml',
-            'fields': ['name', 'price'],
-            'item_filter': MyCustomFilter1,
-            'encoding': 'latin1',
-            'indent': 8,
+        "/home/user/documents/items.xml": {
+            "format": "xml",
+            "fields": ["name", "price"],
+            "item_filter": MyCustomFilter1,
+            "encoding": "latin1",
+            "indent": 8,
         },
-        pathlib.Path('items.csv.gz'): {
-            'format': 'csv',
-            'fields': ['price', 'name'],
-            'item_filter': 'myproject.filters.MyCustomFilter2',
-            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
-            'gzip_compresslevel': 5,
+        pathlib.Path("items.csv.gz"): {
+            "format": "csv",
+            "fields": ["price", "name"],
+            "item_filter": "myproject.filters.MyCustomFilter2",
+            "postprocessing": [MyPlugin1, "scrapy.extensions.postprocessing.GzipPlugin"],
+            "gzip_compresslevel": 5,
         },
     }
 
@@ -466,7 +498,9 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``format``: the :ref:`serialization format <topics-feed-format>`.
 
-    This setting is mandatory, there is no fallback value.
+    If not set, it is inferred from the file extension of the feed URI, e.g.
+    ``json`` for a URI ending in :file:`.json`. It is mandatory if it cannot
+    be inferred this way.
 
 -   ``batch_item_count``: falls back to
     :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
@@ -495,7 +529,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-fs`: ``False``
 
-    -   :ref:`topics-feed-storage-ftp`: ``True``
+    -   :ref:`feed-storage-ftp` and :ref:`feed-storage-ftps`: ``True``
 
         .. note:: Some FTP servers may not support appending to files (the
                   ``APPE`` FTP command).
@@ -527,10 +561,6 @@ If set to ``None``, it uses UTF-8 for everything except JSON output, which uses
 safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
 Use ``"utf-8"`` if you want UTF-8 for JSON too.
-
-.. versionchanged:: 2.8
-   The :command:`startproject` command now sets this setting to
-   ``"utf-8"`` in the generated ``settings.py`` file.
 
 .. setting:: FEED_EXPORT_FIELDS
 
@@ -619,7 +649,9 @@ Default:
         "file": "scrapy.extensions.feedexport.FileFeedStorage",
         "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
         "s3": "scrapy.extensions.feedexport.S3FeedStorage",
+        "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
         "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
+        "ftps": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
 A dict containing the built-in feed storage backends supported by Scrapy. You
@@ -734,7 +766,7 @@ feed URI.
 
 The function signature should be as follows:
 
-.. function:: uri_params(params, spider)
+.. function:: scrapy.extensions.feedexport.uri_params(params, spider)
 
    Return a :class:`dict` of key-value pairs to apply to the feed URI using
    :ref:`printf-style string formatting <python:old-string-formatting>`.
@@ -760,8 +792,8 @@ The function signature should be as follows:
    :param spider: source spider of the feed items
    :type spider: scrapy.Spider
 
-   .. caution:: The function should return a new dictionary, modifying
-                the received ``params`` in-place is deprecated.
+   .. caution:: The function must return a new dictionary instead of modifying
+                the received ``params`` in-place.
 
 For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
@@ -788,6 +820,5 @@ source spider in the feed URI:
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _boto3: https://github.com/boto/boto3
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/

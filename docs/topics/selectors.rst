@@ -26,13 +26,14 @@ used with HTML. `CSS`_ is a language for applying styles to HTML documents. It
 defines selectors to associate those styles with specific HTML elements.
 
 .. note::
-    Scrapy Selectors is a thin wrapper around `parsel`_ library; the purpose of
-    this wrapper is to provide better integration with Scrapy Response objects.
+    Scrapy selectors are a thin wrapper around the `parsel`_ library; the
+    purpose of this wrapper is to provide better integration with Scrapy
+    Response objects.
 
     `parsel`_ is a stand-alone web scraping library which can be used without
-    Scrapy. It uses `lxml`_ library under the hood, and implements an
-    easy API on top of lxml API. It means Scrapy selectors are very similar
-    in speed and parsing accuracy to lxml.
+    Scrapy. It uses the `lxml`_ library under the hood and implements an easy
+    API on top of the lxml API. This means Scrapy selectors have similar speed
+    and parsing accuracy to lxml.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
@@ -308,7 +309,7 @@ Examples:
 
 * ``*::text`` selects all descendant text nodes of the current selector context:
 
-..skip: next
+.. skip: next
 .. code-block:: pycon
 
     >>> response.css("#images *::text").getall()
@@ -543,7 +544,7 @@ you may want to take a look first at this `XPath tutorial`_.
 .. note::
     Some of the tips are based on `this post from Zyte's blog`_.
 
-.. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
+.. _XPath tutorial: http://www.zvon.org/comp/r/tut-XPath_1.html
 .. _this post from Zyte's blog: https://www.zyte.com/blog/xpath-tips-from-the-web-scraping-trenches/
 
 
@@ -634,8 +635,7 @@ Example:
 .. code-block:: pycon
 
     >>> from scrapy import Selector
-    >>> sel = Selector(
-    ...     text="""
+    >>> sel = Selector(text="""
     ...     <ul class="list">
     ...         <li>1</li>
     ...         <li>2</li>
@@ -645,8 +645,8 @@ Example:
     ...         <li>4</li>
     ...         <li>5</li>
     ...         <li>6</li>
-    ...     </ul>"""
-    ... )
+    ...     </ul>""")
+    ...
     >>> xp = lambda x: sel.xpath(x).getall()
 
 This gets all first ``<li>``  elements under whatever it is its parent:
@@ -728,7 +728,7 @@ But using the ``.`` to mean the node, works:
     >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
     ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath-10/#section-String-Functions
+.. _XPath string function: https://www.w3.org/TR/xpath-10/#section-String-Functions
 
 .. _topics-selectors-xpath-variables:
 
@@ -948,11 +948,9 @@ with groups of itemscopes and corresponding itemprops:
     >>> sel = Selector(text=doc, type="html")
     >>> for scope in sel.xpath("//div[@itemscope]"):
     ...     print("current scope:", scope.xpath("@itemtype").getall())
-    ...     props = scope.xpath(
-    ...         """
+    ...     props = scope.xpath("""
     ...                 set:difference(./descendant::*/@itemprop,
-    ...                                .//*[@itemscope]/*/@itemprop)"""
-    ...     )
+    ...                                .//*[@itemscope]/*/@itemprop)""")
     ...     print(f"    properties: {props.getall()}")
     ...     print("")
     ...
@@ -983,9 +981,9 @@ Here we first iterate over ``itemscope`` elements, and for each one,
 we look for all ``itemprops`` elements and exclude those that are themselves
 inside another ``itemscope``.
 
-.. _EXSLT: http://exslt.org/
-.. _regular expressions: http://exslt.org/regexp/index.html
-.. _set manipulation: http://exslt.org/set/index.html
+.. _EXSLT: https://exslt.github.io/
+.. _regular expressions: https://exslt.github.io/regexp/index.html
+.. _set manipulation: https://exslt.github.io/set/index.html
 
 Other XPath extensions
 ----------------------
@@ -1042,7 +1040,6 @@ Built-in Selectors reference
 ============================
 
 .. module:: scrapy.selector
-   :synopsis: Selector class
 
 Selector objects
 ----------------
@@ -1190,4 +1187,4 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object:
 
 .. skip: end
 
-.. _Google Base XML feed: https://support.google.com/merchants/answer/160589?hl=en&ref_topic=2473799
+.. _Google Base XML feed: https://support.google.com/merchants/answer/14987622

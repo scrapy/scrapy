@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from email.utils import formatdate
 from typing import TYPE_CHECKING
 
@@ -14,7 +15,6 @@ from scrapy.exceptions import (
     NotConfigured,
 )
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
@@ -27,6 +27,9 @@ if TYPE_CHECKING:
     from scrapy.settings import Settings
     from scrapy.spiders import Spider
     from scrapy.statscollectors import StatsCollector
+
+
+logger = logging.getLogger(__name__)
 
 
 class HttpCacheMiddleware:
@@ -52,21 +55,20 @@ class HttpCacheMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        assert crawler.stats
         o = cls(crawler.settings, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         o.crawler = crawler
         return o
 
-    async def spider_opened(self, spider: Spider) -> None:
-        await ensure_awaitable(self.storage.open_spider(spider))
+    def spider_opened(self, spider: Spider) -> None:
+        self.storage.open_spider(spider)
 
-    async def spider_closed(self, spider: Spider) -> None:
-        await ensure_awaitable(self.storage.close_spider(spider))
+    def spider_closed(self, spider: Spider) -> None:
+        self.storage.close_spider(spider)
 
     @_warn_spider_arg
-    async def process_request(
+    def process_request(
         self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         if request.meta.get("dont_cache", False):
@@ -78,9 +80,20 @@ class HttpCacheMiddleware:
             return None
 
         # Look for cached response and check if expired
-        cachedresponse: Response | None = await ensure_awaitable(
-            self.storage.retrieve_response(self.crawler.spider, request)
-        )
+        cachedresponse: Response | None
+        try:
+            cachedresponse = self.storage.retrieve_response(
+                self.crawler.spider, request
+            )
+        except Exception:
+            self.stats.inc_value("httpcache/retrieve_error")
+            logger.warning(
+                f"Could not read the cache entry for {request}, treating it as a "
+                f"cache miss.",
+                exc_info=True,
+                extra={"spider": self.crawler.spider},
+            )
+            cachedresponse = None
         if cachedresponse is None:
             self.stats.inc_value("httpcache/miss")
             if self.ignore_missing:
@@ -101,7 +114,7 @@ class HttpCacheMiddleware:
         return None
 
     @_warn_spider_arg
-    async def process_response(
+    def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.meta.get("dont_cache", False):
@@ -121,15 +134,19 @@ class HttpCacheMiddleware:
         cachedresponse: Response | None = request.meta.pop("cached_response", None)
         if cachedresponse is None:
             self.stats.inc_value("httpcache/firsthand")
-            await self._cache_response(response, request)
+            self._cache_response(response, request)
             return response
 
         if self.policy.is_cached_response_valid(cachedresponse, response, request):
             self.stats.inc_value("httpcache/revalidate")
+            if response.status == 304:
+                self._freshen_cached_response(cachedresponse, response)
+                self._cache_response(cachedresponse, request)
             return cachedresponse
 
         self.stats.inc_value("httpcache/invalidate")
-        await self._cache_response(response, request)
+        request.meta.pop("cache_timestamp", None)
+        self._cache_response(response, request)
         return response
 
     @_warn_spider_arg
@@ -144,11 +161,25 @@ class HttpCacheMiddleware:
             return cachedresponse
         return None
 
-    async def _cache_response(self, response: Response, request: Request) -> None:
+    def _freshen_cached_response(
+        self, cachedresponse: Response, response: Response
+    ) -> None:
+        # RFC 7234, section 4.3.4: update the stored response with the
+        # header fields from a successful revalidation (304) response.
+        warnings = [
+            warning
+            for warning in cachedresponse.headers.getlist(b"Warning")
+            if warning.split(None, 1)[0].startswith(b"2")
+        ]
+        cachedresponse.headers.update(response.headers)
+        if warnings:
+            cachedresponse.headers[b"Warning"] = warnings
+        else:
+            cachedresponse.headers.pop(b"Warning", None)
+
+    def _cache_response(self, response: Response, request: Request) -> None:
         if self.policy.should_cache_response(response, request):
             self.stats.inc_value("httpcache/store")
-            await ensure_awaitable(
-                self.storage.store_response(self.crawler.spider, request, response)
-            )
+            self.storage.store_response(self.crawler.spider, request, response)
         else:
             self.stats.inc_value("httpcache/uncacheable")

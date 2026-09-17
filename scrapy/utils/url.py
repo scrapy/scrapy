@@ -7,35 +7,10 @@ from __future__ import annotations
 
 import re
 import warnings
-from importlib import import_module
-from typing import TYPE_CHECKING, Any, TypeAlias
-from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
-from warnings import warn
+from typing import TYPE_CHECKING, TypeAlias
+from urllib.parse import ParseResult, urlparse, urlunparse
 
-from w3lib.url import __all__ as _public_w3lib_objects
-from w3lib.url import add_or_replace_parameter as _add_or_replace_parameter
-from w3lib.url import any_to_uri as _any_to_uri
-from w3lib.url import parse_url as _parse_url
-
-from scrapy.exceptions import ScrapyDeprecationWarning
-
-_DEPRECATED_NAMES: frozenset[str] = frozenset(
-    {"_unquotepath", "_safe_chars", "parse_url", *_public_w3lib_objects}
-)
-
-
-def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED_NAMES:
-        obj_type = "attribute" if name == "_safe_chars" else "function"
-        warnings.warn(
-            f"The scrapy.utils.url.{name} {obj_type} is deprecated, use w3lib.url.{name} instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return getattr(import_module("w3lib.url"), name)
-
-    raise AttributeError
-
+from w3lib.url import any_to_uri, parse_url
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -47,7 +22,7 @@ UrlT: TypeAlias = str | bytes | ParseResult
 
 def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     """Return True if the url belongs to any of the given domains"""
-    host = _parse_url(url).netloc.lower()
+    host = parse_url(url).netloc.lower()
     if not host:
         return False
     return any((host == d) or (host.endswith(f".{d}")) for d in map(str.lower, domains))
@@ -55,7 +30,19 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
 
 def _spider_domains(spider: type[Spider]) -> Iterable[str]:
     yield spider.name
-    if allowed_domains := getattr(spider, "allowed_domains", None):
+    allowed_domains = getattr(spider, "allowed_domains", None)
+    if isinstance(allowed_domains, property):
+        warnings.warn(
+            f"{spider.__name__}.allowed_domains is a property. Properties "
+            "cannot be evaluated on a spider class, only on a spider "
+            "instance, so it will be ignored here. This affects matching "
+            "URLs to spiders, e.g. in the shell, fetch and parse commands. "
+            "Define allowed_domains as a plain class attribute instead.",
+            stacklevel=2,
+            category=UserWarning,
+        )
+        return
+    if allowed_domains:
         yield from allowed_domains
 
 
@@ -66,41 +53,8 @@ def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
 
 def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     """Return True if the url ends with one of the extensions provided"""
-    lowercase_path = _parse_url(url).path.lower()
+    lowercase_path = parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
-
-
-def escape_ajax(url: str) -> str:
-    """
-    Return the crawlable url
-
-    >>> escape_ajax("www.example.com/ajax.html#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html?k1=v1&k2=v2#!key=value")
-    'www.example.com/ajax.html?k1=v1&k2=v2&_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html?#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html#!")
-    'www.example.com/ajax.html?_escaped_fragment_='
-
-    URLs that are not "AJAX crawlable" (according to Google) returned as-is:
-
-    >>> escape_ajax("www.example.com/ajax.html#key=value")
-    'www.example.com/ajax.html#key=value'
-    >>> escape_ajax("www.example.com/ajax.html#")
-    'www.example.com/ajax.html#'
-    >>> escape_ajax("www.example.com/ajax.html")
-    'www.example.com/ajax.html'
-    """
-    warn(
-        "escape_ajax() is deprecated and will be removed in a future Scrapy version.",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    defrag, frag = urldefrag(url)
-    if not frag.startswith("!"):
-        return url
-    return _add_or_replace_parameter(defrag, "_escaped_fragment_", frag[1:])
 
 
 def add_http_if_no_scheme(url: str) -> str:
@@ -160,7 +114,7 @@ def guess_scheme(url: str) -> str:
     """Add an URL scheme if missing: file:// for filepath-like input or
     http:// otherwise."""
     if _is_filesystem_path(url):
-        return _any_to_uri(url)
+        return any_to_uri(url)
     return add_http_if_no_scheme(url)
 
 
@@ -176,8 +130,8 @@ def strip_url(
     - ``strip_credentials`` removes "user:password@"
     - ``strip_default_port`` removes ":80" (resp. ":443", ":21")
       from http:// (resp. https://, ftp://) URLs
-    - ``origin_only`` replaces path component with "/", also dropping
-      query and fragment components ; it also strips credentials
+    - ``origin_only`` replaces the  path component with "/", also dropping
+      the query component; it also strips credentials
     - ``strip_fragment`` drops any #fragment component
     """
 
@@ -198,7 +152,8 @@ def strip_url(
             ("ftp", 21),
         }
     ):
-        netloc = netloc.replace(f":{parsed_url.port}", "")
+        port_suffix = f":{parsed_url.port}"
+        netloc = netloc.removesuffix(port_suffix)
 
     return urlunparse(
         (

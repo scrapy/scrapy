@@ -71,16 +71,47 @@ class TestAddonManager:
         manager = crawler.addons
         assert not manager.addons
 
+    def test_notconfigured_with_args(self):
+        class NotConfiguredAddon:
+            def update_settings(self, settings):
+                raise NotConfigured("addon disabled reason")
+
+        settings_dict = {
+            "ADDONS": {NotConfiguredAddon: 0},
+        }
+        with patch("scrapy.addons.logger") as logger_mock:
+            crawler = get_crawler(settings_dict=settings_dict)
+        assert not crawler.addons.addons
+        logger_mock.warning.assert_called_once_with(
+            "Disabled %(clspath)s: %(eargs)s",
+            {"clspath": NotConfiguredAddon, "eargs": "addon disabled reason"},
+            extra={"crawler": crawler},
+        )
+
+    def test_no_update_settings(self):
+        class PreCrawlerOnlyAddon:
+            @classmethod
+            def update_pre_crawler_settings(cls, settings):
+                settings.set("PRE_CRAWLER_KEY", "value", priority="addon")
+
+        settings_dict = {
+            "ADDONS": {PreCrawlerOnlyAddon: 0},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        manager = crawler.addons
+        assert len(manager.addons) == 1
+        assert isinstance(manager.addons[0], PreCrawlerOnlyAddon)
+
     def test_load_settings_order(self):
         # Get three addons with different settings
         addonlist = []
         for i in range(3):
             addon = get_addon_cls({"KEY1": i})
-            addon.number = i
+            addon.number = i  # type: ignore[attr-defined]
             addonlist.append(addon)
         # Test for every possible ordering
         for ordered_addons in itertools.permutations(addonlist):
-            expected_order = [a.number for a in ordered_addons]
+            expected_order = [a.number for a in ordered_addons]  # type: ignore[attr-defined]
             settings = {"ADDONS": {a: i for i, a in enumerate(ordered_addons)}}
             crawler = get_crawler(settings_dict=settings)
             manager = crawler.addons
@@ -130,6 +161,7 @@ class TestAddonManager:
         settings.set("KEY", 0, priority="default")
         runner = runner_cls(settings)
         crawler = runner.create_crawler(Spider)
+        crawler._apply_settings()
         assert crawler.settings.getint("KEY") == 20
 
     def test_fallback_workflow(self):
@@ -145,7 +177,7 @@ class TestAddonManager:
                     )
                 settings["SCHEDULER"] = "AddonScheduler"
 
-        settings_dict = {
+        settings_dict: dict[str, Any] = {
             "ADDONS": {AddonWithFallback: 1},
         }
         crawler = get_crawler(settings_dict=settings_dict)

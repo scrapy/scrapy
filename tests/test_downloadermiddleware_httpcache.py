@@ -1,28 +1,46 @@
 from __future__ import annotations
 
 import email.utils
+import logging
+import pickle
 import shutil
 import tempfile
 import time
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from unittest import mock
 
 import pytest
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
-from scrapy.extensions.httpcache import FilesystemCacheStorage
+from scrapy.extensions.httpcache import DummyPolicy, rfc1123_to_epoch
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
-from scrapy.utils.defer import ensure_awaitable
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
-from tests.utils import async_sleep
-from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import Generator
 
     from scrapy.crawler import Crawler
+
+
+class CustomResponse(Response):
+    attributes: tuple[str, ...] = (*Response.attributes, "custom")
+
+    def __init__(self, *args: Any, custom: str | None = None, **kwargs: Any):
+        self.custom = custom
+        super().__init__(*args, **kwargs)
+
+
+class AlwaysStalePolicy(DummyPolicy):
+    """:class:`~scrapy.extensions.httpcache.DummyPolicy` that always
+    revalidates cached responses."""
+
+    def is_cached_response_fresh(self, cachedresponse, request):
+        return False
 
 
 class TestBase:
@@ -51,7 +69,6 @@ class TestBase:
         settings = {
             "HTTPCACHE_ENABLED": True,
             "HTTPCACHE_DIR": self.tmpdir,
-            "HTTPCACHE_EXPIRATION_SECS": 1,
             "HTTPCACHE_IGNORE_HTTP_CODES": [],
             "HTTPCACHE_POLICY": self.policy_class,
             "HTTPCACHE_STORAGE": self.storage_class,
@@ -59,142 +76,194 @@ class TestBase:
         settings.update(new_settings)
         return settings
 
-    @asynccontextmanager
-    async def _get_crawler(self, **new_settings: Any) -> AsyncGenerator[Crawler, None]:
+    @contextmanager
+    def _get_crawler(self, **new_settings: Any) -> Generator[Crawler]:
         settings = self._get_settings(**new_settings)
         crawler = get_crawler(Spider, settings)
         crawler.spider = crawler._create_spider("example.com")
-        assert crawler.stats
         crawler.stats.open_spider()
         try:
             yield crawler
         finally:
             crawler.stats.close_spider()
 
-    @asynccontextmanager
-    async def _storage(
-        self, **new_settings: Any
-    ) -> AsyncGenerator[tuple[Any, Crawler], None]:
-        async with self._middleware(**new_settings) as mw:
+    @contextmanager
+    def _storage(self, **new_settings: Any):
+        with self._middleware(**new_settings) as mw:
             yield mw.storage, mw.crawler
 
-    @asynccontextmanager
-    async def _middleware(
-        self, **new_settings: Any
-    ) -> AsyncGenerator[HttpCacheMiddleware, None]:
-        async with self._get_crawler(**new_settings) as crawler:
+    @contextmanager
+    def _middleware(self, **new_settings: Any) -> Generator[HttpCacheMiddleware]:
+        with self._get_crawler(**new_settings) as crawler:
             assert crawler.spider
-            mw = HttpCacheMiddleware.from_crawler(crawler)
-            await mw.spider_opened(crawler.spider)
+            mw = build_from_crawler(HttpCacheMiddleware, crawler)
+            mw.spider_opened(crawler.spider)
             try:
                 yield mw
             finally:
-                await mw.spider_closed(crawler.spider)
+                mw.spider_closed(crawler.spider)
 
-    def assertEqualResponse(self, response1, response2):
+    def assertEqualResponse(self, response1: Response, response2: Response) -> None:
         assert response1.url == response2.url
         assert response1.status == response2.status
         assert response1.headers == response2.headers
         assert response1.body == response2.body
 
 
-class StorageTestMixin:
+class StorageTestMixin(TestBase):
     """Mixin containing storage-specific test methods."""
 
-    @coroutine_test
-    async def test_storage(self):
-        async with self._storage() as (storage, crawler):
-            request2 = self.request.copy()
-            assert (
-                await ensure_awaitable(
-                    storage.retrieve_response(crawler.spider, request2)
-                )
-                is None
-            )
+    def _corrupt_cache_entry(
+        self, storage: Any, spider: Spider, request: Request
+    ) -> None:
+        """Make the cache entry of *request* unreadable for *storage*."""
+        raise NotImplementedError
 
-            await ensure_awaitable(
-                storage.store_response(crawler.spider, self.request, self.response)
-            )
-            response2 = await ensure_awaitable(
-                storage.retrieve_response(crawler.spider, request2)
-            )
+    def _downgrade_cache_entry(
+        self, storage: Any, spider: Spider, request: Request
+    ) -> None:
+        """Rewrite the cache entry of *request* as Scrapy 2.14 would have."""
+        raise NotImplementedError
+
+    def test_storage(self):
+        with self._storage(HTTPCACHE_EXPIRATION_SECS=100) as (storage, crawler):
+            request2 = self.request.copy()
+            assert storage.retrieve_response(crawler.spider, request2) is None
+
+            before = time.time()
+            storage.store_response(crawler.spider, self.request, self.response)
+            after = time.time()
+            response2 = storage.retrieve_response(crawler.spider, request2)
             assert isinstance(response2, HtmlResponse)  # content-type header
             self.assertEqualResponse(self.response, response2)
+            assert before <= request2.meta["cache_timestamp"] <= after
 
-            await async_sleep(2)  # wait for cache to expire
-            assert (
-                await ensure_awaitable(
-                    storage.retrieve_response(crawler.spider, request2)
-                )
-                is None
+            expired = time.time() + storage.expiration_secs + 1
+            with mock.patch("scrapy.extensions.httpcache.time", return_value=expired):
+                assert storage.retrieve_response(crawler.spider, request2) is None
+
+    def test_storage_never_expire(self):
+        with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
+            assert storage.retrieve_response(crawler.spider, self.request) is None
+            storage.store_response(crawler.spider, self.request, self.response)
+            future = time.time() + 10**6
+            with mock.patch("scrapy.extensions.httpcache.time", return_value=future):
+                assert storage.retrieve_response(crawler.spider, self.request)
+
+    def test_corrupted_cache_entry_is_a_miss(self, caplog):
+        with self._middleware() as mw:
+            spider = mw.crawler.spider
+            assert spider
+            mw.storage.store_response(spider, self.request, self.response)
+            self._corrupt_cache_entry(mw.storage, spider, self.request)
+
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+                assert mw.process_request(self.request) is None
+
+            assert "treating it as a cache miss" in caplog.text
+            assert mw.crawler.stats.get_value("httpcache/retrieve_error") == 1
+            assert mw.crawler.stats.get_value("httpcache/miss") == 1
+
+            # Storing the response again replaces the corrupted cache entry.
+            mw.storage.store_response(spider, self.request, self.response)
+            self.assertEqualResponse(
+                self.response, mw.storage.retrieve_response(spider, self.request)
             )
 
-    @coroutine_test
-    async def test_storage_never_expire(self):
-        async with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
-            assert (
-                await ensure_awaitable(
-                    storage.retrieve_response(crawler.spider, self.request)
-                )
-                is None
-            )
-            await ensure_awaitable(
-                storage.store_response(crawler.spider, self.request, self.response)
-            )
-            await async_sleep(0.5)  # give the chance to expire
-            assert await ensure_awaitable(
-                storage.retrieve_response(crawler.spider, self.request)
-            )
+    def test_corrupted_cache_entry_ignore_missing(self):
+        with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
+            spider = mw.crawler.spider
+            assert spider
+            mw.storage.store_response(spider, self.request, self.response)
+            self._corrupt_cache_entry(mw.storage, spider, self.request)
 
-    @coroutine_test
-    async def test_storage_no_content_type_header(self):
+            with pytest.raises(IgnoreRequest):
+                mw.process_request(self.request)
+
+            assert mw.crawler.stats.get_value("httpcache/retrieve_error") == 1
+            assert mw.crawler.stats.get_value("httpcache/ignore") == 1
+
+    def test_storage_no_content_type_header(self):
         """Test that the response body is used to get the right response class
         even if there is no Content-Type header"""
-        async with self._storage() as (storage, crawler):
-            assert (
-                await ensure_awaitable(
-                    storage.retrieve_response(crawler.spider, self.request)
-                )
-                is None
-            )
+        with self._storage() as (storage, crawler):
+            assert storage.retrieve_response(crawler.spider, self.request) is None
             response = Response(
                 "http://www.example.com",
                 body=b"<!DOCTYPE html>\n<title>.</title>",
                 status=202,
             )
-            await ensure_awaitable(
-                storage.store_response(crawler.spider, self.request, response)
-            )
-            cached_response = await ensure_awaitable(
-                storage.retrieve_response(crawler.spider, self.request)
-            )
+            storage.store_response(crawler.spider, self.request, response)
+            cached_response = storage.retrieve_response(crawler.spider, self.request)
             assert isinstance(cached_response, HtmlResponse)
             self.assertEqualResponse(response, cached_response)
 
+    def test_storage_response_class(self):
+        with self._storage() as (storage, crawler):
+            response = CustomResponse(
+                "http://www.example.com", body=b"test body", custom="value"
+            )
+            storage.store_response(crawler.spider, self.request, response)
+            cached_response = storage.retrieve_response(crawler.spider, self.request)
+            assert isinstance(cached_response, CustomResponse)
+            assert cached_response.custom == "value"
 
-class PolicyTestMixin:
+    def test_storage_encoding(self):
+        """The encoding of the stored response is kept even when it cannot be
+        inferred from the response data."""
+        with self._storage() as (storage, crawler):
+            response = HtmlResponse(
+                "http://www.example.com",
+                body='<meta charset="iso-8859-1">€'.encode(),
+                encoding="utf-8",
+            )
+            storage.store_response(crawler.spider, self.request, response)
+            cached_response = storage.retrieve_response(crawler.spider, self.request)
+            assert cached_response.encoding == "utf-8"
+            assert cached_response.text == response.text
+
+    def test_storage_old_cache_entry(self):
+        with self._storage() as (storage, crawler):
+            storage.store_response(crawler.spider, self.request, self.response)
+            self._downgrade_cache_entry(storage, crawler.spider, self.request)
+            cached_response = storage.retrieve_response(crawler.spider, self.request)
+            assert isinstance(cached_response, HtmlResponse)
+            self.assertEqualResponse(self.response, cached_response)
+
+
+class PolicyTestMixin(TestBase):
     """Mixin containing policy-specific test methods."""
 
-    @coroutine_test
-    async def test_dont_cache(self):
-        async with self._middleware() as mw:
-            self.request.meta["dont_cache"] = True
-            await mw.process_response(self.request, self.response)
-            assert (
-                await ensure_awaitable(
-                    mw.storage.retrieve_response(mw.crawler.spider, self.request)
-                )
-                is None
-            )
+    def test_cache_timestamp(self):
+        with self._middleware() as mw:
+            assert mw.process_request(self.request) is None
+            assert "cache_timestamp" not in self.request.meta
 
-        async with self._middleware() as mw:
+            before = time.time()
+            mw.process_response(self.request, self.response)
+            after = time.time()
+
+            if not mw.policy.should_cache_response(self.response, self.request):
+                return
+
+            response = mw.process_request(self.request)
+            assert isinstance(response, Response)
+            assert before <= self.request.meta["cache_timestamp"] <= after
+
+    def test_dont_cache(self):
+        with self._middleware() as mw:
+            self.request.meta["dont_cache"] = True
+            assert mw.process_request(self.request) is None
+            mw.process_response(self.request, self.response)
+            assert mw.storage.retrieve_response(mw.crawler.spider, self.request) is None
+
+        with self._middleware() as mw:
             self.request.meta["dont_cache"] = False
-            await mw.process_response(self.request, self.response)
+            mw.process_response(self.request, self.response)
             if mw.policy.should_cache_response(self.response, self.request):
                 assert isinstance(
-                    await ensure_awaitable(
-                        mw.storage.retrieve_response(mw.crawler.spider, self.request)
-                    ),
+                    mw.storage.retrieve_response(mw.crawler.spider, self.request),
                     self.response.__class__,
                 )
 
@@ -202,130 +271,126 @@ class PolicyTestMixin:
 class DummyPolicyTestMixin(PolicyTestMixin):
     """Mixin containing dummy policy specific test methods."""
 
-    @coroutine_test
-    async def test_middleware(self):
-        async with self._middleware() as mw:
-            assert await mw.process_request(self.request) is None
-            await mw.process_response(self.request, self.response)
-            response = await mw.process_request(self.request)
+    def test_middleware(self):
+        with self._middleware() as mw:
+            assert mw.process_request(self.request) is None
+            mw.process_response(self.request, self.response)
+            response = mw.process_request(self.request)
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
 
-    @coroutine_test
-    async def test_different_request_response_urls(self):
-        async with self._middleware() as mw:
+    def test_different_request_response_urls(self):
+        with self._middleware() as mw:
             req = Request("http://host.com/path")
             res = Response("http://host2.net/test.html")
-            assert await mw.process_request(req) is None
-            await mw.process_response(req, res)
-            cached = await mw.process_request(req)
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
+            cached = mw.process_request(req)
             assert isinstance(cached, Response)
             self.assertEqualResponse(res, cached)
             assert "cached" in cached.flags
 
-    @coroutine_test
-    async def test_middleware_ignore_missing(self):
-        async with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
+    def test_middleware_ignore_missing(self):
+        with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
             with pytest.raises(IgnoreRequest):
-                await mw.process_request(self.request)
-            await mw.process_response(self.request, self.response)
-            response = await mw.process_request(self.request)
+                mw.process_request(self.request)
+            mw.process_response(self.request, self.response)
+            response = mw.process_request(self.request)
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
 
-    @coroutine_test
-    async def test_middleware_ignore_schemes(self):
+    def test_middleware_ignore_schemes(self):
         # http responses are cached by default
         req, res = Request("http://test.com/"), Response("http://test.com/")
-        async with self._middleware() as mw:
-            assert await mw.process_request(req) is None
-            await mw.process_response(req, res)
+        with self._middleware() as mw:
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
 
-            cached = await mw.process_request(req)
+            cached = mw.process_request(req)
             assert isinstance(cached, Response), type(cached)
             self.assertEqualResponse(res, cached)
             assert "cached" in cached.flags
 
         # file response is not cached by default
         req, res = Request("file:///tmp/t.txt"), Response("file:///tmp/t.txt")
-        async with self._middleware() as mw:
-            assert await mw.process_request(req) is None
-            await mw.process_response(req, res)
+        with self._middleware() as mw:
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
 
-            assert (
-                await ensure_awaitable(
-                    mw.storage.retrieve_response(mw.crawler.spider, req)
-                )
-                is None
-            )
-            assert await mw.process_request(req) is None
+            assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
+            assert mw.process_request(req) is None
 
         # s3 scheme response is cached by default
-        req, res = Request("s3://bucket/key"), Response("http://bucket/key")
-        async with self._middleware() as mw:
-            assert await mw.process_request(req) is None
-            await mw.process_response(req, res)
+        req, res = Request("s3://bucket/key"), Response("s3://bucket/key")
+        with self._middleware() as mw:
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
 
-            cached = await mw.process_request(req)
+            cached = mw.process_request(req)
             assert isinstance(cached, Response), type(cached)
             self.assertEqualResponse(res, cached)
             assert "cached" in cached.flags
 
         # ignore s3 scheme
-        req, res = Request("s3://bucket/key2"), Response("http://bucket/key2")
-        async with self._middleware(HTTPCACHE_IGNORE_SCHEMES=["s3"]) as mw:
-            assert await mw.process_request(req) is None
-            await mw.process_response(req, res)
+        req, res = Request("s3://bucket/key2"), Response("s3://bucket/key2")
+        with self._middleware(HTTPCACHE_IGNORE_SCHEMES=["s3"]) as mw:
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
 
-            assert (
-                await ensure_awaitable(
-                    mw.storage.retrieve_response(mw.crawler.spider, req)
-                )
-                is None
-            )
-            assert await mw.process_request(req) is None
+            assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
+            assert mw.process_request(req) is None
 
-    @coroutine_test
-    async def test_middleware_ignore_http_codes(self):
+    def test_middleware_ignore_http_codes(self):
         # test response is not cached
-        async with self._middleware(HTTPCACHE_IGNORE_HTTP_CODES=[202]) as mw:
-            assert await mw.process_request(self.request) is None
-            await mw.process_response(self.request, self.response)
+        with self._middleware(HTTPCACHE_IGNORE_HTTP_CODES=[202]) as mw:
+            assert mw.process_request(self.request) is None
+            mw.process_response(self.request, self.response)
 
-            assert (
-                await ensure_awaitable(
-                    mw.storage.retrieve_response(mw.crawler.spider, self.request)
-                )
-                is None
-            )
-            assert await mw.process_request(self.request) is None
+            assert mw.storage.retrieve_response(mw.crawler.spider, self.request) is None
+            assert mw.process_request(self.request) is None
 
         # test response is cached
-        async with self._middleware(HTTPCACHE_IGNORE_HTTP_CODES=[203]) as mw:
-            await mw.process_response(self.request, self.response)
-            response = await mw.process_request(self.request)
+        with self._middleware(HTTPCACHE_IGNORE_HTTP_CODES=[203]) as mw:
+            mw.process_response(self.request, self.response)
+            response = mw.process_request(self.request)
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
+
+    def test_revalidation_keeps_cached_response(self):
+        # The dummy policy considers every cached response valid, so a policy
+        # that subclasses it to force revalidation always gets the cached
+        # response back, whatever the new response is.
+        with self._middleware(HTTPCACHE_POLICY=AlwaysStalePolicy) as mw:
+            assert mw.process_request(self.request) is None
+            mw.process_response(self.request, self.response)
+
+            assert mw.process_request(self.request) is None
+            fresh_response = self.response.replace(body=b"new body")
+            response = mw.process_response(self.request, fresh_response)
+            assert isinstance(response, Response)
+            self.assertEqualResponse(self.response, response)
+            assert "cached" in response.flags
+            assert mw.stats.get_value("httpcache/revalidate") == 1
 
 
 class RFC2616PolicyTestMixin(PolicyTestMixin):
     """Mixin containing RFC2616 policy specific test methods."""
 
     @staticmethod
-    async def _process_requestresponse(
+    def _process_requestresponse(
         mw: HttpCacheMiddleware, request: Request, response: Response | None
-    ) -> Response | Request:
-        result = None
+    ) -> Response:
+        result: Request | Response | None = None
         try:
-            result = await mw.process_request(request)
+            result = mw.process_request(request)
             if result:
-                assert isinstance(result, (Request, Response))
+                assert isinstance(result, Response)
                 return result
             assert response is not None
-            result = await mw.process_response(request, response)
+            result = mw.process_response(request, response)
             assert isinstance(result, Response)
             return result
         except Exception:
@@ -334,42 +399,36 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             print("Result", result)
             raise
 
-    @coroutine_test
-    async def test_request_cacheability(self):
+    def test_request_cacheability(self):
         res0 = Response(
             self.request.url, status=200, headers={"Expires": self.tomorrow}
         )
         req0 = Request("http://example.com")
         req1 = req0.replace(headers={"Cache-Control": "no-store"})
         req2 = req0.replace(headers={"Cache-Control": "no-cache"})
-        async with self._middleware() as mw:
+        with self._middleware() as mw:
             # response for a request with no-store must not be cached
-            res1 = await self._process_requestresponse(mw, req1, res0)
+            res1 = self._process_requestresponse(mw, req1, res0)
             self.assertEqualResponse(res1, res0)
-            assert (
-                await ensure_awaitable(
-                    mw.storage.retrieve_response(mw.crawler.spider, req1)
-                )
-                is None
-            )
+            assert mw.storage.retrieve_response(mw.crawler.spider, req1) is None
             # Re-do request without no-store and expect it to be cached
-            res2 = await self._process_requestresponse(mw, req0, res0)
+            res2 = self._process_requestresponse(mw, req0, res0)
             assert "cached" not in res2.flags
-            res3 = await mw.process_request(req0)
+            res3 = mw.process_request(req0)
+            assert isinstance(res3, Response)
             assert "cached" in res3.flags
             self.assertEqualResponse(res2, res3)
             # request with no-cache directive must not return cached response
             # but it allows new response to be stored
             res0b = res0.replace(body=b"foo")
-            res4 = await self._process_requestresponse(mw, req2, res0b)
+            res4 = self._process_requestresponse(mw, req2, res0b)
             self.assertEqualResponse(res4, res0b)
             assert "cached" not in res4.flags
-            res5 = await self._process_requestresponse(mw, req0, None)
+            res5 = self._process_requestresponse(mw, req0, None)
             self.assertEqualResponse(res5, res0b)
             assert "cached" in res5.flags
 
-    @coroutine_test
-    async def test_response_cacheability(self):
+    def test_response_cacheability(self):
         responses = [
             # 304 is not cacheable no matter what servers sends
             (False, 304, {}),
@@ -401,39 +460,13 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             (True, 302, {"Expires": self.tomorrow}),
             (True, 200, {"Etag": "foo"}),
         ]
-        async with self._middleware() as mw:
+        with self._middleware() as mw:
             for idx, (shouldcache, status, headers) in enumerate(responses):
                 req0 = Request(f"http://example-{idx}.com")
                 res0 = Response(req0.url, status=status, headers=headers)
-                res1 = await self._process_requestresponse(mw, req0, res0)
+                res1 = self._process_requestresponse(mw, req0, res0)
                 res304 = res0.replace(status=304)
-                res2 = await self._process_requestresponse(
-                    mw, req0, res304 if shouldcache else res0
-                )
-                self.assertEqualResponse(res1, res0)
-                self.assertEqualResponse(res2, res0)
-                resc = await ensure_awaitable(
-                    mw.storage.retrieve_response(mw.crawler.spider, req0)
-                )
-                if shouldcache:
-                    self.assertEqualResponse(resc, res1)
-                    assert "cached" in res2.flags
-                    assert res2.status != 304
-                else:
-                    assert not resc
-                    assert "cached" not in res2.flags
-
-        # cache unconditionally unless response contains no-store or is a 304
-        async with self._middleware(HTTPCACHE_ALWAYS_STORE=True) as mw:
-            for idx, (_, status, headers) in enumerate(responses):
-                shouldcache = (
-                    "no-store" not in headers.get("Cache-Control", "") and status != 304
-                )
-                req0 = Request(f"http://example2-{idx}.com")
-                res0 = Response(req0.url, status=status, headers=headers)
-                res1 = await self._process_requestresponse(mw, req0, res0)
-                res304 = res0.replace(status=304)
-                res2 = await self._process_requestresponse(
+                res2 = self._process_requestresponse(
                     mw, req0, res304 if shouldcache else res0
                 )
                 self.assertEqualResponse(res1, res0)
@@ -447,8 +480,31 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                     assert not resc
                     assert "cached" not in res2.flags
 
-    @coroutine_test
-    async def test_cached_and_fresh(self):
+        # cache unconditionally unless response contains no-store or is a 304
+        with self._middleware(HTTPCACHE_ALWAYS_STORE=True) as mw:
+            for idx, (_, status, headers) in enumerate(responses):
+                shouldcache = (
+                    "no-store" not in headers.get("Cache-Control", "") and status != 304
+                )
+                req0 = Request(f"http://example2-{idx}.com")
+                res0 = Response(req0.url, status=status, headers=headers)
+                res1 = self._process_requestresponse(mw, req0, res0)
+                res304 = res0.replace(status=304)
+                res2 = self._process_requestresponse(
+                    mw, req0, res304 if shouldcache else res0
+                )
+                self.assertEqualResponse(res1, res0)
+                self.assertEqualResponse(res2, res0)
+                resc = mw.storage.retrieve_response(mw.crawler.spider, req0)
+                if shouldcache:
+                    self.assertEqualResponse(resc, res1)
+                    assert "cached" in res2.flags
+                    assert res2.status != 304
+                else:
+                    assert not resc
+                    assert "cached" not in res2.flags
+
+    def test_cached_and_fresh(self):
         sampledata = [
             (200, {"Date": self.yesterday, "Expires": self.tomorrow}),
             (200, {"Date": self.yesterday, "Cache-Control": "max-age=86405"}),
@@ -491,28 +547,27 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             (301, {}),
             (308, {}),
         ]
-        async with self._middleware() as mw:
+        with self._middleware() as mw:
             for idx, (status, headers) in enumerate(sampledata):
                 req0 = Request(f"http://example-{idx}.com")
                 res0 = Response(req0.url, status=status, headers=headers)
                 # cache fresh response
-                res1 = await self._process_requestresponse(mw, req0, res0)
+                res1 = self._process_requestresponse(mw, req0, res0)
                 self.assertEqualResponse(res1, res0)
                 assert "cached" not in res1.flags
                 # return fresh cached response without network interaction
-                res2 = await self._process_requestresponse(mw, req0, None)
+                res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
                 assert "cached" in res2.flags
                 # validate cached response if request max-age set as 0
                 req1 = req0.replace(headers={"Cache-Control": "max-age=0"})
                 res304 = res0.replace(status=304)
-                assert await mw.process_request(req1) is None
-                res3 = await self._process_requestresponse(mw, req1, res304)
+                assert mw.process_request(req1) is None
+                res3 = self._process_requestresponse(mw, req1, res304)
                 self.assertEqualResponse(res1, res3)
                 assert "cached" in res3.flags
 
-    @coroutine_test
-    async def test_cached_and_stale(self):
+    def test_cached_and_stale(self):
         sampledata = [
             (200, {"Date": self.today, "Expires": self.yesterday}),
             (
@@ -549,18 +604,18 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             ),
             (200, {"Cache-Control": "max-age=86400,must-revalidate", "Age": "86405"}),
         ]
-        async with self._middleware() as mw:
+        with self._middleware() as mw:
             for idx, (status, headers) in enumerate(sampledata):
                 req0 = Request(f"http://example-{idx}.com")
                 res0a = Response(req0.url, status=status, headers=headers)
                 # cache expired response
-                res1 = await self._process_requestresponse(mw, req0, res0a)
+                res1 = self._process_requestresponse(mw, req0, res0a)
                 self.assertEqualResponse(res1, res0a)
                 assert "cached" not in res1.flags
                 # Same request but as cached response is stale a new response must
                 # be returned
                 res0b = res0a.replace(body=b"bar")
-                res2 = await self._process_requestresponse(mw, req0, res0b)
+                res2 = self._process_requestresponse(mw, req0, res0b)
                 self.assertEqualResponse(res2, res0b)
                 assert "cached" not in res2.flags
                 cc = headers.get("Cache-Control", "")
@@ -569,13 +624,13 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 # are present
                 if "ETag" in headers or "Last-Modified" in headers:
                     res0c = res0b.replace(status=304)
-                    res3 = await self._process_requestresponse(mw, req0, res0c)
+                    res3 = self._process_requestresponse(mw, req0, res0c)
                     self.assertEqualResponse(res3, res0b)
                     assert "cached" in res3.flags
                     # get cached response on server errors unless must-revalidate
                     # in cached response
                     res0d = res0b.replace(status=500)
-                    res4 = await self._process_requestresponse(mw, req0, res0d)
+                    res4 = self._process_requestresponse(mw, req0, res0d)
                     if "must-revalidate" in cc:
                         assert "cached" not in res4.flags
                         self.assertEqualResponse(res4, res0d)
@@ -585,32 +640,123 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 # Requests with max-stale can fetch expired cached responses
                 # unless cached response has must-revalidate
                 req1 = req0.replace(headers={"Cache-Control": "max-stale"})
-                res5 = await self._process_requestresponse(mw, req1, res0b)
+                res5 = self._process_requestresponse(mw, req1, res0b)
                 self.assertEqualResponse(res5, res0b)
                 if "no-cache" in cc or "must-revalidate" in cc:
                     assert "cached" not in res5.flags
                 else:
                     assert "cached" in res5.flags
 
-    @coroutine_test
-    async def test_process_exception(self):
-        async with self._middleware() as mw:
+    def test_middleware_ignore_schemes(self):
+        # file responses are not cached by default
+        req = Request("file:///tmp/t.txt")
+        res = Response(req.url, headers={"Expires": self.tomorrow})
+        with self._middleware() as mw:
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
+
+            assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
+            assert mw.process_request(req) is None
+
+    def test_max_stale_with_value(self):
+        # A response that expired one day ago.
+        headers = {"Date": self.yesterday, "Expires": self.yesterday}
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers=headers)
+            self._process_requestresponse(mw, req0, res0)
+
+            # max-stale greater than the staleness of the cached response
+            req1 = req0.replace(headers={"Cache-Control": "max-stale=172800"})
+            res1 = mw.process_request(req1)
+            assert isinstance(res1, Response)
+            assert "cached" in res1.flags
+
+            # max-stale lower than the staleness of the cached response
+            req2 = req0.replace(headers={"Cache-Control": "max-stale=60"})
+            assert mw.process_request(req2) is None
+
+            # a non-integer max-stale value is ignored
+            req3 = req0.replace(headers={"Cache-Control": "max-stale=soon"})
+            assert mw.process_request(req3) is None
+
+    def test_freshen_response_on_revalidation(self):
+        # A response successfully revalidated (304) must have its Date
+        # header, and thus its age, refreshed in the cache.
+        headers = {
+            "Date": self.yesterday,
+            "Cache-Control": "max-age=60",
+            "Last-Modified": self.yesterday,
+            "Warning": ["110 - old", "214 - keep"],
+        }
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers=headers)
+            self._process_requestresponse(mw, req0, res0)
+
+            # The cached response is stale, so the request must be
+            # revalidated with the server.
+            assert mw.process_request(req0) is None
+            res304 = Response(req0.url, status=304, headers={"Date": self.today})
+            res1 = mw.process_response(req0, res304)
+            assert res1.headers["Date"] == self.today.encode()
+            assert res1.headers["Warning"] == b"214 - keep"
+
+            # The freshened response must now be considered fresh again,
+            # without a further round trip to the server.
+            res2 = mw.process_request(req0)
+            assert isinstance(res2, Response)
+            assert "cached" in res2.flags
+            assert res2.headers["Date"] == self.today.encode()
+
+    def test_response_dated_in_the_future(self):
+        # A Date header ahead of the local clock must not make the cached
+        # response look aged.
+        headers = {"Date": self.tomorrow, "Cache-Control": "max-age=10"}
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers=headers)
+            res1 = self._process_requestresponse(mw, req0, res0)
+            assert "cached" not in res1.flags
+
+            res2 = self._process_requestresponse(mw, req0, None)
+            self.assertEqualResponse(res1, res2)
+            assert "cached" in res2.flags
+
+    def test_cache_timestamp_not_leaked_on_invalidate(self):
+        # A stale cached response invalidated by a fresh network response must
+        # not leave its storage timestamp behind on the request meta.
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers={"Expires": self.yesterday})
+            self._process_requestresponse(mw, req0, res0)
+
+            assert mw.process_request(req0) is None
+            assert "cache_timestamp" in req0.meta
+
+            res1 = res0.replace(body=b"new body")
+            response = mw.process_response(req0, res1)
+            assert response is res1
+            assert "cache_timestamp" not in req0.meta
+
+    def test_process_exception(self):
+        with self._middleware() as mw:
             res0 = Response(self.request.url, headers={"Expires": self.yesterday})
             req0 = Request(self.request.url)
-            await self._process_requestresponse(mw, req0, res0)
+            self._process_requestresponse(mw, req0, res0)
             for e in mw.DOWNLOAD_EXCEPTIONS:
                 # Simulate encountering an error on download attempts
-                assert await mw.process_request(req0) is None
+                assert mw.process_request(req0) is None
                 res1 = mw.process_exception(req0, e("foo"))
                 # Use cached response as recovery
+                assert isinstance(res1, Response)
                 assert "cached" in res1.flags
                 self.assertEqualResponse(res0, res1)
             # Do not use cached response for unhandled exceptions
-            await mw.process_request(req0)
+            mw.process_request(req0)
             assert mw.process_exception(req0, Exception("foo")) is None
 
-    @coroutine_test
-    async def test_ignore_response_cache_controls(self):
+    def test_ignore_response_cache_controls(self):
         sampledata = [
             (200, {"Date": self.yesterday, "Expires": self.tomorrow}),
             (200, {"Date": self.yesterday, "Cache-Control": "no-store,max-age=86405"}),
@@ -618,68 +764,70 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             (300, {"Cache-Control": "no-cache"}),
             (200, {"Expires": self.tomorrow, "Cache-Control": "no-store"}),
         ]
-        async with self._middleware(
+        with self._middleware(
             HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS=["no-cache", "no-store"]
         ) as mw:
             for idx, (status, headers) in enumerate(sampledata):
                 req0 = Request(f"http://example-{idx}.com")
                 res0 = Response(req0.url, status=status, headers=headers)
                 # cache fresh response
-                res1 = await self._process_requestresponse(mw, req0, res0)
+                res1 = self._process_requestresponse(mw, req0, res0)
                 self.assertEqualResponse(res1, res0)
                 assert "cached" not in res1.flags
                 # return fresh cached response without network interaction
-                res2 = await self._process_requestresponse(mw, req0, None)
+                res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
                 assert "cached" in res2.flags
-
-
-class AsyncDummyCacheStorage(FilesystemCacheStorage):
-    """A simple async storage that wraps FilesystemCacheStorage for testing."""
-
-    async def open_spider(self, spider):
-        await async_sleep(0.01)
-        super().open_spider(spider)
-
-    async def close_spider(self, spider):
-        await async_sleep(0.01)
-        super().close_spider(spider)
-
-    async def retrieve_response(self, spider, request):
-        await async_sleep(0.01)
-        return super().retrieve_response(spider, request)
-
-    async def store_response(self, spider, request, response):
-        await async_sleep(0.01)
-        super().store_response(spider, request, response)
 
 
 # Concrete test classes that combine storage and policy mixins
 
 
-class TestFilesystemStorageWithDummyPolicy(
-    TestBase, StorageTestMixin, DummyPolicyTestMixin
-):
+class FilesystemStorageTestMixin(StorageTestMixin):
     storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        rpath = Path(storage._get_request_path(spider, request))
+        (rpath / "response_body").unlink()
+
+    def _downgrade_cache_entry(self, storage, spider, request) -> None:
+        rpath = Path(storage._get_request_path(spider, request))
+        (rpath / "response_data").unlink()
+
+
+class DbmStorageTestMixin(StorageTestMixin):
+    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        key = storage._fingerprinter.fingerprint(request).hex()
+        storage.db[f"{key}_data"] = b"not a pickle"
+
+    def _downgrade_cache_entry(self, storage, spider, request) -> None:
+        key = storage._fingerprinter.fingerprint(request).hex()
+        data = pickle.loads(storage.db[f"{key}_data"])
+        data = {
+            k: v for k, v in data.items() if k in ("status", "url", "headers", "body")
+        }
+        storage.db[f"{key}_data"] = pickle.dumps(data, protocol=4)
+
+
+class TestFilesystemStorageWithDummyPolicy(
+    FilesystemStorageTestMixin, DummyPolicyTestMixin
+):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
 class TestFilesystemStorageWithRFC2616Policy(
-    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
+    FilesystemStorageTestMixin, RFC2616PolicyTestMixin
 ):
-    storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
-class TestDbmStorageWithDummyPolicy(TestBase, StorageTestMixin, DummyPolicyTestMixin):
-    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+class TestDbmStorageWithDummyPolicy(DbmStorageTestMixin, DummyPolicyTestMixin):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
-class TestDbmStorageWithRFC2616Policy(
-    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
-):
-    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+class TestDbmStorageWithRFC2616Policy(DbmStorageTestMixin, RFC2616PolicyTestMixin):
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
@@ -690,10 +838,9 @@ class TestDbmStorageWithCustomDbmModule(TestDbmStorageWithDummyPolicy):
         new_settings.setdefault("HTTPCACHE_DBM_MODULE", self.dbm_module)
         return super()._get_settings(**new_settings)
 
-    @coroutine_test
-    async def test_custom_dbm_module_loaded(self):
+    def test_custom_dbm_module_loaded(self):
         # make sure our dbm module has been loaded
-        async with self._storage() as (storage, _):
+        with self._storage() as (storage, _):
             assert storage.dbmodule.__name__ == self.dbm_module
 
 
@@ -702,7 +849,22 @@ class TestFilesystemStorageGzipWithDummyPolicy(TestFilesystemStorageWithDummyPol
         new_settings.setdefault("HTTPCACHE_GZIP", True)
         return super()._get_settings(**new_settings)
 
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        # A spider killed while writing a gzip file leaves it truncated.
+        body_path = Path(storage._get_request_path(spider, request), "response_body")
+        body_path.write_bytes(body_path.read_bytes()[:-5])
 
-class TestAsyncStorageWithDummyPolicy(TestBase, StorageTestMixin, DummyPolicyTestMixin):
-    storage_class = f"{__name__}.AsyncDummyCacheStorage"
-    policy_class = "scrapy.extensions.httpcache.DummyPolicy"
+
+@pytest.mark.parametrize(
+    ("string", "expected"),
+    [
+        # RFC examples
+        ("Sun, 06 Nov 1994 08:49:37 GMT", 784111777),
+        ("Sunday, 06-Nov-94 08:49:37 GMT", 784111777),
+        ("Sun Nov  6 08:49:37 1994", 784111777),
+        (None, None),
+        ("foo", None),
+    ],
+)
+def test_rfc1123_to_epoch(string: str | None, expected: int | None) -> None:
+    assert rfc1123_to_epoch(string) == expected

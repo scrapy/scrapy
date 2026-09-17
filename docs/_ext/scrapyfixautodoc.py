@@ -11,7 +11,7 @@ from sphinx.application import Sphinx
 
 def maybe_skip_member(app: Sphinx, what, name: str, obj, skip: bool, options) -> bool:
     if not skip:
-        # autodocs was generating a text "alias of" for the following members
+        # autodoc was generating the text "alias of" for the following members
         return name in {"default_item_class", "default_selector_class"}
     return skip
 

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class LogStats:
     """Log basic scraping stats periodically like:
-    * RPM - Requests per Minute
+    * RPM - Responses per Minute
     * IPM - Items per Minute
     """
 
@@ -37,7 +37,6 @@ class LogStats:
         interval: float = crawler.settings.getfloat("LOGSTATS_INTERVAL")
         if not interval:
             raise NotConfigured
-        assert crawler.stats
         o = cls(crawler.stats, interval)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)

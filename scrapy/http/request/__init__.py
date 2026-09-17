@@ -11,7 +11,6 @@ import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
-    AnyStr,
     Concatenate,
     NoReturn,
     TypeAlias,
@@ -51,7 +50,9 @@ class VerboseCookie(TypedDict):
     secure: NotRequired[bool]
 
 
-CookiesT: TypeAlias = dict[str, str] | list[VerboseCookie]
+CookiesT: TypeAlias = (
+    dict[str | bytes, str | bytes | bool | float | int] | list[VerboseCookie]
+)
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
@@ -125,7 +126,10 @@ class Request(object_ref):
         url: str,
         callback: CallbackT | None = None,
         method: str = "GET",
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes | str | None = None,
         cookies: CookiesT | None = None,
         meta: dict[str, Any] | None = None,
@@ -138,6 +142,7 @@ class Request(object_ref):
     ) -> None:
         self._encoding: str = encoding  # this one has to be set first
         self.method: str = str(method).upper()
+        self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._set_url(url)
         self._set_body(body)
         if not isinstance(priority, int):
@@ -166,7 +171,8 @@ class Request(object_ref):
         #:
         #: The callable must expect the response as its first parameter, and
         #: support any additional keyword arguments set through
-        #: :attr:`cb_kwargs`.
+        #: :attr:`cb_kwargs`. See :ref:`writing-callbacks` and
+        #: :ref:`callback-output`.
         #:
         #: In addition to an arbitrary callable, the following values are also
         #: supported:
@@ -187,8 +193,7 @@ class Request(object_ref):
         #:     raises exceptions for non-2xx responses by default, sending them
         #:     to the :attr:`errback` instead.
         #:
-        #: .. seealso::
-        #:     :ref:`topics-request-response-ref-request-callback-arguments`
+        #: .. seealso:: :ref:`callbacks`
         self.callback: CallbackT | None = callback
 
         #: :class:`~collections.abc.Callable` to handle exceptions raised
@@ -197,7 +202,7 @@ class Request(object_ref):
         #: The callable must expect a :exc:`~twisted.python.failure.Failure` as
         #: its first parameter.
         #:
-        #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
+        #: .. seealso:: :ref:`errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
         self._cookies: CookiesT | None = cookies or None
@@ -232,7 +237,6 @@ class Request(object_ref):
         #: default. See :meth:`~scrapy.Spider.start`.
         self.dont_filter: bool = dont_filter
 
-        self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
         self._flags: list[str] | None = list(flags) if flags else None
 
@@ -252,11 +256,17 @@ class Request(object_ref):
     def url(self) -> str:
         return self._url
 
+    def _url_is_verbatim(self) -> bool:
+        return bool(self._meta and self._meta.get("verbatim_url"))
+
     def _set_url(self, url: str) -> None:
         if not isinstance(url, str):
             raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
-        self._url = safe_url_string(url, self.encoding)
+        if self._url_is_verbatim():
+            self._url = url
+        else:
+            self._url = safe_url_string(url, self.encoding)
 
         if (
             "://" not in self._url
@@ -284,7 +294,7 @@ class Request(object_ref):
 
     @flags.setter
     def flags(self, value: list[str] | None) -> None:
-        self._flags = value or None
+        self._flags = value
 
     @property
     def cookies(self) -> CookiesT:
@@ -294,7 +304,7 @@ class Request(object_ref):
 
     @cookies.setter
     def cookies(self, value: CookiesT | None) -> None:
-        self._cookies = value or None
+        self._cookies = value
 
     @property
     def headers(self) -> Headers:
@@ -304,12 +314,18 @@ class Request(object_ref):
 
     @headers.setter
     def headers(
-        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
+        self,
+        value: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None,
     ) -> None:
         if isinstance(value, Headers):
             self._headers = value
         else:
-            self._headers = Headers(value, encoding=self.encoding) if value else None
+            self._headers = (
+                Headers(value, encoding=self.encoding) if value is not None else None
+            )
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
@@ -372,6 +388,20 @@ class Request(object_ref):
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
+
+    def to_curl(self) -> str:
+        """Return a string with a `cURL <https://curl.se/>`_ command equivalent
+        to this request.
+
+        Inverse of :meth:`from_curl`. See also
+        :func:`scrapy.utils.request.request_to_curl`.
+
+        .. versionadded:: 2.18.0
+        """
+        # Imported here to avoid a circular import.
+        from scrapy.utils.request import request_to_curl  # noqa: PLC0415
+
+        return request_to_curl(self)
 
     def to_dict(self, *, spider: scrapy.Spider | None = None) -> dict[str, Any]:
         """Return a dictionary containing the Request's data.

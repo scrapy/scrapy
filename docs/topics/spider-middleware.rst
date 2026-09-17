@@ -1,13 +1,16 @@
+.. module:: scrapy.spidermiddlewares
+
 .. _topics-spider-middleware:
 
 =================
 Spider Middleware
 =================
 
-The spider middleware is a framework of hooks into Scrapy's spider processing
-mechanism where you can plug custom functionality to process the responses that
-are sent to :ref:`topics-spiders` for processing and to process the requests
-and items that are generated from spiders.
+Spider middleware is a framework of hooks into Scrapy's spider processing
+mechanism where you can plug in custom functionality to process the responses
+that are sent to :ref:`topics-spiders` for processing, and to process the
+requests and items that come out of a spider's callback. See :ref:`concepts`
+for a rundown of other alternatives.
 
 .. _topics-spider-middleware-setting:
 
@@ -16,7 +19,7 @@ Activating a spider middleware
 
 To activate a spider middleware component, add it to the
 :setting:`SPIDER_MIDDLEWARES` setting, which is a dict whose keys are the
-middleware class path and their values are the middleware orders.
+middleware class paths and whose values are the middleware orders.
 
 Here's an example:
 
@@ -30,12 +33,11 @@ The :setting:`SPIDER_MIDDLEWARES` setting is merged with the
 :setting:`SPIDER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant to
 be overridden) and then sorted by order to get the final sorted list of enabled
 middlewares: the first middleware is the one closer to the engine and the last
-is the one closer to the spider. In other words,
-the :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_input`
-method of each middleware will be invoked in increasing
-middleware order (100, 200, 300, ...), and the
-:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output` method
-of each middleware will be invoked in decreasing order.
+is the one closer to the spider. In other words, the
+:meth:`~SpiderMiddleware.process_spider_input` method of each middleware will
+be invoked in increasing middleware order (100, 200, 300, ...), and the
+:meth:`~SpiderMiddleware.process_spider_output` method of each middleware will
+be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
 :setting:`SPIDER_MIDDLEWARES_BASE` setting and pick a value according to where
@@ -43,10 +45,10 @@ you want to insert the middleware. The order does matter because each
 middleware performs a different action and your middleware could depend on some
 previous (or subsequent) middleware being applied.
 
-If you want to disable a builtin middleware (the ones defined in
-:setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
-in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
-value.  For example, if you want to disable the off-site middleware:
+If you want to disable a built-in middleware (the ones defined in
+:setting:`SPIDER_MIDDLEWARES_BASE` and enabled by default) you must define it
+in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as
+its value. For example, if you want to disable the referer middleware:
 
 .. code-block:: python
 
@@ -65,8 +67,6 @@ Writing your own spider middleware
 
 Each spider middleware is a :ref:`component <topics-components>` that defines
 one or more of these methods:
-
-.. module:: scrapy.spidermiddlewares
 
 .. class:: SpiderMiddleware
 
@@ -117,41 +117,41 @@ one or more of these methods:
         :type response: :class:`~scrapy.http.Response` object
 
     .. method:: process_spider_output(response, result)
+        :async:
 
-        This method is called with the results returned from the Spider, after
-        it has processed the response.
+        This method is an :term:`asynchronous generator` called with the
+        results from the spider after the spider has processed the response.
 
-        :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.Request` objects and :ref:`item objects
-        <topics-items>`.
+        *result* is lazy: a generator callback runs as *result* is iterated, so
+        code that runs before that iteration runs before the callback body.
 
-        Consider defining this method as an :term:`asynchronous generator`,
-        which will be a requirement in a future version of Scrapy. However, if
-        you plan on sharing your spider middleware with other people, consider
-        either :ref:`enforcing Scrapy 2.7 <enforce-component-requirements>`
-        as a minimum requirement of your spider middleware, or :ref:`making
-        your spider middleware universal <universal-spider-middleware>` so that
-        it works with Scrapy versions earlier than Scrapy 2.7.
+        The number of objects yielded need not match the number received: drop
+        some, pass others through unchanged, or yield more than were received,
+        e.g. turning one item into several.
+
+        .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
-        :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.Request` objects and
-          :ref:`item objects <topics-items>`
+        :param result: the results from the spider
+        :type result: an :term:`asynchronous iterable` of
+          :class:`~scrapy.Request` objects and :ref:`item objects
+          <topics-items>`
 
     .. method:: process_spider_output_async(response, result)
         :async:
 
-        If defined, this method must be an :term:`asynchronous generator`,
-        which will be called instead of :meth:`process_spider_output` if
-        ``result`` is an :term:`asynchronous iterable`.
+        Alternative name for :meth:`process_spider_output` used when
+        implementing a :ref:`universal spider middleware
+        <universal-spider-middleware>`.
 
     .. method:: process_spider_exception(response, exception)
 
-        This method is called when a spider or :meth:`process_spider_output`
-        method (from a previous spider middleware) raises an exception.
+        This method is called when a spider callback or a
+        :meth:`process_spider_output` method (from a previous spider
+        middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
         iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>`
@@ -174,17 +174,44 @@ one or more of these methods:
         :type exception: :exc:`Exception` object
 
 
+.. _universal-spider-middleware:
+
+Universal spider middlewares
+----------------------------
+
+In Scrapy 2.6.3 and lower, ``process_spider_output()`` must be a *synchronous*
+generator.
+
+To support those versions and higher Scrapy versions in the same middleware,
+rename your asynchronous :meth:`~SpiderMiddleware.process_spider_output`
+method to :meth:`~SpiderMiddleware.process_spider_output_async`, and define a
+synchronous ``process_spider_output()`` method to be used by 2.6.3 and lower
+versions.
+
+For example:
+
+.. code-block:: python
+
+    class UniversalSpiderMiddleware:
+        async def process_spider_output_async(self, response, result):
+            async for r in result:
+                # ... do something with r
+                yield r
+
+        def process_spider_output(self, response, result):
+            for r in result:
+                # ... do something with r
+                yield r
+
+.. currentmodule:: None
+
 Base class for custom spider middlewares
 ----------------------------------------
 
 Scrapy provides a base class for custom spider middlewares. It's not required
-to use it but it can help with simplifying middleware implementations and
-reducing the amount of boilerplate code in :ref:`universal middlewares
-<universal-spider-middleware>`.
+to use it but it can help with simplifying middleware implementations.
 
-.. module:: scrapy.spidermiddlewares.base
-
-.. autoclass:: BaseSpiderMiddleware
+.. autoclass:: scrapy.spidermiddlewares.base.BaseSpiderMiddleware
    :members:
 
 .. _topics-spider-middleware-ref:
@@ -202,36 +229,14 @@ For a list of the components enabled by default (and their orders) see the
 DepthMiddleware
 ---------------
 
-.. module:: scrapy.spidermiddlewares.depth
-   :synopsis: Depth Spider Middleware
+.. reqmeta:: depth
 
-.. class:: DepthMiddleware
-
-   DepthMiddleware is used for tracking the depth of each Request inside the
-   site being scraped. It works by setting ``request.meta['depth'] = 0`` whenever
-   there is no value previously set (usually just the first Request) and
-   incrementing it by 1 otherwise.
-
-   It can be used to limit the maximum depth to scrape, control Request
-   priority based on their depth, and things like that.
-
-   The :class:`DepthMiddleware` can be configured through the following
-   settings (see the settings documentation for more info):
-
-      * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
-        crawl for any site. If zero, no limit will be imposed.
-      * :setting:`DEPTH_STATS_VERBOSE` - Whether to collect the number of
-        requests for each depth.
-      * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
-        their depth.
+.. autoclass:: scrapy.spidermiddlewares.depth.DepthMiddleware
 
 HttpErrorMiddleware
 -------------------
 
-.. module:: scrapy.spidermiddlewares.httperror
-   :synopsis: HTTP Error Spider Middleware
-
-.. class:: HttpErrorMiddleware
+.. class:: scrapy.spidermiddlewares.httperror.HttpErrorMiddleware
 
     Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
     have to deal with them, which (most of the time) imposes an overhead,
@@ -297,11 +302,36 @@ Default: ``False``
 Pass all responses, regardless of its status code.
 
 
+MetaCopyDetectionMiddleware
+---------------------------
+
+.. class:: scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware
+
+   Warns when a spider yields a request that contains internal meta keys which
+   should not be copied from :attr:`response.meta <scrapy.http.Response.meta>`
+   into new requests. See :attr:`~scrapy.http.Request.meta` to learn why.
+
+   Only 1 warning is emitted per crawl.
+
+   MetaCopyDetectionMiddleware settings
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. setting:: META_COPY_WARN_SKIP_KEYS
+
+   META_COPY_WARN_SKIP_KEYS
+   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Default: ``[]``
+
+   A list of internal meta key names to exclude from the internal-keys check.
+   Use this when you intentionally copy one of the monitored keys and want to
+   suppress the resulting warning without disabling the middleware entirely.
+
+
 RefererMiddleware
 -----------------
 
 .. module:: scrapy.spidermiddlewares.referer
-   :synopsis: Referer Spider Middleware
 
 .. class:: RefererMiddleware
 
@@ -325,7 +355,7 @@ Whether to enable referer middleware.
 REFERRER_POLICY
 ^^^^^^^^^^^^^^^
 
-Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
+Default: ``"scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"``
 
 .. reqmeta:: referrer_policy
 
@@ -336,27 +366,29 @@ Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
     using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
     with the same acceptable values as for the ``REFERRER_POLICY`` setting.
 
+.. seealso:: :ref:`security-credential-leakage`
+
 Acceptable values for REFERRER_POLICY
 *************************************
 
-- either a path to a :class:`scrapy.spidermiddlewares.referer.ReferrerPolicy`
-  subclass — a custom policy or one of the built-in ones (see classes below),
+- either a path to a :class:`ReferrerPolicy` subclass — a custom policy or one
+  of the built-in ones (see classes below),
 - or one or more comma-separated standard W3C-defined string values,
 - or the special ``"scrapy-default"``.
 
-=======================================  ========================================================================
-String value                             Class name (as a string)
-=======================================  ========================================================================
-``"scrapy-default"`` (default)           :class:`scrapy.spidermiddlewares.referer.DefaultReferrerPolicy`
-`"no-referrer"`_                         :class:`scrapy.spidermiddlewares.referer.NoReferrerPolicy`
-`"no-referrer-when-downgrade"`_          :class:`scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy`
-`"same-origin"`_                         :class:`scrapy.spidermiddlewares.referer.SameOriginPolicy`
-`"origin"`_                              :class:`scrapy.spidermiddlewares.referer.OriginPolicy`
-`"strict-origin"`_                       :class:`scrapy.spidermiddlewares.referer.StrictOriginPolicy`
-`"origin-when-cross-origin"`_            :class:`scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy`
-`"strict-origin-when-cross-origin"`_     :class:`scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy`
-`"unsafe-url"`_                          :class:`scrapy.spidermiddlewares.referer.UnsafeUrlPolicy`
-=======================================  ========================================================================
+=======================================  ==========================================
+String value                             Class
+=======================================  ==========================================
+``"scrapy-default"`` (default)           :class:`DefaultReferrerPolicy`
+`"no-referrer"`_                         :class:`NoReferrerPolicy`
+`"no-referrer-when-downgrade"`_          :class:`NoReferrerWhenDowngradePolicy`
+`"same-origin"`_                         :class:`SameOriginPolicy`
+`"origin"`_                              :class:`OriginPolicy`
+`"strict-origin"`_                       :class:`StrictOriginPolicy`
+`"origin-when-cross-origin"`_            :class:`OriginWhenCrossOriginPolicy`
+`"strict-origin-when-cross-origin"`_     :class:`StrictOriginWhenCrossOriginPolicy`
+`"unsafe-url"`_                          :class:`UnsafeUrlPolicy`
+=======================================  ==========================================
 
 .. autoclass:: ReferrerPolicy
 
@@ -412,9 +444,8 @@ REFERRER_POLICIES
 
 Default: ``{}``
 
-A dictionary mapping policy names to import paths of
-:class:`scrapy.spidermiddlewares.referer.ReferrerPolicy` subclasses, or
-``None`` to disable support for a given policy name.
+A dictionary mapping policy names to import paths of :class:`ReferrerPolicy`
+subclasses, or ``None`` to disable support for a given policy name.
 
 This allows overriding the policies triggered by the ``Referrer-Policy``
 response header.
@@ -422,26 +453,29 @@ response header.
 Use ``""`` to override the policy for responses with `no referrer policy
 <https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string>`__.
 
+.. currentmodule:: None
+
 
 StartSpiderMiddleware
 ---------------------
 
-.. module:: scrapy.spidermiddlewares.start
+.. autoclass:: scrapy.spidermiddlewares.start.StartSpiderMiddleware
 
-.. autoclass:: StartSpiderMiddleware
+
+StickyMetaParamsMiddleware
+--------------------------
+
+.. autoclass:: scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware
 
 
 UrlLengthMiddleware
 -------------------
 
-.. module:: scrapy.spidermiddlewares.urllength
-   :synopsis: URL Length Spider Middleware
-
-.. class:: UrlLengthMiddleware
+.. class:: scrapy.spidermiddlewares.urllength.UrlLengthMiddleware
 
    Filters out requests with URLs longer than URLLENGTH_LIMIT
 
-   The :class:`UrlLengthMiddleware` can be configured through the following
+   This middleware can be configured through the following
    settings (see the settings documentation for more info):
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.

@@ -1,3 +1,5 @@
+.. module:: scrapy.downloadermiddlewares
+
 .. _topics-downloader-middleware:
 
 =====================
@@ -6,7 +8,8 @@ Downloader Middleware
 
 The downloader middleware is a framework of hooks into Scrapy's
 request/response processing.  It's a light, low-level system for globally
-altering Scrapy's requests and responses.
+altering Scrapy's requests and responses at the HTTP level. See
+:ref:`concepts` for a rundown of other alternatives.
 
 .. _topics-downloader-middleware-setting:
 
@@ -29,11 +32,11 @@ The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
 to be overridden) and then sorted by order to get the final sorted list of
 enabled middlewares: the first middleware is the one closer to the engine and
-the last is the one closer to the downloader. In other words,
-the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
-method of each middleware will be invoked in increasing
-middleware order (100, 200, 300, ...) and the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response` method
-of each middleware will be invoked in decreasing order.
+the last is the one closer to the downloader. In other words, the
+:meth:`~DownloaderMiddleware.process_request` method of each middleware will be
+invoked in increasing middleware order (100, 200, 300, ...) and the
+:meth:`~DownloaderMiddleware.process_response` method of each middleware will
+be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to
@@ -63,8 +66,6 @@ Writing your own downloader middleware
 
 Each downloader middleware is a :ref:`component <topics-components>` that
 defines one or more of these methods:
-
-.. module:: scrapy.downloadermiddlewares
 
 .. class:: DownloaderMiddleware
 
@@ -156,6 +157,63 @@ defines one or more of these methods:
       :param exception: the raised exception
       :type exception: an ``Exception`` object
 
+.. currentmodule:: None
+
+.. _mw-download:
+
+Downloading a request from a downloader middleware
+==================================================
+
+A downloader middleware can download a request of its own while it processes
+another one, e.g. to fetch something that the request it is processing needs.
+The built-in :ref:`robots.txt middleware <topics-dlmw-robots>` does that: it
+holds each request while it downloads the ``robots.txt`` file of its website.
+
+Use :meth:`crawler.engine.download_async()
+<scrapy.core.engine.ExecutionEngine.download_async>` for that:
+
+.. code-block:: python
+
+    from scrapy import Request
+    from scrapy.http.request import NO_CALLBACK
+
+
+    class TokenMiddleware:
+        def __init__(self, crawler):
+            self.crawler = crawler
+            self.token = None
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(crawler)
+
+        async def process_request(self, request):
+            if request.meta.get("dont_obey_robotstxt"):
+                return
+            if self.token is None:
+                response = await self.crawler.engine.download_async(
+                    Request(
+                        "https://example.com/token",
+                        callback=NO_CALLBACK,
+                        meta={"dont_obey_robotstxt": True},
+                    )
+                )
+                self.token = response.text
+            request.headers["Authorization"] = self.token
+
+Requests that you download this way go through the downloader middleware chain
+as well, including your own middleware and the :ref:`robots.txt middleware
+<topics-dlmw-robots>`, which holds a request until the ``robots.txt`` file of
+its website arrives. Be careful not to introduce deadlocks: a request that you
+download must not end up waiting for the request that is waiting for it. Hence
+:reqmeta:`dont_obey_robotstxt` above, which makes both middlewares let the token
+request through.
+
+While the first token response is in transit, ``process_request`` runs for other
+requests as well, and the middleware above downloads a token for each of them.
+Cache the task that downloads the token, and not only its result, to download
+the token only once.
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -169,115 +227,16 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
-.. _cookies-mw:
-
 CookiesMiddleware
 -----------------
 
-.. module:: scrapy.downloadermiddlewares.cookies
-   :synopsis: Cookies Downloader Middleware
-
-.. class:: CookiesMiddleware
-
-   This middleware enables working with sites that require cookies, such as
-   those that use sessions. It keeps track of cookies sent by web servers, and
-   sends them back on subsequent requests (from that spider), just like web
-   browsers do.
-
-   .. caution:: When non-UTF8 encoded byte sequences are passed to a
-      :class:`~scrapy.Request`, the ``CookiesMiddleware`` will log
-      a warning. Refer to :ref:`topics-logging-advanced-customization`
-      to customize the logging behaviour.
-
-   .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-      :ref:`cookies-mw`. If you need to set cookies for a request, use the
-      :class:`Request.cookies <scrapy.Request>` parameter. This is a known
-      current limitation that is being worked on.
-
-The following settings can be used to configure the cookie middleware:
-
-* :setting:`COOKIES_ENABLED`
-* :setting:`COOKIES_DEBUG`
-
-.. reqmeta:: cookiejar
-
-Multiple cookie sessions per spider
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There is support for keeping multiple cookie sessions per spider by using the
-:reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
-(session), but you can pass an identifier to use different ones.
-
-For example:
-
-.. skip: next
-.. code-block:: python
-
-    for i, url in enumerate(urls):
-        yield scrapy.Request(url, meta={"cookiejar": i}, callback=self.parse_page)
-
-Keep in mind that the :reqmeta:`cookiejar` meta key is not "sticky". You need to keep
-passing it along on subsequent requests. For example:
-
-.. code-block:: python
-
-    def parse_page(self, response):
-        # do some processing
-        return scrapy.Request(
-            "http://www.example.com/otherpage",
-            meta={"cookiejar": response.meta["cookiejar"]},
-            callback=self.parse_other_page,
-        )
-
-.. setting:: COOKIES_ENABLED
-
-COOKIES_ENABLED
-~~~~~~~~~~~~~~~
-
-Default: ``True``
-
-Whether to enable the cookies middleware. If disabled, no cookies will be sent
-to web servers.
-
-Notice that despite the value of :setting:`COOKIES_ENABLED` setting if
-``Request.``:reqmeta:`meta['dont_merge_cookies'] <dont_merge_cookies>`
-evaluates to ``True`` the request cookies will **not** be sent to the
-web server and received cookies in :class:`~scrapy.http.Response` will
-**not** be merged with the existing cookies.
-
-For more detailed information see the ``cookies`` parameter in
-:class:`~scrapy.Request`.
-
-.. setting:: COOKIES_DEBUG
-
-COOKIES_DEBUG
-~~~~~~~~~~~~~
-
-Default: ``False``
-
-If enabled, Scrapy will log all cookies sent in requests (i.e. ``Cookie``
-header) and all cookies received in responses (i.e. ``Set-Cookie`` header).
-
-Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
-
-    2011-04-06 14:35:10-0300 [scrapy.core.engine] INFO: Spider opened
-    2011-04-06 14:35:10-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
-            Cookie: clientlanguage_nl=en_EN
-    2011-04-06 14:35:14-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
-            Set-Cookie: JSESSIONID=B~FA4DC0C496C8762AE4F1A620EAB34F38; Path=/
-            Set-Cookie: ip_isocode=US
-            Set-Cookie: clientlanguage_nl=en_EN; Expires=Thu, 07-Apr-2011 21:21:34 GMT; Path=/
-    2011-04-06 14:49:50-0300 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
-    [...]
+See :ref:`cookies`.
 
 
 DefaultHeadersMiddleware
 ------------------------
 
-.. module:: scrapy.downloadermiddlewares.defaultheaders
-   :synopsis: Default Headers Downloader Middleware
-
-.. class:: DefaultHeadersMiddleware
+.. class:: scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware
 
     This middleware sets all default requests headers specified in the
     :setting:`DEFAULT_REQUEST_HEADERS` setting.
@@ -285,10 +244,7 @@ DefaultHeadersMiddleware
 DownloadTimeoutMiddleware
 -------------------------
 
-.. module:: scrapy.downloadermiddlewares.downloadtimeout
-   :synopsis: Download timeout middleware
-
-.. class:: DownloadTimeoutMiddleware
+.. class:: scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
     :setting:`DOWNLOAD_TIMEOUT` setting.
@@ -302,31 +258,17 @@ DownloadTimeoutMiddleware
 HttpAuthMiddleware
 ------------------
 
-.. module:: scrapy.downloadermiddlewares.httpauth
-   :synopsis: HTTP Auth downloader middleware
+.. class:: scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware
 
-.. class:: HttpAuthMiddleware
+    This middleware authenticates requests using `Basic access authentication`_
+    (aka. HTTP auth).
 
-    This middleware authenticates all requests generated from certain spiders
-    using `Basic access authentication`_ (aka. HTTP auth).
+    Use the :setting:`HTTPAUTH_USER`, :setting:`HTTPAUTH_PASS`, and
+    :setting:`HTTPAUTH_DOMAIN` settings to configure it. You can also override
+    the credentials per request via :attr:`~scrapy.Request.meta` keys
+    :reqmeta:`http_user`, :reqmeta:`http_pass`, and :reqmeta:`http_auth_domain`.
 
-    To enable HTTP authentication for a spider, set the ``http_user`` and
-    ``http_pass`` spider attributes to the authentication data and the
-    ``http_auth_domain`` spider attribute to the domain which requires this
-    authentication (its subdomains will be also handled in the same way).
-    You can set ``http_auth_domain`` to ``None`` to enable the
-    authentication for all requests but you risk leaking your authentication
-    credentials to unrelated domains.
-
-    .. warning::
-        In previous Scrapy versions HttpAuthMiddleware sent the authentication
-        data with all requests, which is a security problem if the spider
-        makes requests to several different domains. Currently if the
-        ``http_auth_domain`` attribute is not set, the middleware will use the
-        domain of the first request, which will work for some spiders but not
-        for others. In the future the middleware will produce an error instead.
-
-    Example:
+    Example using settings (e.g. in :attr:`~scrapy.Spider.custom_settings`):
 
     .. code-block:: python
 
@@ -334,12 +276,69 @@ HttpAuthMiddleware
 
 
         class SomeIntranetSiteSpider(CrawlSpider):
-            http_user = "someuser"
-            http_pass = "somepass"
-            http_auth_domain = "intranet.example.com"
             name = "intranet.example.com"
+            custom_settings = {
+                "HTTPAUTH_USER": "someuser",
+                "HTTPAUTH_PASS": "somepass",
+                "HTTPAUTH_DOMAIN": "intranet.example.com",
+            }
 
             # .. rest of the spider code omitted ...
+
+    Example using per-request meta:
+
+    .. code-block:: python
+
+        async def start(self):
+            yield Request(
+                "https://intranet.example.com/protected/",
+                meta={
+                    "http_user": "someuser",
+                    "http_pass": "somepass",
+                    "http_auth_domain": "intranet.example.com",
+                },
+            )
+
+.. setting:: HTTPAUTH_USER
+
+HTTPAUTH_USER
+~~~~~~~~~~~~~
+
+.. versionadded:: 2.17.0
+
+Default: ``""``
+
+The username to use for HTTP basic authentication, applied to all requests
+whose URL matches :setting:`HTTPAUTH_DOMAIN`.
+
+.. setting:: HTTPAUTH_PASS
+
+HTTPAUTH_PASS
+~~~~~~~~~~~~~
+
+.. versionadded:: 2.17.0
+
+Default: ``""``
+
+The password to use for HTTP basic authentication.
+
+.. setting:: HTTPAUTH_DOMAIN
+
+HTTPAUTH_DOMAIN
+~~~~~~~~~~~~~~~
+
+.. versionadded:: 2.17.0
+
+Default: ``None``
+
+The domain (and its subdomains) to which HTTP basic authentication credentials
+are sent. Set to ``None`` to send credentials with all requests, but be aware
+that this risks leaking credentials to unrelated domains.
+
+This setting must be explicitly configured whenever :setting:`HTTPAUTH_USER`
+or :setting:`HTTPAUTH_PASS` is set.
+
+.. seealso:: :ref:`security-credential-leakage`
 
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
@@ -347,10 +346,7 @@ HttpAuthMiddleware
 HttpCacheMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.httpcache
-   :synopsis: HTTP Cache downloader middleware
-
-.. class:: HttpCacheMiddleware
+.. class:: scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware
 
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
@@ -375,8 +371,16 @@ HttpCacheMiddleware
 
     You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals ``True``.
 
+    .. reqmeta:: cache_timestamp
+
+    .. versionadded:: 2.19.0
+
+    When a response comes from the cache, its :attr:`~scrapy.http.Response.meta`
+    exposes the :reqmeta:`cache_timestamp` key: the Unix timestamp of when the
+    response was stored, useful e.g. to interpret dates relative to the time
+    the page was downloaded rather than to the current time.
+
 .. module:: scrapy.extensions.httpcache
-   :noindex:
 
 .. _httpcache-policy-dummy:
 
@@ -459,7 +463,10 @@ Filesystem storage backend (default)
 
     *   ``response_body`` - the plain response body
 
-    *   ``response_headers`` - the request headers (in raw HTTP format)
+    *   ``response_headers`` - the response headers (in raw HTTP format)
+
+    *   ``response_data`` - the remaining data of the response, as returned by
+        :meth:`Response.to_dict() <scrapy.http.Response.to_dict>`, pickled
 
     *   ``meta`` - some metadata of this cache resource in Python ``repr()``
         format (grep-friendly format)
@@ -494,18 +501,17 @@ Writing your own storage backend
 You can implement a cache storage backend by creating a Python class that
 defines the methods described below.
 
-.. note::
-    All methods of a custom HTTP cache storage can also be defined as asynchronous
-    coroutines using ``async def``.
-
-.. module:: scrapy.extensions.httpcache
+To store a response, use :meth:`Response.to_dict()
+<scrapy.http.Response.to_dict>`, and to read it back, use
+:func:`~scrapy.utils.response.response_from_dict`. That way responses of any
+class, including those of third-party plugins, are cached and restored intact.
 
 .. class:: CacheStorage
 
     .. method:: open_spider(spider)
 
       This method gets called after a spider has been opened for crawling. It handles
-      the :signal:`open_spider <spider_opened>` signal.
+      the :signal:`spider_opened` signal.
 
       :param spider: the spider which has been opened
       :type spider: :class:`~scrapy.Spider` object
@@ -513,7 +519,7 @@ defines the methods described below.
     .. method:: close_spider(spider)
 
       This method gets called after a spider has been closed. It handles
-      the :signal:`close_spider <spider_closed>` signal.
+      the :signal:`spider_closed` signal.
 
       :param spider: the spider which has been closed
       :type spider: :class:`~scrapy.Spider` object
@@ -522,11 +528,19 @@ defines the methods described below.
 
       Return response if present in cache, or ``None`` otherwise.
 
+      If this method raises an exception, e.g. because the cache entry is
+      corrupted, the middleware logs a warning and handles the request as a
+      cache miss.
+
       :param spider: the spider which generated the request
       :type spider: :class:`~scrapy.Spider` object
 
       :param request: the request to find cached response for
       :type request: :class:`~scrapy.Request` object
+
+      On a cache hit, set ``request.meta["cache_timestamp"]`` (see
+      :reqmeta:`cache_timestamp`) to the Unix timestamp of when the response
+      was stored.
 
     .. method:: store_response(spider, request, response)
 
@@ -549,8 +563,8 @@ In order to use your storage backend, set:
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :class:`HttpCacheMiddleware` can be configured through the following
-settings:
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` can be
+configured through the following settings:
 
 .. setting:: HTTPCACHE_ENABLED
 
@@ -685,25 +699,20 @@ We assume that the spider will not issue Cache-Control directives
 in requests unless it actually needs them, so directives in requests are
 not filtered.
 
+.. currentmodule:: None
+
+.. _http-compression:
+
 HttpCompressionMiddleware
 -------------------------
 
-.. module:: scrapy.downloadermiddlewares.httpcompression
-   :synopsis: Http Compression Middleware
+.. class:: scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware
 
-.. class:: HttpCompressionMiddleware
+   This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
+   traffic to be sent/received from web sites.
 
-   This middleware allows compressed (gzip, deflate) traffic to be
-   sent/received from web sites.
-
-   This middleware also supports decoding `brotli-compressed`_ as well as
-   `zstd-compressed`_ responses, provided that `brotli`_ or `zstandard`_ is
-   installed, respectively.
-
-.. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotli: https://pypi.org/project/Brotli/
-.. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
-.. _zstandard: https://pypi.org/project/zstandard/
+.. _brotli: https://www.ietf.org/rfc/rfc7932.txt
+.. _zstd: https://www.ietf.org/rfc/rfc8478.txt
 
 
 HttpCompressionMiddleware Settings
@@ -722,10 +731,9 @@ Whether the Compression middleware will be enabled.
 HttpProxyMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.httpproxy
-   :synopsis: Http Proxy Middleware
-
 .. reqmeta:: proxy
+
+.. module:: scrapy.downloadermiddlewares.httpproxy
 
 .. class:: HttpProxyMiddleware
 
@@ -749,13 +757,29 @@ HttpProxyMiddleware
     Handling of this meta key needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers. It's currently unsupported by
-    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
+
+.. note::
+
+    Usually a proxy URL uses the ``http://`` scheme. More rarely, it uses the
+    ``https://`` one. While both kinds of proxy URLs can be used with both HTTP
+    and HTTPS destination URLs, the specifics of the network exchange are
+    different for all 4 cases and it's possible that HTTPS proxies are fully or
+    partially unsupported by a given download handler. Currently,
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
+    supports HTTPS proxies only for HTTP destinations.
+
+.. note::
+
+    If the download handler supports it, you can use a SOCKS proxy URL (e.g.
+    ``socks5://username:password@some_proxy_server:port``).
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
+    supports SOCKS proxies while other built-in handlers don't.
 
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. setting:: HTTPPROXY_ENABLED
-.. setting:: HTTPPROXY_AUTH_ENCODING
 
 HTTPPROXY_ENABLED
 ^^^^^^^^^^^^^^^^^
@@ -763,6 +787,8 @@ HTTPPROXY_ENABLED
 Default: ``True``
 
 Whether or not to enable the :class:`HttpProxyMiddleware`.
+
+.. setting:: HTTPPROXY_AUTH_ENCODING
 
 HTTPPROXY_AUTH_ENCODING
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -774,49 +800,14 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 OffsiteMiddleware
 -----------------
 
-.. module:: scrapy.downloadermiddlewares.offsite
-   :synopsis: Offsite Middleware
+.. autoclass:: scrapy.downloadermiddlewares.offsite.OffsiteMiddleware
 
-.. class:: OffsiteMiddleware
-
-   .. versionadded:: 2.11.2
-
-   Filters out Requests for URLs outside the domains covered by the spider.
-
-   This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.Spider.allowed_domains` attribute.
-   All subdomains of any domain in the list are also allowed.
-   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
-   but not ``www2.example.com`` nor ``example.com``.
-
-   When your spider returns a request for a domain not belonging to those
-   covered by the spider, this middleware will log a debug message similar to
-   this one::
-
-      DEBUG: Filtered offsite request to 'offsite.example': <GET http://offsite.example/some/page.html>
-
-   To avoid filling the log with too much noise, it will only print one of
-   these messages for each new domain filtered. So, for example, if another
-   request for ``offsite.example`` is filtered, no log message will be
-   printed. But if a request for ``other.example`` is filtered, a message
-   will be printed (but only for the first request filtered).
-
-   If the spider doesn't define an
-   :attr:`~scrapy.Spider.allowed_domains` attribute, or the
-   attribute is empty, the offsite middleware will allow all requests.
-
-   .. reqmeta:: allow_offsite
-
-   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
-   ``True`` or :attr:`Request.meta` has ``allow_offsite`` set to ``True``, then
-   the OffsiteMiddleware will allow the request even if its domain is not listed
-   in allowed domains.
+   .. automethod:: should_follow
 
 RedirectMiddleware
 ------------------
 
 .. module:: scrapy.downloadermiddlewares.redirect
-   :synopsis: Redirection Middleware
 
 .. class:: RedirectMiddleware
 
@@ -837,6 +828,19 @@ The format of a reason depends on the middleware that handled the corresponding
 redirect. For example, :class:`RedirectMiddleware` indicates the triggering
 response status code as an integer, while :class:`MetaRefreshMiddleware`
 always uses the ``'meta refresh'`` string as reason.
+
+.. reqmeta:: redirect_times
+
+The number of redirects that a request has gone through so far can be found in
+the ``redirect_times`` :attr:`Request.meta <scrapy.Request.meta>` key.
+
+.. reqmeta:: redirect_ttl
+
+The number of redirects that a request may still go through is tracked in the
+``redirect_ttl`` :attr:`Request.meta <scrapy.Request.meta>` key, which is
+initialized from :setting:`REDIRECT_MAX_TIMES` and decreased on every redirect.
+Set it on a request to allow fewer redirects for that request;
+:setting:`REDIRECT_MAX_TIMES` still applies as an upper bound.
 
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
@@ -865,6 +869,41 @@ The ``handle_httpstatus_list`` key of :attr:`Request.meta
 allow on a per-request basis. You can also set the meta key
 ``handle_httpstatus_all`` to ``True`` if you want to allow any response code
 for a request.
+
+To decide whether to follow a redirect based on its target URL, subclass
+:class:`RedirectMiddleware` and override
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`:
+
+.. code-block:: python
+
+    import re
+
+    from scrapy import Request
+    from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
+    from scrapy.exceptions import IgnoreRequest
+
+
+    class AllowedRedirectMiddleware(RedirectMiddleware):
+        def process_response(self, request, response, spider):
+            result = super().process_response(request, response, spider)
+            if isinstance(result, Request) and not re.search(r"/product/", result.url):
+                raise IgnoreRequest(f"Redirect target not allowed: {result.url}")
+            return result
+
+Enable it in place of :class:`RedirectMiddleware`, using the same priority:
+
+.. code-block:: python
+
+    from scrapy import Spider
+
+
+    class MySpider(Spider):
+        custom_settings = {
+            "DOWNLOADER_MIDDLEWARES": {
+                "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": None,
+                "myproject.middlewares.AllowedRedirectMiddleware": 600,
+            }
+        }
 
 
 RedirectMiddleware settings
@@ -925,7 +964,7 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``[]``
+Default: ``["noscript"]``
 
 Meta tags within these tags are ignored.
 
@@ -948,28 +987,28 @@ RetryMiddleware
 ---------------
 
 .. module:: scrapy.downloadermiddlewares.retry
-   :synopsis: Retry Middleware
 
 .. class:: RetryMiddleware
 
    A middleware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
 
-Failed pages are collected on the scraping process and rescheduled at the
-end, once the spider has finished crawling all regular (non failed) pages.
-
-The :class:`RetryMiddleware` can be configured through the following
-settings (see the settings documentation for more info):
-
-* :setting:`RETRY_ENABLED`
-* :setting:`RETRY_TIMES`
-* :setting:`RETRY_HTTP_CODES`
-* :setting:`RETRY_EXCEPTIONS`
-
 .. reqmeta:: dont_retry
 
 If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_retry`` key
 set to True, the request will be ignored by this middleware.
+
+.. reqmeta:: retry_times
+
+The number of times that a request has been retried so far can be found in the
+``retry_times`` :attr:`Request.meta <scrapy.Request.meta>` key. Since it counts
+against :setting:`RETRY_TIMES`, copying it into a follow-up request lowers the
+number of retries allowed for that request.
+
+.. reqmeta:: priority_adjust
+
+The ``priority_adjust`` :attr:`Request.meta <scrapy.Request.meta>` key
+overrides :setting:`RETRY_PRIORITY_ADJUST` for a request.
 
 To retry requests from a spider callback, you can use the
 :func:`get_retry_request` function:
@@ -1032,7 +1071,7 @@ Default::
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        IOError,
+        OSError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]
 
@@ -1046,6 +1085,23 @@ has been exceeded (see :setting:`RETRY_TIMES`). To learn about uncaught
 exception propagation, see
 :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`.
 
+.. setting:: RETRY_GIVE_UP_LOG_LEVEL
+
+RETRY_GIVE_UP_LOG_LEVEL
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.17.0
+
+Default: ``"ERROR"``
+
+:ref:`Logging level <levels>` used for the message logged when a request
+exceeds its retries.
+
+Can be a level name (e.g. ``"WARNING"``) or a number (e.g. ``logging.WARNING``
+or ``30``).
+
+See also: :reqmeta:`give_up_log_level`, :func:`get_retry_request`.
+
 .. setting:: RETRY_PRIORITY_ADJUST
 
 RETRY_PRIORITY_ADJUST
@@ -1058,16 +1114,17 @@ Adjust retry request priority relative to original request:
 - a positive priority adjust means higher priority.
 - **a negative priority adjust (default) means lower priority.**
 
+See also: :reqmeta:`priority_adjust`.
+
+
+.. currentmodule:: None
 
 .. _topics-dlmw-robots:
 
 RobotsTxtMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.robotstxt
-   :synopsis: robots.txt middleware
-
-.. class:: RobotsTxtMiddleware
+.. class:: scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 
     This middleware filters out requests forbidden by the robots.txt exclusion
     standard.
@@ -1107,7 +1164,7 @@ Parsers vary in several aspects:
 
 * Support for wildcard matching
 
-* Usage of `length based rule <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt#order-of-precedence-for-rules>`_:
+* Usage of `length based rule <https://developers.google.com/crawling/docs/robots-txt/robots-txt-spec#order-of-precedence-for-rules>`_:
   in particular for ``Allow`` and ``Disallow`` directives, where the most
   specific rule based on the length of the path trumps the less specific
   (shorter) rule
@@ -1125,7 +1182,7 @@ Based on `Protego <https://github.com/scrapy/protego>`_:
 * implemented in Python
 
 * is compliant with `Google's Robots.txt Specification
-  <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt>`_
+  <https://developers.google.com/crawling/docs/robots-txt/robots-txt-spec>`_
 
 * supports wildcard matching
 
@@ -1145,9 +1202,9 @@ Based on :class:`~urllib.robotparser.RobotFileParser`:
 * is compliant with `Martijn Koster's 1996 draft specification
   <https://www.robotstxt.org/norobots-rfc.txt>`_
 
-* lacks support for wildcard matching
+* lacks support for wildcard matching (before Python 3.14.5)
 
-* doesn't use the length based rule
+* doesn't use the length based rule (before Python 3.14.5)
 
 It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0.
 
@@ -1173,8 +1230,7 @@ Based on `Robotexclusionrulesparser <https://pypi.org/project/robotexclusionrule
 
 In order to use this parser:
 
-* Install ``Robotexclusionrulesparser`` by running
-  ``pip install robotexclusionrulesparser``
+* Install the :ref:`robotparser <extras>` extra.
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.RerpRobotParser``
@@ -1188,10 +1244,7 @@ You can implement support for a new robots.txt_ parser by subclassing
 the abstract base class :class:`~scrapy.robotstxt.RobotParser` and
 implementing the methods described below.
 
-.. module:: scrapy.robotstxt
-   :synopsis: robots.txt parser interface and implementations
-
-.. autoclass:: RobotParser
+.. autoclass:: scrapy.robotstxt.RobotParser
    :members:
 
 .. _robots.txt: https://www.robotstxt.org/
@@ -1199,10 +1252,7 @@ implementing the methods described below.
 DownloaderStats
 ---------------
 
-.. module:: scrapy.downloadermiddlewares.stats
-   :synopsis: Downloader Stats Middleware
-
-.. class:: DownloaderStats
+.. class:: scrapy.downloadermiddlewares.stats.DownloaderStats
 
    Middleware that stores stats of all requests, responses and exceptions that
    pass through it.
@@ -1213,10 +1263,7 @@ DownloaderStats
 UserAgentMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.useragent
-   :synopsis: User Agent Middleware
-
-.. class:: UserAgentMiddleware
+.. class:: scrapy.downloadermiddlewares.useragent.UserAgentMiddleware
 
    Middleware that sets the ``User-Agent`` header.
 

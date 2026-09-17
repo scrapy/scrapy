@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
-from twisted.web import resource
+from typing import TYPE_CHECKING
+
 from twisted.web.static import Data
 
 from .http_base import BaseMockServer, main_factory
+from .http_resources import BaseResource, put_child
+
+if TYPE_CHECKING:
+    from twisted.web.server import Request
 
 
-class Root(resource.Resource):
-    def __init__(self):
-        resource.Resource.__init__(self)
-        self.putChild(b"file", Data(b"0123456789", "text/plain"))
+class Root(BaseResource):
+    def __init__(self) -> None:
+        super().__init__()
+        put_child(self, b"file", Data(b"0123456789", "text/plain"))
 
-    def getChild(self, name, request):
+    def getChild(self, path: bytes, request: Request) -> Root:
         return self
 
 
@@ -21,11 +26,21 @@ class SimpleMockServer(BaseMockServer):
     listen_http = False
     module_name = "tests.mockserver.simple_https"
 
-    def __init__(self, keyfile: str, certfile: str, cipher_string: str | None):
+    def __init__(
+        self,
+        keyfile: str,
+        certfile: str,
+        *,
+        cipher_string: str | None = None,
+        tls_min_version: str | None = None,
+        tls_max_version: str | None = None,
+    ) -> None:
         super().__init__()
         self.keyfile = keyfile
         self.certfile = certfile
-        self.cipher_string = cipher_string or ""
+        self.cipher_string = cipher_string
+        self.tls_min_version = tls_min_version
+        self.tls_max_version = tls_max_version
 
     def get_additional_args(self) -> list[str]:
         args = [
@@ -36,6 +51,10 @@ class SimpleMockServer(BaseMockServer):
         ]
         if self.cipher_string is not None:
             args.extend(["--cipher-string", self.cipher_string])
+        if self.tls_min_version is not None:
+            args.extend(["--tls-min-version", self.tls_min_version])
+        if self.tls_max_version is not None:
+            args.extend(["--tls-max-version", self.tls_max_version])
         return args
 
 

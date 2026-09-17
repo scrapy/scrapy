@@ -7,6 +7,7 @@ import logging
 import warnings
 from collections.abc import Awaitable, Callable, Generator, Sequence
 from typing import Any as TypingAny
+from typing import cast
 
 from pydispatch.dispatcher import (
     Anonymous,
@@ -38,7 +39,7 @@ def send_catch_log(
     *arguments: TypingAny,
     **named: TypingAny,
 ) -> list[tuple[TypingAny, TypingAny]]:
-    """Like ``pydispatcher.robust.sendRobust()`` but it also logs errors and returns
+    """Like ``pydispatch.robust.sendRobust()`` but it also logs errors and returns
     Failures instead of exceptions.
     """
     dont_log = named.pop("dont_log", ())
@@ -124,13 +125,11 @@ def _send_catch_log_deferred(
             **named,
         )
         d.addErrback(logerror, receiver)
-        # TODO https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html
+
         d2: Deferred[tuple[TypingAny, TypingAny]] = d.addBoth(
-            lambda result: (
-                receiver,  # pylint: disable=cell-var-from-loop  # noqa: B023
-                result,
-            )
+            lambda result, recv: (recv, result), receiver
         )
+
         dfds.append(d2)
 
     results = yield DeferredList(dfds)
@@ -173,9 +172,8 @@ async def _send_catch_log_asyncio(
 
     Returns a coroutine that completes once all signal handlers have finished.
 
-    This function requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
-    installed.
+    This function requires an installed asyncio reactor or a running asyncio
+    event loop.
 
     .. versionadded:: 2.14
     """
@@ -185,7 +183,9 @@ async def _send_catch_log_asyncio(
     handlers: list[Awaitable[TypingAny]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
 
-        async def handler(receiver: Callable) -> TypingAny:
+        async def handler(
+            receiver: Callable[..., Any],
+        ) -> tuple[Callable[..., Any], TypingAny]:
             result: TypingAny
             try:
                 result = await ensure_awaitable(
@@ -208,7 +208,10 @@ async def _send_catch_log_asyncio(
 
         handlers.append(handler(receiver))
 
-    return await asyncio.gather(*handlers, return_exceptions=True)
+    return cast(
+        "list[tuple[TypingAny, TypingAny]]",
+        await asyncio.gather(*handlers, return_exceptions=True),
+    )
 
 
 def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:

@@ -1,13 +1,23 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import pytest
 
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
+    _job_dir,
     arglist_to_dict,
     build_component_list,
+    closest_scrapy_cfg,
     feed_complete_default_values_from_settings,
     feed_process_params_from_cli,
+    get_sources,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestBuildComponentList:
@@ -35,6 +45,20 @@ class TestBuildComponentList:
         ):
             build_component_list(duplicate_bs, convert=lambda x: x.lower())
 
+    def test_duplicate_components_in_dict(self):
+        d = {"one": 1, "ONE": 2}
+        with pytest.raises(
+            ValueError, match=r"Some paths in .* convert to the same object"
+        ):
+            build_component_list(d, convert=lambda x: x.lower())
+
+    def test_invalid_value(self):
+        d = {"one": "1"}
+        with pytest.raises(
+            ValueError, match=r"Invalid value 1 for component one, please provide"
+        ):
+            build_component_list(d, convert=lambda x: x)
+
     def test_valid_numbers(self):
         # work well with None and numeric values
         d = {"a": 10, "b": None, "c": 15, "d": 5.0}
@@ -45,6 +69,10 @@ class TestBuildComponentList:
             "c": 22222222222222222222,
         }
         assert build_component_list(d, convert=lambda x: x) == ["b", "c", "a"]
+
+
+def test_get_sources():
+    assert get_sources() == [*get_sources(use_closest=False), closest_scrapy_cfg()]
 
 
 def test_arglist_to_dict():
@@ -106,7 +134,7 @@ class TestFeedExportConfig:
             )
 
     def test_feed_complete_default_values_from_settings_empty(self):
-        feed = {}
+        feed: dict[str, Any] = {}
         settings = Settings(
             {
                 "FEED_EXPORT_ENCODING": "custom encoding",
@@ -152,3 +180,39 @@ class TestFeedExportConfig:
             "batch_item_count": 2,
             "item_export_kwargs": {},
         }
+
+    def test_feed_complete_default_values_from_settings_format_from_uri(self):
+        feed: dict[str, Any] = {}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "output.json"
+        )
+        assert new_feed["format"] == "json"
+
+    def test_feed_complete_default_values_from_settings_format_kept(self):
+        feed = {"format": "csv"}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "output.json"
+        )
+        assert new_feed["format"] == "csv"
+
+    def test_feed_complete_default_values_from_settings_format_not_inferable(self):
+        feed: dict[str, Any] = {}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "stdout:"
+        )
+        assert new_feed["format"] == ""
+
+
+def test_no_jobdir() -> None:
+    assert _job_dir(Settings()) is None
+    assert _job_dir(Settings({"JOBDIR": ""})) is None
+
+
+def test_existing_jobdir(tmp_path: Path) -> None:
+    assert _job_dir(Settings({"JOBDIR": str(tmp_path)})) == str(tmp_path)
+
+
+def test_missing_jobdir(tmp_path: Path) -> None:
+    jobdir = tmp_path / "missing" / "jobdir"
+    assert _job_dir(Settings({"JOBDIR": str(jobdir)})) == str(jobdir)
+    assert jobdir.is_dir()

@@ -3,15 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from scrapy.exceptions import StopDownload
-from tests.test_engine import (
+from tests.utils.bases.engine import TestEngineBase
+from tests.utils.decorators import coroutine_test
+from tests.utils.engine import (
     AttrsItemsSpider,
     CrawlerRun,
     DataClassItemsSpider,
     DictItemsSpider,
     MySpider,
-    TestEngineBase,
 )
-from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     import pytest

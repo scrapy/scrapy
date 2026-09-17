@@ -29,7 +29,6 @@ class MemoryDebugger:
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("MEMDEBUG_ENABLED"):
             raise NotConfigured
-        assert crawler.stats
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o

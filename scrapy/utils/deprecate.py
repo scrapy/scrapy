@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import warnings
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import get_func_args_dict
@@ -43,15 +43,18 @@ def create_deprecated_class(
     It can be used to rename a base class in a library. For example, if we
     have
 
-        class OldName(SomeClass):
-            # ...
+    .. code-block:: python
 
-    and we want to rename it to NewName, we can do the following::
+        class OldName(SomeClass): ...
 
-        class NewName(SomeClass):
-            # ...
+    and we want to rename it to NewName, we can do the following:
 
-        OldName = create_deprecated_class('OldName', NewName)
+    .. code-block:: python
+
+        class NewName(SomeClass): ...
+
+
+        OldName = create_deprecated_class("OldName", NewName)
 
     Then, if user class inherits from OldName, warning is issued. Also, if
     some code uses ``issubclass(sub, OldName)`` or ``isinstance(sub(), OldName)``
@@ -68,7 +71,7 @@ def create_deprecated_class(
         def __new__(  # pylint: disable=bad-classmethod-argument
             metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
-            cls = super().__new__(metacls, name, bases, clsdict_)
+            cls: type = super().__new__(metacls, name, bases, clsdict_)
             if metacls.deprecated_class is None:
                 metacls.deprecated_class = cls
             return cls
@@ -100,7 +103,7 @@ def create_deprecated_class(
                 # is the deprecated class itself - subclasses of the
                 # deprecated class should not use custom `__subclasscheck__`
                 # method.
-                return super().__subclasscheck__(sub)
+                return cast("bool", super().__subclasscheck__(sub))
 
             if not inspect.isclass(sub):
                 raise TypeError("issubclass() arg 1 must be a class")

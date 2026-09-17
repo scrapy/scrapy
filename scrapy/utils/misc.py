@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import hashlib
 import inspect
 import os
 import re
@@ -13,7 +12,7 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
@@ -28,7 +27,7 @@ if TYPE_CHECKING:
 
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
-_ITER_T = TypeVar("_ITER_T", bound=dict | Item | str | bytes)
+_ITER_T = TypeVar("_ITER_T", bound=dict[Any, Any] | Item | str | bytes)
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
 _P = ParamSpec("_P")
@@ -51,7 +50,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     if arg is None:
         return ()
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
-        return arg
+        return cast("Iterable[Any]", arg)
     return [arg]
 
 
@@ -90,19 +89,24 @@ def load_object(path: str | Callable[..., Any]) -> Any:
     return obj
 
 
+def _load_objects(objects: Iterable[str | Callable[..., Any]]) -> tuple[Any, ...]:
+    """Resolve *objects* (objects or import paths) to a tuple of objects."""
+    return tuple(load_object(obj) if isinstance(obj, str) else obj for obj in objects)
+
+
 def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
 
     For example:
-    >>> list(walk_modules_iter('scrapy.utils'))
-    [<module 'scrapy.utils' from '...'>, ...]
-    >>> gen = walk_modules_iter('scrapy.utils.nonexistent') # error not raised until the generator is consumed
+    >>> list(walk_modules_iter('scrapy.commands'))
+    [<module 'scrapy.commands' from '...'>, ...]
+    >>> gen = walk_modules_iter('scrapy.commands.nonexistent') # error not raised until the generator is consumed
     >>> list(gen)
     Traceback (most recent call last):
         ...
-    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'
+    ModuleNotFoundError: No module named 'scrapy.commands.nonexistent'...
     """
 
     mod = import_module(path)
@@ -135,34 +139,9 @@ def walk_modules(path: str) -> list[ModuleType]:  # pragma: no cover
     return list(walk_modules_iter(path))
 
 
-def md5sum(file: IO[bytes]) -> str:
-    """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory.
-
-    >>> from io import BytesIO
-    >>> md5sum(BytesIO(b'file content to hash'))
-    '784406af91dd5a54fbb9c84c2236595a'
-    """
-    warnings.warn(
-        (
-            "The scrapy.utils.misc.md5sum function is deprecated and will be "
-            "removed in a future version of Scrapy."
-        ),
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    m = hashlib.md5()  # noqa: S324
-    while True:
-        d = file.read(8096)
-        if not d:
-            break
-        m.update(d)
-    return m.hexdigest()
-
-
 def rel_has_nofollow(rel: str | None) -> bool:
     """Return True if link rel attribute has nofollow type"""
-    return rel is not None and "nofollow" in rel.replace(",", " ").split()
+    return rel is not None and "nofollow" in rel.lower().replace(",", " ").split()
 
 
 class SupportsFromCrawler(Protocol[_T_co, _P]):
@@ -252,7 +231,14 @@ def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
         yield node
 
 
-_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
+_generator_callbacks_cache: LocalWeakReferencedCache[Callable[..., Any], bool] = (
+    LocalWeakReferencedCache(limit=128)
+)
+
+
+def _returns_none(return_node: ast.Return) -> bool:
+    value = return_node.value
+    return value is None or (isinstance(value, ast.Constant) and value.value is None)
 
 
 def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noqa: A002
@@ -262,12 +248,6 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noq
     """
     if callable in _generator_callbacks_cache:
         return bool(_generator_callbacks_cache[callable])
-
-    def returns_none(return_node: ast.Return) -> bool:
-        value = return_node.value
-        return value is None or (
-            isinstance(value, ast.Constant) and value.value is None
-        )
 
     if inspect.isgeneratorfunction(callable):
         func = callable
@@ -284,7 +264,7 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noq
 
         tree = ast.parse(code)
         for node in walk_callable(tree):
-            if isinstance(node, ast.Return) and not returns_none(node):
+            if isinstance(node, ast.Return) and not _returns_none(node):
                 _generator_callbacks_cache[callable] = True
                 return bool(_generator_callbacks_cache[callable])
 

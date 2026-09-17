@@ -11,19 +11,20 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from itemadapter import ItemAdapter
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
+from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.pipelines.media import FileException
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterator
     from os import PathLike
 
     from PIL import Image
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
+    from scrapy.settings import BaseSettings
 
 
 class ImageException(FileException):
@@ -40,7 +42,7 @@ class ImageException(FileException):
 
 
 class ImagesPipeline(FilesPipeline):
-    """Abstract pipeline that implement the image thumbnail generation logic"""
+    """Pipeline that implements the handling logic specific to images."""
 
     MEDIA_NAME: str = "image"
 
@@ -126,6 +128,20 @@ class ImagesPipeline(FilesPipeline):
     ) -> str:
         return await self.image_downloaded(response, request, info, item=item)
 
+    @classmethod
+    def _update_stores(cls, settings: BaseSettings) -> None:
+        super()._update_stores(settings)
+
+        s3store: type[S3FilesStore] = cast(
+            "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
+        )
+        s3store.POLICY = settings["IMAGES_STORE_S3_ACL"]
+
+        gcs_store: type[GCSFilesStore] = cast(
+            "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
+        )
+        gcs_store.POLICY = settings["IMAGES_STORE_GCS_ACL"] or None
+
     async def image_downloaded(
         self,
         response: Response,
@@ -159,7 +175,7 @@ class ImagesPipeline(FilesPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> Iterable[tuple[str, Image.Image, BytesIO]]:
+    ) -> Iterator[tuple[str, Image.Image, BytesIO]]:
         path = self.file_path(request, response=response, info=info, item=item)
         orig_image = self._Image.open(BytesIO(response.body))
         transposed_image = self._ImageOps.exif_transpose(orig_image)

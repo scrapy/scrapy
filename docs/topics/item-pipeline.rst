@@ -7,10 +7,10 @@ Item Pipeline
 After an item has been scraped by a spider, it is sent to the Item Pipeline
 which processes it through several components that are executed sequentially.
 
-Each item pipeline component (sometimes referred as just "Item Pipeline") is a
-Python class that implements a simple method. They receive an item and perform
-an action over it, also deciding if the item should continue through the
-pipeline or be dropped and no longer processed.
+Each item pipeline component (sometimes referred to as just "Item Pipeline") is
+a Python class that implements a simple method. Each component receives an item
+and performs an action on it while deciding whether the item should continue
+through the pipeline or be dropped and no longer processed.
 
 Typical uses of item pipelines are:
 
@@ -28,7 +28,7 @@ implement the following method:
 
 .. method:: process_item(self, item)
 
-   This method is called for every item pipeline component.
+   Scrapy calls this method for every item processed by the pipeline component.
 
    `item` is an :ref:`item object <item-types>`, see
    :ref:`supporting-item-types`.
@@ -41,29 +41,43 @@ implement the following method:
    :param item: the scraped item
    :type item: :ref:`item object <item-types>`
 
-Additionally, they may also implement the following methods:
+Additionally, a component may implement the following methods:
 
 .. method:: open_spider(self)
 
    This method is called when the spider is opened.
 
+   .. versionchanged:: 2.18.0
+      Added support for :exc:`~scrapy.exceptions.CloseSpider`.
+
+   It may raise :exc:`~scrapy.exceptions.CloseSpider` to close the spider before
+   it starts crawling, e.g. if a resource that the pipeline needs is
+   unavailable.
+
 .. method:: close_spider(self)
 
-   This method is called when the spider is closed.
+   This method is called when the spider is closed, before the
+   :signal:`spider_closed` signal is sent.
 
 Any of these methods may be defined as a coroutine function (``async def``).
+
+:meth:`open_spider` and :meth:`close_spider` run concurrently on all enabled
+item pipelines; only :meth:`process_item` follows the :setting:`ITEM_PIPELINES`
+order.
 
 
 Item pipeline example
 =====================
+
+.. _price-pipeline-example:
 
 Price validation and dropping items with no prices
 --------------------------------------------------
 
 Let's take a look at the following hypothetical pipeline that adjusts the
 ``price`` attribute for those items that do not include VAT
-(``price_excludes_vat`` attribute), and drops those items which don't
-contain a price:
+(``price_excludes_vat`` attribute), and drops those items that don't contain a
+price:
 
 .. code-block:: python
 
@@ -110,16 +124,16 @@ format:
            self.file.write(line)
            return item
 
-.. note:: The purpose of JsonWriterPipeline is just to introduce how to write
-   item pipelines. If you really want to store all scraped items into a JSON
-   file you should use the :ref:`Feed exports <topics-feed-exports>`.
+.. note:: The JsonWriterPipeline example simply introduces how to write item
+    pipelines. If you really want to store all scraped items in a JSON file,
+    you should use the :ref:`Feed exports <topics-feed-exports>`.
 
 Write items to MongoDB
 ----------------------
 
-In this example we'll write items to MongoDB_ using pymongo_.
-MongoDB address and database name are specified in Scrapy settings;
-MongoDB collection is named after item class.
+In this example, we'll write items to MongoDB_ using pymongo_. The MongoDB
+address and database name are specified in the Scrapy settings; the MongoDB
+collection is specified in a class attribute.
 
 The main point of this example is to show how to :ref:`get the crawler
 <from-crawler>` and how to clean up the resources properly.
@@ -162,13 +176,13 @@ The main point of this example is to show how to :ref:`get the crawler
 
 .. _ScreenshotPipeline:
 
-Take screenshot of item
------------------------
+Take a screenshot of an item
+----------------------------
 
 This example demonstrates how to use :doc:`coroutine syntax <coroutines>` in
 the :meth:`process_item` method.
 
-This item pipeline makes a request to a locally-running instance of Splash_ to
+This item pipeline makes a request to a locally running instance of Splash_ to
 render a screenshot of the item URL. After the request response is downloaded,
 the item pipeline saves the screenshot to a file and adds the filename to the
 item.
@@ -185,8 +199,8 @@ item.
 
 
     class ScreenshotPipeline:
-        """Pipeline that uses Splash to render screenshot of
-        every Scrapy item."""
+        """Pipeline that uses Splash to render a screenshot of every Scrapy
+        item."""
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
@@ -205,16 +219,17 @@ item.
             response = await self.crawler.engine.download_async(request)
 
             if response.status != 200:
-                # Error happened, return item.
+                # An error occurred, so return the item.
                 return item
 
-            # Save screenshot to file, filename will be hash of url.
+            # Save the screenshot to a file; the filename is the hash of the
+            # URL.
             url = adapter["url"]
             url_hash = hashlib.md5(url.encode("utf8")).hexdigest()
             filename = f"{url_hash}.png"
             Path(filename).write_bytes(response.body)
 
-            # Store filename in item.
+            # Store the filename in the item.
             adapter["screenshot_filename"] = filename
             return item
 
@@ -223,9 +238,9 @@ item.
 Duplicates filter
 -----------------
 
-A filter that looks for duplicate items, and drops those items that were
-already processed. Let's say that our items have a unique id, but our spider
-returns multiples items with the same id:
+This filter looks for duplicate items and drops those that were already
+processed. Let's say that our items have a unique id, but our spider returns
+multiple items with the same id:
 
 .. code-block:: python
 
@@ -246,6 +261,8 @@ returns multiples items with the same id:
                 return item
 
 
+.. _activating-item-pipeline:
+
 Activating an Item Pipeline component
 =====================================
 
@@ -262,3 +279,140 @@ To activate an Item Pipeline component you must add its class to the
 The integer values you assign to classes in this setting determine the
 order in which they run: items go through from lower valued to higher
 valued classes. It's customary to define these numbers in the 0-1000 range.
+
+A complete example
+==================
+
+The examples above show item pipeline components on their own. In a project, a
+pipeline is one of four pieces that work together: the :ref:`item
+<topics-items>` your spider produces, the :ref:`spider <topics-spiders>` that
+yields it, the pipeline that processes it, and the :setting:`ITEM_PIPELINES`
+setting that enables the pipeline.
+
+The following example wires those pieces together to validate the price of
+books scraped from `books.toscrape.com`_, reusing the ``PricePipeline`` from
+:ref:`price-pipeline-example` above.
+
+Define the item in ``myproject/items.py``:
+
+.. code-block:: python
+
+    from dataclasses import dataclass
+
+
+    @dataclass
+    class BookItem:
+        title: str
+        price: float
+
+Yield instances of that item from your spider, e.g. in
+``myproject/spiders/books.py``:
+
+.. skip: next
+.. code-block:: python
+
+    import scrapy
+
+    from myproject.items import BookItem
+
+
+    class BooksSpider(scrapy.Spider):
+        name = "books"
+        start_urls = ["https://books.toscrape.com/"]
+
+        def parse(self, response):
+            for book in response.css("article.product_pod"):
+                yield BookItem(
+                    title=book.css("h3 a::attr(title)").get(),
+                    price=float(book.css("p.price_color::text").re_first(r"[\d.]+")),
+                )
+
+Put the ``PricePipeline`` shown earlier in ``myproject/pipelines.py``, and
+enable it in ``myproject/settings.py``:
+
+.. code-block:: python
+
+    ITEM_PIPELINES = {
+        "myproject.pipelines.PricePipeline": 300,
+    }
+
+With these pieces in place, every ``BookItem`` that ``BooksSpider`` yields
+passes through ``PricePipeline`` before it reaches the :ref:`feed exports
+<topics-feed-exports>` or any other output.
+
+.. _books.toscrape.com: https://books.toscrape.com/
+
+
+.. _test-item-pipeline:
+
+Testing an item pipeline
+========================
+
+To send the items from a single URL through your item pipelines, use the
+:command:`parse` command with the ``--pipelines`` option::
+
+    scrapy parse --pipelines "https://books.toscrape.com/"
+
+To test specific item data instead, add a callback that builds an item out of
+its keyword arguments:
+
+.. skip: next
+.. code-block:: python
+
+    class BooksSpider(scrapy.Spider):
+        # ...
+
+        def parse_item(self, response, **fields):
+            yield BookItem(**fields)
+
+and pass those keyword arguments in the command line::
+
+    scrapy parse --pipelines -c parse_item --cbkwargs '{"title": "Test", "price": 10}' "https://books.toscrape.com/"
+
+Pass any URL that your spider handles; it is downloaded even though the
+callback ignores it.
+
+
+Common pitfalls
+===============
+
+The pipeline does not run
+-------------------------
+
+A pipeline component only runs if its class is listed in the
+:setting:`ITEM_PIPELINES` setting, normally in your project's
+:file:`settings.py` file (see :ref:`activating-item-pipeline`). Adding it to
+the spider or elsewhere has no effect.
+
+To confirm that Scrapy loaded your pipeline, look for a line like this near the
+start of the crawl log::
+
+    [scrapy.middleware] INFO: Enabled item pipelines:
+    ['myproject.pipelines.PricePipeline']
+
+If your pipeline is missing from that list, check that its import path matches
+the :setting:`ITEM_PIPELINES` entry, and that the setting is not being
+overridden, for example by :attr:`~scrapy.Spider.custom_settings` or by a
+redefinition of :setting:`ITEM_PIPELINES` in :file:`settings.py`.
+
+The item is not returned
+------------------------
+
+:meth:`process_item` must return the item (or raise
+:exc:`~scrapy.exceptions.DropItem`). A common mistake is to modify the item but
+forget to return it:
+
+.. code-block:: python
+
+    def process_item(self, item):
+        ItemAdapter(item)["price"] *= 1.15
+        # Bug: returns None, so the next component gets None instead of the item.
+
+Return the item so that the next component, and the rest of Scrapy, can keep
+processing it:
+
+.. code-block:: python
+
+    def process_item(self, item):
+        ItemAdapter(item)["price"] *= 1.15
+        return item

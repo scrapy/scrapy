@@ -23,7 +23,7 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-def log_task_exception(task: Task) -> None:
+def log_task_exception(task: Task[None]) -> None:
     try:
         task.result()
     except Exception:

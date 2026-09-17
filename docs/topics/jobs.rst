@@ -7,7 +7,7 @@ Jobs: pausing and resuming crawls
 Sometimes, for big sites, it's desirable to pause crawls and be able to resume
 them later.
 
-Scrapy supports this functionality out of the box by providing the following
+Scrapy supports this functionality out of the box through the following
 facilities:
 
 * a scheduler that persists scheduled requests on disk
@@ -29,7 +29,7 @@ The job directory will store all required data to keep the state of a *single*
 job (i.e. a spider run), so that if stopped cleanly, it can be resumed later.
 
 .. warning:: This directory must *not* be shared by different spiders, or even
-    different jobs of the same spider.
+    different jobs of the same spider. See :ref:`job-dir-spider-name`.
 
 .. warning:: Treat the job directory with the same security care as your
     Scrapy project source code. Do not point ``JOBDIR`` to a path that
@@ -44,21 +44,44 @@ To start a spider with persistence support enabled, run it like this::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
-Then, you can stop the spider safely at any time (by pressing Ctrl-C or sending
+Then you can stop the spider safely at any time (by pressing Ctrl-C or sending
 a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
+
+.. _job-dir-spider-name:
+
+Deriving the job directory from the spider name
+===============================================
+
+One way to keep job directories apart is to build the path in
+:meth:`~scrapy.Spider.update_settings`, so that a group of spiders shares the
+same path except for the spider name:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    from scrapy import Spider
+
+
+    class BaseSpider(Spider):
+        @classmethod
+        def update_settings(cls, settings):
+            super().update_settings(settings)
+            settings.set("JOBDIR", str(Path("crawls", cls.name)), priority="spider")
+
 
 .. _topics-keeping-persistent-state-between-batches:
 
 Keeping persistent state between batches
 ========================================
 
-Sometimes you'll want to keep some persistent spider state between pause/resume
-batches. You can use the ``spider.state`` attribute for that, which should be a
-dict. There's :ref:`a built-in extension <topics-extensions-ref-spiderstate>`
-that takes care of serializing, storing and loading that attribute from the job
-directory, when the spider starts and stops.
+Sometimes you'll want to keep persistent spider state between pause/resume
+batches. Use the ``spider.state`` attribute for that. It should be a dict.
+There's :ref:`a built-in extension <topics-extensions-ref-spiderstate>` that
+takes care of serializing, storing and loading that attribute from the job
+directory when the spider starts and stops.
 
 Here's an example of a callback that uses the spider state (other spider code
 is omitted for brevity):
@@ -72,8 +95,8 @@ is omitted for brevity):
 Persistence gotchas
 ===================
 
-There are a few things to keep in mind if you want to be able to use the Scrapy
-persistence support:
+There are a few things to keep in mind if you want to use Scrapy's persistence
+support:
 
 Pause limitations
 -----------------
@@ -83,11 +106,19 @@ stopping it cleanly. Forced, sudden or otherwise unclean shutdown can lead to
 data corruption in the job directory, which may prevent the spider from
 resuming correctly.
 
-Cookies expiration
-------------------
+Scrapy version changes
+----------------------
 
-Cookies may expire. So, if you don't resume your spider quickly the requests
-scheduled may no longer work. This won't be an issue if your spider doesn't rely
+The contents of a job directory are an implementation detail of the Scrapy
+version that wrote them. A job must be resumed with the same Scrapy version
+that paused it; after upgrading or downgrading Scrapy, start a new job with a
+new job directory.
+
+Cookie expiration
+-----------------
+
+Cookies may expire, so if you don't resume your spider quickly, the scheduled
+requests may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
 
 .. _request-serialization:
@@ -96,13 +127,26 @@ Request serialization
 ---------------------
 
 For persistence to work, :class:`~scrapy.Request` objects must be
-serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
-values passed to their ``__init__`` method, which must be methods of the
-running :class:`~scrapy.Spider` class.
+serializable with :mod:`pickle`, except for the :ref:`callback
+<callbacks>` and :ref:`errback
+<errbacks>` values passed to their ``__init__``
+method, which must be methods of the running :class:`~scrapy.Spider` class.
+
+Requests that cannot be serialized are kept in memory only: they are still
+sent, but they are lost when the crawl is paused.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
+
+.. note:: Because requests are serialized with :mod:`pickle`, the objects you
+    store on a request, such as the values of its
+    :attr:`~scrapy.Request.cb_kwargs` and :attr:`~scrapy.Request.meta`
+    dictionaries, are deep-copied when the request is written to and later read
+    back from the job directory. As a result, the callback receives a *copy* of
+    those objects rather than the original ones, and changes made to the copy are
+    not reflected in the original object. Keep this in mind if you rely on
+    sharing mutable state through ``cb_kwargs`` or ``meta``.
 
 .. _job-dir-contents:
 
@@ -142,8 +186,8 @@ Where:
 -   :class:`~scrapy.pqueues.ScrapyPriorityQueue` creates the ``{priority}{s?}``
     directories.
 
--   :class:`scrapy.squeues.PickleLifoDiskQueue`, a subclass of
-    :class:`queuelib.LifoDiskQueue` that uses :mod:`pickle` to serialize
+-   :class:`scrapy.squeues.PickleFifoDiskQueue`, a subclass of
+    :class:`queuelib.FifoDiskQueue` that uses :mod:`pickle` to serialize
     :class:`dict` representations of :class:`scrapy.Request` objects, creates
     the ``info.json`` and ``q{00000}`` files.
 

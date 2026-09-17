@@ -1,0 +1,6 @@
+cff-version: 1.2.0
+message: If you use Scrapy in published research, please cite it as below.
+title: Scrapy
+authors:
+  - name: Scrapy contributors
+url: https://scrapy.org
