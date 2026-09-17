@@ -22,6 +22,8 @@ from scrapy.utils.engine import get_engine_status
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     from twisted.internet.task import LoopingCall
 
     # typing.Self requires Python 3.11
@@ -38,11 +40,23 @@ class MemoryUsage:
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("MEMUSAGE_ENABLED"):
             raise NotConfigured
+        self.resource: ModuleType | None
         try:
             # stdlib's resource module is only available on unix platforms.
             self.resource = import_module("resource")
-        except ImportError as exc:
-            raise NotConfigured from exc
+        except ImportError:
+            self.resource = None
+            try:
+                import psutil  # noqa: PLC0415
+            except ImportError as exc:
+                raise NotConfigured(
+                    "The MemoryUsage extension requires either the stdlib "
+                    "'resource' module (not available on Windows) or the "
+                    "'psutil' package. Install it with the 'memusage' extra "
+                    "(pip install scrapy[memusage]), or disable this "
+                    "extension by setting MEMUSAGE_ENABLED to False."
+                ) from exc
+            self._process = psutil.Process()
 
         self.crawler: Crawler = crawler
         self._stats: StatsCollector = crawler.stats
@@ -73,11 +87,15 @@ class MemoryUsage:
         return cls(crawler)
 
     def get_virtual_size(self) -> int:
-        size: int = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
-        if sys.platform != "darwin":
-            # on macOS ru_maxrss is in bytes, on Linux it is in KB
-            size *= 1024
-        return size
+        if self.resource is not None:
+            size: int = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
+            if sys.platform != "darwin":
+                # on macOS ru_maxrss is in bytes, on Linux it is in KB
+                size *= 1024
+            return size
+        # The psutil fallback is only used where 'resource' is unavailable,
+        # i.e. on Windows, where psutil tracks the peak working set size.
+        return int(self._process.memory_info().peak_wset)
 
     def engine_started(self) -> None:
         self._stats.set_value("memusage/startup", self.get_virtual_size())
