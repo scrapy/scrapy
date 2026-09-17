@@ -56,11 +56,15 @@ class DontCloseSpider(Exception):
 
 
 class CloseSpider(Exception):
-    """Raised from a :ref:`spider callback <topics-spiders>`, or while the
+    """Raised from a :ref:`spider callback <topics-spiders>`, a
+    :ref:`downloader middleware <topics-downloader-middleware>`, or while the
     spider is starting, to request the spider to be closed/stopped.
 
     .. versionchanged:: 2.18.0
        Added support for raising it while the spider is starting.
+
+    .. versionchanged:: VERSION
+       Added support for raising it from a downloader middleware.
 
     *reason* is a string with the reason for closing.
 

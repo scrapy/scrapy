@@ -65,6 +65,7 @@ __all__ = [
     "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
     "DOWNLOADER_MIDDLEWARES",
     "DOWNLOADER_MIDDLEWARES_BASE",
+    "DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS",
     "DOWNLOADER_STATS",
     "DOWNLOAD_BIND_ADDRESS",
     "DOWNLOAD_DELAY",
@@ -343,6 +344,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware": 900,
     # Downloader side
 }
+DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS = False
 
 DOWNLOADER_STATS = True
 
@@ -537,8 +539,9 @@ RETRY_EXCEPTIONS = [
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    # OSError is raised by the HttpCompression middleware when trying to
-    # decompress an empty response
+    # EOFError and OSError are raised by the HttpCompression middleware when
+    # the response body cannot be decompressed
+    EOFError,
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
