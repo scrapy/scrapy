@@ -347,6 +347,9 @@ separate thread once the crawl is done, keeping the reactor free.
 .. autoclass:: scrapy.extensions.feedexport.BlockingFeedStorage
    :members: _store_in_thread
 
+A storage backend receives a file. To send items to a service as they are
+scraped, write an :ref:`item pipeline <topics-item-pipeline>` instead.
+
 
 .. _item-filter:
 
@@ -849,6 +852,8 @@ Storage backend classes
 These are the classes that :setting:`FEED_STORAGES_BASE` assigns to the
 built-in URI schemes.
 
+.. currentmodule:: scrapy.extensions.feedexport
+
 .. autoclass:: FileFeedStorage
 
 .. autoclass:: FTPFeedStorage
@@ -858,6 +863,8 @@ built-in URI schemes.
 .. autoclass:: S3FeedStorage
 
 .. autoclass:: StdoutFeedStorage
+
+.. currentmodule:: None
 
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier

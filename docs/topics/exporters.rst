@@ -161,6 +161,15 @@ binary file, wrap it with :class:`io.TextIOWrapper` and call
 :meth:`~BaseItemExporter.finish_exporting`; otherwise the wrapper closes the
 underlying file when it is garbage-collected.
 
+:meth:`~BaseItemExporter.start_exporting`,
+:meth:`~BaseItemExporter.export_item` and
+:meth:`~BaseItemExporter.finish_exporting` may be coroutines. Feed exports
+export one item at a time, though, so awaiting slow work in
+:meth:`~BaseItemExporter.export_item` delays the export of every other item, in
+every feed, until it completes. Do it in batches instead, and in
+:meth:`~BaseItemExporter.finish_exporting`, which runs at the end of the crawl
+and once per batch when using :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
+
 For example, the following item exporter writes items as blocks of
 ``name: value`` lines:
 
