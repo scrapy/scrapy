@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 
-from scrapy.utils.display import _enable_windows_terminal_processing, pformat, pprint
+from scrapy.utils._colorize import _enable_windows_terminal_processing, pformat, pprint
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -59,7 +59,7 @@ def test_pformat_old_windows(isatty: mock.Mock, version: mock.Mock) -> None:
 
 
 @mock.patch("sys.platform", "win32")
-@mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
+@mock.patch("scrapy.utils._colorize._enable_windows_terminal_processing")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
 def test_pformat_windows_no_terminal_processing(
@@ -72,7 +72,7 @@ def test_pformat_windows_no_terminal_processing(
 
 
 @mock.patch("sys.platform", "win32")
-@mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
+@mock.patch("scrapy.utils._colorize._enable_windows_terminal_processing")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
 def test_pformat_windows(
