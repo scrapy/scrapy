@@ -333,8 +333,8 @@ your pipeline to it:
     class CustomFilesPipeline(FilesPipeline):
         STORE_SCHEMES = FilesPipeline.STORE_SCHEMES | {"s3": CustomS3FilesStore}
 
-Any header that the `PutObject`_ operation accepts works; a header it does
-not accept raises :exc:`TypeError`.
+Supported headers are those that the installed botocore version models for
+the `PutObject`_ operation; any other header raises :exc:`TypeError`.
 
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
 `Zenko CloudServer`_. All you need to do is set the endpoint option in your

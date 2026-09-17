@@ -957,8 +957,8 @@ class TestS3FilesStore:
     def test_headers_to_botocore_kwargs(self):
         store = S3FilesStore("s3://mybucket/key")
         assert store._headers_to_botocore_kwargs(
-            {"cache-control": "max-age=1", "x-amz-checksum-sha256": "abc"}
-        ) == {"CacheControl": "max-age=1", "ChecksumSHA256": "abc"}
+            {"cache-control": "max-age=1", "X-AMZ-TAGGING": "a=b"}
+        ) == {"CacheControl": "max-age=1", "Tagging": "a=b"}
 
     @inline_callbacks_test
     def test_stat(self):
