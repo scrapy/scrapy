@@ -157,10 +157,24 @@ class TestShellCommand:
     def test_fetch_request_with_callbacks(self, mockserver: MockServer) -> None:
         url = mockserver.url("/text")
         code = (
-            f"fetch(scrapy.Request('{url}', callback=lambda r: r, errback=lambda f: f))"
+            f"fetch(scrapy.Request('{url}', callback=lambda r: print('CALLBACK'), "
+            "errback=lambda f: print('ERRBACK')))"
         )
-        ret, out, _ = proc("shell", "-c", code)
+        ret, out, err = proc("shell", "-c", code)
         assert ret == 0, out
+        assert "CALLBACK" not in out
+        assert "ERRBACK" not in out
+        assert (
+            "UserWarning: Callbacks and errbacks of Request objects passed to fetch() are ignored"
+            in err
+        )
+
+    def test_redirect_referer(self, mockserver: MockServer) -> None:
+        """Redirects set the Referer header even in the shell."""
+        url = mockserver.url("/redirect-no-meta-refresh")
+        code = f"fetch('{url}') or response.request.headers.get('Referer')"
+        _, out, _ = proc("shell", "-c", code)
+        assert url in out
 
 
 class TestShellCommandWithSpider(TestProjectBase):
