@@ -10,6 +10,7 @@ import asyncio
 from threading import Thread
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from scrapy import signals
 from scrapy.commands import ScrapyCommand
 from scrapy.crawler import AsyncCrawlerProcess, Crawler
 from scrapy.http import Request
@@ -106,13 +107,20 @@ class Command(ScrapyCommand):
         self._start_crawler_thread()
 
         async def _init_engine() -> None:
-            # We may need to wait until some parts of start_async() have
-            # finished, which may need a special event in the engine and may
-            # wait until https://github.com/scrapy/scrapy/issues/6916
+            started: asyncio.Future[None] = loop.create_future()
+
+            def on_engine_started(**kwargs: Any) -> None:
+                started.set_result(None)
+
+            crawler.signals.connect(on_engine_started, signals.engine_started)
             crawler.engine = crawler._create_engine()
             loop.create_task(
                 crawler.engine.start_async(_start_request_processing=False)
             )
+            # Wait until the engine has been started, so that the engine is
+            # usable when this returns to the main thread.
+            await started
+            crawler.signals.disconnect(on_engine_started, signals.engine_started)
 
         future = asyncio.run_coroutine_threadsafe(_init_engine(), loop)
         future.result()
