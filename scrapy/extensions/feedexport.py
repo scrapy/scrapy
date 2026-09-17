@@ -19,6 +19,7 @@ from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
+from uuid import uuid4
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
@@ -311,13 +312,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         assert u.hostname
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
-
-        if feed_options and feed_options.get("overwrite", True) is False:
-            logger.warning(
-                "GCS does not support appending to files. To "
-                "suppress this warning, remove the overwrite "
-                "option from your FEEDS setting or set it to True."
-            )
+        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
     @classmethod
     def from_crawler(
@@ -341,8 +336,24 @@ class GCSFeedStorage(BlockingFeedStorage):
 
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
-            blob = bucket.blob(self.blob_name)
-            blob.upload_from_file(file, predefined_acl=self.acl)
+            blob = None if self.overwrite else bucket.get_blob(self.blob_name)
+            if blob is None:
+                bucket.blob(self.blob_name).upload_from_file(
+                    file, predefined_acl=self.acl
+                )
+                return
+            # Appending uploads the new data as a separate object and composes
+            # it with the existing one, leaving the data already stored
+            # untouched. Composition resolves its sources by name, so it always
+            # appends to the latest version of the blob.
+            part = bucket.blob(f"{self.blob_name}.{uuid4().hex}.part")
+            part.upload_from_file(file, predefined_acl=self.acl)
+            try:
+                blob.compose([blob, part], client=client)
+            finally:
+                part.delete(client=client)
+            if self.acl:
+                blob.acl.save_predefined(self.acl, client=client)
         finally:
             file.close()
 

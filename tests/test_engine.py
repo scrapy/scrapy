@@ -416,6 +416,52 @@ class TestMisuse:
             await engine.close_async()
 
 
+class BrokenScheduler(BaseScheduler):
+    """A scheduler that cannot be built."""
+
+    @classmethod
+    def from_crawler(cls, crawler: Any) -> BrokenScheduler:
+        raise ValueError("broken scheduler")
+
+    def has_pending_requests(self) -> bool:
+        return False
+
+    def enqueue_request(self, request: Request) -> bool:
+        return True
+
+    def next_request(self) -> Request | None:
+        return None
+
+
+@coroutine_test
+async def test_scheduler_creation_error() -> None:
+    """An error while building the scheduler is reported directly, instead of
+    other errors such as "Engine slot not assigned"."""
+    crawler = get_crawler(DefaultSpider, {"SCHEDULER": BrokenScheduler})
+    with pytest.raises(ValueError, match="broken scheduler"):
+        await crawler.crawl_async()
+    assert crawler.engine is not None
+    assert crawler.engine.spider is None
+
+
+@coroutine_test
+async def test_stop_without_spider_closes_downloader() -> None:
+    crawler = get_crawler(DefaultSpider)
+    engine = crawler.engine = ExecutionEngine(crawler, lambda _: None)
+    engine.downloader.close = Mock(wraps=engine.downloader.close)  # type: ignore[method-assign]
+    started: defer.Deferred[None] = defer.Deferred()
+
+    def on_engine_started(**kwargs: Any) -> None:
+        started.callback(None)
+
+    crawler.signals.connect(on_engine_started, signals.engine_started)
+    start_dfd = deferred_from_coro(engine.start_async(_start_request_processing=False))
+    await maybe_deferred_to_future(started)
+    await engine.stop_async()
+    await maybe_deferred_to_future(start_dfd)
+    engine.downloader.close.assert_called_once()
+
+
 @coroutine_test
 async def test_pause_unpause() -> None:
     engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
