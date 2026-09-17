@@ -9,6 +9,21 @@ Scrapy VERSION (unreleased)
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-   Changes to the ``fetch()`` shortcut of the :ref:`Scrapy shell
+    <topics-shell>`:
+
+    - Requests are now downloaded with
+      :meth:`ExecutionEngine.download_async()
+      <scrapy.core.engine.ExecutionEngine.download_async>` instead of being
+      passed to the scheduler. As a result, spider middlewares are no longer
+      applied to them.
+
+    - When a :class:`~scrapy.Request` object is passed, its ``callback`` and
+      ``errback`` are no longer called, and a warning is issued if they are
+      set.
+
+    (:gh:`TBD`)
+
 -   New projects created with the :command:`startproject` command define their
     configuration in a :file:`pyproject.toml` file, instead of the now
     deprecated :file:`scrapy.cfg` file.
