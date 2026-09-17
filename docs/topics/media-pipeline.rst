@@ -314,6 +314,28 @@ policy:
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
+To send custom headers with the uploaded files, subclass ``S3FilesStore``
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme of
+your pipeline to it:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline, S3FilesStore
+
+
+    class CustomS3FilesStore(S3FilesStore):
+        HEADERS = {
+            "Cache-Control": "max-age=172800",
+            "X-Amz-Storage-Class": "STANDARD_IA",
+        }
+
+
+    class CustomFilesPipeline(FilesPipeline):
+        STORE_SCHEMES = FilesPipeline.STORE_SCHEMES | {"s3": CustomS3FilesStore}
+
+Any header that the `PutObject`_ operation accepts works; a header it does
+not accept raises :exc:`TypeError`.
+
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
 `Zenko CloudServer`_. All you need to do is set the endpoint option in your
 Scrapy settings:
@@ -334,6 +356,7 @@ To reuse connections for as many files as you check or upload in parallel, set
 
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
+.. _PutObject: https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 
