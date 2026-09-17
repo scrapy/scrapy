@@ -29,7 +29,7 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
-from tests.utils.cloud import mock_google_cloud_storage
+from tests.utils.cloud import mock_google_cloud_blob, mock_google_cloud_storage
 from tests.utils.decorators import coroutine_test
 
 
@@ -592,20 +592,147 @@ class TestGCSFeedStorage:
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
 
-    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture):
-        with caplog.at_level(logging.DEBUG):
-            GCSFeedStorage("gs://mybucket/export.csv", "myproject-123", "custom-acl")
-        assert "GCS does not support appending to files" not in caplog.text
+    @coroutine_test
+    async def test_store_append_new_blob(self) -> None:
+        pytest.importorskip("google.cloud.storage")
 
-    def test_overwrite_false(self, caplog: pytest.LogCaptureFixture):
-        with caplog.at_level(logging.DEBUG):
-            GCSFeedStorage(
+        (client_mock, bucket_mock, blob_mock) = mock_google_cloud_storage()
+        bucket_mock.get_blob.return_value = None
+        with mock.patch("google.cloud.storage.Client") as m:
+            m.return_value = client_mock
+
+            f = mock.Mock()
+            storage = GCSFeedStorage(
                 "gs://mybucket/export.csv",
                 "myproject-123",
-                "custom-acl",
+                "publicRead",
                 feed_options={"overwrite": False},
             )
-        assert "GCS does not support appending to files" in caplog.text
+            await maybe_deferred_to_future(storage.store(f))
+
+            bucket_mock.get_blob.assert_called_once_with("export.csv")
+            bucket_mock.blob.assert_called_once_with("export.csv")
+            blob_mock.upload_from_file.assert_called_once_with(
+                f, predefined_acl="publicRead"
+            )
+            blob_mock.compose.assert_not_called()
+            f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_store_append_existing_blob(self) -> None:
+        pytest.importorskip("google.cloud.storage")
+
+        (client_mock, bucket_mock, part_mock) = mock_google_cloud_storage()
+        blob_mock = mock_google_cloud_blob()
+        bucket_mock.get_blob.return_value = blob_mock
+        with mock.patch("google.cloud.storage.Client") as m:
+            m.return_value = client_mock
+
+            f = mock.Mock()
+            storage = GCSFeedStorage(
+                "gs://mybucket/export.csv",
+                "myproject-123",
+                "publicRead",
+                feed_options={"overwrite": False},
+            )
+            await maybe_deferred_to_future(storage.store(f))
+
+            part_name = bucket_mock.blob.call_args.args[0]
+            assert part_name.startswith("export.csv.")
+            assert part_name.endswith(".part")
+            part_mock.upload_from_file.assert_called_once_with(
+                f, predefined_acl="publicRead"
+            )
+            blob_mock.compose.assert_called_once_with(
+                [blob_mock, part_mock], client=client_mock
+            )
+            part_mock.delete.assert_called_once_with(client=client_mock)
+            blob_mock.acl.save_predefined.assert_called_once_with(
+                "publicRead", client=client_mock
+            )
+            blob_mock.upload_from_file.assert_not_called()
+            f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_store_append_without_acl(self) -> None:
+        pytest.importorskip("google.cloud.storage")
+
+        (client_mock, bucket_mock, _part_mock) = mock_google_cloud_storage()
+        blob_mock = mock_google_cloud_blob()
+        bucket_mock.get_blob.return_value = blob_mock
+        with mock.patch("google.cloud.storage.Client") as m:
+            m.return_value = client_mock
+
+            storage = GCSFeedStorage(
+                "gs://mybucket/export.csv",
+                "myproject-123",
+                None,
+                feed_options={"overwrite": False},
+            )
+            await maybe_deferred_to_future(storage.store(mock.Mock()))
+
+            blob_mock.compose.assert_called_once()
+            blob_mock.acl.save_predefined.assert_not_called()
+
+    @coroutine_test
+    async def test_store_append_deletes_part_on_compose_error(self) -> None:
+        pytest.importorskip("google.cloud.storage")
+
+        (client_mock, bucket_mock, part_mock) = mock_google_cloud_storage()
+        blob_mock = mock_google_cloud_blob()
+        blob_mock.compose.side_effect = OSError("Compose failed")
+        bucket_mock.get_blob.return_value = blob_mock
+        with mock.patch("google.cloud.storage.Client") as m:
+            m.return_value = client_mock
+
+            f = mock.Mock()
+            storage = GCSFeedStorage(
+                "gs://mybucket/export.csv",
+                "myproject-123",
+                "publicRead",
+                feed_options={"overwrite": False},
+            )
+            with pytest.raises(OSError, match="Compose failed"):
+                await maybe_deferred_to_future(storage.store(f))
+
+            part_mock.delete.assert_called_once_with(client=client_mock)
+            f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_store_overwrite_ignores_existing_blob(self) -> None:
+        pytest.importorskip("google.cloud.storage")
+
+        (client_mock, bucket_mock, blob_mock) = mock_google_cloud_storage()
+        with mock.patch("google.cloud.storage.Client") as m:
+            m.return_value = client_mock
+
+            storage = GCSFeedStorage(
+                "gs://mybucket/export.csv", "myproject-123", "publicRead"
+            )
+            await maybe_deferred_to_future(storage.store(mock.Mock()))
+
+            bucket_mock.get_blob.assert_not_called()
+            blob_mock.compose.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("feed_options", "expected"),
+        [
+            (None, True),
+            ({}, True),
+            ({"overwrite": True}, True),
+            ({"overwrite": False}, False),
+        ],
+    )
+    def test_overwrite(
+        self, feed_options: dict[str, Any] | None, expected: bool
+    ) -> None:
+        storage = GCSFeedStorage(
+            "gs://mybucket/export.csv",
+            "myproject-123",
+            "custom-acl",
+            feed_options=feed_options,
+        )
+        assert storage.overwrite is expected
 
 
 class TestStdoutFeedStorage:

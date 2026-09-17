@@ -260,6 +260,9 @@ class ExecutionEngine:
             self._start_request_processing_awaitable = None
         if self.spider is not None:
             await self.close_spider_async(reason="shutdown", mode=self._stop_mode)
+        else:
+            # Normally it's close_spider_async() that does this.
+            self.downloader.close()
         await self.signals.send_catch_log_async(signal=signals.engine_stopped)
         if self._closewait:
             self._closewait.callback(None)
@@ -578,10 +581,10 @@ class ExecutionEngine:
             raise RuntimeError(
                 f"No free spider slot when opening {self.crawler.spider.name!r}"
             )
+        scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         logger.info("Spider opened", extra={"spider": self.crawler.spider})
         self.spider = self.crawler.spider
         nextcall = CallLaterOnce(self._start_scheduled_requests)
-        scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
         # A component that fails to start can ask for the spider to be closed.
         # The rest of the startup runs anyway, so that components that are
