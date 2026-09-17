@@ -260,6 +260,9 @@ class ExecutionEngine:
             self._start_request_processing_awaitable = None
         if self.spider is not None:
             await self.close_spider_async(reason="shutdown", mode=self._stop_mode)
+        else:
+            # Normally it's close_spider_async() that does this.
+            self.downloader.close()
         await self.signals.send_catch_log_async(signal=signals.engine_stopped)
         if self._closewait:
             self._closewait.callback(None)
