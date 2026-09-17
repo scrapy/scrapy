@@ -22,6 +22,7 @@ import scrapy
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils._shell import DEFAULT_PYTHON_SHELLS, start_python_console
@@ -205,14 +206,17 @@ class Shell:
     ) -> None:
         if isinstance(request_or_url, Request):
             request = request_or_url
-            if request.callback or request.errback:
+            if (
+                not (request.callback is None or request.callback is NO_CALLBACK)
+                or request.errback
+            ):
                 warnings.warn(
                     "Callbacks and errbacks of Request objects passed to fetch() are ignored.",
                     stacklevel=2,
                 )
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True, **kwargs)
+            request = Request(url, callback=NO_CALLBACK, dont_filter=True, **kwargs)
             if not redirect:
                 request.meta["dont_redirect"] = True
         response: Response | None = None
