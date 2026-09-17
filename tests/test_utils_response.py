@@ -110,6 +110,37 @@ def test_get_base_url():
     assert get_base_url(resp2) == "http://www.example.com"
 
 
+_PADDING = b"<!--" + b"x" * 5000 + b"-->"
+
+
+@pytest.mark.parametrize("linear_scan", [False, True])
+def test_get_base_url_past_the_first_characters(monkeypatch, linear_scan):
+    monkeypatch.setattr("scrapy.utils.response.W3LIB_LINEAR_HTML_SCAN", linear_scan)
+    resp = HtmlResponse(
+        "http://www.example.com",
+        body=b"<html><head>"
+        + _PADDING
+        + b'<base href="http://www.example.com/img/"></head></html>',
+    )
+    expected = (
+        "http://www.example.com/img/" if linear_scan else "http://www.example.com"
+    )
+    assert get_base_url(resp) == expected
+
+
+@pytest.mark.parametrize("linear_scan", [False, True])
+def test_get_meta_refresh_past_the_first_characters(monkeypatch, linear_scan):
+    monkeypatch.setattr("scrapy.utils.response.W3LIB_LINEAR_HTML_SCAN", linear_scan)
+    resp = HtmlResponse(
+        "http://www.example.com",
+        body=b"<html><head>"
+        + _PADDING
+        + b'<meta http-equiv="refresh" content="5;url=/new"></head></html>',
+    )
+    expected = (5.0, "http://www.example.com/new") if linear_scan else (None, None)
+    assert get_meta_refresh(resp) == expected
+
+
 def test_response_status_message():
     assert response_status_message(200) == "200 OK"
     assert response_status_message(404) == "404 Not Found"

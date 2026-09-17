@@ -17,6 +17,7 @@ from twisted.web import http
 from w3lib import html
 
 from scrapy.http.headers import Headers
+from scrapy.utils._deps_compat import W3LIB_LINEAR_HTML_SCAN
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
@@ -31,7 +32,7 @@ _baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
 def get_base_url(response: TextResponse) -> str:
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
-        text = response.text[0:4096]
+        text = response.text if W3LIB_LINEAR_HTML_SCAN else response.text[0:4096]
         _baseurl_cache[response] = html.get_base_url(
             text, response.url, response.encoding
         )
@@ -49,7 +50,7 @@ def get_meta_refresh(
 ) -> tuple[None, None] | tuple[float, str]:
     """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
-        text = response.text[0:4096]
+        text = response.text if W3LIB_LINEAR_HTML_SCAN else response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(
             text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
         )

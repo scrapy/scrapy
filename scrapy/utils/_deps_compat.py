@@ -5,6 +5,7 @@ from packaging.version import Version
 from parsel import __version__ as PARSEL_VERSION_STRING
 from twisted import version as TWISTED_VERSION
 from twisted.python.versions import Version as TxVersion
+from w3lib.html import remove_tags_with_content
 
 # improved urllib.robotparser, https://github.com/python/cpython/pull/149374
 STDLIB_IMPROVED_ROBOTFILEPARSER = sys.version_info >= (3, 14, 5) or (
@@ -24,3 +25,7 @@ PARSEL_SUPPORTS_JMESPATH = PARSEL_VERSION >= Version("1.8.0")
 PYOPENSSL_VERSION = Version(PYOPENSSL_VERSION_STRING)
 # SSL.Context.set_cipher_list() creates a temporary connection, making the context immutable
 PYOPENSSL_SET_CIPHER_LIST_TMP_CONN = PYOPENSSL_VERSION < Version("25.2.0")
+
+# w3lib 2.5.0 made the HTML scanning functions linear on malformed input.
+# Below it, scanning a whole document can take seconds.
+W3LIB_LINEAR_HTML_SCAN = remove_tags_with_content("<a <b>c</b></a>", ("a",)) != ""
