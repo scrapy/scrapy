@@ -205,6 +205,11 @@ class Shell:
     ) -> None:
         if isinstance(request_or_url, Request):
             request = request_or_url
+            if request.callback or request.errback:
+                warnings.warn(
+                    "Callbacks and errbacks of Request objects passed to fetch() are ignored.",
+                    stacklevel=2,
+                )
         else:
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True, **kwargs)

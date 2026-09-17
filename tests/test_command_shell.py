@@ -160,10 +160,14 @@ class TestShellCommand:
             f"fetch(scrapy.Request('{url}', callback=lambda r: print('CALLBACK'), "
             "errback=lambda f: print('ERRBACK')))"
         )
-        ret, out, _ = proc("shell", "-c", code)
+        ret, out, err = proc("shell", "-c", code)
         assert ret == 0, out
         assert "CALLBACK" not in out
         assert "ERRBACK" not in out
+        assert (
+            "UserWarning: Callbacks and errbacks of Request objects passed to fetch() are ignored"
+            in err
+        )
 
     def test_redirect_referer(self, mockserver: MockServer) -> None:
         """Redirects set the Referer header even in the shell."""
