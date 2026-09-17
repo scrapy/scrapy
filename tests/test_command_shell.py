@@ -162,6 +162,13 @@ class TestShellCommand:
         ret, out, _ = proc("shell", "-c", code)
         assert ret == 0, out
 
+    def test_redirect_referer(self, mockserver: MockServer) -> None:
+        """Redirects set the Referer header even in the shell."""
+        url = mockserver.url("/redirect-no-meta-refresh")
+        code = f"fetch('{url}') or response.request.headers.get('Referer')"
+        _, out, _ = proc("shell", "-c", code)
+        assert url in out
+
 
 class TestShellCommandWithSpider(TestProjectBase):
     @pytest.fixture(autouse=True)
