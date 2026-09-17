@@ -156,7 +156,8 @@ Request objects
         :attr:`cb_kwargs` instead, see :ref:`callback-data`. However, request
         metadata may be the right choice in certain scenarios, such as to
         maintain some debugging data across all follow-up requests (e.g. the
-        source URL).
+        source URL). To copy some metadata keys automatically into follow-up
+        requests, consider using the :setting:`STICKY_META_KEYS` setting.
 
         A common use of request metadata is to define request-specific
         parameters for Scrapy components (extensions, middlewares, etc.). For

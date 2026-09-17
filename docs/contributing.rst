@@ -149,6 +149,31 @@ If you decide to work on something without an open issue, please:
     test coverage, tests should be written for real scenarios, with minimum
     mocking. We usually prefer end-to-end tests.
 
+.. _dev-setup:
+
+Setting up a development environment
+====================================
+
+Before you can write a patch, you need a local copy of the Scrapy code base
+that you can run and modify:
+
+#.  Follow GitHub’s `contributing to a project`_ guide to fork the Scrapy
+    repository, clone your fork and create a branch for your changes.
+
+#.  Install your clone, ideally inside :ref:`a virtual environment
+    <intro-using-virtualenv>`, so that ``scrapy`` runs your code:
+
+    .. code-block:: bash
+
+        pip install -e .
+
+#.  Set up :ref:`pre-commit <scrapy-pre-commit>`, and install :doc:`tox
+    <tox:index>`, which is what :ref:`runs the tests <running-tests>`:
+
+    .. code-block:: bash
+
+        pip install tox
+
 .. _writing-patches:
 
 Writing patches
@@ -404,6 +429,7 @@ And their unit-tests are in::
     tests/test_loader.py
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
+.. _contributing to a project: https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests

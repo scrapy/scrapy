@@ -19,6 +19,7 @@ from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
+from uuid import uuid4
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
@@ -354,7 +355,7 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class GCSFeedStorage(BlockingFeedStorage):
-    supported_modes: frozenset[str] = frozenset({"create", "overwrite"})
+    supported_modes: frozenset[str] = FEED_MODES
 
     def __init__(
         self,
@@ -388,27 +389,38 @@ class GCSFeedStorage(BlockingFeedStorage):
             feed_options=feed_options,
         )
 
-    def _get_blob(self) -> Any:
-        from google.cloud.storage import Client  # noqa: PLC0415
-
-        client = Client(project=self.project_id)
-        bucket = client.bucket(self.bucket_name)
-        return bucket.blob(self.blob_name)
-
     def _store_in_thread(self, file: IO[bytes]) -> None:
         from google.api_core.exceptions import PreconditionFailed  # noqa: PLC0415
+        from google.cloud.storage import Client  # noqa: PLC0415
 
         file.seek(0)
         try:
-            kwargs = {"if_generation_match": 0} if self._mode == "create" else {}
+            client = Client(project=self.project_id)
+            bucket = client.bucket(self.bucket_name)
+            blob = bucket.get_blob(self.blob_name) if self._mode == "append" else None
+            if blob is None:
+                kwargs = {"if_generation_match": 0} if self._mode == "create" else {}
+                try:
+                    bucket.blob(self.blob_name).upload_from_file(
+                        file, predefined_acl=self.acl, **kwargs
+                    )
+                except PreconditionFailed as error:
+                    raise FileExistsError(
+                        f"gs://{self.bucket_name}/{self.blob_name} already exists"
+                    ) from error
+                return
+            # Appending uploads the new data as a separate object and composes
+            # it with the existing one, leaving the data already stored
+            # untouched. Composition resolves its sources by name, so it always
+            # appends to the latest version of the blob.
+            part = bucket.blob(f"{self.blob_name}.{uuid4().hex}.part")
+            part.upload_from_file(file, predefined_acl=self.acl)
             try:
-                self._get_blob().upload_from_file(
-                    file, predefined_acl=self.acl, **kwargs
-                )
-            except PreconditionFailed as error:
-                raise FileExistsError(
-                    f"gs://{self.bucket_name}/{self.blob_name} already exists"
-                ) from error
+                blob.compose([blob, part], client=client)
+            finally:
+                part.delete(client=client)
+            if self.acl:
+                blob.acl.save_predefined(self.acl, client=client)
         finally:
             file.close()
 

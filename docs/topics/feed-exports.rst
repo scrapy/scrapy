@@ -292,8 +292,14 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
 
-Supported :ref:`modes <feed-mode>`: ``"create"`` and ``"overwrite"``. If
-:setting:`FEED_MODE` is ``None``, ``"overwrite"`` is used.
+Supported :ref:`modes <feed-mode>`: ``"append"``, ``"create"`` and
+``"overwrite"``. If :setting:`FEED_MODE` is ``None``, ``"overwrite"`` is used.
+
+Appending turns the feed into a `composite object`_, which has a CRC32C
+checksum but no MD5 hash.
+
+.. versionadded:: VERSION
+   Appending support.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -875,4 +881,5 @@ source spider in the feed URI:
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
+.. _composite object: https://docs.cloud.google.com/storage/docs/composite-objects
 .. _Google Cloud Storage: https://cloud.google.com/storage/
