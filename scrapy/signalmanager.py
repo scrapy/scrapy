@@ -3,16 +3,16 @@ from __future__ import annotations
 import warnings
 from typing import Any
 
-from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils import _signal_registry
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
 
 
 class SignalManager:
-    def __init__(self, sender: Any = dispatcher.Anonymous):
+    def __init__(self, sender: Any = _signal_registry.Anonymous):
         self.sender: Any = sender
 
     def connect(self, receiver: Any, signal: Any, **kwargs: Any) -> None:
@@ -30,7 +30,7 @@ class SignalManager:
         :type signal: object
         """
         kwargs.setdefault("sender", self.sender)
-        dispatcher.connect(receiver, signal, **kwargs)
+        _signal_registry.connect(receiver, signal, **kwargs)
 
     def disconnect(self, receiver: Any, signal: Any, **kwargs: Any) -> None:
         """
@@ -39,7 +39,7 @@ class SignalManager:
         are the same.
         """
         kwargs.setdefault("sender", self.sender)
-        dispatcher.disconnect(receiver, signal, **kwargs)
+        _signal_registry.disconnect(receiver, signal, **kwargs)
 
     def send_catch_log(self, signal: Any, **kwargs: Any) -> list[tuple[Any, Any]]:
         """
