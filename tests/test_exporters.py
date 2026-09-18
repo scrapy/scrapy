@@ -143,7 +143,7 @@ class TestBaseItemExporter(ABC):
 
 
 class TestPythonItemExporter(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
+    def _get_exporter(self, **kwargs: Any) -> PythonItemExporter:
         return PythonItemExporter(**kwargs)
 
     def test_invalid_option(self):
