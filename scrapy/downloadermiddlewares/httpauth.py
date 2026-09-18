@@ -15,6 +15,7 @@ from scrapy import Request, Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
@@ -23,6 +24,32 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
+
+
+_DEFAULT_PORTS = {
+    "http": 80,
+    "https": 443,
+}
+
+
+def _origin(request: Request) -> str:
+    parsed_url = urlparse_cached(request)
+    scheme = parsed_url.scheme
+    netloc = (
+        parsed_url.netloc
+        if parsed_url.port != _DEFAULT_PORTS[scheme]
+        else parsed_url.hostname
+    )
+    return f"{scheme}://{netloc}"
+
+
+def _setdefault_auth_origin(request: Request) -> str:
+    origin: str | None = request.meta.get("auth_origin")
+    if origin:
+        return origin
+    origin = _origin(request)
+    request.meta["auth_origin"] = origin
+    return origin
 
 
 class HttpAuthMiddleware:
@@ -70,14 +97,22 @@ class HttpAuthMiddleware:
     def process_request(
         self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
-        if b"Authorization" in request.headers:
+        if (
+            b"Authorization" in request.headers
+            or urlparse_cached(request).scheme not in _DEFAULT_PORTS
+        ):
             return None
         # Per-request meta overrides
         usr = request.meta.get("http_user", "")
         pwd = request.meta.get("http_pass", "")
         if usr or pwd:
             domain = request.meta.get("http_auth_domain")
-            if not domain or url_is_from_any_domain(request.url, [domain]):
+            allowed = (
+                url_is_from_any_domain(request.url, [domain])
+                if domain
+                else _setdefault_auth_origin(request) == _origin(request)
+            )
+            if allowed:
                 request.headers[b"Authorization"] = basic_auth_header(usr, pwd)
             return None
         # Middleware-level auth

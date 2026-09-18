@@ -969,6 +969,10 @@ http_auth_domain
 
 Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
 
+If this key is not set, :reqmeta:`http_user` and :reqmeta:`http_pass` are only
+sent to the origin (scheme, host and port) of the request where they were first
+used, e.g. they are not sent after a cross-origin redirect.
+
 .. reqmeta:: http_pass
 
 http_pass
