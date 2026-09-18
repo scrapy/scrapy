@@ -22,8 +22,37 @@ Remember that Scrapy requires a Twisted reactor or (with
 you need to run one of those in your script for it to work (helpers described
 below can do it for you).
 
-The first utility you can use to run your spiders is
-:class:`scrapy.crawler.AsyncCrawlerProcess` or
+To run a single spider, use :func:`scrapy.run`:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "my_spider"
+        start_urls = ["https://quotes.toscrape.com"]
+
+        def parse(self, response):
+            for quote in response.css("div.quote span.text::text").getall():
+                yield {"text": quote}
+
+
+    scrapy.run(MySpider, settings={"FEEDS": {"items.json": {}}})
+
+.. autofunction:: scrapy.run
+
+From code that already runs in an asyncio event loop, such as a notebook or an
+existing asyncio or Twisted application, use :func:`scrapy.run_async` instead:
+
+.. code-block:: python
+
+    await scrapy.run_async(MySpider)
+
+.. autofunction:: scrapy.run_async
+
+To run several spiders in the same process, or to control the event loop
+yourself, use :class:`scrapy.crawler.AsyncCrawlerProcess` or
 :class:`scrapy.crawler.CrawlerProcess`. These classes will start a Twisted
 reactor for you, configuring the logging and setting shutdown handlers. These
 classes are the ones used by all Scrapy commands. They have similar

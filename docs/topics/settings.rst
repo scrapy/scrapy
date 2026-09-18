@@ -2353,7 +2353,8 @@ take the :setting:`DNS_TIMEOUT` setting into account.
 TWISTED_REACTOR_ENABLED
 -----------------------
 
-Default: ``True``
+Default: ``True`` (``False`` in :func:`scrapy.run`, and in
+:func:`scrapy.run_async` when no reactor is installed)
 
 Whether to install and use the Twisted reactor.
 

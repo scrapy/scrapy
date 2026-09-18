@@ -1290,3 +1290,74 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
         self._setup_reactor(install_signal_handlers)
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
+
+
+def _run_settings(
+    settings: dict[str, Any] | Settings | None, *, use_reactor: bool
+) -> Settings:
+    if not isinstance(settings, Settings):
+        settings = Settings(settings)
+    settings.set("TWISTED_REACTOR_ENABLED", use_reactor, priority="default")
+    return settings
+
+
+def run(
+    spider: type[Spider],
+    args: dict[str, Any] | None = None,
+    *,
+    settings: dict[str, Any] | Settings | None = None,
+) -> Crawler:
+    """Run a single spider, blocking until the crawl finishes, and return its
+    :class:`~scrapy.crawler.Crawler`.
+
+    .. versionadded:: VERSION
+
+    *spider* is a :class:`~scrapy.Spider` subclass, *args* are :ref:`spider
+    arguments <spiderargs>` for it, and *settings* are :ref:`settings
+    <topics-settings>` for the crawl, with :setting:`TWISTED_REACTOR_ENABLED`
+    defaulting to ``False``.
+
+    Use :func:`scrapy.run_async` from code that runs in an asyncio event loop.
+
+    See :ref:`run-from-script`.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+    else:
+        raise RuntimeError(
+            "scrapy.run() starts an asyncio event loop, so it cannot be "
+            "called while one is already running. Use scrapy.run_async() "
+            "instead."
+        )
+    process = AsyncCrawlerProcess(_run_settings(settings, use_reactor=False))
+    crawler = process.create_crawler(spider)
+    process.crawl(crawler, **(args or {}))
+    process.start()
+    return crawler
+
+
+async def run_async(
+    spider: type[Spider],
+    args: dict[str, Any] | None = None,
+    *,
+    settings: dict[str, Any] | Settings | None = None,
+) -> Crawler:
+    """Run a single spider in the running asyncio event loop and return its
+    :class:`~scrapy.crawler.Crawler`.
+
+    .. versionadded:: VERSION
+
+    Takes the same arguments as :func:`scrapy.run`, except that
+    :setting:`TWISTED_REACTOR_ENABLED` defaults to whether a
+    :mod:`~twisted.internet.reactor` is installed. Unlike :func:`scrapy.run`,
+    it neither starts the event loop nor installs signal handlers.
+    """
+    settings = _run_settings(settings, use_reactor=is_reactor_installed())
+    configure_logging(settings)
+    log_scrapy_info(settings)
+    runner = AsyncCrawlerRunner(settings)
+    crawler = runner.create_crawler(spider)
+    await runner.crawl(crawler, **(args or {}))
+    return crawler

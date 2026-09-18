@@ -677,3 +677,39 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
             "RuntimeError: TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed"
             in log
         )
+
+
+class TestRunSubprocess(ScriptRunnerMixin):
+    @property
+    def script_dir(self) -> Path:
+        return self.get_script_dir("run")
+
+    def test_simple(self) -> None:
+        log = self.run_script("simple.py")
+        assert "is_reactorless(): True" in log
+        assert "Spider closed (finished)" in log
+        assert "spider: no_request" in log
+        assert "finish_reason: finished" in log
+
+    def test_spider_args(self) -> None:
+        log = self.run_script("spider_args.py")
+        assert "foo: 42" in log
+        assert "CONCURRENT_REQUESTS: 7" in log
+        assert "Spider closed (finished)" in log
+
+    def test_reactor(self) -> None:
+        log = self.run_script("reactor.py")
+        assert "is_reactorless(): False" in log
+        assert "Spider closed (finished)" in log
+
+    def test_async_simple(self) -> None:
+        log = self.run_script("async_simple.py")
+        assert "is_reactorless(): True" in log
+        assert "Spider closed (finished)" in log
+        assert "spider: no_request" in log
+        assert "finish_reason: finished" in log
+
+    def test_async_reactor(self) -> None:
+        log = self.run_script("async_reactor.py")
+        assert "is_reactorless(): False" in log
+        assert "Spider closed (finished)" in log
