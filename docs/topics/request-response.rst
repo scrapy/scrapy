@@ -833,6 +833,8 @@ Those are:
 * :reqmeta:`bindaddress`
 * :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
+* :reqmeta:`delay`
+* :reqmeta:`delayed`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`
 * :reqmeta:`dont_merge_cookies`
@@ -912,6 +914,44 @@ This meta key is not supported by
 :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
 :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
 the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
+
+.. reqmeta:: delay
+
+delay
+-----
+
+.. versionadded:: VERSION
+
+Number of seconds to hold a request before sending it:
+
+.. code-block:: python
+
+    Request("https://example.com/slow", meta={"delay": 5.0})
+
+The delay is a minimum: once it elapses, the request competes with the other
+pending requests as usual, subject to e.g. its
+:attr:`~scrapy.Request.priority`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+:setting:`DOWNLOAD_DELAY`.
+
+Scrapy removes this key as soon as the countdown starts, so that a copy of the
+request, e.g. a retry or a redirect, is not held again, and so that setting the
+key again asks for a new delay. See also :reqmeta:`delayed`.
+
+.. reqmeta:: delayed
+
+delayed
+-------
+
+.. versionadded:: VERSION
+
+Delays, in seconds, that a request has been held for because of
+:reqmeta:`delay`. Read-only.
+
+.. code-block:: python
+
+    def parse(self, response):
+        delays = response.meta.get("delayed", [])
+        self.logger.info(f"Held {len(delays)} times, {sum(delays)}s in total")
 
 .. reqmeta:: download_timeout
 
