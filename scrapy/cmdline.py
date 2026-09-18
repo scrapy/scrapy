@@ -38,8 +38,6 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
 
 
 def _iter_command_classes(module_name: str) -> Iterable[type[ScrapyCommand]]:
-    # TODO: add `name` attribute to commands and merge this function with
-    # scrapy.utils.spider.iter_spider_classes
     for module in walk_modules_iter(module_name):
         for obj in vars(module).values():
             if (

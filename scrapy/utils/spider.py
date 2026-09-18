@@ -47,18 +47,27 @@ def iterate_spider_output(
     return arg_to_iter(d)
 
 
-def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
-    """Return an iterator over all spider classes defined in the given module
-    that can be instantiated (i.e. which have name)
+def iter_spider_classes(
+    module: ModuleType,
+    *,
+    require_name: bool = True,
+) -> Iterable[type[Spider]]:
+    """Return an iterator over all :class:`~scrapy.spiders.Spider` subclasses
+    defined in the given module, excluding those marked with
+    :func:`scrapy.spiders.ignore_spider`.
+
+    If `require_name` is ``True`` (default), any
+    :class:`~scrapy.spiders.Spider` subclass without a non-empty
+    :attr:`~scrapy.Spider.name` is also excluded.
     """
     for obj in vars(module).values():
-        if (
-            inspect.isclass(obj)
-            and issubclass(obj, Spider)
-            and obj.__module__ == module.__name__
-            and getattr(obj, "name", None)
-        ):
-            yield obj
+        if not inspect.isclass(obj) or not issubclass(obj, Spider):
+            continue
+        if obj.__module__ != module.__name__ or obj._is_ignored():
+            continue
+        if require_name and not getattr(obj, "name", None):
+            continue
+        yield obj
 
 
 @overload
