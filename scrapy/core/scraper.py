@@ -265,8 +265,11 @@ class Scraper:
             return
 
         try:
-            # call the request errback with the downloader error
-            output = await self.call_spider_async(result, request)
+            # call the request errback with the downloader error and the spider
+            # middlewares with its output
+            output = await self.spidermw._scrape_failure_async(
+                self.call_spider_async, result, request
+            )
         except Exception as spider_exc:
             # the errback didn't silence the exception
             assert self.crawler.spider
