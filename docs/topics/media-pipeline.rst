@@ -244,6 +244,9 @@ on the item in your spider, and read it back from the item in
 Supported Storage
 =================
 
+Use :setting:`UPLOAD_TIMEOUT` to limit how long uploads to a remote storage
+backend may take.
+
 File system storage
 -------------------
 
