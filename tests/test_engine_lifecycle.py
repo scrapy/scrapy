@@ -123,6 +123,19 @@ async def test_close_created() -> None:
 
 
 @coroutine_test
+async def test_close_stopped(caplog: pytest.LogCaptureFixture) -> None:
+    crawler = get_crawler(DefaultSpider)
+    await crawler.crawl_async()
+    engine = crawler.engine
+    assert engine is not None
+    assert_state(engine, _EngineState.STOPPED)
+    with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
+        await engine.close_async()
+    assert_state(engine, _EngineState.STOPPED)
+    assert_no_invalid_transition(caplog)
+
+
+@coroutine_test
 async def test_running_setter_deprecated() -> None:
     engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
     with pytest.warns(
