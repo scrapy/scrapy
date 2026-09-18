@@ -13,7 +13,7 @@ from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.downloader import Downloader
-from scrapy.core.engine import ExecutionEngine, _Slot
+from scrapy.core.engine import ExecutionEngine, _EngineState, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import (
     CloseSpider,
@@ -167,7 +167,7 @@ class TestEngine(TestEngineBase):
     async def test_stop_async_reentrant_fast_waits_for_closewait(self) -> None:
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
         engine.spider = Mock()
-        engine._stopping = True
+        engine._state = _EngineState.STOPPING
         engine._closewait = defer.Deferred()
 
         with patch.object(
@@ -187,7 +187,7 @@ class TestEngine(TestEngineBase):
         self,
     ) -> None:
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        engine._stopping = True
+        engine._state = _EngineState.STOPPING
 
         with patch.object(
             engine, "close_spider_async", new_callable=AsyncMock
@@ -445,11 +445,16 @@ async def test_scheduler_creation_error() -> None:
 
 
 @coroutine_test
-async def test_stop_without_spider_closes_downloader() -> None:
+async def test_stop_without_spider_closes_downloader(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     crawler = get_crawler(DefaultSpider)
     engine = crawler.engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader.close = Mock(wraps=engine.downloader.close)  # type: ignore[method-assign]
-    await engine.start_async()
+    with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
+        await engine.start_async()
+    # Starting without a spider is not part of the engine lifecycle.
+    assert "Invalid engine state transition: CREATED → STARTING" in caplog.text
     await engine.stop_async()
     engine.downloader.close.assert_called_once()
 
