@@ -40,6 +40,10 @@ can also be imported as ``scrapy.linkextractors.LinkExtractor``:
 
     from scrapy.linkextractors import LinkExtractor
 
+.. autodata:: scrapy.linkextractors.IGNORED_EXTENSIONS
+
+.. autodata:: scrapy.linkextractors.SUPPORTED_SCHEMES
+
 LxmlLinkExtractor
 -----------------
 
