@@ -118,8 +118,18 @@ instance, which can be accessed and used like this:
         def parse(self, response):
             self.logger.info("Parse function called on %s", response.url)
 
-That logger is created using the Spider's name, but you can use any custom
-Python logger you want. For example:
+That logger is created using the Spider's name, and every message logged
+through it, as well as most messages logged by Scrapy itself while crawling,
+carries a reference to the spider that triggered it. This is useful to tell
+spiders apart when :ref:`running several of them in the same process
+<run-multiple-spiders>`: add ``%(spider)s`` to :setting:`LOG_FORMAT` to
+include the spider name in every log message, e.g.:
+
+.. code-block:: python
+
+    LOG_FORMAT = "%(asctime)s [%(name)s] %(spider)s %(levelname)s: %(message)s"
+
+You can use any custom Python logger you want too. For example:
 
 .. code-block:: python
 
