@@ -182,11 +182,9 @@ class ExecutionEngine:
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return deferred_from_coro(
-            self.start_async(_start_request_processing=_start_request_processing)
-        )
+        return deferred_from_coro(self.start_async())
 
-    async def start_async(self, *, _start_request_processing: bool = True) -> None:
+    async def start_async(self) -> None:
         """Start the execution engine.
 
         .. versionadded:: 2.14
@@ -199,19 +197,18 @@ class ExecutionEngine:
         if self._stopping:
             # band-aid until https://github.com/scrapy/scrapy/issues/6916
             return
-        if _start_request_processing and self.spider is None:
-            # require an opened spider when not run in scrapy shell
+        if self.spider is None:
+            # require an opened spider
             return
         self.running = True
         self._closewait = Deferred()
-        if _start_request_processing:
-            coro = self._start_request_processing()
-            if is_asyncio_available():
-                # not wrapping in a Deferred here to avoid https://github.com/twisted/twisted/issues/12470
-                # (can happen when this is cancelled, e.g. in test_close_during_start_iteration())
-                self._start_request_processing_awaitable = asyncio.ensure_future(coro)
-            else:
-                self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
+        coro = self._start_request_processing()
+        if is_asyncio_available():
+            # not wrapping in a Deferred here to avoid https://github.com/twisted/twisted/issues/12470
+            # (can happen when this is cancelled, e.g. in test_close_during_start_iteration())
+            self._start_request_processing_awaitable = asyncio.ensure_future(coro)
+        else:
+            self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
         with contextlib.suppress(asyncio.exceptions.CancelledError):
             await maybe_deferred_to_future(self._closewait)
 

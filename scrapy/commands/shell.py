@@ -10,12 +10,10 @@ import asyncio
 from threading import Thread
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from scrapy import signals
 from scrapy.commands import ScrapyCommand
 from scrapy.crawler import AsyncCrawlerProcess, Crawler
 from scrapy.http import Request
 from scrapy.shell import Shell
-from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
@@ -97,31 +95,17 @@ class Command(ScrapyCommand):
         shell.start(url=url, redirect=not opts.no_redirect)
 
     def _init_with_reactor(self, crawler: Crawler) -> None:
-        # Create the engine and run start_async() in the main thread
+        # Create the engine in the main thread
         crawler.engine = crawler._create_engine()
-        _schedule_coro(crawler.engine.start_async(_start_request_processing=False))
         self._start_crawler_thread()
 
     def _init_without_reactor(self, crawler: Crawler) -> None:
-        # Create the engine and run start_async() in the event loop thread
+        # Create the engine in the event loop thread
         loop = self._get_reactorless_loop()
         self._start_crawler_thread()
 
         async def _init_engine() -> None:
-            started: asyncio.Future[None] = loop.create_future()
-
-            def on_engine_started(**kwargs: Any) -> None:
-                started.set_result(None)
-
-            crawler.signals.connect(on_engine_started, signals.engine_started)
             crawler.engine = crawler._create_engine()
-            loop.create_task(
-                crawler.engine.start_async(_start_request_processing=False)
-            )
-            # Wait until the engine has been started, so that the engine is
-            # usable when this returns to the main thread.
-            await started
-            crawler.signals.disconnect(on_engine_started, signals.engine_started)
 
         future = asyncio.run_coroutine_threadsafe(_init_engine(), loop)
         future.result()
