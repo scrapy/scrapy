@@ -66,7 +66,7 @@ class TopLevelFormatter(logging.Filter):
         return True
 
 
-DEFAULT_LOGGING = {
+DEFAULT_LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "loggers": {
@@ -113,7 +113,8 @@ def configure_logging(
     This function does:
 
     - Route warnings and twisted logging through Python standard logging
-    - Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively
+    - Set log levels for the Scrapy, Twisted and third-party loggers, which
+      :setting:`LOG_LEVELS` can override
     - Route stdout to log if LOG_STDOUT setting is True
 
     When installing a root logging handler, this function also creates a
@@ -142,13 +143,20 @@ def configure_logging(
     observer = twisted_log.PythonLoggingObserver("twisted")
     observer.start()
 
-    dictConfig(DEFAULT_LOGGING)
+    _configure_logger_levels(settings)
 
     if settings.getbool("LOG_STDOUT"):
         sys.stdout = StreamLogger(logging.getLogger("stdout"))
 
     if install_root_handler:
         install_scrapy_root_handler(settings)
+
+
+def _configure_logger_levels(settings: Settings) -> None:
+    loggers = DEFAULT_LOGGING["loggers"] | {
+        name: {"level": level} for name, level in settings.getdict("LOG_LEVELS").items()
+    }
+    dictConfig(DEFAULT_LOGGING | {"loggers": loggers})
 
 
 _scrapy_root_handler: logging.Handler | None = None
