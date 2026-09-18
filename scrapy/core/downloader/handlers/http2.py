@@ -7,7 +7,7 @@ from urllib.parse import urldefrag
 from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
 from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
-from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.core.downloader.handlers._base_http import BaseHttpDownloadHandler
 from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-class H2DownloadHandler(BaseDownloadHandler):
+class H2DownloadHandler(BaseHttpDownloadHandler):
     lazy = True
 
     def __init__(self, crawler: Crawler):
@@ -40,7 +40,7 @@ class H2DownloadHandler(BaseDownloadHandler):
         super().__init__(crawler)
         self._crawler = crawler
 
-        self._pool = H2ConnectionPool(crawler)
+        self._pool = H2ConnectionPool(crawler, self._pool_size_total)
         self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
