@@ -52,10 +52,14 @@ class HttpCompressionMiddleware:
             self.stats = stats
             self._max_size = 1073741824
             self._warn_size = 33554432
+            self._keep_encoding_header = False
             return
         self.stats = crawler.stats
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+        self._keep_encoding_header = crawler.settings.getbool(
+            "COMPRESSION_KEEP_ENCODING_HEADER"
+        )
         crawler.signals.connect(self.open_spider, signals.spider_opened)
 
     @classmethod
@@ -85,14 +89,15 @@ class HttpCompressionMiddleware:
     def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
-        if request.method == "HEAD":
+        if request.method == "HEAD" or "decoded" in response.flags:
             return response
         content_encoding = response.headers.getlist("Content-Encoding")
         if content_encoding:
+            original_content_encoding = content_encoding
             max_size = request.meta.get("download_maxsize", self._max_size)
             warn_size = request.meta.get("download_warnsize", self._warn_size)
             try:
-                decoded_body, content_encoding = self._handle_encoding(
+                decoded_body, content_encoding, decoded = self._handle_encoding(
                     response.body, content_encoding, max_size
                 )
             except _DecompressionMaxSizeExceeded as e:
@@ -123,22 +128,26 @@ class HttpCompressionMiddleware:
                 headers=response.headers, url=response.url, body=decoded_body
             )
             kwargs: dict[str, Any] = {"body": decoded_body}
+            if decoded:
+                kwargs["flags"] = [*response.flags, "decoded"]
             if issubclass(respcls, TextResponse):
                 # force recalculating the encoding until we make sure the
                 # responsetypes guessing is reliable
                 kwargs["encoding"] = None
             response = response.replace(cls=respcls, **kwargs)
-            if not content_encoding:
+            if self._keep_encoding_header:
+                response.headers["Content-Encoding"] = original_content_encoding
+            elif not content_encoding:
                 del response.headers["Content-Encoding"]
         return response
 
     def _handle_encoding(
         self, body: bytes, content_encoding: list[bytes], max_size: int
-    ) -> tuple[bytes, list[bytes]]:
+    ) -> tuple[bytes, list[bytes], bool]:
         to_decode, to_keep = self._split_encodings(content_encoding)
         for encoding in to_decode:
             body = self._decode(body, encoding, max_size)
-        return body, to_keep
+        return body, to_keep, bool(to_decode)
 
     @staticmethod
     def _split_encodings(

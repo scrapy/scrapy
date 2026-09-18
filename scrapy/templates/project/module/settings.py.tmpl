@@ -83,5 +83,8 @@ DOWNLOAD_DELAY = 1
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
+# Preserve Content-Encoding so spiders can inspect the original response headers
+COMPRESSION_KEEP_ENCODING_HEADER = True
+
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
