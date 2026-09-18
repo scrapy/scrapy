@@ -219,6 +219,10 @@ class HttpxDownloadHandler(_Base):
             exc, httpx.RemoteProtocolError
         ) and "peer closed connection without sending complete message body" in str(exc)
 
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, httpx.ReadTimeout)
+
     def _log_tls_info(self, response: httpx.Response, request: Request) -> None:
         network_stream: AsyncNetworkStream = response.extensions["network_stream"]
         extra_ssl_object = network_stream.get_extra_info("ssl_object")
