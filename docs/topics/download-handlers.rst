@@ -140,30 +140,48 @@ individual handler docs for more differences:
      - Proxies
      - Bad headers
      - TLS
+     - IPv6
    * - :class:`Aiohttp <scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler>`
      - asyncio
      - 1.1
      - HTTP
      - Fail
      - Stdlib ``ssl``
+     - Yes
    * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
      - Reactor, :ref:`twisted-http2 <extras>` extra
      - 2
      - None
      - Not applicable
      - ``cryptography``
+     - Needs a setting
    * - :class:`HTTP11 <scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler>`
      - Reactor
      - 1.1
      - HTTP
      - Skip bad
      - ``cryptography``
+     - Needs a setting
    * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
      - asyncio, :ref:`httpx <extras>` extra
      - 1.1, 2
      - HTTP, SOCKS
      - Fail
      - Stdlib ``ssl``
+     - Yes, except through a proxy
+
+About the IPv6 column: the Twisted-based handlers reach every host, including
+hosts given as an IPv6 address literal such as ``https://[::1]/``, through the
+resolver configured with :setting:`TWISTED_DNS_RESOLVER`. Its default value
+only returns IPv4 addresses, so IPv6 requires setting it to
+``scrapy.resolver.CachingHostnameResolver``. That applies to proxy hosts as
+well as to target hosts.
+
+The asyncio-based handlers do not use the Twisted resolver, so they need no
+setting for IPv6. However, with
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, IPv6
+address literals `do not work through a proxy
+<https://github.com/pydantic/httpx2/pull/1091>`__.
 
 Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
@@ -386,6 +404,15 @@ Other limitations:
 -   The handler creates a separate connection pool for each proxy URL (due to
     limitations of ``httpx``) which may lead to higher resource usage when
     using proxy rotation.
+
+-   Requests to a URL with an IPv6 address literal, such as
+    ``https://[::1]/``, `do not work through a proxy
+    <https://github.com/pydantic/httpx2/pull/1091>`__.
+
+Unlike the Twisted-based handlers, this handler does not use the resolver
+configured with :setting:`TWISTED_DNS_RESOLVER`, so it resolves IPv6 hosts
+without needing that setting changed, and it is not affected by
+:setting:`DNS_TIMEOUT` or by the :setting:`DNSCACHE_ENABLED` cache.
 
 .. setting:: HTTPX_HTTP2_ENABLED
 
