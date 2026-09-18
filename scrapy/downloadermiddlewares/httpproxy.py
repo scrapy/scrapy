@@ -13,6 +13,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
+from scrapy.utils.url import _to_http_scheme
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -66,7 +67,7 @@ class HttpProxyMiddleware:
                 creds, proxy_url = self._get_proxy(request.meta["proxy"], "")
         elif self.proxies:
             parsed = urlparse_cached(request)
-            _scheme = parsed.scheme
+            _scheme = _to_http_scheme(parsed.scheme)
             if (
                 # 'no_proxy' is only supported by http schemes
                 _scheme not in {"http", "https"}

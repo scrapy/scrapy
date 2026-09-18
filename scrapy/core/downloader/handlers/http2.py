@@ -40,9 +40,9 @@ class H2DownloadHandler(BaseDownloadHandler):
         super().__init__(crawler)
         self._crawler = crawler
 
+        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         self._pool = H2ConnectionPool(crawler)
         self._context_factory = _load_context_factory_from_settings(crawler)
-        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
         if urlparse_cached(request).scheme == "http":
