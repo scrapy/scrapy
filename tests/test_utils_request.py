@@ -39,7 +39,7 @@ if TYPE_CHECKING:
                 headers={"Content-type": b"text/html"},
                 body=b"Some body",
             ),
-            b"POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body",
+            b"POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-type: text/html\r\n\r\nSome body",
         ),
     ],
 )

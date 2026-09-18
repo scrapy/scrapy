@@ -67,6 +67,27 @@ def test_encode_multiple() -> None:
     assert val[0] == b"\xc2\xa3"
 
 
+def test_key_case_kept() -> None:
+    h = Headers({"accept": "text/html", "access_token": "foo"})
+    assert sorted(h.keys()) == [b"accept", b"access_token"]
+
+
+def test_key_case_of_first_spelling_wins() -> None:
+    h = Headers({"accept": "a", "Accept": "b"})
+    assert h.getlist("ACCEPT") == [b"a", b"b"]
+    assert list(h.keys()) == [b"accept"]
+
+    h["ACCEPT"] = "c"
+    h.appendlist("aCCept", "d")
+    h.update({"ACCEPT": "e"})
+    assert list(h.keys()) == [b"accept"]
+    assert h.getlist("accept") == [b"e"]
+
+    del h["ACCEPT"]
+    h["ACCEPT"] = "f"
+    assert list(h.keys()) == [b"ACCEPT"]
+
+
 def test_delete_and_contains() -> None:
     h = Headers()
     h["Content-Type"] = "text/html"
