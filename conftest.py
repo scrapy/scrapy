@@ -34,6 +34,8 @@ collect_ignore = [
     *_py_files("tests/CrawlerProcess"),
     # contains scripts to be run by tests/test_crawler_subprocess.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
+    # contains scripts to be run by tests/test_crawler_subprocess.py::RunSubprocess
+    *_py_files("tests/run"),
 ]
 
 base_dir = Path(__file__).parent

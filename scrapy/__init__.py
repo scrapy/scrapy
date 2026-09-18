@@ -20,6 +20,8 @@ __all__ = [
     "Selector",
     "Spider",
     "__version__",
+    "run",
+    "run_async",
     "version_info",
 ]
 
@@ -27,6 +29,9 @@ __all__ = [
 # Scrapy and Twisted versions
 __version__ = files("scrapy").joinpath("VERSION").read_text(encoding="ascii").strip()
 version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."))
+
+# Imported last because scrapy.settings.default_settings reads __version__.
+from scrapy.crawler import run, run_async  # noqa: E402  # isort: skip
 
 
 # Ignore noisy twisted deprecation warnings
