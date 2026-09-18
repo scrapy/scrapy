@@ -16,6 +16,10 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         super().__init__(crawler)
         self._default_maxsize: int = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._default_warnsize: int = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+        self._headers_maxsize: int = crawler.settings.getint("DOWNLOAD_HEADERS_MAXSIZE")
+        self._headers_warnsize: int = crawler.settings.getint(
+            "DOWNLOAD_HEADERS_WARNSIZE"
+        )
         self._fail_on_dataloss: bool = crawler.settings.getbool(
             "DOWNLOAD_FAIL_ON_DATALOSS"
         )
