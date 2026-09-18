@@ -508,6 +508,11 @@ class, including those of third-party plugins, are cached and restored intact.
 
 .. class:: CacheStorage
 
+    .. note::  Any of the cache storage methods may be defined as a coroutine
+        function (``async def``).
+
+        .. versionadded:: VERSION
+
     .. method:: open_spider(spider)
 
       This method gets called after a spider has been opened for crawling. It handles
