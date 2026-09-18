@@ -7,7 +7,7 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatter
     from scrapy.signalmanager import SignalManager
+    from scrapy.utils.defer import FailureWithRequest
 
 
 logger = logging.getLogger(__name__)
@@ -329,8 +330,7 @@ class Scraper:
                     stacklevel=2,
                 )
         else:  # result is a Failure
-            # TODO: properly type adding this attribute to a Failure
-            result.request = request  # type: ignore[attr-defined]
+            cast("FailureWithRequest", result).request = request
             if not request.errback:
                 result.raiseException()
             warn_on_generator_with_return_value(self.crawler.spider, request.errback)
