@@ -7,7 +7,7 @@ import pytest
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import CookiesT, VerboseCookie
 from scrapy.utils.misc import build_from_crawler
@@ -190,6 +190,7 @@ class TestCookiesMiddleware:
         assert self.mw.process_request(req2) is None
         assert "Cookie" in req2.headers
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_dont_merge_cookies(self):
         # merge some cookies into jar
         headers = {"Set-Cookie": "C1=value1; path=/"}
@@ -280,6 +281,7 @@ class TestCookiesMiddleware:
             req2.headers.get("Cookie"), b"C1=value1; galleta=salada"
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_cookiejar_key(self):
         req = Request(
             "http://scrapytest.org/",
@@ -339,6 +341,117 @@ class TestCookiesMiddleware:
         req6 = Request("file:///scrapy/sometempfile")
         assert self.mw.process_request(req6) is None
         assert req6.headers.get("Cookie") is None
+
+    def _set_cookie(self, value: str, **meta: Any) -> None:
+        req = Request("http://scrapytest.org/", meta=meta)
+        assert self.mw.process_request(req) is None
+        res = Response("http://scrapytest.org/", headers={"Set-Cookie": value})
+        assert self.mw.process_response(req, res) is res
+
+    def _get_cookie(self, **meta: Any) -> bytes | None:
+        req = Request("http://scrapytest.org/", meta=meta)
+        assert self.mw.process_request(req) is None
+        return req.headers.get("Cookie")
+
+    def test_session_key(self) -> None:
+        self._set_cookie("C1=value1; path=/", session="store1")
+        self._set_cookie("C2=value2; path=/", session="store2")
+        assert self._get_cookie(session="store1") == b"C1=value1"
+        assert self._get_cookie(session="store2") == b"C2=value2"
+        assert self._get_cookie() is None
+        assert self._get_cookie(session="main") is None
+
+    def test_session_none(self) -> None:
+        self._set_cookie("C1=value1; path=/")
+        assert self._get_cookie(session=None) is None
+        self._set_cookie("C2=value2; path=/", session=None)
+        assert self._get_cookie() == b"C1=value1"
+
+    def test_session_none_request_cookies(self) -> None:
+        req = Request(
+            "http://scrapytest.org/",
+            cookies={"galleta": "salada"},
+            meta={"session": None},
+        )
+        assert self.mw.process_request(req) is None
+        assert req.headers.get("Cookie") == b"galleta=salada"
+
+        res = Response(
+            "http://scrapytest.org/", headers={"Set-Cookie": "C1=value1; path=/"}
+        )
+        assert self.mw.process_response(req, res) is res
+        assert self._get_cookie() is None
+        assert self._get_cookie(session=None) is None
+
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+    def test_dont_merge_cookies_request_cookies(self) -> None:
+        req = Request(
+            "http://scrapytest.org/",
+            cookies={"galleta": "salada"},
+            meta={"dont_merge_cookies": True},
+        )
+        assert self.mw.process_request(req) is None
+        assert "Cookie" not in req.headers
+
+    def test_session_none_cookie_header(self) -> None:
+        req = Request(
+            "http://scrapytest.org/",
+            headers={"Cookie": "galleta=salada"},
+            meta={"session": None},
+        )
+        assert self.mw.process_request(req) is None
+        assert req.headers.get("Cookie") == b"galleta=salada"
+
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+    def test_session_over_cookiejar(self) -> None:
+        self._set_cookie("C1=value1; path=/", session="store1")
+        assert self._get_cookie(session="store1", cookiejar="store2") == b"C1=value1"
+
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+    def test_cookiejar_key_types(self) -> None:
+        self._set_cookie("C1=value1; path=/", cookiejar=1)
+        assert self._get_cookie(cookiejar="1") is None
+
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+    def test_cookiejar_sessions(self) -> None:
+        self._set_cookie("C1=value1; path=/", cookiejar="store1")
+        assert "cookiejar:'store1'" in self.mw.crawler.sessions
+        assert self._get_cookie(session="cookiejar:'store1'") == b"C1=value1"
+
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+    def test_jars_deprecated(self) -> None:
+        self._set_cookie("C1=value1; path=/")
+        self._set_cookie("C2=value2; path=/", cookiejar="store1")
+        with pytest.warns(ScrapyDeprecationWarning, match="CookiesMiddleware.jars"):
+            jars = self.mw.jars
+        assert sorted(str(key) for key in jars) == ["None", "store1"]
+        assert [cookie.name for cookie in jars["store1"]] == ["C2"]
+
+    def test_deprecated_keys_ignored(self) -> None:
+        for key in ("cookiejar", "dont_merge_cookies"):
+            req = Request(
+                "http://scrapytest.org/", meta={key: "store1", "session": "store2"}
+            )
+            with pytest.warns(
+                ScrapyDeprecationWarning, match=f"{key} request meta key is deprecated"
+            ) as warnings:
+                assert self.mw.process_request(req) is None
+            assert "is being ignored" in str(warnings[0].message)
+
+    def test_cookiejar_deprecated(self) -> None:
+        req = Request("http://scrapytest.org/", meta={"cookiejar": "store1"})
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="cookiejar request meta key is deprecated"
+        ):
+            assert self.mw.process_request(req) is None
+
+    def test_dont_merge_cookies_deprecated(self) -> None:
+        req = Request("http://scrapytest.org/", meta={"dont_merge_cookies": True})
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="dont_merge_cookies request meta key is deprecated",
+        ):
+            assert self.mw.process_request(req) is None
 
     def test_local_domain(self):
         request = Request("http://example-host/", cookies={"currencyCookie": "USD"})
