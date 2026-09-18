@@ -11,6 +11,7 @@ import asyncio
 import contextlib
 import logging
 import warnings
+from enum import Enum
 from functools import partial
 from time import time
 from traceback import format_exc
@@ -62,6 +63,43 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class _EngineState(Enum):
+    """The lifecycle state of ExecutionEngine.
+
+    The engine goes through these states in order, possibly skipping some."""
+
+    # The engine has been created but no spider has been opened yet.
+    CREATED = "created"
+    # open_spider_async() is running.
+    SPIDER_OPENING = "spider_opening"
+    # The spider is open but start_async() has not been called yet.
+    SPIDER_OPEN = "spider_open"
+    # start_async() is running, engine_started may be in flight.
+    STARTING = "starting"
+    # The engine is running.
+    RUNNING = "running"
+    # stop_async() is running, engine_stopped has not been sent yet.
+    STOPPING = "stopping"
+    # The engine has been stopped and cannot be reused.
+    STOPPED = "stopped"
+
+
+_STATE_TRANSITIONS: dict[_EngineState, frozenset[_EngineState]] = {
+    # Shortcut to STOPPED: close_async() without a spider
+    _EngineState.CREATED: frozenset(
+        {_EngineState.SPIDER_OPENING, _EngineState.STOPPED}
+    ),
+    _EngineState.SPIDER_OPENING: frozenset({_EngineState.SPIDER_OPEN}),
+    # Shortcut to STOPPED: close_async() before start_async()
+    _EngineState.SPIDER_OPEN: frozenset({_EngineState.STARTING, _EngineState.STOPPED}),
+    # Shortcut to STOPPING: stop_async() from an engine_started handler
+    _EngineState.STARTING: frozenset({_EngineState.RUNNING, _EngineState.STOPPING}),
+    _EngineState.RUNNING: frozenset({_EngineState.STOPPING}),
+    _EngineState.STOPPING: frozenset({_EngineState.STOPPED}),
+    _EngineState.STOPPED: frozenset(),
+}
 
 
 class _Slot:
@@ -116,9 +154,7 @@ class ExecutionEngine:
         self.logformatter: LogFormatter = crawler.logformatter
         self._slot: _Slot | None = None
         self.spider: Spider | None = None
-        self.running: bool = False
-        self._starting: bool = False
-        self._stopping: bool = False
+        self._state: _EngineState = _EngineState.CREATED
         self._stop_mode: _StopMode = "graceful"
         self._downloader_fast_stopped: bool = False
         self.paused: bool = False
@@ -174,6 +210,37 @@ class ExecutionEngine:
         """
         return self._slot.scheduler if self._slot is not None else None
 
+    @property
+    def running(self) -> bool:
+        """Whether the engine is running, i.e. :meth:`start_async` has started
+        processing requests and :meth:`stop_async` has not been called yet.
+
+        .. versionchanged:: VERSION
+            Became a read-only property.
+        """
+        return self._state is _EngineState.RUNNING
+
+    @running.setter
+    def running(self, value: bool) -> None:
+        warnings.warn(
+            "Setting ExecutionEngine.running is deprecated and has no effect.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
+    def _transition_to(self, state: _EngineState) -> None:
+        """Set the state, validating the transition.
+
+        If the transition is invalid, a warning is logged and the transition
+        still happens.
+        """
+        if state not in _STATE_TRANSITIONS[self._state]:
+            logger.warning(
+                f"Invalid engine state transition: {self._state.name} → {state.name}",
+                stack_info=True,
+            )
+        self._state = state
+
     def start(
         self, _start_request_processing: bool = True
     ) -> Deferred[None]:  # pragma: no cover
@@ -189,18 +256,23 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
         """
-        if self._starting:
+        if self._state not in (
+            _EngineState.CREATED,
+            _EngineState.SPIDER_OPENING,
+            _EngineState.SPIDER_OPEN,
+        ):
             raise RuntimeError("Engine already running")
         self.start_time = time()
-        self._starting = True
+        self._transition_to(_EngineState.STARTING)
         await self.signals.send_catch_log_async(signal=signals.engine_started)
-        if self._stopping:
-            # band-aid until https://github.com/scrapy/scrapy/issues/6916
+        if self._state in (_EngineState.STOPPING, _EngineState.STOPPED):
+            # An engine_started handler stopped the engine.
+            # Band-aid until the next stage of https://github.com/scrapy/scrapy/issues/6916
             return
         if self.spider is None:
             # require an opened spider
             return
-        self.running = True
+        self._transition_to(_EngineState.RUNNING)
         self._closewait = Deferred()
         coro = self._start_request_processing()
         if is_asyncio_available():
@@ -230,20 +302,23 @@ class ExecutionEngine:
 
         mode = _normalize_stop_mode(mode, allow_force=False)
 
-        if not self._starting and not self._stopping:
+        if self._state in (
+            _EngineState.CREATED,
+            _EngineState.SPIDER_OPENING,
+            _EngineState.SPIDER_OPEN,
+        ):
             raise RuntimeError("Engine not running")
 
         self._stop_mode = _max_stop_mode(self._stop_mode, mode)
 
-        if self._stopping:
+        if self._state in (_EngineState.STOPPING, _EngineState.STOPPED):
             if self.spider is not None and self._stop_mode == "fast":
                 await self.close_spider_async(reason="shutdown", mode="fast")
             if self._closewait:
                 await maybe_deferred_to_future(self._closewait)
             return
 
-        self.running = self._starting = False
-        self._stopping = True
+        self._transition_to(_EngineState.STOPPING)
         if self._start_request_processing_awaitable is not None:
             if (
                 not is_asyncio_available()
@@ -261,6 +336,10 @@ class ExecutionEngine:
             # Normally it's close_spider_async() that does this.
             self.downloader.close()
         await self.signals.send_catch_log_async(signal=signals.engine_stopped)
+        # Firing _closewait can resume start_async(), and with it the code
+        # awaiting start_async(), before this method continues, so the engine
+        # must already be STOPPED when that code checks the state.
+        self._transition_to(_EngineState.STOPPED)
         if self._closewait:
             self._closewait.callback(None)
 
@@ -279,10 +358,13 @@ class ExecutionEngine:
         """
         if self.running:
             await self.stop_async()  # will also close spider and downloader
-        elif self.spider is not None:
+            return
+        if self.spider is not None:
             await self.close_spider_async(reason=reason)  # will also close downloader
         else:
             self.downloader.close()
+        if self._state not in (_EngineState.STOPPING, _EngineState.STOPPED):
+            self._transition_to(_EngineState.STOPPED)
 
     def pause(self) -> None:
         self.paused = True
@@ -579,43 +661,49 @@ class ExecutionEngine:
                 f"No free spider slot when opening {self.crawler.spider.name!r}"
             )
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
+        self._transition_to(_EngineState.SPIDER_OPENING)
         logger.info("Spider opened", extra={"spider": self.crawler.spider})
         self.spider = self.crawler.spider
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
-        # A component that fails to start can ask for the spider to be closed.
-        # The rest of the startup runs anyway, so that components that are
-        # started also get stopped, and the request is honored once the spider
-        # is open.
-        close_spider_exc: CloseSpider | None = None
         try:
-            self._start = await self.scraper.spidermw.process_start()
-            if hasattr(scheduler, "open") and (
-                d := scheduler.open(self.crawler.spider)
-            ):
-                await maybe_deferred_to_future(d)
-            await self.scraper.open_spider_async()
-        except CloseSpider as exc:
-            close_spider_exc = exc
-        stats = self.crawler.stats
-        if argument_is_required(stats.open_spider, "spider"):
-            warnings.warn(
-                f"The open_spider() method of {global_object_name(type(stats))} requires a spider argument,"
-                f" this is deprecated and the argument will not be passed in future Scrapy versions.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
+            # A component that fails to start can ask for the spider to be closed.
+            # The rest of the startup runs anyway, so that components that are
+            # started also get stopped, and the request is honored once the spider
+            # is open.
+            close_spider_exc: CloseSpider | None = None
+            try:
+                self._start = await self.scraper.spidermw.process_start()
+                if hasattr(scheduler, "open") and (
+                    d := scheduler.open(self.crawler.spider)
+                ):
+                    await maybe_deferred_to_future(d)
+                await self.scraper.open_spider_async()
+            except CloseSpider as exc:
+                close_spider_exc = exc
+            stats = self.crawler.stats
+            if argument_is_required(stats.open_spider, "spider"):
+                warnings.warn(
+                    f"The open_spider() method of {global_object_name(type(stats))} requires a spider argument,"
+                    f" this is deprecated and the argument will not be passed in future Scrapy versions.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                stats.open_spider(spider=self.crawler.spider)
+            else:
+                stats.open_spider()
+            results = await self.signals.send_catch_log_async(
+                signals.spider_opened, spider=self.crawler.spider, dont_log=CloseSpider
             )
-            stats.open_spider(spider=self.crawler.spider)
-        else:
-            stats.open_spider()
-        results = await self.signals.send_catch_log_async(
-            signals.spider_opened, spider=self.crawler.spider, dont_log=CloseSpider
-        )
-        for _, result in results:
-            if isinstance(result, CloseSpider):
-                close_spider_exc = close_spider_exc or result
-        if close_spider_exc is not None:
-            raise close_spider_exc
+            for _, result in results:
+                if isinstance(result, CloseSpider):
+                    close_spider_exc = close_spider_exc or result
+            if close_spider_exc is not None:
+                raise close_spider_exc
+        finally:
+            # Partially open counts as open because we still want to close the
+            # components that were opened (close_spider_async() will do that).
+            self._transition_to(_EngineState.SPIDER_OPEN)
 
     def _spider_idle(self) -> None:
         """
