@@ -8,9 +8,11 @@ from __future__ import annotations
 import re
 import warnings
 from typing import TYPE_CHECKING, TypeAlias
-from urllib.parse import ParseResult, urlparse, urlunparse
+from urllib.parse import ParseResult, urljoin, urlparse, urlunparse
 
-from w3lib.url import any_to_uri, parse_url
+from w3lib.url import any_to_uri, parse_url, safe_url_string
+
+from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -165,3 +167,18 @@ def strip_url(
             "" if strip_fragment else parsed_url.fragment,
         )
     )
+
+
+def _redirect_url(url: str, location: str | bytes) -> str:
+    """Return the absolute URL that the *location* value of the ``Location``
+    header of a response to a request to *url* points to."""
+    target = safe_url_string(location)
+    parsed_url = urlparse(url)
+    if to_bytes(location).startswith(b"//"):
+        # safe_url_string() may drop leading slashes of a scheme-relative URL,
+        # so build the absolute URL without relying on urljoin().
+        target = f"{parsed_url.scheme}://{target.lstrip('/')}"
+    redirect_url = urljoin(url, target)
+    if not urlparse(redirect_url).fragment and parsed_url.fragment:
+        redirect_url = urljoin(redirect_url, f"#{parsed_url.fragment}")
+    return redirect_url
