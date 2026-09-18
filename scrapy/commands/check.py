@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import time
 from collections import defaultdict
-from collections.abc import AsyncIterator, Awaitable
+from collections.abc import AsyncIterator, Awaitable, Iterable
 from typing import Any, ClassVar
 from unittest import TestCase, TextTestRunner
 from unittest import TextTestResult as _TextTestResult
@@ -93,6 +93,9 @@ class Command(ScrapyCommand):
 
     def short_desc(self) -> str:
         return "Check spider contracts"
+
+    def complete_argument(self, args: list[str]) -> Iterable[str]:
+        return () if args else self._spider_names()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)
