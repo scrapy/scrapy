@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseRedirectMiddleware:
-    crawler: Crawler
     enabled_setting: str = "REDIRECT_ENABLED"
+    crawler: Crawler
 
     def __init__(self, settings: BaseSettings):
         if not settings.getbool(self.enabled_setting):
@@ -105,6 +105,10 @@ class BaseRedirectMiddleware:
                 *request.meta.get("redirect_reasons", []),
                 reason,
             ]
+            assert self.crawler.request_fingerprinter is not None
+            redirected.meta["redirect_fingerprints"] = request.meta.get(
+                "redirect_fingerprints", set()
+            ) | {self.crawler.request_fingerprinter.fingerprint(request)}
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug(
