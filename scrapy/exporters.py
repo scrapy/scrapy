@@ -18,12 +18,13 @@ from xml.sax.xmlreader import AttributesImpl
 
 from itemadapter import ItemAdapter, is_item
 
-from scrapy.item import Field, Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
     from json import JSONEncoder
+
+    from scrapy.item import Field
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,28 @@ class BaseItemExporter(ABC):
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
-        serializer: Callable[[Any], Any] = field.get("serializer", lambda x: x)
+        serializer: Callable[[Any], Any] = field.get(
+            "serializer", self._serialize_value
+        )
         return serializer(value)
+
+    def _serialize_value(self, value: Any) -> Any:
+        if is_item(value):
+            adapter = ItemAdapter(value)
+            field_names = (
+                adapter.field_names()
+                if self.export_empty_fields
+                else self._get_populated_field_names(adapter)
+            )
+            return {
+                name: self.serialize_field(
+                    adapter.get_field_meta(name), name, adapter[name]
+                )
+                for name in field_names
+            }
+        if is_listlike(value):
+            return [self._serialize_value(v) for v in value]
+        return value
 
     def start_exporting(self) -> None:  # noqa: B027
         pass
@@ -287,6 +308,7 @@ class CsvItemExporter(BaseItemExporter):
         return serializer(value)
 
     def _join_if_needed(self, value: Any) -> Any:
+        value = self._serialize_value(value)
         if isinstance(value, (list, tuple)):
             try:
                 return self._join_multivalued.join(value)
@@ -384,11 +406,9 @@ class PprintItemExporter(BaseItemExporter):
 
 
 class PythonItemExporter(BaseItemExporter):
-    """This is a base class for item exporters that extends
-    :class:`BaseItemExporter` with support for nested items.
-
-    It serializes items to built-in Python types, so that any serialization
-    library (e.g. :mod:`json` or msgpack_) can be used on top of it.
+    """It serializes items to built-in Python types, so that any
+    serialization library (e.g. :mod:`json` or msgpack_) can be used on top
+    of it.
 
     .. _msgpack: https://pypi.org/project/msgpack/
     """
@@ -398,28 +418,10 @@ class PythonItemExporter(BaseItemExporter):
         if not self.encoding:
             self.encoding = "utf-8"
 
-    def serialize_field(
-        self, field: Mapping[str, Any] | Field, name: str, value: Any
-    ) -> Any:
-        serializer: Callable[[Any], Any] = field.get(
-            "serializer", self._serialize_value
-        )
-        return serializer(value)
-
     def _serialize_value(self, value: Any) -> Any:
-        if isinstance(value, Item):
-            return self.export_item(value)
         if isinstance(value, (str, bytes)):
             return to_unicode(value, encoding=self.encoding)
-        if is_item(value):
-            return dict(self._serialize_item(value))
-        if is_listlike(value):
-            return [self._serialize_value(v) for v in value]
-        return value
-
-    def _serialize_item(self, item: Any) -> Iterable[tuple[str | bytes, Any]]:
-        for key, value in ItemAdapter(item).items():
-            yield key, self._serialize_value(value)
+        return super()._serialize_value(value)
 
     def export_item(self, item: Any) -> dict[str | bytes, Any]:  # type: ignore[override]
         result: dict[str | bytes, Any] = dict(self.get_serialized_fields(item))

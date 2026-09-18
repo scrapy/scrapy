@@ -141,6 +141,36 @@ class TestBaseItemExporter(ABC):
         )
         assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == "24"
 
+    def test_nested_item_field_custom_serializer(self):
+        nested = self.custom_field_item_class(name="Nested\xa3", age="22")
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == {
+            "name": "Nested\xa3",
+            "age": "24",
+        }
+
+    def test_nested_item_list_field_custom_serializer(self):
+        nested = [
+            self.custom_field_item_class(name="Nested\xa3", age="22"),
+            self.custom_field_item_class(name="Other", age="1"),
+        ]
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == [
+            {"name": "Nested\xa3", "age": "24"},
+            {"name": "Other", "age": "3"},
+        ]
+
+    def test_nested_item_field_ignores_fields_to_export(self):
+        nested = self.custom_field_item_class(name="Nested\xa3", age="22")
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter(fields_to_export=["age"])
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == {
+            "name": "Nested\xa3",
+            "age": "24",
+        }
+
 
 class TestPythonItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
