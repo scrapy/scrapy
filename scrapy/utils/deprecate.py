@@ -3,14 +3,25 @@
 from __future__ import annotations
 
 import inspect
+import sys
 import warnings
-from typing import TYPE_CHECKING, Any, cast, overload
+from typing import TYPE_CHECKING, Any, overload
+
+from formerly import deprecated_class
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import get_func_args_dict
 
+if sys.version_info >= (3, 13):
+    from warnings import deprecated as _deprecated
+else:
+    from typing_extensions import deprecated as _deprecated
+
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+_WRAPPER_MODULES = frozenset({__name__, _deprecated.__module__})
 
 
 def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> None:
@@ -23,6 +34,11 @@ def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> No
     )
 
 
+@_deprecated(
+    "scrapy.utils.deprecate.create_deprecated_class() is deprecated, use"
+    " formerly.deprecated_class() instead.",
+    category=ScrapyDeprecationWarning,
+)
 def create_deprecated_class(
     name: str,
     new_class: type,
@@ -34,114 +50,27 @@ def create_deprecated_class(
     subclass_warn_message: str = "{cls} inherits from deprecated class {old}, please inherit from {new}.",
     instance_warn_message: str = "{cls} is deprecated, instantiate {new} instead.",
 ) -> type:
-    """
-    Return a "deprecated" class that causes its subclasses to issue a warning.
-    Subclasses of ``new_class`` are considered subclasses of this class.
-    It also warns when the deprecated class is instantiated, but do not when
-    its subclasses are instantiated.
-
-    It can be used to rename a base class in a library. For example, if we
-    have
-
-    .. code-block:: python
-
-        class OldName(SomeClass): ...
-
-    and we want to rename it to NewName, we can do the following:
-
-    .. code-block:: python
-
-        class NewName(SomeClass): ...
-
-
-        OldName = create_deprecated_class("OldName", NewName)
-
-    Then, if user class inherits from OldName, warning is issued. Also, if
-    some code uses ``issubclass(sub, OldName)`` or ``isinstance(sub(), OldName)``
-    checks they'll still return True if sub is a subclass of NewName instead of
-    OldName.
-    """
-
-    # https://github.com/python/mypy/issues/4177
-    class DeprecatedClass(new_class.__class__):  # type: ignore[misc,name-defined]
-        # pylint: disable=no-self-argument
-        deprecated_class: type | None = None
-        warned_on_subclass: bool = False
-
-        def __new__(  # pylint: disable=bad-classmethod-argument
-            metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
-        ) -> type:
-            cls: type = super().__new__(metacls, name, bases, clsdict_)
-            if metacls.deprecated_class is None:
-                metacls.deprecated_class = cls
-            return cls
-
-        def __init__(cls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]):
-            meta = cls.__class__
-            old = meta.deprecated_class
-            if old in bases and not (warn_once and meta.warned_on_subclass):
-                meta.warned_on_subclass = True
-                msg = subclass_warn_message.format(
-                    cls=_clspath(cls),
-                    old=_clspath(old, old_class_path),
-                    new=_clspath(new_class, new_class_path),
-                )
-                if warn_once:
-                    msg += " (warning only on first subclass, there may be others)"
-                warnings.warn(msg, warn_category, stacklevel=2)
-            super().__init__(name, bases, clsdict_)
-
-        # see https://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
-        # and https://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
-        # for implementation details
-        def __instancecheck__(cls, inst: Any) -> bool:
-            return any(cls.__subclasscheck__(c) for c in (type(inst), inst.__class__))
-
-        def __subclasscheck__(cls, sub: type) -> bool:
-            if cls is not DeprecatedClass.deprecated_class:
-                # we should do the magic only if second `issubclass` argument
-                # is the deprecated class itself - subclasses of the
-                # deprecated class should not use custom `__subclasscheck__`
-                # method.
-                return cast("bool", super().__subclasscheck__(sub))
-
-            if not inspect.isclass(sub):
-                raise TypeError("issubclass() arg 1 must be a class")
-
-            mro = getattr(sub, "__mro__", ())
-            return any(c in {cls, new_class} for c in mro)
-
-        def __call__(cls, *args: Any, **kwargs: Any) -> Any:
-            old = DeprecatedClass.deprecated_class
-            if cls is old:
-                msg = instance_warn_message.format(
-                    cls=_clspath(cls, old_class_path),
-                    new=_clspath(new_class, new_class_path),
-                )
-                warnings.warn(msg, warn_category, stacklevel=2)
-            return super().__call__(*args, **kwargs)
-
-    deprecated_cls = DeprecatedClass(name, (new_class,), clsdict or {})
-
-    try:
-        frm = inspect.stack()[1]
-        parent_module = inspect.getmodule(frm[0])
-        if parent_module is not None:
-            deprecated_cls.__module__ = parent_module.__name__
-    except Exception as e:
-        # Sometimes inspect.stack() fails (e.g. when the first import of
-        # deprecated class is in jinja2 template). __module__ attribute is not
-        # important enough to raise an exception as users may be unable
-        # to fix inspect.stack() errors.
-        warnings.warn(f"Error detecting parent module: {e!r}", stacklevel=2)
-
-    return deprecated_cls
-
-
-def _clspath(cls: type, forced: str | None = None) -> str:
-    if forced is not None:
-        return forced
-    return f"{cls.__module__}.{cls.__name__}"
+    """Return a deprecated alias of *new_class* named *name*."""
+    cls: type = deprecated_class(
+        name,
+        new_class,
+        namespace=clsdict,
+        category=warn_category,
+        warn_once=warn_once,
+        old_path=old_class_path,
+        new_path=new_class_path,
+        subclass_message=subclass_warn_message,
+        instance_message=instance_warn_message,
+    )
+    # deprecated_class() takes the module of the alias from its calling frame,
+    # which is this function and the decorator wrapping it, so skip past both.
+    frame = inspect.currentframe()
+    assert frame is not None
+    while frame.f_globals.get("__name__") in _WRAPPER_MODULES:
+        assert frame.f_back is not None
+        frame = frame.f_back
+    cls.__module__ = frame.f_globals.get("__name__", cls.__module__)
+    return cls
 
 
 DEPRECATION_RULES: list[tuple[str, str]] = []
