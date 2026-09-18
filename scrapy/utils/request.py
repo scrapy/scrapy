@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 _fingerprint_cache: WeakKeyDictionary[
-    Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
+    Request, dict[tuple[tuple[bytes, ...] | None, bool, bool, str | None], bytes]
 ] = WeakKeyDictionary()
 
 
@@ -81,8 +81,18 @@ def fingerprint(
         )
     verbatim_url = bool(request.meta.get("verbatim_url"))
     effective_keep_fragments = keep_fragments and not verbatim_url
+    # A handler ID matching the URL scheme is the one that would be used
+    # anyway, so it is left out to keep such fingerprints unchanged.
+    handler_id: str | None = request.meta.get("download_handler")
+    if handler_id is not None and handler_id == urlparse_cached(request).scheme:
+        handler_id = None
     cache = _fingerprint_cache.setdefault(request, {})
-    cache_key = (processed_include_headers, effective_keep_fragments, verbatim_url)
+    cache_key = (
+        processed_include_headers,
+        effective_keep_fragments,
+        verbatim_url,
+        handler_id,
+    )
     if cache_key not in cache:
         # To decode bytes reliably (JSON does not support bytes), regardless of
         # character encoding, we use bytes.hex()
@@ -104,6 +114,8 @@ def fingerprint(
             "body": (request.body or b"").hex(),
             "headers": headers,
         }
+        if handler_id is not None:
+            fingerprint_data["download_handler"] = handler_id
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
         cache[cache_key] = hashlib.sha1(  # noqa: S324
             fingerprint_json.encode()
@@ -118,13 +130,17 @@ class RequestFingerprinterProtocol(Protocol):
 class RequestFingerprinter:
     """Default fingerprinter.
 
+    .. versionchanged:: VERSION
+       :reqmeta:`download_handler` is taken into account.
+
     It takes into account a canonical version
     (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
     <scrapy.Request.url>` and the values of :attr:`request.method
     <scrapy.Request.method>` and :attr:`request.body
     <scrapy.Request.body>`, unless :reqmeta:`verbatim_url` is true for that
-    request. It then generates an `SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_
-    hash.
+    request. It also takes into account :reqmeta:`download_handler` when it
+    does not match the URL scheme. It then generates an `SHA1
+    <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
     """
 
     @classmethod
