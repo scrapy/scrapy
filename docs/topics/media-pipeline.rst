@@ -626,6 +626,22 @@ See here the methods that you can override in your custom Files Pipeline:
              for file_url in adapter["file_urls"]:
                  yield scrapy.Request(file_url)
 
+      This is also how you verify downloads against checksums published by the
+      website, using the :reqmeta:`expected_checksum` meta key:
+
+      .. code-block:: python
+
+         from scrapy import Request
+
+
+         def get_media_requests(self, item, info):
+             adapter = ItemAdapter(item)
+             for file_url, sha256 in zip(adapter["file_urls"], adapter["file_sha256"]):
+                 yield Request(file_url, meta={"expected_checksum": {"sha256": sha256}})
+
+      Files whose checksum does not match are reported to
+      :meth:`~item_completed` as failures instead of being stored.
+
       You can also use it to set request headers, see :ref:`media-request-headers`.
 
       Those requests will be processed by the pipeline and, when they have finished
