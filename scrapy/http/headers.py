@@ -111,7 +111,9 @@ class Headers(dict):  # type: ignore[type-arg]
         except IndexError:
             return None
 
-    def getlist(self, key: str | bytes, def_val: Any = None) -> list[bytes]:
+    def getlist(
+        self, key: str | bytes, def_val: _RawValue | Iterable[_RawValue] | None = None
+    ) -> list[bytes]:
         try:
             return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))
         except KeyError:

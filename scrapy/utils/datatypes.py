@@ -134,5 +134,5 @@ class SequenceExclude:
     def __init__(self, seq: Container[Any]):
         self.seq: Container[Any] = seq
 
-    def __contains__(self, item: Any) -> bool:
+    def __contains__(self, item: object) -> bool:
         return item not in self.seq
