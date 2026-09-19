@@ -42,7 +42,7 @@ class CloseSpider:
         self.task: CallLaterResult | None = None
 
         # for CLOSESPIDER_TIMEOUT_NO_ITEM
-        self.task_no_item: AsyncioLoopingCall | LoopingCall | None = None
+        self.task_no_item: AsyncioLoopingCall[[], None] | LoopingCall | None = None
 
         self.close_on: dict[str, Any] = {
             "timeout": crawler.settings.getfloat("CLOSESPIDER_TIMEOUT"),

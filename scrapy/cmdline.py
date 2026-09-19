@@ -67,7 +67,7 @@ def _get_commands_from_entry_points(
     cmds: dict[str, ScrapyCommand] = {}
     for entry_point in entry_points(group=group):
         obj = entry_point.load()
-        if inspect.isclass(obj):
+        if inspect.isclass(obj) and issubclass(obj, ScrapyCommand):
             cmds[entry_point.name] = obj()
         else:
             raise ValueError(f"Invalid entry point {entry_point.name}")

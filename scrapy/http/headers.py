@@ -63,9 +63,9 @@ class Headers(dict):  # type: ignore[type-arg]
         | Mapping[bytes, Any]
         | Iterable[tuple[str | bytes, Any]],
     ) -> None:
-        seq = seq.items() if isinstance(seq, Mapping) else seq
+        items = seq.items() if isinstance(seq, Mapping) else seq
         iseq: dict[bytes, list[bytes]] = {}
-        for k, v in seq:
+        for k, v in items:
             iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
         dict.update(self, iseq)
 

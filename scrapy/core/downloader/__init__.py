@@ -200,7 +200,7 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = build_from_crawler(
             DownloaderMiddlewareManager, crawler
         )
-        self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
+        self._slot_gc_loop: AsyncioLoopingCall[..., None] | LoopingCall | None = None
         self._accepting_requests: bool = True
         self._download_tasks: dict[Request, Deferred[None]] = {}
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
