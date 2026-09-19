@@ -318,8 +318,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.DEBUG,
-            f"Retrying {request} (failed {expected_retry_times} times): "
-            f"{expected_reason}",
+            (
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_max_retries_reached(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -339,8 +341,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.ERROR,
-            f"Gave up retrying {request} (failed {failure_count} times): "
-            f"{expected_reason}",
+            (
+                f"Gave up retrying {request} (failed {failure_count} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_one_retry(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -364,8 +368,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.DEBUG,
-            f"Retrying {request} (failed {expected_retry_times} times): "
-            f"{expected_reason}",
+            (
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_two_retries(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -397,8 +403,10 @@ class TestGetRetryRequest:
             assert (
                 "scrapy.downloadermiddlewares.retry",
                 logging.DEBUG,
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
+                (
+                    f"Retrying {request} (failed {expected_retry_times} times): "
+                    f"{expected_reason}"
+                ),
             ) in caplog.record_tuples
 
         caplog.clear()
@@ -418,8 +426,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.ERROR,
-            f"Gave up retrying {request} (failed {failure_count} times): "
-            f"{expected_reason}",
+            (
+                f"Gave up retrying {request} (failed {failure_count} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_no_spider(self):
@@ -520,8 +530,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.DEBUG,
-            f"Retrying {request} (failed {expected_retry_times} times): "
-            f"{expected_reason}",
+            (
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_reason_builtin_exception(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -543,8 +555,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.DEBUG,
-            f"Retrying {request} (failed {expected_retry_times} times): "
-            f"{expected_reason}",
+            (
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_reason_builtin_exception_class(
@@ -568,8 +582,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.DEBUG,
-            f"Retrying {request} (failed {expected_retry_times} times): "
-            f"{expected_reason}",
+            (
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_reason_custom_exception(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -591,8 +607,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.DEBUG,
-            f"Retrying {request} (failed {expected_retry_times} times): "
-            f"{expected_reason}",
+            (
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_reason_custom_exception_class(
@@ -616,8 +634,10 @@ class TestGetRetryRequest:
         assert (
             "scrapy.downloadermiddlewares.retry",
             logging.DEBUG,
-            f"Retrying {request} (failed {expected_retry_times} times): "
-            f"{expected_reason}",
+            (
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}"
+            ),
         ) in caplog.record_tuples
 
     def test_custom_logger(self, caplog: pytest.LogCaptureFixture) -> None:

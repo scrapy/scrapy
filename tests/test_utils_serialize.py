@@ -19,8 +19,8 @@ class TestJsonEncoder:
         return ScrapyJSONEncoder(sort_keys=True)
 
     def test_encode_decode(self, encoder: ScrapyJSONEncoder) -> None:
-        dt = datetime.datetime(2010, 1, 2, 10, 11, 12)
-        dts = "2010-01-02T10:11:12"
+        dt_naive = datetime.datetime(2010, 1, 2, 10, 11, 12)  # noqa: DTZ001
+        dt_naives = "2010-01-02T10:11:12"
         dt_aware = datetime.datetime(
             2010, 1, 2, 10, 11, 12, 133700, tzinfo=datetime.timezone.utc
         )
@@ -35,15 +35,15 @@ class TestJsonEncoder:
         decs = "1000.12"
         s = {"foo"}
         ss = ["foo"]
-        dt_set = {dt}
-        dt_sets = [dts]
+        dt_set = {dt_naive}
+        dt_sets = [dt_naives]
 
         for input_, output in [
             ("foo", "foo"),
             (d, ds),
             (t, ts),
             (t_us, t_uss),
-            (dt, dts),
+            (dt_naive, dt_naives),
             (dt_aware, dt_awares),
             (dec, decs),
             (["foo", d], ["foo", ds]),
