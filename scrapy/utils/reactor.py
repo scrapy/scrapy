@@ -48,7 +48,7 @@ def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
     return reactor.listenTCP(portrange[-1], factory, interface=host)  # type: ignore[no-any-return]
 
 
-class CallLaterOnce(Generic[_T]):
+class CallLaterOnce(Generic[_P, _T]):
     """Schedule a function to be called in the next reactor loop, but only if
     it hasn't been already scheduled since the last time it ran.
     """

@@ -108,7 +108,6 @@ pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 strict = true
-extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
 ]
@@ -117,6 +116,7 @@ untyped_calls_exclude = [
 module = "tests.*"
 allow_untyped_defs = true
 allow_incomplete_defs = true # 59 errors
+extra_checks = false # weird addErrback() errors with untyped log.err
 
 # Interface classes are hard to support
 [[tool.mypy.overrides]]

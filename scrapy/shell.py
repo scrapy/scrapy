@@ -282,7 +282,7 @@ class Shell:
 
         return "\n".join(f"[s] {line}" for line in b) + "\n"
 
-    def _is_relevant(self, value: Any) -> bool:
+    def _is_relevant(self, value: object) -> bool:
         return isinstance(value, self.relevant_classes) or is_item(value)
 
 

@@ -15,7 +15,7 @@ class SignalManager:
     def __init__(self, sender: Any = dispatcher.Anonymous):
         self.sender: Any = sender
 
-    def connect(self, receiver: Any, signal: Any, **kwargs: Any) -> None:
+    def connect(self, receiver: Any, signal: object, **kwargs: Any) -> None:
         """
         Connect a receiver function to a signal.
 
@@ -32,7 +32,7 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         dispatcher.connect(receiver, signal, **kwargs)
 
-    def disconnect(self, receiver: Any, signal: Any, **kwargs: Any) -> None:
+    def disconnect(self, receiver: Any, signal: object, **kwargs: Any) -> None:
         """
         Disconnect a receiver function from a signal. This has the
         opposite effect of the :meth:`connect` method, and the arguments
@@ -41,7 +41,7 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         dispatcher.disconnect(receiver, signal, **kwargs)
 
-    def send_catch_log(self, signal: Any, **kwargs: Any) -> list[tuple[Any, Any]]:
+    def send_catch_log(self, signal: object, **kwargs: Any) -> list[tuple[Any, Any]]:
         """
         Send a signal, catch exceptions and log them.
 
@@ -52,7 +52,7 @@ class SignalManager:
         return _signal.send_catch_log(signal, **kwargs)
 
     def send_catch_log_deferred(
-        self, signal: Any, **kwargs: Any
+        self, signal: object, **kwargs: Any
     ) -> Deferred[list[tuple[Any, Any]]]:  # pragma: no cover
         """
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
@@ -73,7 +73,7 @@ class SignalManager:
         return _signal._send_catch_log_deferred(signal, **kwargs)
 
     async def send_catch_log_async(
-        self, signal: Any, **kwargs: Any
+        self, signal: object, **kwargs: Any
     ) -> list[tuple[Any, Any]]:
         """
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
@@ -91,7 +91,7 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         return await _signal.send_catch_log_async(signal, **kwargs)
 
-    def disconnect_all(self, signal: Any, **kwargs: Any) -> None:
+    def disconnect_all(self, signal: object, **kwargs: Any) -> None:
         """
         Disconnect all receivers from the given signal.
 
@@ -101,7 +101,7 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         _signal.disconnect_all(signal, **kwargs)
 
-    async def wait_for(self, signal: Any) -> None:
+    async def wait_for(self, signal: object) -> None:
         """Await the next *signal*.
 
         See :ref:`start-requests-lazy` for an example.

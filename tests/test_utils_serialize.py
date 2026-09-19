@@ -81,9 +81,9 @@ class TestJsonEncoder:
     def test_encode_attrs_item(self, encoder: ScrapyJSONEncoder) -> None:
         @attr.s
         class AttrsItem:
-            name = attr.ib(type=str)
-            url = attr.ib(type=str)
-            price = attr.ib(type=int)
+            name: str = attr.ib()
+            url: str = attr.ib()
+            price: int = attr.ib()
 
         item = AttrsItem(name="Product", url="http://product.org", price=1)
         encoded = encoder.encode(item)

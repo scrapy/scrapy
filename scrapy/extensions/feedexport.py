@@ -496,7 +496,7 @@ class FeedExporter:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
-        self.feeds = {}
+        self.feeds: dict[str, dict[str, Any]] = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
         self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []

@@ -68,16 +68,16 @@ class _Slot:
     def __init__(
         self,
         close_if_idle: bool,
-        nextcall: CallLaterOnce[None],
+        nextcall: CallLaterOnce[[], None],
         scheduler: BaseScheduler,
     ) -> None:
         self.closing: Deferred[None] | None = None
         self.inprogress: set[Request] = set()
         self.close_if_idle: bool = close_if_idle
-        self.nextcall: CallLaterOnce[None] = nextcall
+        self.nextcall: CallLaterOnce[[], None] = nextcall
         self.scheduler: BaseScheduler = scheduler
-        self.heartbeat: AsyncioLoopingCall | LoopingCall = create_looping_call(
-            nextcall.schedule
+        self.heartbeat: AsyncioLoopingCall[[], None] | LoopingCall = (
+            create_looping_call(nextcall.schedule)
         )
 
     def add_request(self, request: Request) -> None:
