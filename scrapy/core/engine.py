@@ -13,7 +13,6 @@ import logging
 import warnings
 from functools import partial
 from time import time
-from traceback import format_exc
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks
@@ -309,11 +308,7 @@ class ExecutionEngine:
         except Exception as exception:
             self._start = None
             self._start_error = True
-            exception_traceback = format_exc()
-            logger.error(
-                f"Error while reading start items and requests: {exception}.\n{exception_traceback}",
-                exc_info=True,
-            )
+            logger.exception("Error while reading start items and requests")
             self.signals.send_catch_log(
                 signal=signals.spider_error,
                 failure=Failure(),
@@ -358,9 +353,8 @@ class ExecutionEngine:
         except Exception:
             # an error happened, log it and stop the engine
             self._start_request_processing_awaitable = None
-            logger.error(
+            logger.exception(
                 "Error while processing requests from start()",
-                exc_info=True,
                 extra={"spider": self.spider},
             )
             await self.stop_async()
@@ -457,10 +451,8 @@ class ExecutionEngine:
             yield self.scraper.enqueue_scrape(result, request)
         except Exception:
             assert self.spider is not None
-            logger.error(
-                "Error while enqueuing scrape",
-                exc_info=True,
-                extra={"spider": self.spider},
+            logger.exception(
+                "Error while enqueuing scrape", extra={"spider": self.spider}
             )
 
     def spider_is_idle(self) -> bool:
@@ -721,30 +713,24 @@ class ExecutionEngine:
         try:
             await self._slot.close()
         except Exception:
-            logger.error("Slot close failure", exc_info=True, extra={"spider": spider})
+            logger.exception("Slot close failure", extra={"spider": spider})
 
         try:
             self.downloader.close()
         except Exception:
-            logger.error(
-                "Downloader close failure", exc_info=True, extra={"spider": spider}
-            )
+            logger.exception("Downloader close failure", extra={"spider": spider})
 
         try:
             await self.scraper.close_spider_async()
         except Exception:
-            logger.error(
-                "Scraper close failure", exc_info=True, extra={"spider": spider}
-            )
+            logger.exception("Scraper close failure", extra={"spider": spider})
 
         if hasattr(self._slot.scheduler, "close"):
             try:
                 if (d := self._slot.scheduler.close(reason)) is not None:
                     await maybe_deferred_to_future(d)
             except Exception:
-                logger.error(
-                    "Scheduler close failure", exc_info=True, extra={"spider": spider}
-                )
+                logger.exception("Scheduler close failure", extra={"spider": spider})
 
         try:
             await self.signals.send_catch_log_async(
@@ -753,10 +739,8 @@ class ExecutionEngine:
                 reason=reason,
             )
         except Exception:
-            logger.error(
-                "Error while sending spider_close signal",
-                exc_info=True,
-                extra={"spider": spider},
+            logger.exception(
+                "Error while sending spider_close signal", extra={"spider": spider}
             )
 
         try:

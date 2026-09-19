@@ -63,10 +63,9 @@ def send_catch_log(
             result = Failure()
         except Exception:
             result = Failure()
-            logger.error(
+            logger.exception(
                 "Error caught on signal handler: %(receiver)s",
                 {"receiver": receiver},
-                exc_info=True,
                 extra={"spider": spider},
             )
         else:
@@ -197,10 +196,9 @@ async def _send_catch_log_asyncio(
             except dont_log as ex:  # pylint: disable=catching-non-exception
                 result = ex
             except Exception as ex:
-                logger.error(
+                logger.exception(
                     "Error caught on signal handler: %(receiver)s",
                     {"receiver": receiver},
-                    exc_info=True,
                     extra={"spider": spider},
                 )
                 result = ex
