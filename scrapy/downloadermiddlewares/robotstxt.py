@@ -44,7 +44,7 @@ class RobotsTxtMiddleware:
         self.crawler: Crawler = crawler
         self._stats: StatsCollector = crawler.stats
         self._parsers: dict[str, RobotParser | Deferred[RobotParser | None] | None] = {}
-        self._parserimpl: RobotParser = load_object(
+        self._parserimpl: type[RobotParser] = load_object(
             crawler.settings.get("ROBOTSTXT_PARSER")
         )
 

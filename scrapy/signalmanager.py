@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
@@ -10,12 +10,17 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 class SignalManager:
-    def __init__(self, sender: Any = dispatcher.Anonymous):
-        self.sender: Any = sender
+    def __init__(self, sender: object = dispatcher.Anonymous):
+        self.sender: object = sender
 
-    def connect(self, receiver: Any, signal: object, **kwargs: Any) -> None:
+    def connect(
+        self, receiver: Callable[..., Any], signal: object, **kwargs: Any
+    ) -> None:
         """
         Connect a receiver function to a signal.
 
@@ -32,7 +37,9 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         dispatcher.connect(receiver, signal, **kwargs)
 
-    def disconnect(self, receiver: Any, signal: object, **kwargs: Any) -> None:
+    def disconnect(
+        self, receiver: Callable[..., Any], signal: object, **kwargs: Any
+    ) -> None:
         """
         Disconnect a receiver function from a signal. This has the
         opposite effect of the :meth:`connect` method, and the arguments
@@ -41,7 +48,9 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         dispatcher.disconnect(receiver, signal, **kwargs)
 
-    def send_catch_log(self, signal: object, **kwargs: Any) -> list[tuple[Any, Any]]:
+    def send_catch_log(
+        self, signal: object, **kwargs: Any
+    ) -> list[tuple[Callable[..., Any], Any]]:
         """
         Send a signal, catch exceptions and log them.
 
@@ -53,7 +62,7 @@ class SignalManager:
 
     def send_catch_log_deferred(
         self, signal: object, **kwargs: Any
-    ) -> Deferred[list[tuple[Any, Any]]]:  # pragma: no cover
+    ) -> Deferred[list[tuple[Callable[..., Any], Any]]]:  # pragma: no cover
         """
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
         handlers <signal-deferred>`.
@@ -74,7 +83,7 @@ class SignalManager:
 
     async def send_catch_log_async(
         self, signal: object, **kwargs: Any
-    ) -> list[tuple[Any, Any]]:
+    ) -> list[tuple[Callable[..., Any], Any]]:
         """
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
         handlers <signal-deferred>`.

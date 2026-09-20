@@ -131,8 +131,8 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary[_KT, _VT | None]):
 class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
-    def __init__(self, seq: Container[Any]):
-        self.seq: Container[Any] = seq
+    def __init__(self, seq: Container[object]):
+        self.seq: Container[object] = seq
 
     def __contains__(self, item: object) -> bool:
         return item not in self.seq

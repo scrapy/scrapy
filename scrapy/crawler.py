@@ -398,7 +398,7 @@ class Crawler:
 
     @staticmethod
     def _get_component(
-        component_class: type[_T], components: Iterable[Any]
+        component_class: type[_T], components: Iterable[object]
     ) -> _T | None:
         for component in components:
             if isinstance(component, component_class):

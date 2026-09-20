@@ -247,7 +247,7 @@ class S3FilesStore:
             )
         )
 
-    def _headers_to_botocore_kwargs(self, headers: dict[str, Any]) -> dict[str, Any]:
+    def _headers_to_botocore_kwargs(self, headers: dict[str, str]) -> dict[str, str]:
         """Convert headers to botocore keyword arguments."""
         # This is required while we need to support both boto and botocore.
         mapping = CaseInsensitiveDict(

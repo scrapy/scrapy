@@ -32,7 +32,7 @@ _VT = TypeVar("_VT")
 _P = ParamSpec("_P")
 
 
-def is_listlike(x: Any) -> bool:
+def is_listlike(x: object) -> bool:
     """
     >>> is_listlike("foo")
     False
