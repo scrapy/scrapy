@@ -678,11 +678,10 @@ class FilesPipeline(MediaPipeline):
             )
             raise
         except Exception as exc:
-            logger.error(
+            logger.exception(
                 "File (unknown-error): Error processing file from %(request)s "
                 "referred in <%(referer)s>",
                 {"request": request, "referer": referer},
-                exc_info=True,
                 extra={"spider": info.spider},
             )
             raise _FileException(str(exc)) from exc

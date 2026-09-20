@@ -627,10 +627,9 @@ class FeedExporter:
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
-            logger.error(
+            logger.exception(
                 "Error storing %s",
                 logmsg,
-                exc_info=True,
                 extra={"spider": spider},
             )
             self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")

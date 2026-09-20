@@ -101,10 +101,8 @@ class RobotsTxtMiddleware:
                 await self._parse_robots(resp, netloc, request)
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    logger.error(
-                        "Error downloading %(request)s: %(f_exception)s",
-                        {"request": request, "f_exception": e},
-                        exc_info=True,
+                    logger.exception(
+                        f"Error downloading {request}",
                         extra={"spider": self.crawler.spider},
                     )
                 self._robots_error(e, netloc)
