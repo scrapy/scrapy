@@ -138,10 +138,6 @@ fetched. Therefore, do not rely on a fixed order between
 are sent, however, :signal:`spider_closed` and all its asynchronous handlers
 finish before :signal:`engine_stopped` is sent.
 
-Use the spider signals for work that requires a spider, such as allocating and
-releasing per-spider resources. Use the engine signals for work tied to the
-engine itself and independent of whether a spider has been opened.
-
 engine_started
 ~~~~~~~~~~~~~~
 
@@ -151,10 +147,6 @@ engine_started
     Sent when the Scrapy engine has started crawling.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
-
-.. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
-    depending on how the spider was started. So **don't** rely on this signal
-    getting fired before :signal:`spider_opened`.
 
 engine_stopped
 ~~~~~~~~~~~~~~
