@@ -1,5 +1,7 @@
 from typing import Any
 
+import pytest
+
 from scrapy.http import (
     Headers,
     HtmlResponse,
@@ -45,6 +47,37 @@ def test_from_content_disposition() -> None:
 
 def test_from_content_disposition_no_filename() -> None:
     assert responsetypes.from_content_disposition(b"attachment") is Response
+
+
+@pytest.mark.parametrize("as_bytes", [False, True])
+@pytest.mark.parametrize(
+    ("header", "response_class"),
+    [
+        ('attachment; size=123; filename="data.xml"', XmlResponse),
+        ('attachment; filename="data;part.xml"', XmlResponse),
+        ('attachment; filename="data=part.xml"', XmlResponse),
+        ('attachment; FILENAME = "data.xml"', XmlResponse),
+        ("attachment; filename*=UTF-8''data%2Exml", XmlResponse),
+        ("attachment; filename=data.bin; filename*=UTF-8''data%2Exml", XmlResponse),
+        ("attachment; filename*=UTF-8''data%2Exml; filename=data.bin", XmlResponse),
+        ('attachment; name="data.xml"', Response),
+        ('attachment; filename=""', Response),
+        ("attachment; filename", Response),
+        ("", Response),
+    ],
+)
+def test_from_content_disposition_parameters(
+    header: str, response_class: type[Response], as_bytes: bool
+) -> None:
+    value = header.encode("latin-1") if as_bytes else header
+    assert responsetypes.from_content_disposition(value) is response_class
+    assert (
+        responsetypes.from_args(
+            headers=Headers({"Content-Disposition": value}),
+            url="https://example.com/download",
+        )
+        is response_class
+    )
 
 
 def test_from_content_type() -> None:

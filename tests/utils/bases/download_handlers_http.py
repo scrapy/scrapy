@@ -31,7 +31,14 @@ from scrapy.exceptions import (
     StopDownload,
     UnsupportedURLSchemeError,
 )
-from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
+from scrapy.http import (
+    Headers,
+    HtmlResponse,
+    JsonResponse,
+    Request,
+    Response,
+    TextResponse,
+)
 from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -316,6 +323,31 @@ class TestHttpBase(ABC):
             assert response.headers.getlist(header_name) == [
                 header_value.encode(encoding="utf-8")
             ]
+
+    @pytest.mark.parametrize(
+        "content_disposition",
+        [
+            'attachment; size=123; filename="data.json"',
+            'attachment; filename="data;part=1.json"',
+            "attachment; filename=data.bin; filename*=UTF-8''data%2Ejson",
+        ],
+    )
+    @coroutine_test
+    async def test_download_content_disposition_filename(
+        self, mockserver: MockServer, content_disposition: str
+    ) -> None:
+        response_headers = {
+            "Content-Type": "application/octet-stream",
+            "Content-Disposition": content_disposition,
+        }
+        request = Request(
+            mockserver.url("/response-headers", is_secure=self.is_secure),
+            body=json.dumps(response_headers),
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert isinstance(response, JsonResponse)
+        assert response.json() == response_headers
 
     @coroutine_test
     async def test_download_no_extra_response_headers(

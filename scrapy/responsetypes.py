@@ -5,6 +5,8 @@ based on different criteria.
 
 from __future__ import annotations
 
+from email.message import Message
+from email.utils import collapse_rfc2231_value
 from importlib.resources import files
 from mimetypes import MimeTypes
 from typing import TYPE_CHECKING, ClassVar
@@ -65,16 +67,19 @@ class ResponseTypes:
     def from_content_disposition(
         self, content_disposition: str | bytes
     ) -> type[Response]:
-        try:
-            filename = (
-                to_unicode(content_disposition, encoding="latin-1", errors="replace")
-                .split(";")[1]
-                .split("=")[1]
-                .strip("\"'")
-            )
-            return self.from_filename(filename)
-        except IndexError:
-            return Response
+        message = Message()
+        message["Content-Disposition"] = to_unicode(
+            content_disposition, encoding="latin-1", errors="replace"
+        )
+        filename = None
+        for name, value in message.get_params([], header="Content-Disposition")[1:]:
+            if name.lower() != "filename":
+                continue
+            if isinstance(value, tuple):
+                # RFC 6266 gives filename* precedence over the plain filename.
+                return self.from_filename(collapse_rfc2231_value(value))
+            filename = value
+        return self.from_filename(filename) if filename else Response
 
     def from_headers(self, headers: Mapping[bytes, bytes]) -> type[Response]:
         """Return the most appropriate Response class by looking at the HTTP
