@@ -22,10 +22,10 @@ from scrapy.utils.test import get_crawler
 
 
 class TestRetry:
-    def setup_method(self):
+    def setup_method(self) -> None:
         self.crawler = get_crawler(DefaultSpider)
         self.crawler.spider = self.crawler._create_spider()
-        self.mw = build_from_crawler(RetryMiddleware, self.crawler)
+        self.mw: RetryMiddleware = build_from_crawler(RetryMiddleware, self.crawler)
         self.mw.max_retry_times = 2
 
     def test_priority_adjust(self):

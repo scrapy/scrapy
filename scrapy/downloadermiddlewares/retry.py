@@ -129,6 +129,7 @@ def get_retry_request(
             raise ValueError(f"Invalid give-up log level: {give_up_log_level!r}")
         give_up_log_level = level
     stats.inc_value(f"{stats_base_key}/max_reached")
+    assert give_up_log_level is not None
     logger.log(
         give_up_log_level,
         "Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",

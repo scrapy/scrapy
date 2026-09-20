@@ -635,11 +635,11 @@ class TestFilesPipelineFieldsDataClass(TestFilesPipelineFieldsMixin):
 class FilesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    file_urls: list[str] = attr.ib(default=list)
-    files: list[dict[str, str]] = attr.ib(default=list)
+    file_urls: list[str] = attr.ib(factory=list)
+    files: list[dict[str, str]] = attr.ib(factory=list)
     # overridden fields
-    custom_file_urls: list[str] = attr.ib(default=list)
-    custom_files: list[dict[str, str]] = attr.ib(default=list)
+    custom_file_urls: list[str] = attr.ib(factory=list)
+    custom_files: list[dict[str, str]] = attr.ib(factory=list)
 
 
 class TestFilesPipelineFieldsAttrsItem(TestFilesPipelineFieldsMixin):
