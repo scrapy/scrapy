@@ -137,6 +137,15 @@ class ResponseDataLossError(Exception):
     """Indicates that Scrapy couldn't get a complete response."""
 
 
+class DecompressionError(Exception):
+    """Raised by
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    when a response body cannot be decompressed.
+
+    .. versionadded:: VERSION
+    """
+
+
 class UnsupportedURLSchemeError(Exception):
     """Indicates that the URL scheme is not supported."""
 

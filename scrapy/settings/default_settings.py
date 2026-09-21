@@ -532,6 +532,7 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
     "scrapy.exceptions.CannotResolveHostError",
+    "scrapy.exceptions.DecompressionError",
     "scrapy.exceptions.DownloadConnectionRefusedError",
     "scrapy.exceptions.DownloadFailedError",
     "scrapy.exceptions.DownloadTimeoutError",
@@ -539,9 +540,6 @@ RETRY_EXCEPTIONS = [
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    # EOFError and OSError are raised by the HttpCompression middleware when
-    # the response body cannot be decompressed
-    EOFError,
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]

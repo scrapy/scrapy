@@ -1075,6 +1075,7 @@ Default::
 
     [
         'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DecompressionError',
         'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadFailedError',
         'scrapy.exceptions.DownloadTimeoutError',
@@ -1082,7 +1083,6 @@ Default::
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        EOFError,
         OSError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]

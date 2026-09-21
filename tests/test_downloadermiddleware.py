@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-from gzip import BadGzipFile, compress
+from gzip import compress
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -12,6 +12,7 @@ from twisted.internet.defer import Deferred, succeed
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import (
     CloseSpider,
+    DecompressionError,
     IgnoreRequest,
     ScrapyDeprecationWarning,
     _InvalidOutput,
@@ -152,7 +153,7 @@ class TestDefaults(TestManagerBase):
     async def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request("http://example.com")
         resp = _invalid_gzipped_response(req)
-        with pytest.raises(BadGzipFile):
+        with pytest.raises(DecompressionError):
             async with self.get_mwman() as mwman:
                 await self._download(mwman, req, resp)
 
