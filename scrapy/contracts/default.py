@@ -19,7 +19,8 @@ class UrlContract(Contract):
     conditions of a callback.
 
     This contract is mandatory: callbacks lacking it are ignored when running
-    the checks.
+    the checks. A callback docstring may repeat it, once per batch, to check
+    the callback against more than one sample URL; see :ref:`topics-contracts`.
 
     .. code-block:: none
 
@@ -27,6 +28,7 @@ class UrlContract(Contract):
     """
 
     name = "url"
+    generates_request = True
 
     def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
         args["url"] = self.args[0]
@@ -73,7 +75,7 @@ class MethodContract(Contract):
     """Sets (``@method``) the :attr:`method <scrapy.Request.method>` of the
     sample request.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     .. code-block:: none
 
@@ -91,7 +93,7 @@ class BodyContract(Contract):
     """Sets (``@body``) the :attr:`body <scrapy.Request.body>` of the sample
     request.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     .. code-block:: none
 
@@ -109,7 +111,7 @@ class HeaderContract(Contract):
     """Sets (``@header``) a header of the sample request. Use one line per
     header.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     .. code-block:: none
 
@@ -130,7 +132,7 @@ class CookieContract(Contract):
     """Sets (``@cookie``) a cookie of the sample request. Use one line per
     cookie.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     .. code-block:: none
 

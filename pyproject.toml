@@ -9,6 +9,7 @@ description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
     "aiohttp>=3.13.3",
+    "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -108,7 +109,6 @@ pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 strict = true
-extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
 ]
@@ -117,6 +117,7 @@ untyped_calls_exclude = [
 module = "tests.*"
 allow_untyped_defs = true
 allow_incomplete_defs = true # 59 errors
+extra_checks = false # weird addErrback() errors with untyped log.err
 
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
@@ -153,7 +154,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.18.0"
+current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -311,6 +312,9 @@ filterwarnings = [
     "ignore:unclosed <socket\\.socket fd=:ResourceWarning",
     "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
     "ignore:unclosed transport <:ResourceWarning",
+    # These are triggered by garbage collecting an unclosed AiohttpDownloadHandler.
+    "ignore:.*<function (ClientSession|BaseConnector)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:Unclosed (client session|connector) <aiohttp\\.:ResourceWarning",
     # PyDispatcher iterates its connection registry while a weakref callback
     # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
     # can die within a single collection.
@@ -348,6 +352,12 @@ extend-select = [
     "COM",
     # pydocstyle
     "D",
+    # pycodestyle
+    "E4",
+    "E7",
+    "E9",
+    # Pyflakes
+    "F",
     # flake8-future-annotations
     "FA",
     # flynt
@@ -402,8 +412,8 @@ extend-select = [
     "YTT",
 ]
 ignore = [
-    # Ones we want to ignore
-
+    # Do not catch blind exception
+    "BLE001",
     # Trailing comma missing
     "COM812",
     # Missing docstring in public module
@@ -444,6 +454,8 @@ ignore = [
     "PLR0911",
     # Too many arguments in function definition
     "PLR0913",
+    # Too many positional arguments
+    "PLR0917",
     # Magic value used in comparison
     "PLR2004",
     # String contains ambiguous {}.
@@ -460,6 +472,8 @@ ignore = [
     "SIM115",
     # Yoda condition detected
     "SIM300",
+    # Prefer `TypeError` exception for invalid type
+    "TRY004",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -511,4 +525,4 @@ split-on-trailing-comma = false
 convention = "pep257"
 
 [tool.sphinx-scrapy]
-python-version = "3.14"  # Keep in sync with .github/workflows/checks.yml.
+python-version = "3.14"  # Keep in sync with .github/workflows/ci.yml.

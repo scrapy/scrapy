@@ -19,13 +19,13 @@ from scrapy.exceptions import (
 from scrapy.http import Headers
 from scrapy.http.response.websocket import WebSocketResponse
 from scrapy.utils._download_handlers import make_response, normalize_bind_address
-from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.ssl import (
+from scrapy.utils._ssl import (
     _log_sslobj_debug_info,
     _make_insecure_ssl_ctx,
     _make_ssl_context,
 )
+from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.httpobj import urlparse_cached
 
 from ._base_http import BaseHttpDownloadHandler
 

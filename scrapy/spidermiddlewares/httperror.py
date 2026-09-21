@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class HttpError(IgnoreRequest):
     """A non-2xx response was filtered"""
 
-    def __init__(self, response: Response, *args: Any, **kwargs: Any):
+    def __init__(self, response: Response, *args: object, **kwargs: object):
         self.response = response
         super().__init__(*args, **kwargs)
 

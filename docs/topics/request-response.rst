@@ -5,10 +5,9 @@ Requests and Responses
 ======================
 
 .. module:: scrapy.http
-   :synopsis: Request and Response classes
 
-Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
-sites.
+Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling
+websites.
 
 Typically, :class:`~scrapy.Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
@@ -157,7 +156,8 @@ Request objects
         :attr:`cb_kwargs` instead, see :ref:`callback-data`. However, request
         metadata may be the right choice in certain scenarios, such as to
         maintain some debugging data across all follow-up requests (e.g. the
-        source URL).
+        source URL). To copy some metadata keys automatically into follow-up
+        requests, consider using the :setting:`STICKY_META_KEYS` setting.
 
         A common use of request metadata is to define request-specific
         parameters for Scrapy components (extensions, middlewares, etc.). For
@@ -831,6 +831,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`
@@ -908,8 +909,9 @@ Set the :reqmeta:`bindaddress` request meta key to override it for a
 specific request.
 
 This meta key is not supported by
-:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
-:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+:class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
+the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 
 .. reqmeta:: download_timeout
 
@@ -925,9 +927,11 @@ download_latency
 ----------------
 
 The amount of time spent to fetch the response, since the request has been
-started, i.e. HTTP message sent over the network. This meta key only becomes
-available when the response has been downloaded. While most other meta keys are
-used to control Scrapy behavior, this one is supposed to be read-only.
+started, i.e. HTTP message sent over the network. It covers the time until
+Scrapy reads the response, which your own code can delay, see
+:ref:`optimize-blocking`. This meta key only becomes available when the
+response has been downloaded. While most other meta keys are used to control
+Scrapy behavior, this one is supposed to be read-only.
 
 .. reqmeta:: download_fail_on_dataloss
 

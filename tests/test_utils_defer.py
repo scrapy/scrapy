@@ -502,6 +502,5 @@ def test_maybe_deferred_coro_deferred() -> None:
     # Only the deprecation of maybeDeferred_coro() itself is reported; callables
     # that return a Deferred are the reason it exists.
     assert [str(record.message) for record in records] == [
-        "maybeDeferred_coro() is deprecated and will be removed in a future"
-        " Scrapy version."
+        "maybeDeferred_coro() is deprecated and will be removed in a future Scrapy version."
     ]

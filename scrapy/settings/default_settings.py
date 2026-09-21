@@ -146,6 +146,7 @@ __all__ = [
     "LOG_FILE_APPEND",
     "LOG_FORMAT",
     "LOG_FORMATTER",
+    "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
@@ -212,6 +213,7 @@ __all__ = [
     "STATSMAILER_RCPTS",
     "STATS_CLASS",
     "STATS_DUMP",
+    "STICKY_META_KEYS",
     "TELNETCONSOLE_ENABLED",
     "TELNETCONSOLE_HOST",
     "TELNETCONSOLE_PASSWORD",
@@ -455,6 +457,7 @@ JOBDIR = None
 
 LOG_COLOR = True
 LOG_ENABLED = True
+LOG_INSTALL_ROOT_HANDLER = True
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENCODING = "utf-8"
 LOG_FILE = None
@@ -584,7 +587,8 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
-    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 1000,
+    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 999,
+    "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     # Spider side
 }
 
@@ -594,6 +598,8 @@ STATS_CLASS = "scrapy.statscollectors.MemoryStatsCollector"
 STATS_DUMP = True
 
 STATSMAILER_RCPTS: list[str] = []
+
+STICKY_META_KEYS: list[str] = []
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_HOST = "127.0.0.1"
