@@ -488,6 +488,8 @@ MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
 
+MEDIA_CACHE_SIZE = -1
+
 MEMDEBUG_ENABLED = False  # enable memory debugging
 
 MEMUSAGE_ENABLED = True
