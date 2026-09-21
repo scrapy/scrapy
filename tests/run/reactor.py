@@ -1,4 +1,5 @@
 import scrapy
+from scrapy.settings import Settings
 from scrapy.utils.reactorless import is_reactorless
 
 
@@ -11,4 +12,4 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-scrapy.run(NoRequestsSpider, settings={"TWISTED_REACTOR_ENABLED": True})
+scrapy.run(NoRequestsSpider, settings=Settings({"TWISTED_REACTOR_ENABLED": True}))
