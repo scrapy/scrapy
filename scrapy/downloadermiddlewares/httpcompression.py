@@ -112,9 +112,11 @@ class HttpCompressionMiddleware:
                 raise IgnoreRequest(msg) from e
             except _DECOMPRESSION_ERRORS as e:
                 encodings = b", ".join(content_encoding).decode()
-                raise DecompressionError(
+                decompression_error = DecompressionError(
                     f"Could not decompress {response} ({encodings}): {e}"
-                ) from e
+                )
+                decompression_error.response = response
+                raise decompression_error from e
             if len(response.body) < warn_size <= len(decoded_body):
                 logger.warning(
                     f"{response} body size after decompression "

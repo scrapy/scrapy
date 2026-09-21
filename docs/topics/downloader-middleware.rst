@@ -912,7 +912,7 @@ Enable it in place of :class:`RedirectMiddleware`, using the same priority:
         custom_settings = {
             "DOWNLOADER_MIDDLEWARES": {
                 "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": None,
-                "myproject.middlewares.AllowedRedirectMiddleware": 600,
+                "myproject.middlewares.AllowedRedirectMiddleware": 590,
             }
         }
 

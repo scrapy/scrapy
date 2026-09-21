@@ -142,8 +142,13 @@ class DecompressionError(Exception):
     :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
     when a response body cannot be decompressed.
 
+    The response whose body could not be decompressed is available as the
+    *response* attribute.
+
     .. versionadded:: VERSION
     """
+
+    response: Response | None = None
 
 
 class UnsupportedURLSchemeError(Exception):

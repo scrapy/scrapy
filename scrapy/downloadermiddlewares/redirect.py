@@ -7,8 +7,8 @@ from urllib.parse import urljoin, urlparse
 from w3lib.url import safe_url_string
 
 from scrapy import signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured
-from scrapy.http import HtmlResponse, Response
+from scrapy.exceptions import DecompressionError, IgnoreRequest, NotConfigured
+from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spidermiddlewares.referer import RefererMiddleware
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Request, Spider
+    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 
@@ -245,6 +245,15 @@ class RedirectMiddleware(BaseRedirectMiddleware):
             )
 
         return self._redirect(redirected, request, response.status)
+
+    @_warn_spider_arg
+    def process_exception(
+        self, request: Request, exception: Exception, spider: Spider | None = None
+    ) -> Request | None:
+        if not isinstance(exception, DecompressionError) or exception.response is None:
+            return None
+        result = self.process_response(request, exception.response)
+        return result if isinstance(result, Request) else None
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):

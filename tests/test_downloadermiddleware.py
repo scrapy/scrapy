@@ -117,18 +117,10 @@ class TestDefaults(TestManagerBase):
                 )
 
     @coroutine_test
-    async def test_3xx_and_invalid_gzipped_body_must_redirect(self):
-        """Regression test for a failure when redirecting a compressed
-        request.
-
-        This happens when httpcompression middleware is executed before redirect
-        middleware and attempts to decompress a non-compressed body.
-        In particular when some website returns a 30x response with header
-        'Content-Encoding: gzip' giving as result the error below:
-
-            BadGzipFile: Not a gzipped file (...)
-
-        """
+    async def test_3xx_and_invalid_gzipped_body_fails(self):
+        # Without DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS,
+        # RedirectMiddleware.process_exception() is never consulted, even
+        # though the response has a usable Location header.
         req = Request("http://example.com")
         body = b"<p>You are being redirected</p>"
         resp = Response(
@@ -142,12 +134,9 @@ class TestDefaults(TestManagerBase):
                 "Location": "http://example.com/login",
             },
         )
-        async with self.get_mwman() as mwman:
-            ret = await self._download(mwman, req, resp)
-        assert isinstance(ret, Request), f"Not redirected: {ret!r}"
-        assert to_bytes(ret.url) == resp.headers["Location"], (
-            "Not redirected to location header"
-        )
+        with pytest.raises(DecompressionError):
+            async with self.get_mwman() as mwman:
+                await self._download(mwman, req, resp)
 
     @coroutine_test
     async def test_200_and_invalid_gzipped_body_must_fail(self):
@@ -330,6 +319,28 @@ class TestResponseExceptions(TestManagerBase):
             result = await self._download(mwman, req, response_func(req))
         assert isinstance(result, Request)
         assert result.url == req.url
+
+    @coroutine_test
+    async def test_3xx_and_invalid_gzipped_body_must_redirect(self):
+        req = Request("http://example.com")
+        body = b"<p>You are being redirected</p>"
+        resp = Response(
+            req.url,
+            status=302,
+            body=body,
+            headers={
+                "Content-Length": str(len(body)),
+                "Content-Type": "text/html",
+                "Content-Encoding": "gzip",
+                "Location": "http://example.com/login",
+            },
+        )
+        async with self.get_mwman() as mwman:
+            ret = await self._download(mwman, req, resp)
+        assert isinstance(ret, Request), f"Not redirected: {ret!r}"
+        assert to_bytes(ret.url) == resp.headers["Location"], (
+            "Not redirected to location header"
+        )
 
     @coroutine_test
     async def test_close_spider(self):
