@@ -47,8 +47,9 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
             raise NotConfigured(
                 "Cannot disable FTP_PASSIVE_MODE when using AioftpDownloadHandler"
             )
-        self.user = crawler.settings.get("FTP_USER", aioftp.DEFAULT_USER)
-        self.password = crawler.settings.get("FTP_PASSWORD", aioftp.DEFAULT_PASSWORD)
+        self.user: str = crawler.settings.get("FTP_USER", aioftp.DEFAULT_USER)
+        self.password: str = crawler.settings.get("FTP_PASSWORD", aioftp.DEFAULT_PASSWORD)
+        self._ssl_context: SSLContext = _make_ssl_context(crawler.settings)
 
     @asynccontextmanager
     async def _make_request(
@@ -57,24 +58,16 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
         url = urlparse_cached(request)
         assert url.hostname
 
-        implicit_tls: SSLContext | None = None
-        explicit_tls: SSLContext | None = None
-        if url.scheme == "ftps":
-            if url.port == 990:
-                implicit_tls = _make_ssl_context(self.crawler.settings)
-            else:
-                explicit_tls = _make_ssl_context(self.crawler.settings)
-
         client = aioftp.Client(
             socket_timeout=timeout,
             connection_timeout=timeout,
             path_timeout=timeout,
-            ssl=implicit_tls,
+            ssl=self._ssl_context if url.scheme == "ftps" and url.port == 990 else None,
         )
         try:
             await client.connect(url.hostname, url.port or 21)
-            if explicit_tls:
-                await client.upgrade_to_tls(explicit_tls)
+            if url.scheme == "ftps" and url.port != 990:
+                await client.upgrade_to_tls(self._ssl_context)
             await client.login(self.user, self.password)
 
             try:
@@ -104,8 +97,7 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
 
     @staticmethod
     def _extract_headers(response: _AioftpResponse) -> Headers:
-        headers = {}
-        return Headers(headers)
+        return Headers(())
 
     @staticmethod
     def _build_base_response_args(
