@@ -9,7 +9,8 @@ own custom functionality into Scrapy.
 
 Unlike other components, extensions do not have a specific role in Scrapy. They
 are “wildcard” components that can be used for anything that does not fit the
-role of any other type of component.
+role of any other type of component, such as collecting stats or enforcing a
+memory limit; see :ref:`concepts` for a rundown of other alternatives.
 
 Loading and activating extensions
 =================================
@@ -48,8 +49,8 @@ tasks triggered by them.
 Sample extension
 ----------------
 
-Here we will implement a simple extension to illustrate the concepts described
-in the previous section. This extension will log a message every time:
+Here we implement a simple extension to illustrate the concepts described in
+the previous section. This extension will log a message every time:
 
 * a spider is opened
 * a spider is closed
@@ -58,7 +59,7 @@ in the previous section. This extension will log a message every time:
 The extension will be enabled through the ``MYEXT_ENABLED`` setting and the
 number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
 
-Here is the code of such extension:
+Here is the code for that extension:
 
 .. code-block:: python
 
@@ -118,71 +119,34 @@ General purpose extensions
 Log Stats extension
 ~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.logstats
-   :synopsis: Basic stats logging
-
-.. class:: LogStats
+.. class:: scrapy.extensions.logstats.LogStats
 
 Log basic stats like crawled pages and scraped items.
 
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.corestats
-   :synopsis: Core stats collection
-
-.. class:: CoreStats
+.. class:: scrapy.extensions.corestats.CoreStats
 
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
-The following stats are collected:
-
-* ``start_time``: start date/time of the crawl (:class:`~datetime.datetime`).
-* ``finish_time``: end date/time of the crawl (:class:`~datetime.datetime`).
-* ``elapsed_time_seconds``: total crawl duration in seconds (:class:`float`).
-* ``finish_reason``: the closing reason string (e.g. ``"finished"``,
-  ``"closespider_timeout"``).
-* ``item_scraped_count``: total number of items that passed all pipelines.
-* ``item_dropped_count``: total number of items dropped by a pipeline.
-* ``item_dropped_reasons_count/<ExceptionName>``: per-exception drop count
-  (e.g. ``item_dropped_reasons_count/DropItem``).
-* ``response_received_count``: total number of HTTP responses received.
+The following stats are collected: :stat:`elapsed_time_seconds`,
+:stat:`finish_reason`, :stat:`finish_time`, :stat:`item_dropped_count`,
+:stat:`item_dropped_reasons_count/{exception}`, :stat:`item_scraped_count`,
+:stat:`response_received_count`, :stat:`start_time`.
 
 Log Count extension
 ~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.logcount
-   :synopsis: Basic stats logging
-
-.. autoclass:: LogCount
-
-.. _topics-extensions-ref-telnetconsole:
-
-Telnet console extension
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.extensions.telnet
-   :synopsis: Telnet console
-
-.. class:: TelnetConsole
-
-Provides a telnet console for getting into a Python interpreter inside the
-currently running Scrapy process, which can be very useful for debugging.
-
-The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
-setting, and the server will listen in the port specified in
-:setting:`TELNETCONSOLE_PORT`.
+.. autoclass:: scrapy.extensions.logcount.LogCount
 
 .. _topics-extensions-ref-memusage:
 
 Memory usage extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.memusage
-   :synopsis: Memory usage extension
-
-.. class:: MemoryUsage
+.. class:: scrapy.extensions.memusage.MemoryUsage
 
 .. note:: This extension does not work in Windows.
 
@@ -190,7 +154,7 @@ Monitors the memory used by the Scrapy process that runs the spider and:
 
 1. sends a :signal:`memusage_warning_reached` signal when it exceeds
    :setting:`MEMUSAGE_WARNING_MB`
-2. closes the spider with the `"memusage_exceeded"` reason when it exceeds
+2. closes the spider with the ``"memusage_exceeded"`` reason when it exceeds
    :setting:`MEMUSAGE_LIMIT_MB`
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
@@ -203,28 +167,24 @@ can be configured with the following settings:
 Memory debugger extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.memdebug
-   :synopsis: Memory debugger extension
-
-.. class:: MemoryDebugger
+.. class:: scrapy.extensions.memdebug.MemoryDebugger
 
 An extension for debugging memory usage. It collects information about:
 
 * objects uncollected by the Python garbage collector
-* objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
+* objects left alive that shouldn't be. For more info, see
+  :ref:`topics-leaks-trackrefs`
 
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
-info will be stored in the stats.
+info will be stored in the :stat:`memdebug/gc_garbage_count` and
+:stat:`memdebug/live_refs/{cls}` stats.
 
 .. _topics-extensions-ref-spiderstate:
 
 Spider state extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.spiderstate
-   :synopsis: Spider state extension
-
-.. class:: SpiderState
+.. class:: scrapy.extensions.spiderstate.SpiderState
 
 Manages spider state data by loading it before a crawl and saving it after.
 
@@ -245,10 +205,7 @@ For an example, see :ref:`topics-keeping-persistent-state-between-batches`.
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.closespider
-   :synopsis: Close spider extension
-
-.. class:: CloseSpider
+.. class:: scrapy.extensions.closespider.CloseSpider
 
 Closes a spider automatically when some conditions are met, using a specific
 closing reason for each condition.
@@ -265,9 +222,9 @@ settings:
 
 .. note::
 
-   When a certain closing condition is met, requests which are
-   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS`
-   requests) are still processed.
+    When a certain closing condition is met, requests that are currently in the
+    downloader queue (up to :setting:`CONCURRENT_REQUESTS`
+    requests) are still processed.
 
 .. setting:: CLOSESPIDER_TIMEOUT
 
@@ -277,7 +234,7 @@ CLOSESPIDER_TIMEOUT
 Default: ``0.0``
 
 If the spider remains open for more than this number of seconds, it will be
-automatically closed with the reason ``closespider_timeout``. If zero (or non
+automatically closed with the reason ``closespider_timeout``. If zero (or not
 set), spiders won't be closed by timeout.
 
 .. setting:: CLOSESPIDER_TIMEOUT_NO_ITEM
@@ -289,8 +246,8 @@ Default: ``0``
 
 An integer which specifies a number of seconds. If the spider has not produced
 any items in the last number of seconds, it will be closed with the reason
-``closespider_timeout_no_item``. If zero (or non set), spiders won't be closed
-regardless if it hasn't produced any items.
+``closespider_timeout_no_item``. If zero (or not set), spiders won't be closed
+even if they have not produced any items.
 
 .. setting:: CLOSESPIDER_ITEMCOUNT
 
@@ -300,9 +257,9 @@ CLOSESPIDER_ITEMCOUNT
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
-that amount and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itemcount``.
-If zero (or non set), spiders won't be closed by number of passed items.
+that amount and those items are passed by the item pipeline, the spider will be
+closed with the reason ``closespider_itemcount``. If zero (or not set), spiders
+won't be closed by the number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 
@@ -313,7 +270,7 @@ Default: ``0``
 
 An integer which specifies the maximum number of responses to crawl. If the spider
 crawls more than that, the spider will be closed with the reason
-``closespider_pagecount``. If zero (or non set), spiders won't be closed by
+``closespider_pagecount``. If zero (or not set), spiders won't be closed by the
 number of crawled responses.
 
 .. setting:: CLOSESPIDER_PAGECOUNT_NO_ITEM
@@ -327,7 +284,7 @@ An integer which specifies the maximum number of consecutive responses to crawl
 without items scraped. If the spider crawls more consecutive responses than that
 and no items are scraped in the meantime, the spider will be closed with the
 reason ``closespider_pagecount_no_item``. If zero (or not set), spiders won't be
-closed by number of crawled responses with no items.
+closed by the number of crawled responses with no items.
 
 .. setting:: CLOSESPIDER_ERRORCOUNT
 
@@ -338,16 +295,13 @@ Default: ``0``
 
 An integer which specifies the maximum number of errors to receive before
 closing the spider. If the spider generates more than that number of errors,
-it will be closed with the reason ``closespider_errorcount``. If zero (or non
-set), spiders won't be closed by number of errors.
-
-.. module:: scrapy.extensions.periodic_log
-   :synopsis: Periodic stats logging
+it will be closed with the reason ``closespider_errorcount``. If zero (or not
+set), spiders won't be closed by the number of errors.
 
 Periodic log extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: PeriodicLog
+.. class:: scrapy.extensions.periodic_log.PeriodicLog
 
 This extension periodically logs rich stat data as a JSON object::
 
@@ -381,8 +335,8 @@ This extension periodically logs rich stat data as a JSON object::
             "elapsed": 360.008903,
             "log_interval": 60.0,
             "log_interval_real": 60.006694,
-            "start_time": "2023-08-03 23:24:57",
-            "utcnow": "2023-08-03 23:30:57"
+            "start_time": "2023-08-03T23:24:57.148903+00:00",
+            "utcnow": "2023-08-03T23:30:57.157806+00:00"
         }
     }
 
@@ -460,11 +414,10 @@ Default: ``False``
 Debugging extensions
 --------------------
 
-.. module:: scrapy.extensions.debug
-   :synopsis: Extensions for debugging Scrapy
-
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.debug
 
 .. class:: StackTraceDump
 
@@ -502,3 +455,94 @@ signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
+
+.. currentmodule:: None
+
+.. _topics-extensions-ref-telnetconsole:
+
+Telnet console extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. class:: scrapy.extensions.telnet.TelnetConsole
+
+Provides a telnet console for getting into a Python interpreter inside the
+currently running Scrapy process, which can be very useful for debugging.
+
+The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
+setting, and the server will listen on the port specified in
+:setting:`TELNETCONSOLE_PORT`.
+
+Remote control extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 2.19.0
+
+.. module:: scrapy.extensions.remote_control
+
+.. autoclass:: RemoteControl
+
+.. setting:: REMOTE_CONTROL_ENABLED
+
+REMOTE_CONTROL_ENABLED
+""""""""""""""""""""""
+
+Default: ``True``
+
+Whether to enable the :class:`RemoteControl` extension.
+
+.. setting:: REMOTE_CONTROL_JOBS_DIR
+
+REMOTE_CONTROL_JOBS_DIR
+"""""""""""""""""""""""
+
+Default: ``None``
+
+The directory for storing :class:`RemoteControl` job files. When this is set to
+``None``, a ``scrapy/job_files`` subdirectory in
+:func:`platformdirs.user_state_dir` is used.
+
+As job files contain authentication tokens necessary to connect to Scrapy
+processes, this directory should not be exposed to untrusted environments.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_DEFAULT
+
+REMOTE_CONTROL_TIMEOUT_DEFAULT
+""""""""""""""""""""""""""""""
+
+Default: ``30.0``
+
+The default timeout in seconds for running a single code snippet sent to the
+:class:`RemoteControl` ``/execute`` endpoint. You can override it for a single
+request via the ``timeout_sec`` request field.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_MAX
+
+REMOTE_CONTROL_TIMEOUT_MAX
+""""""""""""""""""""""""""
+
+Default: ``600.0``
+
+The maximum allowed value for the ``timeout_sec`` field of
+:class:`RemoteControl` ``/execute`` endpoint requests. Higher values will be
+clamped to this value.
+
+.. setting:: REMOTE_CONTROL_OUTPUT_MAX_BYTES
+
+REMOTE_CONTROL_OUTPUT_MAX_BYTES
+"""""""""""""""""""""""""""""""
+
+Default: ``65536``
+
+The maximum size of the ``output`` field in responses of :class:`RemoteControl`
+``/execute`` endpoint requests. Longer ones will be truncated.
+
+.. setting:: REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+
+REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+""""""""""""""""""""""""""""""""""
+
+Default: ``16384``
+
+The maximum size of the ``traceback`` field in responses of
+:class:`RemoteControl` ``/execute`` endpoint requests. Longer ones will be
+truncated.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from hashlib import sha1
-from typing import Any
+from typing import TYPE_CHECKING, Any, Protocol
 from weakref import WeakKeyDictionary
 
 import pytest
@@ -16,6 +16,9 @@ from scrapy.utils.request import (
     request_to_curl,
 )
 from scrapy.utils.test import get_crawler
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 @pytest.mark.parametrize(
@@ -56,8 +59,18 @@ def test_request_httprepr_for_non_http_request(r: Request) -> None:
     request_httprepr(r)
 
 
+class _FingerprintFunction(Protocol):
+    def __call__(
+        self,
+        request: Request,
+        *,
+        include_headers: Iterable[bytes | str] | None = None,
+        keep_fragments: bool = False,
+    ) -> bytes: ...
+
+
 class TestFingerprint:
-    function: staticmethod[[Request], bytes] = staticmethod(fingerprint)
+    function: _FingerprintFunction = staticmethod(fingerprint)
     cache: (
         WeakKeyDictionary[
             Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
@@ -285,9 +298,9 @@ class TestCustomRequestFingerprinter:
 
     def test_dont_canonicalize(self):
         class RequestFingerprinter:
-            cache = WeakKeyDictionary()
+            cache: WeakKeyDictionary[Request, bytes] = WeakKeyDictionary()
 
-            def fingerprint(self, request):
+            def fingerprint(self, request: Request) -> bytes:
                 if request not in self.cache:
                     fp = sha1()
                     fp.update(to_bytes(request.url))
@@ -457,3 +470,14 @@ class TestRequestToCurl:
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
         )
         self._test_request(request_object, expected_curl_command)
+
+    def test_request_to_curl_method(self) -> None:
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            'curl -X POST https://www.httpbin.org/post --data-raw \'{"foo": "bar"}\''
+        )
+        assert request_object.to_curl() == expected_curl_command

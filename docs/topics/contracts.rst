@@ -1,16 +1,20 @@
 .. _topics-contracts:
 
-=================
-Spiders Contracts
-=================
+================
+Spider Contracts
+================
 
-Testing spiders can get particularly annoying and while nothing prevents you
-from writing unit tests the task gets cumbersome quickly. Scrapy offers an
+Testing spiders can get particularly annoying, and while nothing prevents you
+from writing unit tests, the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
 
-This allows you to test each callback of your spider by hardcoding a sample url
-and check various constraints for how the callback processes the response. Each
-contract is prefixed with an ``@`` and included in the docstring. See the
+.. versionchanged:: 2.19.0
+   Added support for callbacks defined with ``async def``, including
+   :term:`asynchronous generators <asynchronous generator>`.
+
+This allows you to test each callback of your spider by hardcoding a sample URL
+and checking various constraints for how the callback processes the response.
+Each contract is prefixed with an ``@`` and included in the docstring. See the
 following example:
 
 .. code-block:: python
@@ -26,54 +30,58 @@ following example:
         @scrapes Title Author Year Price
         """
 
+A callback docstring can also be split into several batches of contracts, one
+per paragraph separated by a blank line, and a batch may repeat ``@url`` to
+check the callback against more than one sample request:
+
+.. versionadded:: VERSION
+
+.. code-block:: python
+
+    def parse(self, response):
+        """
+        @url http://www.example.com/s?field-keywords=selfish+gene
+        @url http://www.example.com/s?field-keywords=hitchhikers+guide
+        @returns items 16 16
+
+        @url http://www.example.com/s?field-keywords=out+of+stock+item
+        @returns items 0 0
+        """
+
 You can use the following contracts:
 
 .. module:: scrapy.contracts.default
 
-.. class:: UrlContract
+.. autoclass:: UrlContract
 
-    This contract (``@url``) sets the sample URL used when checking other
-    contract conditions for this spider. This contract is mandatory. All
-    callbacks lacking this contract are ignored when running the checks::
+.. autoclass:: CallbackKeywordArgumentsContract
 
-    @url url
+.. autoclass:: MetadataContract
 
-.. class:: CallbackKeywordArgumentsContract
+.. autoclass:: MethodContract
 
-    This contract (``@cb_kwargs``) sets the :attr:`cb_kwargs <scrapy.Request.cb_kwargs>`
-    attribute for the sample request. It must be a valid JSON dictionary.
-    ::
+.. autoclass:: BodyContract
 
-    @cb_kwargs {"arg1": "value1", "arg2": "value2", ...}
+.. autoclass:: HeaderContract
 
-.. class:: MetadataContract
+.. autoclass:: CookieContract
 
-    This contract (``@meta``) sets the :attr:`meta <scrapy.Request.meta>`
-    attribute for the sample request. It must be a valid JSON dictionary.
-    ::
+.. autoclass:: ReturnsContract
 
-    @meta {"arg1": "value1", "arg2": "value2", ...}
+.. autoclass:: ScrapesContract
 
-.. class:: ReturnsContract
+Use the :command:`check` command to run the contract checks. It ignores
+:setting:`ITEM_PIPELINES` and :setting:`FEEDS`, since contracts check the
+output of callbacks instead of sending it to item processing; use the ``-s``
+command-line option to set them back for a check run.
 
-    This contract (``@returns``) sets lower and upper bounds for the items and
-    requests returned by the spider. The upper bound is optional::
-
-    @returns item(s)|request(s) [min [max]]
-
-.. class:: ScrapesContract
-
-    This contract (``@scrapes``) checks that all the items returned by the
-    callback have the specified fields::
-
-    @scrapes field_1 field_2 ...
-
-Use the :command:`check` command to run the contract checks.
+.. versionchanged:: 2.18.0
+   :setting:`ITEM_PIPELINES` and :setting:`FEEDS` are now ignored.
 
 Custom Contracts
 ================
 
-If you find you need more power than the built-in Scrapy contracts you can
+If you find you need more power than the built-in Scrapy contracts, you can
 create and load your own contracts in the project by using the
 :setting:`SPIDER_CONTRACTS` setting:
 
@@ -87,32 +95,16 @@ create and load your own contracts in the project by using the
 Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override three methods:
 
-.. module:: scrapy.contracts
+.. autoclass:: scrapy.contracts.Contract
 
-.. class:: Contract(method, *args)
+    .. automethod:: adjust_request_args
 
-    :param method: callback function to which the contract is associated
-    :type method: collections.abc.Callable
-
-    :param args: list of arguments passed into the docstring (whitespace
-        separated)
-    :type args: list
-
-    .. method:: Contract.adjust_request_args(args)
-
-        This receives a ``dict`` as an argument containing default arguments
-        for request object. :class:`~scrapy.Request` is used by default,
-        but this can be changed with the ``request_cls`` attribute.
-        If multiple contracts in chain have this attribute defined, the last one is used.
-
-        Must return the same or a modified version of it.
-
-    .. method:: Contract.pre_process(response)
+    .. method:: pre_process(response)
 
         This allows hooking in various checks on the response received from the
-        sample request, before it's being passed to the callback.
+        sample request, before it is passed to the callback.
 
-    .. method:: Contract.post_process(output)
+    .. method:: post_process(output)
 
         This allows processing the output of the callback. Iterators are
         converted to lists before being passed to this hook.
@@ -134,10 +126,8 @@ response received:
 
 
     class HasHeaderContract(Contract):
-        """
-        Demo contract which checks the presence of a custom header
-        @has_header X-CustomHeader
-        """
+        """Demo contract that checks the presence of a custom header:
+        @has_header X-CustomHeader"""
 
         name = "has_header"
 
@@ -152,8 +142,8 @@ Detecting check runs
 ====================
 
 When ``scrapy check`` is running, the ``SCRAPY_CHECK`` environment variable is
-set to the ``true`` string. You can use :data:`os.environ` to perform any change to
-your spiders or your settings when ``scrapy check`` is used:
+set to the ``true`` string. You can use :data:`os.environ` to make any changes
+to your spiders or your settings when ``scrapy check`` is used:
 
 .. code-block:: python
 

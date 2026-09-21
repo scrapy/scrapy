@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -8,8 +7,6 @@ from typing import TYPE_CHECKING
 from twisted.internet.defer import Deferred
 
 from scrapy.settings import Settings, default_settings
-from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.defer import maybe_deferred_to_future
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -21,13 +18,6 @@ def twisted_sleep(seconds: float):
     d: Deferred[None] = Deferred()
     reactor.callLater(seconds, d.callback, None)
     return d
-
-
-async def async_sleep(seconds: float) -> None:
-    if is_asyncio_available():
-        await asyncio.sleep(seconds)
-    else:
-        await maybe_deferred_to_future(twisted_sleep(seconds))
 
 
 def get_script_run_env() -> dict[str, str]:

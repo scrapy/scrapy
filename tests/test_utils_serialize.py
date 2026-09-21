@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import datetime
 import json
@@ -17,24 +19,32 @@ class TestJsonEncoder:
         return ScrapyJSONEncoder(sort_keys=True)
 
     def test_encode_decode(self, encoder: ScrapyJSONEncoder) -> None:
-        dt = datetime.datetime(2010, 1, 2, 10, 11, 12)
-        dts = "2010-01-02 10:11:12"
+        dt_naive = datetime.datetime(2010, 1, 2, 10, 11, 12)  # noqa: DTZ001
+        dt_naives = "2010-01-02T10:11:12"
+        dt_aware = datetime.datetime(
+            2010, 1, 2, 10, 11, 12, 133700, tzinfo=datetime.timezone.utc
+        )
+        dt_awares = "2010-01-02T10:11:12.133700+00:00"
         d = datetime.date(2010, 1, 2)
         ds = "2010-01-02"
         t = datetime.time(10, 11, 12)
         ts = "10:11:12"
+        t_us = datetime.time(10, 11, 12, 133700)
+        t_uss = "10:11:12.133700"
         dec = Decimal("1000.12")
         decs = "1000.12"
         s = {"foo"}
         ss = ["foo"]
-        dt_set = {dt}
-        dt_sets = [dts]
+        dt_set = {dt_naive}
+        dt_sets = [dt_naives]
 
         for input_, output in [
             ("foo", "foo"),
             (d, ds),
             (t, ts),
-            (dt, dts),
+            (t_us, t_uss),
+            (dt_naive, dt_naives),
+            (dt_aware, dt_awares),
             (dec, decs),
             (["foo", d], ["foo", ds]),
             (s, ss),
@@ -71,9 +81,9 @@ class TestJsonEncoder:
     def test_encode_attrs_item(self, encoder: ScrapyJSONEncoder) -> None:
         @attr.s
         class AttrsItem:
-            name = attr.ib(type=str)
-            url = attr.ib(type=str)
-            price = attr.ib(type=int)
+            name: str = attr.ib()
+            url: str = attr.ib()
+            price: int = attr.ib()
 
         item = AttrsItem(name="Product", url="http://product.org", price=1)
         encoded = encoder.encode(item)

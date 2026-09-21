@@ -44,6 +44,15 @@ Here is a simple example showing how you can catch signals and perform some acti
         def parse(self, response):
             pass
 
+.. _signal-order:
+
+Handler order
+=============
+
+The order in which the handlers of a signal run is undefined, and
+:ref:`asynchronous handlers <signal-deferred>` run concurrently. If two actions
+must happen in a given order, run both from a single handler, in that order.
+
 .. _signal-deferred:
 
 Asynchronous signal handlers
@@ -103,7 +112,6 @@ Built-in signals reference
 ==========================
 
 .. module:: scrapy.signals
-   :synopsis: Signals definitions
 
 Here's the list of Scrapy built-in signals and their meaning.
 
@@ -145,9 +153,18 @@ scheduler_empty
     Sent whenever the engine asks for a pending request from the
     :ref:`scheduler <topics-scheduler>` (i.e. calls its
     :meth:`~scrapy.core.scheduler.BaseScheduler.next_request` method) and the
-    scheduler returns none.
+    scheduler returns None.
 
     See :ref:`start-requests-lazy` for an example.
+
+    .. warning:: Only wait for this signal from
+        :meth:`~scrapy.Spider.start`. While no request can be sent, e.g. while
+        the responses being parsed exceed
+        :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`, the engine does not ask the
+        scheduler for requests, and hence this signal is not sent. So waiting
+        for it from a :ref:`callback <callbacks>` can hang the crawl,
+        because the response being parsed is itself one of the responses that
+        may be blocking requests.
 
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
@@ -156,12 +173,11 @@ Item signals
 ------------
 
 .. note::
-    As at max :setting:`CONCURRENT_ITEMS` items are processed in
-    parallel, many deferreds are fired together using
-    :class:`~twisted.internet.defer.DeferredList`. Hence the next
-    batch waits for the :class:`~twisted.internet.defer.DeferredList`
-    to fire and then runs the respective item signal handler for
-    the next batch of scraped items.
+    At most :setting:`CONCURRENT_ITEMS` items are processed in parallel, many
+    deferreds are fired together using
+    :class:`~twisted.internet.defer.DeferredList`. Hence the next batch waits
+    for the :class:`~twisted.internet.defer.DeferredList` to fire and then runs
+    the respective item signal handler for the next batch of scraped items.
 
 item_scraped
 ~~~~~~~~~~~~
@@ -253,12 +269,12 @@ spider_closed
     :param spider: the spider which has been closed
     :type spider: :class:`~scrapy.Spider` object
 
-    :param reason: a string which describes the reason why the spider was closed. If
-        it was closed because the spider has completed scraping, the reason
-        is ``'finished'``. Otherwise, if the spider was manually closed by
-        calling the ``close_spider`` engine method, then the reason is the one
-        passed in the ``reason`` argument of that method (which defaults to
-        ``'cancelled'``). If the engine was shutdown (for example, by hitting
+    :param reason: a string which describes the reason why the spider was
+        closed. If it was closed because the spider has completed scraping, the
+        reason is ``'finished'``. Otherwise, if the spider was manually closed
+        by calling the ``close_spider`` engine method, then the reason is the
+        one passed in the ``reason`` argument of that method (which defaults to
+        ``'cancelled'``). If the engine was shut down (for example, by hitting
         Ctrl-C to stop it) the reason will be ``'shutdown'``.
     :type reason: str
 
@@ -271,6 +287,13 @@ spider_opened
     Sent after a spider has been opened for crawling. This is typically used to
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
+
+    .. versionchanged:: 2.18.0
+       Added support for :exc:`~scrapy.exceptions.CloseSpider`.
+
+    You may raise a :exc:`~scrapy.exceptions.CloseSpider` exception to close the
+    spider before it starts crawling, e.g. if a resource that the spider needs
+    is unavailable.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
@@ -320,15 +343,22 @@ spider_error
 .. signal:: spider_error
 .. function:: spider_error(failure, response, spider)
 
-    Sent when a spider callback generates an error (i.e. raises an exception).
+    Sent when a spider callback or the :meth:`~scrapy.Spider.start` method of a
+    spider generates an error (i.e. raises an exception).
+
+    .. versionchanged:: 2.18.0
+       Exceptions from :meth:`~scrapy.Spider.start` are also reported, see
+       :ref:`start-error`.
 
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
     :param failure: the exception raised
     :type failure: twisted.python.failure.Failure
 
-    :param response: the response being processed when the exception was raised
-    :type response: :class:`~scrapy.http.Response` object
+    :param response: the response being processed when the exception was
+        raised, or ``None`` if the exception came from
+        :meth:`~scrapy.Spider.start`.
+    :type response: :class:`~scrapy.http.Response` | ``None``
 
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.Spider` object
@@ -421,11 +451,11 @@ request_reached_downloader
 .. signal:: request_reached_downloader
 .. function:: request_reached_downloader(request, spider)
 
-    Sent when a :class:`~scrapy.Request` reached downloader.
+    Sent when a :class:`~scrapy.Request` reached the downloader.
 
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
-    :param request: the request that reached downloader
+    :param request: the request that reached the downloader
     :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider that yielded the request
@@ -454,11 +484,11 @@ bytes_received
 .. signal:: bytes_received
 .. function:: bytes_received(data, request, spider)
 
-    Sent by some download handlers when a group of bytes is
-    received for a specific request. This signal might be fired multiple
-    times for the same request, with partial data each time. For instance,
-    a possible scenario for a 25 kb response would be two signals fired
-    with 10 kb of data, and a final one with 5 kb of data.
+    Sent by some download handlers when a group of bytes is received for a
+    specific request. This signal might be fired multiple times for the same
+    request, with partial data each time. For instance, a possible scenario for
+    a 25 KB response would be two signals fired with 10 KB of data, and a final
+    one with 5 KB of data.
 
     Handlers for this signal can stop the download of a response while it
     is in progress by raising the :exc:`~scrapy.exceptions.StopDownload`
@@ -503,6 +533,27 @@ headers_received
 
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.Spider` object
+
+robots_parsed
+~~~~~~~~~~~~~
+
+.. signal:: robots_parsed
+.. function:: robots_parsed(robotparser, request)
+
+    .. versionadded:: 2.18.0
+
+    Sent by
+    :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after it
+    downloads and parses a :file:`robots.txt` file, for the host that *request*
+    targets.
+
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param robotparser: the parser holding the parsed :file:`robots.txt` contents
+    :type robotparser: :class:`~scrapy.robotstxt.RobotParser` object
+
+    :param request: the request that triggered the :file:`robots.txt` download
+    :type request: :class:`~scrapy.Request` object
 
 
 Response signals

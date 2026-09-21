@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
@@ -12,7 +12,9 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     _parallel_asyncio,
+    call_later,
     is_asyncio_available,
+    sleep,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -20,11 +22,19 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 
-class TestAsyncio:
-    @coroutine_test
-    async def test_is_asyncio_available(self, reactor_pytest: str) -> None:
-        # the result should depend only on the pytest --reactor argument
-        assert is_asyncio_available() == (reactor_pytest != "default")
+@coroutine_test
+async def test_is_asyncio_available(reactor_pytest: str) -> None:
+    # the result should depend only on the pytest --reactor argument
+    assert is_asyncio_available() == (reactor_pytest != "default")
+
+
+@coroutine_test
+async def test_sleep() -> None:
+    events: list[str] = []
+    call_later(0.05, events.append, "call_later")
+    await sleep(0.1)
+    events.append("sleep")
+    assert events == ["call_later", "sleep"]
 
 
 @pytest.mark.only_asyncio
@@ -145,7 +155,9 @@ class TestAsyncioLoopingCall:
 
     @coroutine_test
     async def test_looping_call_bad_function(self):
-        looping_call = AsyncioLoopingCall(Deferred)
+        looping_call: AsyncioLoopingCall[[], Deferred[Any]] = AsyncioLoopingCall(
+            Deferred
+        )
         with pytest.raises(TypeError):
             looping_call.start(0.1)
         assert not looping_call.running

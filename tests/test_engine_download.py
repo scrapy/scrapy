@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from unittest.mock import Mock, call
 
 import pytest
@@ -74,6 +75,25 @@ class TestEngineDownloadAsync:
         )
 
     @coroutine_test
+    async def test_download_async_many_redirects(self, engine):
+        """A long chain of requests being replaced by new ones is handled
+        iteratively, without hitting the recursion limit."""
+        count = sys.getrecursionlimit() * 2
+        requests = [Request(f"http://example.com/{i}") for i in range(count)]
+        final_response = Response("http://example.com/final", body=b"done")
+        engine.downloader.fetch.side_effect = [
+            *(defer.succeed(request) for request in requests[1:]),
+            defer.succeed(final_response),
+        ]
+        engine.spider = Mock()
+        engine._slot.add_request = Mock()
+        engine._slot.remove_request = Mock()
+
+        result = await self._download(engine, requests[0])
+        assert result == final_response
+        assert engine.downloader.fetch.call_count == count
+
+    @coroutine_test
     async def test_download_async_no_spider(self, engine):
         """Test async download attempt when no spider is available."""
         request = Request("http://example.com")
@@ -95,6 +115,18 @@ class TestEngineDownloadAsync:
             await self._download(engine, request)
         engine._slot.add_request.assert_called_once_with(request)
         engine._slot.remove_request.assert_called_once_with(request)
+
+    @coroutine_test
+    async def test_download_async_fetch_needs_spider(self, engine):
+        engine._downloader_fetch_needs_spider = True
+        request = Request("http://example.com")
+        response = Response("http://example.com", body=b"test body")
+        engine.spider = Mock()
+        engine.downloader.fetch.return_value = defer.succeed(response)
+
+        result = await self._download(engine, request)
+        assert result == response
+        engine.downloader.fetch.assert_called_once_with(request, engine.spider)
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")

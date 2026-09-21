@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
-from twisted.web import resource
+from typing import TYPE_CHECKING
+
 from twisted.web.static import Data
 
 from .http_base import BaseMockServer, main_factory
+from .http_resources import BaseResource, put_child
+
+if TYPE_CHECKING:
+    from twisted.web.server import Request
 
 
-class Root(resource.Resource):
-    def __init__(self):
-        resource.Resource.__init__(self)
-        self.putChild(b"file", Data(b"0123456789", "text/plain"))
+class Root(BaseResource):
+    def __init__(self) -> None:
+        super().__init__()
+        put_child(self, b"file", Data(b"0123456789", "text/plain"))
 
-    def getChild(self, path, request):
+    def getChild(self, path: bytes, request: Request) -> Root:
         return self
 
 
@@ -29,7 +34,7 @@ class SimpleMockServer(BaseMockServer):
         cipher_string: str | None = None,
         tls_min_version: str | None = None,
         tls_max_version: str | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.keyfile = keyfile
         self.certfile = certfile

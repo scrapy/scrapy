@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import logging
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import pytest
-from testfixtures import LogCapture
 from twisted.internet import defer
 
 from scrapy.core.scheduler import BaseScheduler
@@ -12,8 +13,10 @@ from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.request import fingerprint
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 PATHS = ["/a", "/b", "/c"]
 URLS = [urljoin("https://example.org", p) for p in PATHS]
@@ -56,13 +59,15 @@ class PathsSpider(Spider):
 
     def __init__(self, mockserver, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.start_urls = map(mockserver.url, PATHS)
+        self.start_urls = [mockserver.url(path) for path in PATHS]
 
     def parse(self, response):
         return {"path": urlparse_cached(response).path}
 
 
 class InterfaceCheckMixin:
+    scheduler: Any
+
     def test_scheduler_class(self):
         assert isinstance(self.scheduler, BaseScheduler)
         assert issubclass(self.scheduler.__class__, BaseScheduler)
@@ -70,7 +75,7 @@ class InterfaceCheckMixin:
 
 class TestBaseScheduler(InterfaceCheckMixin):
     def setup_method(self):
-        self.scheduler = BaseScheduler()
+        self.scheduler = BaseScheduler()  # type: ignore[abstract]
 
     def test_methods(self):
         assert self.scheduler.open(Spider("foo")) is None
@@ -147,18 +152,19 @@ class TestSimpleScheduler(InterfaceCheckMixin):
 class TestMinimalSchedulerCrawl:
     scheduler_cls = MinimalScheduler
 
-    @inline_callbacks_test
-    def test_crawl(self):
-        with MockServer() as mockserver:
-            settings = {
-                "SCHEDULER": self.scheduler_cls,
-            }
-            with LogCapture() as log:
-                crawler = get_crawler(PathsSpider, settings)
-                yield crawler.crawl(mockserver)
-            for path in PATHS:
-                assert f"{{'path': '{path}'}}" in str(log)
-            assert f"'item_scraped_count': {len(PATHS)}" in str(log)
+    @coroutine_test
+    async def test_crawl(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        settings = {
+            "SCHEDULER": self.scheduler_cls,
+        }
+        with caplog.at_level(logging.DEBUG):
+            crawler = get_crawler(PathsSpider, settings)
+            await crawler.crawl_async(mockserver)
+        for path in PATHS:
+            assert f"{{'path': '{path}'}}" in caplog.text
+        assert f"'item_scraped_count': {len(PATHS)}" in caplog.text
 
 
 class TestSimpleSchedulerCrawl(TestMinimalSchedulerCrawl):

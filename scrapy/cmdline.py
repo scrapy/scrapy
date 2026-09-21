@@ -26,6 +26,7 @@ _P = ParamSpec("_P")
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
+    # the return type is list[tuple[Action | None, str, str | None, str | None]] | None on 3.12+
     def _parse_optional(
         self, arg_string: str
     ) -> tuple[argparse.Action | None, str, str | None] | None:
@@ -66,7 +67,7 @@ def _get_commands_from_entry_points(
     cmds: dict[str, ScrapyCommand] = {}
     for entry_point in entry_points(group=group):
         obj = entry_point.load()
-        if inspect.isclass(obj):
+        if inspect.isclass(obj) and issubclass(obj, ScrapyCommand):
             cmds[entry_point.name] = obj()
         else:
             raise ValueError(f"Invalid entry point {entry_point.name}")
@@ -225,13 +226,11 @@ def _run_command(cmd: ScrapyCommand, args: list[str], opts: argparse.Namespace) 
 def _run_command_profiled(
     cmd: ScrapyCommand, args: list[str], opts: argparse.Namespace
 ) -> None:
-    if opts.profile:
-        sys.stderr.write(f"scrapy: writing cProfile stats to {opts.profile!r}\n")
+    sys.stderr.write(f"scrapy: writing cProfile stats to {opts.profile!r}\n")
     loc = locals()
     p = cProfile.Profile()
     p.runctx("cmd.run(args, opts)", globals(), loc)
-    if opts.profile:
-        p.dump_stats(opts.profile)
+    p.dump_stats(opts.profile)
 
 
 if __name__ == "__main__":

@@ -69,6 +69,10 @@ def fingerprint(
     so they are also ignored by default when calculating the fingerprint.
     If you want to include them, set the keep_fragments argument to True
     (for instance when handling requests with a headless browser).
+
+    keep_fragments is not a substitute for rendering JavaScript to reach
+    content loaded based on the URL fragment; see
+    :ref:`topics-dynamic-content` for that instead.
     """
     processed_include_headers: tuple[bytes, ...] | None = None
     if include_headers:
@@ -174,7 +178,7 @@ def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Req
     return request_cls(**kwargs)
 
 
-def _get_method(obj: Any, name: Any) -> Any:
+def _get_method(obj: Any, name: object) -> Any:
     """Helper function for request_from_dict"""
     name = str(name)
     try:

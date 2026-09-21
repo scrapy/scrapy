@@ -97,7 +97,7 @@ handler documentation.
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
 
-See :ref:`topics-request-response-ref-request-callback-arguments`.
+See :ref:`callback-data`.
 
 How can I simulate a user login in my spider?
 ---------------------------------------------
@@ -118,7 +118,7 @@ My Scrapy crawler has memory leaks. What can I do?
 
 See :ref:`topics-leaks`.
 
-Also, Python has a builtin memory leak issue which is described in
+Also, Python has a built-in memory leak issue which is described in
 :ref:`topics-leaks-without-leaks`.
 
 How can I make Scrapy consume less memory?
@@ -136,12 +136,12 @@ middleware with a :ref:`custom downloader middleware
 <topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
-    instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
-    a complex regular expression.
+    instead of joining the strings in :attr:`~scrapy.Spider.allowed_domains`
+    into a complex regular expression.
 
 -   If you can meet the installation requirements, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
-    :issue:`1908`.
+    :gh:`1908`.
 
 See also `other suggestions at StackOverflow
 <https://stackoverflow.com/q/36440681>`__.
@@ -220,21 +220,15 @@ the :ref:`topics-signals-ref` to know which ones.
 What does the response status code 999 mean?
 --------------------------------------------
 
-999 is a custom response status code used by Yahoo sites to throttle requests.
+999 is a custom response status code used by some sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) in your spider:
+higher) for the affected domains, with the :setting:`DOWNLOAD_SLOTS` setting:
 
 .. code-block:: python
 
-    from scrapy.spiders import CrawlSpider
-
-
-    class MySpider(CrawlSpider):
-        name = "myspider"
-
-        download_delay = 2
-
-        # [ ... rest of the spider code ... ]
+    DOWNLOAD_SLOTS = {
+        "example.com": {"delay": 2},
+    }
 
 Or by setting a global download delay in your project with the
 :setting:`DOWNLOAD_DELAY` setting.
@@ -247,6 +241,10 @@ Yes, but you can also use the Scrapy shell which allows you to quickly analyze
 often, more useful than plain old ``pdb.set_trace()``.
 
 For more info see :ref:`topics-shell-inspect-response`.
+
+You can also :ref:`connect to live crawls <connect-live-crawl>`, which is the
+best way to debug running spiders without adding breakpoints to their code in
+advance.
 
 Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 -------------------------------------------------------------------
@@ -282,8 +280,8 @@ Parsing big feeds with XPath selectors can be problematic since they need to
 build the DOM of the entire feed in memory, and this can be quite slow and
 consume a lot of memory.
 
-In order to avoid parsing all the entire feed at once in memory, you can use
-the :func:`~scrapy.utils.iterators.xmliter_lxml` and
+In order to avoid parsing the entire feed at once in memory, you can use the
+:func:`~scrapy.utils.iterators.xmliter_lxml` and
 :func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
 :class:`~scrapy.spiders.XMLFeedSpider` and
 :class:`~scrapy.spiders.CSVFeedSpider` use.
@@ -298,7 +296,7 @@ Does Scrapy manage cookies automatically?
 Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them
 back on subsequent requests, like any regular web browser does.
 
-For more info see :ref:`topics-request-response` and :ref:`cookies-mw`.
+For more info see :ref:`cookies`.
 
 How can I see the cookies being sent and received from Scrapy?
 --------------------------------------------------------------
@@ -320,8 +318,8 @@ Should I use spider arguments or settings to configure my spider?
 -----------------------------------------------------------------
 
 Both :ref:`spider arguments <spiderargs>` and :ref:`settings <topics-settings>`
-can be used to configure your spider. There is no strict rule that mandates to
-use one or the other, but settings are more suited for parameters that, once
+can be used to configure your spider. There is no strict rule that mandates
+using one or the other, but settings are more suited for parameters that, once
 set, don't change much, while spider arguments are meant to change more often,
 even on each spider run and sometimes are required for the spider to run at all
 (for example, to set the start url of a spider).
@@ -332,8 +330,8 @@ section of the site (which varies each time). In that case, the credentials to
 log in would be settings, while the url of the section to scrape would be a
 spider argument.
 
-I'm scraping a XML document and my XPath selector doesn't return any items
---------------------------------------------------------------------------
+I'm scraping an XML document and my XPath selector doesn't return any items
+---------------------------------------------------------------------------
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
@@ -425,7 +423,7 @@ Running ``runspider`` I get ``error: No spider found in file: <filename>``
 This may happen if your Scrapy project has a spider module with a name that
 conflicts with the name of one of the `Python standard library modules`_, such
 as ``csv.py`` or ``os.py``, or any `Python package`_ that you have installed.
-See :issue:`2680`.
+See :gh:`2680`.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905

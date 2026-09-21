@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import _load_objects
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
 
@@ -94,7 +94,6 @@ def get_retry_request(
     retry-related job stats
     """
     settings = spider.crawler.settings
-    assert spider.crawler.stats
     stats = spider.crawler.stats
     retry_times = request.meta.get("retry_times", 0) + 1
     if max_retry_times is None:
@@ -130,6 +129,7 @@ def get_retry_request(
             raise ValueError(f"Invalid give-up log level: {give_up_log_level!r}")
         give_up_log_level = level
     stats.inc_value(f"{stats_base_key}/max_reached")
+    assert give_up_log_level is not None
     logger.log(
         give_up_log_level,
         "Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",
@@ -149,10 +149,7 @@ class RetryMiddleware:
         self.retry_http_codes = {int(x) for x in settings.getlist("RETRY_HTTP_CODES")}
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
         self.give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
-        self.exceptions_to_retry = tuple(
-            load_object(x) if isinstance(x, str) else x
-            for x in settings.getlist("RETRY_EXCEPTIONS")
-        )
+        self.exceptions_to_retry = _load_objects(settings.getlist("RETRY_EXCEPTIONS"))
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

@@ -21,7 +21,9 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: 2.13
 
--   :class:`~scrapy.Request` callbacks.
+-   :class:`~scrapy.Request` :ref:`callbacks <callbacks>`, which may
+    also be defined as :term:`asynchronous generators <asynchronous
+    generator>`.
 
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
@@ -58,7 +60,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 Using Deferred-based APIs
 =========================
 
-In addition to native coroutine APIs Scrapy has some APIs that return a
+In addition to native coroutine APIs, Scrapy has some APIs that return a
 :class:`~twisted.internet.defer.Deferred` object or take a user-supplied
 function that returns a :class:`~twisted.internet.defer.Deferred` object. These
 APIs are also asynchronous but don't yet support native ``async def`` syntax.
@@ -119,7 +121,7 @@ return coroutines are listed in :ref:`coroutine-support`):
 
     - ``stat_file()``
 
-In most cases you can use these APIs in code that otherwise uses coroutines, by
+In most cases, you can use these APIs in code that otherwise uses coroutines by
 wrapping a :class:`~twisted.internet.defer.Deferred` object into a
 :class:`~asyncio.Future` object or vice versa. See :ref:`asyncio-await-dfd` for
 more information about this.
@@ -172,8 +174,8 @@ becomes:
 
 Coroutines may be used to call asynchronous code. This includes other
 coroutines, functions that return Deferreds and functions that return
-:term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
-This means you can use many useful Python libraries providing such code:
+:term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`. This
+means you can use many useful Python libraries that provide such code:
 
 .. skip: next
 .. code-block:: python
@@ -195,8 +197,8 @@ This means you can use many useful Python libraries providing such code:
             # ... use response and additional_data to yield items and requests
 
 .. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
-          :mod:`asyncio` loop and to use them you need to
-          :doc:`enable asyncio support in Scrapy<asyncio>`.
+    :mod:`asyncio` loop, and to use them you need to :doc:`enable asyncio
+    support in Scrapy<asyncio>`.
 
 .. note:: If you want to ``await`` on Deferreds while using the asyncio reactor,
           you need to :ref:`wrap them<asyncio-await-dfd>`.

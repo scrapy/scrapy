@@ -39,11 +39,23 @@ logger = logging.getLogger(__name__)
 
 
 class DownloadHandlerProtocol(Protocol):
+    """Interface that :ref:`download handlers <topics-download-handlers>` must
+    implement.
+
+    Besides implementing this protocol, the contract of a download handler
+    includes **never** calling :meth:`crawler.engine.download_async()
+    <scrapy.core.engine.ExecutionEngine.download_async>`.
+    """
+
     lazy: bool
+    """Whether to delay instantiation of the handler; see :ref:`lazy
+    <lazy-download-handlers>`."""
 
-    async def download_request(self, request: Request) -> Response: ...
+    async def download_request(self, request: Request) -> Response:
+        """Download *request* and return a response."""
 
-    async def close(self) -> None: ...
+    async def close(self) -> None:
+        """Clean up any resources used by the handler."""
 
 
 class DownloadHandlers:
@@ -108,10 +120,9 @@ class DownloadHandlers:
             self._notconfigured[scheme] = str(ex)
             return None
         except Exception as ex:
-            logger.error(
+            logger.exception(
                 'Loading "%(clspath)s" for scheme "%(scheme)s"',
                 {"clspath": path, "scheme": scheme},
-                exc_info=True,
                 extra={"crawler": self._crawler},
             )
             self._notconfigured[scheme] = str(ex)

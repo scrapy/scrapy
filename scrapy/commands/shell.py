@@ -14,7 +14,6 @@ from scrapy.commands import ScrapyCommand
 from scrapy.crawler import AsyncCrawlerProcess, Crawler
 from scrapy.http import Request
 from scrapy.shell import Shell
-from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
@@ -27,8 +26,9 @@ if TYPE_CHECKING:
 class Command(ScrapyCommand):
     default_settings: ClassVar[dict[str, Any]] = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
-        "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,
+        "TELNETCONSOLE_ENABLED": False,
+        "REMOTE_CONTROL_ENABLED": False,
     }
 
     def syntax(self) -> str:
@@ -95,24 +95,17 @@ class Command(ScrapyCommand):
         shell.start(url=url, redirect=not opts.no_redirect)
 
     def _init_with_reactor(self, crawler: Crawler) -> None:
-        # Create the engine and run start_async() in the main thread
+        # Create the engine in the main thread
         crawler.engine = crawler._create_engine()
-        _schedule_coro(crawler.engine.start_async(_start_request_processing=False))
         self._start_crawler_thread()
 
     def _init_without_reactor(self, crawler: Crawler) -> None:
-        # Create the engine and run start_async() in the event loop thread
+        # Create the engine in the event loop thread
         loop = self._get_reactorless_loop()
         self._start_crawler_thread()
 
         async def _init_engine() -> None:
-            # We may need to wait until some parts of start_async() have
-            # finished, which may need a special event in the engine and may
-            # wait until https://github.com/scrapy/scrapy/issues/6916
             crawler.engine = crawler._create_engine()
-            loop.create_task(
-                crawler.engine.start_async(_start_request_processing=False)
-            )
 
         future = asyncio.run_coroutine_threadsafe(_init_engine(), loop)
         future.result()
