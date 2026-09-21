@@ -109,6 +109,24 @@ class TestFTPBase(ABC):
         assert r.body == b"['550 nonexistent.txt: No such file or directory.']"
 
     @deferred_f_from_coro_f
+    async def test_ftp_list(self, server_url: str, dh: FTPDownloadHandler) -> None:
+        request = Request(url=server_url, meta=self.req_meta)
+        r = await dh.download_request(request)
+        assert isinstance(r, TextResponse)
+        assert r.status == 200
+        assert set(r.text.splitlines()) == {filename for filename, _ in self.test_files}
+
+    @deferred_f_from_coro_f
+    async def test_ftp_list_nonexistent(
+        self, server_url: str, dh: FTPDownloadHandler
+    ) -> None:
+        request = Request(url=server_url + "nonexistent/", meta=self.req_meta)
+        r = await dh.download_request(request)
+        assert isinstance(r, TextResponse)
+        assert r.status == 200
+        assert r.text == ""
+
+    @deferred_f_from_coro_f
     async def test_ftp_local_filename(
         self, server_url: str, dh: FTPDownloadHandler
     ) -> None:
