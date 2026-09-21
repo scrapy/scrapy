@@ -75,12 +75,14 @@ class SyncStartSpider(Spider):
 
 class TestMain:
     @coroutine_test
-    async def test_sleep(self):
+    async def test_sleep(self) -> None:
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on
         the scheduler (returning no requests while also returning True from
         the has_pending_requests() method) should cause the spider to miss the
         processing of any later requests."""
-        seconds = 2
+        # Long enough to span several engine heartbeats, which are what
+        # wake the engine up while the scheduler reports no requests.
+        seconds = 0.5
 
         class TestSpider(Spider):
             name = "test"

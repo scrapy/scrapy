@@ -3,11 +3,13 @@ from __future__ import annotations
 import asyncio
 import inspect
 import platform
+import subprocess
 import sys
 from typing import TYPE_CHECKING
 
 import pytest
 
+from scrapy.utils.test import get_testenv
 from tests.spiders import ExceptionSpider, NoRequestsSpider
 from tests.utils.cmdline import proc
 
@@ -155,10 +157,45 @@ class MySpider(scrapy.Spider):
         log = self.get_log(tmp_path, "", name="myspider.txt")
         assert "Unable to load" in log
 
+    @pytest.mark.skipif(
+        platform.system() == "Windows", reason="process substitution requires bash"
+    )
+    def test_runspider_fd(self) -> None:
+        command = (
+            f"{sys.executable} -m scrapy.cmdline runspider"
+            f" <(cat <<'EOF'\n{self.debug_log_spider}\nEOF\n)"
+        )
+        p = subprocess.run(
+            ["bash", "-c", command],
+            check=False,
+            capture_output=True,
+            encoding="utf-8",
+            timeout=15,
+            env=get_testenv(),
+        )
+        assert p.returncode == 0, p.stderr
+        assert "DEBUG: It Works!" in p.stderr
+
     def test_start_errors(self, tmp_path: Path) -> None:
         log = self.get_log(tmp_path, self.badspider, name="badspider.py")
         assert "start" in log
         assert "badspider.py" in log, log
+
+    def test_errorcount_exit_code(self, tmp_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {'CLOSESPIDER_ERRORCOUNT': 1}
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.runspider(tmp_path, spider_code)
+        assert "Spider closed (closespider_errorcount)" in err
+        assert returncode != 0
 
     def test_asyncio_enabled_true(self, tmp_path: Path) -> None:
         log = self.get_log(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -39,7 +39,7 @@ class TestCoreStatsExtension:
         crawler: Crawler,
         spider: Spider,
     ) -> None:
-        fixed_datetime = datetime(2019, 12, 1, 11, 38)
+        fixed_datetime = datetime(2019, 12, 1, 11, 38, tzinfo=timezone.utc)
         mock_datetime.now = mock.Mock(return_value=fixed_datetime)
         crawler.stats = StatsCollector(crawler)
         ext = build_from_crawler(CoreStats, crawler)
@@ -179,13 +179,13 @@ class TestStatsCollector:
     @coroutine_test
     async def test_deprecated_spider_arg_custom_collector_subclass(self) -> None:
         class CustomStatsCollector(StatsCollector):
-            def open_spider(self, spider):  # pylint: disable=signature-differs
+            def open_spider(self, spider):  # type: ignore[override]  # pylint: disable=signature-differs
                 super().open_spider(spider)
 
             def inc_value(self, key, count=1, start=0, spider=None):  # pylint: disable=useless-parent-delegation
                 super().inc_value(key, count, start, spider)
 
-            def close_spider(self, spider, reason):  # pylint: disable=signature-differs
+            def close_spider(self, spider, reason):  # type: ignore[override]  # pylint: disable=signature-differs
                 super().close_spider(spider, reason)
 
         crawler = get_crawler(SimpleSpider, {"STATS_CLASS": CustomStatsCollector})

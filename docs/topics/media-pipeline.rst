@@ -14,15 +14,15 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 
 Both pipelines implement these features:
 
-* Avoid re-downloading media that was downloaded recently
-* Specifying where to store the media (filesystem directory, FTP server, Amazon S3 bucket,
-  Google Cloud Storage bucket)
+* Avoid re-downloading media that have been downloaded recently
+* Specify where to store the media (filesystem directory, FTP server, Amazon S3
+  bucket, Google Cloud Storage bucket)
 
 The Images Pipeline has a few extra functions for processing images:
 
-* Convert all downloaded images to a common format (JPG) and mode (RGB)
+* Convert all downloaded images to a common format (JPEG) and mode (RGB)
 * Thumbnail generation
-* Check images width/height to make sure they meet a minimum constraint
+* Check images' width/height to make sure they meet a minimum constraint
 
 The pipelines also keep an internal queue of those media URLs which are currently
 being scheduled for download, and connect those responses that arrive containing
@@ -49,9 +49,9 @@ this:
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
    about the downloaded files, such as the downloaded path, the original
-   scraped url (taken from the ``file_urls`` field), the file checksum and the file status.
-   The files in the list of the ``files`` field will retain the same order of
-   the original ``file_urls`` field. If some file failed downloading, an
+   scraped URL (taken from the ``file_urls`` field), the file checksum and the
+   file status. The files in the ``files`` field will retain the same order as
+   in the original ``file_urls`` field. If some file failed downloading, an
    error will be logged and the file won't be present in the ``files`` field.
 
 
@@ -209,6 +209,36 @@ the resulting path. A path that depends on the response can never match that
 check, and :setting:`FILES_EXPIRES` set to ``0`` disables it, at the cost of
 downloading every file on every run.
 
+.. _media-request-headers:
+
+Setting request headers
+-----------------------
+
+Media requests are built from the item, not from the response that yielded
+it, so features like :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware`
+do not apply to them. To send a header such as ``Referer``, store the value
+on the item in your spider, and read it back from the item in
+``get_media_requests`` of your custom media pipeline:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+    from scrapy.pipelines.files import FilesPipeline
+
+
+    class MySpider(Spider):
+        def parse(self, response):
+            yield {
+                "file_urls": response.css("a.file::attr(href)").getall(),
+                "referrer": response.url,
+            }
+
+
+    class MyFilesPipeline(FilesPipeline):
+        def get_media_requests(self, item, info):
+            for file_url in item["file_urls"]:
+                yield Request(file_url, headers={"Referer": item["referrer"]})
+
 .. _topics-supported-storage:
 
 Supported Storage
@@ -285,8 +315,8 @@ policy:
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
-`Zenko CloudServer`_. All you need to do is set endpoint option in you Scrapy
-settings:
+`Zenko CloudServer`_. All you need to do is set the endpoint option in your
+Scrapy settings:
 
 .. code-block:: python
 
@@ -432,15 +462,17 @@ specifies the delay in number of days:
     # 30 days of delay for images expiration
     IMAGES_EXPIRES = 30
 
-The default value for both settings is 90 days.
+The default value for both settings is 90 days. A negative value disables
+expiration, i.e. files are never re-downloaded once fetched.
 
-If you have pipeline that subclasses FilesPipeline and you'd like to have
-different setting for it you can set setting keys preceded by uppercase
-class name. E.g. given pipeline class called MyPipeline you can set setting key:
+If you have a pipeline that subclasses FilesPipeline and you'd like to have a
+different setting for it, you can set setting keys preceded by the uppercase
+class name. For example, given a pipeline class called MyPipeline you can set
+the setting key:
 
     MYPIPELINE_FILES_EXPIRES = 180
 
-and pipeline class MyPipeline will have expiration time set to 180.
+and the pipeline class MyPipeline will have an expiration time set to 180.
 
 The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.
@@ -537,7 +569,6 @@ Extending the Media Pipelines
 =============================
 
 .. module:: scrapy.pipelines.files
-   :synopsis: Files Pipeline
 
 See here the methods that you can override in your custom Files Pipeline:
 
@@ -594,6 +625,8 @@ See here the methods that you can override in your custom Files Pipeline:
              adapter = ItemAdapter(item)
              for file_url in adapter["file_urls"]:
                  yield scrapy.Request(file_url)
+
+      You can also use it to set request headers, see :ref:`media-request-headers`.
 
       Those requests will be processed by the pipeline and, when they have finished
       downloading, the results will be sent to the
@@ -684,7 +717,6 @@ See here the methods that you can override in your custom Files Pipeline:
 
 
 .. module:: scrapy.pipelines.images
-   :synopsis: Images Pipeline
 
 See here the methods that you can override in your custom Images Pipeline:
 
@@ -766,6 +798,49 @@ See here the methods that you can override in your custom Images Pipeline:
       but using a different field names for storing image downloading results.
 
       By default, the :meth:`item_completed` method returns the item.
+
+
+.. _media-pipeline-failed-downloads:
+
+Accessing the response of a failed download
+===========================================
+
+When a download fails, :meth:`~item_completed` receives it as a
+:exc:`~twisted.python.failure.Failure` whose ``value`` is the exception
+raised from :meth:`~media_downloaded`. For a non-2xx response, that
+exception is a :exc:`~scrapy.pipelines.media.FileException` built from just
+a message, without a reference to the response. To access the response, for
+example to record its ``status`` on the item, override
+:meth:`~media_downloaded` to attach it to a custom exception:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline
+    from scrapy.pipelines.media import FileException
+
+
+    class ResponseFileException(FileException):
+        def __init__(self, response):
+            super().__init__(f"download-error ({response.status})")
+            self.response = response
+
+
+    class MyFilesPipeline(FilesPipeline):
+        async def media_downloaded(self, response, request, info, *, item=None):
+            try:
+                return await super().media_downloaded(response, request, info, item=item)
+            except FileException:
+                raise ResponseFileException(response)
+
+        def item_completed(self, results, item, info):
+            errors = [
+                value.value.response.status
+                for ok, value in results
+                if not ok and value.check(ResponseFileException)
+            ]
+            if errors:
+                item["download_errors"] = errors
+            return super().item_completed(results, item, info)
 
 
 .. _media-pipeline-example:

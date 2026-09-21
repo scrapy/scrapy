@@ -59,7 +59,7 @@ class CloseSpider(Exception):
     """Raised from a :ref:`spider callback <topics-spiders>`, or while the
     spider is starting, to request the spider to be closed/stopped.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
        Added support for raising it while the spider is starting.
 
     *reason* is a string with the reason for closing.
@@ -91,7 +91,7 @@ class StopDownload(Exception):
       exception, which is in turn stored as the ``value`` attribute of the
       received :class:`~twisted.python.failure.Failure` object. This means that
       in an errback defined as ``def errback(self, failure)``, the response can
-      be accessed though ``failure.value.response``.
+      be accessed through ``failure.value.response``.
 
     * If ``fail=False``, the request callback is called instead.
 

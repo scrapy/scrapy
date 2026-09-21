@@ -19,6 +19,7 @@ from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
+from uuid import uuid4
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
@@ -27,11 +28,11 @@ from zope.interface import Interface
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
+from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
 from scrapy.utils.boto import _get_max_pool_connections
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
-from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
@@ -311,13 +312,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         assert u.hostname
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
-
-        if feed_options and feed_options.get("overwrite", True) is False:
-            logger.warning(
-                "GCS does not support appending to files. To "
-                "suppress this warning, remove the overwrite "
-                "option from your FEEDS setting or set it to True."
-            )
+        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
     @classmethod
     def from_crawler(
@@ -341,8 +336,24 @@ class GCSFeedStorage(BlockingFeedStorage):
 
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
-            blob = bucket.blob(self.blob_name)
-            blob.upload_from_file(file, predefined_acl=self.acl)
+            blob = None if self.overwrite else bucket.get_blob(self.blob_name)
+            if blob is None:
+                bucket.blob(self.blob_name).upload_from_file(
+                    file, predefined_acl=self.acl
+                )
+                return
+            # Appending uploads the new data as a separate object and composes
+            # it with the existing one, leaving the data already stored
+            # untouched. Composition resolves its sources by name, so it always
+            # appends to the latest version of the blob.
+            part = bucket.blob(f"{self.blob_name}.{uuid4().hex}.part")
+            part.upload_from_file(file, predefined_acl=self.acl)
+            try:
+                blob.compose([blob, part], client=client)
+            finally:
+                part.delete(client=client)
+            if self.acl:
+                blob.acl.save_predefined(self.acl, client=client)
         finally:
             file.close()
 
@@ -485,7 +496,7 @@ class FeedExporter:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
-        self.feeds = {}
+        self.feeds: dict[str, dict[str, Any]] = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
         self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
@@ -506,7 +517,7 @@ class FeedExporter:
             uri = str(uri.absolute()) if isinstance(uri, Path) else str(uri)
             feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
-                feed_options, self.settings
+                feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
@@ -520,7 +531,7 @@ class FeedExporter:
                 else str(settings_uri)
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
-                feed_options, self.settings
+                feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
 
@@ -616,10 +627,9 @@ class FeedExporter:
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
-            logger.error(
+            logger.exception(
                 "Error storing %s",
                 logmsg,
-                exc_info=True,
                 extra={"spider": spider},
             )
             self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
@@ -712,7 +722,13 @@ class FeedExporter:
     def _exporter_supported(self, format_: str) -> bool:
         if format_ in self.exporters:
             return True
-        logger.error("Unknown feed format: %(format)s", {"format": format_})
+        if format_:
+            logger.error("Unknown feed format: %(format)s", {"format": format_})
+        else:
+            logger.error(
+                "Feed format not set and it could not be inferred from the "
+                "feed URI; set it explicitly with the 'format' key"
+            )
         return False
 
     def _settings_are_valid(self) -> bool:

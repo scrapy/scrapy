@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import sys
 import warnings
 from asyncio import Future
 from collections import deque
@@ -86,11 +87,39 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
     return d
 
 
-async def _defer_sleep_async() -> None:
-    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
-    before attending pending delayed calls, so do not set delay to zero.
+async def _process_pending_io() -> None:
+    """Yield control until the event loop has gone through its readers and writers.
+
+    Yielding twice is what makes that guarantee: the first yield can resume
+    before the callbacks of the file descriptors that the poll found ready, and
+    only the second one is certain to resume after them.
     """
-    await sleep(_DEFER_DELAY)
+    await sleep(0)
+    await sleep(0)
+
+
+async def _process_pending_io_before_callback() -> None:
+    """Same as :func:`_process_pending_io`, for use right before a spider
+    callback, where a real delay is needed on Windows.
+
+    Console control events, which is what Ctrl-C and Ctrl-Break send, are
+    delivered on a separate thread there, and their Python-level handler only
+    runs once the main thread reaches a bytecode boundary, which it cannot do
+    while parked in the blocking wait of the reactor or the event loop, as
+    nothing interrupts that wait. So a signal sent during a slow callback is
+    only handled at the next wake-up, e.g. the engine heartbeat 5 seconds
+    later, which is late enough to miss a shutdown entirely. Yielding for a
+    moment keeps a timed call pending, which bounds that wait, and by the time
+    it elapses a shutdown is under way and keeps the loop busy on its own.
+
+    A signal wake-up socket on Windows would remove the need for this:
+    https://github.com/python/cpython/issues/67246
+    https://github.com/python/cpython/issues/86849
+    """
+    if sys.platform == "win32":
+        await sleep(_DEFER_DELAY)
+        return
+    await _process_pending_io()
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover
@@ -166,7 +195,7 @@ def parallel(
     return DeferredList([coop.coiterate(work) for _ in range(count)])
 
 
-class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
+class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
     """A class that wraps an async iterable into a normal iterator suitable
     for using in Cooperator.coiterate(). As it's only needed for parallel_async(),
     it calls the callable directly in the callback, instead of providing a more
@@ -219,7 +248,7 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
     ):
-        self.aiterator: AsyncIterator[_T] = aiterable.__aiter__()
+        self.aiterator: AsyncIterator[_T] = aiter(aiterable)
         self.callable: Callable[Concatenate[_T, _P], Deferred[Any] | None] = callable_
         self.callable_args: tuple[Any, ...] = callable_args
         self.callable_kwargs: dict[str, Any] = callable_kwargs

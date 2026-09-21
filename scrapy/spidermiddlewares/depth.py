@@ -42,7 +42,7 @@ class DepthMiddleware(BaseSpiderMiddleware):
     depth_reset
     -----------
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.18.0
 
     :attr:`~scrapy.Request.meta` key that, set to ``True``, gives a request
     depth 0 instead of the depth of its source response plus 1, e.g. to keep

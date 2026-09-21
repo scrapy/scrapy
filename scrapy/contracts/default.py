@@ -19,7 +19,8 @@ class UrlContract(Contract):
     conditions of a callback.
 
     This contract is mandatory: callbacks lacking it are ignored when running
-    the checks.
+    the checks. A callback docstring may repeat it, once per batch, to check
+    the callback against more than one sample URL; see :ref:`topics-contracts`.
 
     .. code-block:: none
 
@@ -27,6 +28,7 @@ class UrlContract(Contract):
     """
 
     name = "url"
+    generates_request = True
 
     def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
         args["url"] = self.args[0]
@@ -66,6 +68,84 @@ class MetadataContract(Contract):
 
     def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
         args["meta"] = json.loads(" ".join(self.args))
+        return args
+
+
+class MethodContract(Contract):
+    """Sets (``@method``) the :attr:`method <scrapy.Request.method>` of the
+    sample request.
+
+    .. versionadded:: 2.19.0
+
+    .. code-block:: none
+
+        @method POST
+    """
+
+    name = "method"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["method"] = self.args[0]
+        return args
+
+
+class BodyContract(Contract):
+    """Sets (``@body``) the :attr:`body <scrapy.Request.body>` of the sample
+    request.
+
+    .. versionadded:: 2.19.0
+
+    .. code-block:: none
+
+        @body field1=value1&field2=value2
+    """
+
+    name = "body"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["body"] = " ".join(self.args)
+        return args
+
+
+class HeaderContract(Contract):
+    """Sets (``@header``) a header of the sample request. Use one line per
+    header.
+
+    .. versionadded:: 2.19.0
+
+    .. code-block:: none
+
+        @header name value
+    """
+
+    name = "header"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["headers"] = {
+            **(args.get("headers") or {}),
+            self.args[0]: " ".join(self.args[1:]),
+        }
+        return args
+
+
+class CookieContract(Contract):
+    """Sets (``@cookie``) a cookie of the sample request. Use one line per
+    cookie.
+
+    .. versionadded:: 2.19.0
+
+    .. code-block:: none
+
+        @cookie name value
+    """
+
+    name = "cookie"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["cookies"] = {
+            **(args.get("cookies") or {}),
+            self.args[0]: " ".join(self.args[1:]),
+        }
         return args
 
 
