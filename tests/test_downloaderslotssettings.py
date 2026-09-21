@@ -16,7 +16,7 @@ from tests.utils.decorators import coroutine_test, inline_callbacks_test
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
     name = "downloader_slots"
 
-    custom_settings = {
+    custom_settings: dict[str, Any] = {
         "DOWNLOAD_DELAY": 1,
         "DOWNLOAD_DELAY_JITTER": 0,
         "DOWNLOAD_SLOTS": {
