@@ -131,12 +131,11 @@ sent in this order:
 #. :signal:`spider_closed`
 #. :signal:`engine_stopped`
 
-The :ref:`Scrapy shell <topics-shell>` is different: its engine starts before a
-spider is opened, and a spider is only opened when the first request is
-fetched. Therefore, do not rely on a fixed order between
-:signal:`engine_started` and :signal:`spider_opened`. When both closing signals
-are sent, however, :signal:`spider_closed` and all its asynchronous handlers
-finish before :signal:`engine_stopped` is sent.
+The :ref:`Scrapy shell <topics-shell>` never starts or stops the engine, so it
+never sends :signal:`engine_started` or :signal:`engine_stopped`. It only
+sends :signal:`spider_opened`, once the first request is fetched. When both
+closing signals are sent, :signal:`spider_closed` and all its asynchronous
+handlers finish before :signal:`engine_stopped` is sent.
 
 engine_started
 ~~~~~~~~~~~~~~
