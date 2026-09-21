@@ -43,7 +43,11 @@ def no_proj_path(tmp_path: Path) -> Generator[Path]:
     prev_dir = Path.cwd()
     try:
         os.chdir(tmp_path)
-        with set_environ(HOME=str(tmp_path), XDG_CONFIG_HOME=str(tmp_path)):
+        with set_environ(
+            HOME=str(tmp_path),
+            USERPROFILE=str(tmp_path),
+            XDG_CONFIG_HOME=str(tmp_path),
+        ):
             yield tmp_path
     finally:
         os.chdir(prev_dir)

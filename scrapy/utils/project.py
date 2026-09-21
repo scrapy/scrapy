@@ -130,9 +130,11 @@ def get_project_settings() -> Settings:
                 if from_environ
                 else closest_config() or "a global scrapy.cfg file"
             )
-            exc.msg = (
+            msg = (
                 f"{exc.msg} (settings module {settings_module_path!r} set by {source})"
             )
+            exc.msg = msg
+            exc.args = (msg, *exc.args[1:])
             raise
 
     valid_envvars = {
