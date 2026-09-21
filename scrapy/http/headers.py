@@ -148,12 +148,13 @@ class Headers(dict):  # type: ignore[type-arg]
 
     def to_unicode_dict(self) -> CaseInsensitiveDict:
         """Return headers as a CaseInsensitiveDict with str keys
-        and str values. Multiple values are joined with ','.
+        and str values. Multiple values are joined with ','. Bytes that
+        cannot be decoded are replaced with U+FFFD.
         """
         return CaseInsensitiveDict(
             (
-                to_unicode(key, encoding=self.encoding),
-                to_unicode(b",".join(value), encoding=self.encoding),
+                to_unicode(key, encoding=self.encoding, errors="replace"),
+                to_unicode(b",".join(value), encoding=self.encoding, errors="replace"),
             )
             for key, value in self.items()
         )
@@ -162,9 +163,13 @@ class Headers(dict):  # type: ignore[type-arg]
         """Return headers as a list of ``(key, value)`` tuples.
 
         Multiple values are represented as multiple tuples with the same key.
+        Bytes that cannot be decoded are replaced with U+FFFD.
         """
         return [
-            (key.decode(self.encoding), value.decode(self.encoding))
+            (
+                key.decode(self.encoding, errors="replace"),
+                value.decode(self.encoding, errors="replace"),
+            )
             for key, values in self.items()
             for value in values
         ]
