@@ -110,7 +110,6 @@ pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 strict = true
-extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
 ]
@@ -119,6 +118,7 @@ untyped_calls_exclude = [
 module = "tests.*"
 allow_untyped_defs = true
 allow_incomplete_defs = true # 59 errors
+extra_checks = false # weird addErrback() errors with untyped log.err
 
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
@@ -353,6 +353,12 @@ extend-select = [
     "COM",
     # pydocstyle
     "D",
+    # pycodestyle
+    "E4",
+    "E7",
+    "E9",
+    # Pyflakes
+    "F",
     # flake8-future-annotations
     "FA",
     # flynt
@@ -407,8 +413,8 @@ extend-select = [
     "YTT",
 ]
 ignore = [
-    # Ones we want to ignore
-
+    # Do not catch blind exception
+    "BLE001",
     # Trailing comma missing
     "COM812",
     # Missing docstring in public module
@@ -449,6 +455,8 @@ ignore = [
     "PLR0911",
     # Too many arguments in function definition
     "PLR0913",
+    # Too many positional arguments
+    "PLR0917",
     # Magic value used in comparison
     "PLR2004",
     # String contains ambiguous {}.
@@ -465,6 +473,8 @@ ignore = [
     "SIM115",
     # Yoda condition detected
     "SIM300",
+    # Prefer `TypeError` exception for invalid type
+    "TRY004",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -516,4 +526,4 @@ split-on-trailing-comma = false
 convention = "pep257"
 
 [tool.sphinx-scrapy]
-python-version = "3.14"  # Keep in sync with .github/workflows/checks.yml.
+python-version = "3.14"  # Keep in sync with .github/workflows/ci.yml.

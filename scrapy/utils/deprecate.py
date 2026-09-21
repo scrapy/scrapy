@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 _WRAPPER_MODULES = frozenset({__name__, _deprecated.__module__})
 
 
-def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> None:
+def attribute(obj: object, oldattr: str, newattr: str, version: str = "0.12") -> None:
     cname = obj.__class__.__name__
     warnings.warn(
         f"{cname}.{oldattr} attribute is deprecated and will be no longer supported "

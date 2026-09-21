@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, cast, overload
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
@@ -40,7 +40,7 @@ def iterate_spider_output(
     result: Any,
 ) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[_T]:
     if inspect.isasyncgen(result):
-        return result
+        return cast("AsyncGenerator[_T]", result)
     d: Deferred[_T] = deferred_from_coro(result)
     if inspect.iscoroutine(result):
         return d.addCallback(iterate_spider_output)
