@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import os
 from importlib.util import find_spec
 from pathlib import Path
@@ -16,7 +17,7 @@ from tests.mockserver.http import MockServer
 from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Generator, Iterator
 
 
 def _py_files(folder):
@@ -79,6 +80,31 @@ def fast_engine_heartbeat(monkeypatch: pytest.MonkeyPatch) -> None:
     pay the whole interval.
     """
     monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.1)
+
+
+@pytest.fixture(autouse=True)
+def _fail_on_unclosed_aiohttp_session(
+    caplog: pytest.LogCaptureFixture,
+) -> Iterator[None]:
+    """Fail the test that leaks an aiohttp ``ClientSession`` instead of a
+    later, unrelated one.
+
+    ``ClientSession.__del__()`` reports an unclosed session to the asyncio
+    logger, not through the warnings module, so it survives regardless of
+    which test happens to be running when the garbage collector gets to it.
+    Under the ``none`` reactor, any test that downloads over HTTP or HTTPS
+    can end up going through :class:`~scrapy.core.downloader.handlers.
+    _aiohttp.AiohttpDownloadHandler`, not only the tests that target it
+    directly, so this runs for every test rather than a single module.
+    """
+    yield
+    gc.collect()
+    unclosed = [
+        record.message
+        for record in caplog.records
+        if record.name == "asyncio" and "Unclosed" in record.message
+    ]
+    assert not unclosed
 
 
 @pytest.fixture(scope="session")
