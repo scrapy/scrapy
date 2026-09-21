@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -15,11 +16,10 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils import OneShotLoop
-from tests.utils.cmdline import proc
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from tests.mockserver.http import MockServer
+    from collections.abc import Coroutine
 
 # MemoryUsage relies on the stdlib 'resource' module (not available on Windows)
 pytestmark = pytest.mark.skipif(
@@ -64,19 +64,25 @@ def test_memusage_disabled() -> None:
         build_from_crawler(MemoryUsage, get_crawler(settings_dict=settings))
 
 
-def test_memusage_limit_stops_crawler_without_spider(mockserver: MockServer) -> None:
-    # The Scrapy shell starts the engine without opening a spider, so the
-    # whole crawler is stopped instead of a spider being closed.
-    _, out, err = proc(
-        "shell",
-        mockserver.url("/text"),
-        "-c",
-        "response.status",
-        "--set",
-        "MEMUSAGE_LIMIT_MB=1",
-    )
-    assert "Memory usage exceeded 1MiB" in err
-    assert "200" in out
+def test_memusage_limit_stops_crawler_without_spider(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When the limit is exceeded while no spider is open (e.g. it was
+    already closed), the whole crawler is stopped instead."""
+    crawler = get_crawler(settings_dict={"MEMUSAGE_LIMIT_MB": 1})
+    crawler.engine = MagicMock(spider=None)
+    crawler.stop_async = AsyncMock()  # type: ignore[method-assign]
+    scheduled: list[Coroutine[Any, Any, None]] = []
+    monkeypatch.setattr(memusage_mod, "_schedule_coro", scheduled.append)
+    monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda _: 2 * MB)
+    ext = build_from_crawler(MemoryUsage, crawler)
+
+    ext._check_limit()
+
+    assert crawler.stats.get_value("memusage/limit_reached") == 1
+    crawler.stop_async.assert_called_once_with()
+    for coro in scheduled:
+        coro.close()
 
 
 @coroutine_test

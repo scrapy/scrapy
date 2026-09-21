@@ -496,7 +496,7 @@ class FeedExporter:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
-        self.feeds = {}
+        self.feeds: dict[str, dict[str, Any]] = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
         self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
@@ -627,10 +627,9 @@ class FeedExporter:
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
-            logger.error(
+            logger.exception(
                 "Error storing %s",
                 logmsg,
-                exc_info=True,
                 extra={"spider": spider},
             )
             self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
