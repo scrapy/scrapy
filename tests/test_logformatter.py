@@ -255,6 +255,7 @@ class DropSomeItemsPipeline:
             self.drop = False
             raise DropItem("Ignoring item")
         self.drop = True
+        return item
 
 
 class TestShowOrSkipMessages:
