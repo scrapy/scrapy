@@ -10,7 +10,10 @@ import warnings
 from typing import TYPE_CHECKING, TypeAlias
 from urllib.parse import ParseResult, urlparse, urlunparse
 
+import w3lib.url
 from w3lib.url import any_to_uri, parse_url
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -57,15 +60,23 @@ def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
 
+def _add_http_if_no_scheme(url: str) -> str:
+    if not re.match(r"^\w+://", url, flags=re.IGNORECASE):
+        scheme = "http:" if urlparse(url).netloc else "http://"
+        url = scheme + url
+    return url
+
+
 def add_http_if_no_scheme(url: str) -> str:
     """Add http as the default scheme if it is missing from the url."""
-    match = re.match(r"^\w+://", url, flags=re.IGNORECASE)
-    if not match:
-        parts = urlparse(url)
-        scheme = "http:" if parts.netloc else "http://"
-        url = scheme + url
-
-    return url
+    if hasattr(w3lib.url, "add_http_if_no_scheme"):
+        warnings.warn(
+            "scrapy.utils.url.add_http_if_no_scheme() is deprecated, use "
+            "w3lib.url.add_http_if_no_scheme() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+    return _add_http_if_no_scheme(url)
 
 
 def _is_posix_path(string: str) -> bool:
@@ -115,7 +126,7 @@ def guess_scheme(url: str) -> str:
     http:// otherwise."""
     if _is_filesystem_path(url):
         return any_to_uri(url)
-    return add_http_if_no_scheme(url)
+    return _add_http_if_no_scheme(url)
 
 
 def strip_url(
