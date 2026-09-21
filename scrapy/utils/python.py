@@ -32,7 +32,7 @@ _VT = TypeVar("_VT")
 _P = ParamSpec("_P")
 
 
-def is_listlike(x: Any) -> bool:
+def is_listlike(x: object) -> bool:
     """
     >>> is_listlike("foo")
     False
@@ -163,7 +163,7 @@ def memoizemethod_noargs(
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
 
-    return new_method
+    return new_method  # type: ignore[return-value]
 
 
 _BINARYCHARS = {
@@ -363,7 +363,7 @@ class MutableAsyncChain(AsyncIterator[_T]):
         return self
 
     async def __anext__(self) -> _T:
-        return await self.data.__anext__()
+        return await anext(self.data)
 
 
 def _looks_like_import_path(value: str) -> bool:

@@ -99,7 +99,7 @@ class MemoryUsage:
 
     def engine_started(self) -> None:
         self._stats.set_value("memusage/startup", self.get_virtual_size())
-        self.tasks: list[AsyncioLoopingCall | LoopingCall] = []
+        self.tasks: list[AsyncioLoopingCall[[], None] | LoopingCall] = []
         tsk = create_looping_call(self.update)
         self.tasks.append(tsk)
         tsk.start(self.check_interval, now=True)

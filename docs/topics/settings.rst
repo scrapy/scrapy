@@ -4,7 +4,7 @@
 Settings
 ========
 
-The Scrapy settings allows you to customize the behaviour of all Scrapy
+The Scrapy settings allow you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
 The infrastructure of the settings provides a global namespace of key-value mappings
@@ -262,6 +262,13 @@ example:
 A component can be specified either as a class object or through an import
 path.
 
+A key that cannot be resolved into a component, such as the import path of a
+component that no longer exists, raises an exception, even if its priority is
+:data:`None`.
+
+.. versionchanged:: VERSION
+   Unresolvable keys used to be silently ignored in some cases.
+
 .. warning:: Component priority dictionaries are regular :class:`dict` objects.
     Be careful not to define the same component more than once, e.g. with
     different import path strings or defining both an import path and a
@@ -334,6 +341,12 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
+.. versionchanged:: VERSION
+   :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
+   :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
+   instead of being read from the project settings and ignored in
+   :ref:`per-spider settings <spider-settings>`.
+
 Because only 1 reactor can be used per process, these settings cannot use a
 different value per spider when :ref:`running multiple spiders in the same
 process <run-multiple-spiders>`.
@@ -363,11 +376,10 @@ These settings are applied when starting the reactor:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
-They are read from the settings of the
-:class:`~scrapy.crawler.CrawlerProcess` or
-:class:`~scrapy.crawler.AsyncCrawlerProcess` object, so setting them from a
-spider or an :ref:`add-on <topics-addons>` has no effect. They are ignored
-altogether when using :class:`~scrapy.crawler.CrawlerRunner` or
+They can also be :ref:`set from a spider <spider-settings>`, but only the
+values from the first spider that runs are used; if a later spider defines a
+different value, a warning is issued. They are ignored altogether when using
+:class:`~scrapy.crawler.CrawlerRunner` or
 :class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
 
 There is an additional restriction for :setting:`TWISTED_REACTOR` and
@@ -401,12 +413,14 @@ value per spider when :ref:`running multiple spiders in the same process
 
 These settings are:
 
+-   :setting:`LOG_COLOR`
 -   :setting:`LOG_DATEFORMAT`
 -   :setting:`LOG_ENABLED`
 -   :setting:`LOG_ENCODING`
 -   :setting:`LOG_FILE`
 -   :setting:`LOG_FILE_APPEND`
 -   :setting:`LOG_FORMAT`
+-   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
@@ -962,8 +976,8 @@ every 10 seconds:
 
     DOWNLOAD_DELAY = 2.5
 
-This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting, which is enabled by default.
+This setting is also affected by the :setting:`DOWNLOAD_DELAY_JITTER` setting,
+which randomizes delays by ±50% by default.
 
 Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
 concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
@@ -975,6 +989,25 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
+
+It is possible to change this setting per domain by using
+:setting:`DOWNLOAD_SLOTS`.
+
+.. setting:: DOWNLOAD_DELAY_JITTER
+
+DOWNLOAD_DELAY_JITTER
+---------------------
+
+.. versionadded:: 2.19.0
+
+Default: ``0.5``
+
+Magnitude of the random variation applied to :setting:`DOWNLOAD_DELAY`, e.g.
+``0.2`` spreads delays between 80% and 120% of :setting:`DOWNLOAD_DELAY`. ``0``
+disables randomization.
+
+Randomizing delays makes the time between requests less uniform, resulting in a
+more natural crawling pattern.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
@@ -1059,8 +1092,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": None,
     }
@@ -1085,6 +1118,7 @@ handler (without replacement), place this in your ``settings.py``:
     :ref:`security-local-resources`
 
 
+.. reqmeta:: download_slot
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
@@ -1097,8 +1131,8 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "jitter": 0},
+            "books.toscrape.com": {"delay": 3, "jitter": 0.2},
         }
 
 .. note::
@@ -1107,7 +1141,15 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
 
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+    -   :setting:`DOWNLOAD_DELAY_JITTER`: ``jitter``
+
+Requests are assigned to a slot based on their URL domain. To assign a request
+to a specific slot instead, set the name of the slot as the ``download_slot``
+:attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
+slot, that key holds the name of the slot.
+
+Since that key is kept on redirects, a redirected request stays in the slot of
+the request it comes from, even when it points to a different domain.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1196,7 +1238,7 @@ response was not properly finished. If ``True``, these responses raise a
 responses are passed through and the flag ``dataloss`` is added to the
 response, i.e.: ``'dataloss' in response.flags`` is ``True``.
 
-Optionally, this can be set per-request basis by using the
+Optionally, this can be set on a per-request basis by using the
 :reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
 
 .. note::
@@ -1380,6 +1422,7 @@ Default:
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
+        "scrapy.extensions.remote_control.RemoteControl": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -1437,6 +1480,7 @@ non-default value in :ref:`per-spider settings <spider-settings>`.
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
+.. reqmeta:: ftp_passive
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -1444,7 +1488,8 @@ FTP_PASSIVE_MODE
 
 Default: ``True``
 
-Whether or not to use passive mode when initiating FTP transfers.
+Whether or not to use passive mode when initiating FTP transfers, unless there
+is an ``"ftp_passive"`` key in ``Request`` meta.
 
 .. note::
 
@@ -1508,7 +1553,7 @@ The Project ID that will be used when storing data on `Google Cloud Storage`_.
 HTTP2_MAX_FRAME_SIZE
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``16384``
 
@@ -1580,6 +1625,24 @@ Default: ``None``
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
+
+.. setting:: LOG_COLOR
+
+LOG_COLOR
+---------
+
+.. versionadded:: 2.19.0
+
+Default: ``True``
+
+Whether to colorize log output by log level when logging to a terminal.
+Requires the ``color`` extra:
+
+.. code-block:: bash
+
+    pip install scrapy[color]
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_ENABLED
 
@@ -1661,6 +1724,22 @@ LOG_FORMATTER
 Default: :class:`scrapy.logformatter.LogFormatter`
 
 The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
+
+.. setting:: LOG_INSTALL_ROOT_HANDLER
+
+LOG_INSTALL_ROOT_HANDLER
+------------------------
+
+.. versionadded:: 2.19.0
+
+Default: ``True``
+
+Whether to install a handler for the root logger, configured according to the
+other :ref:`logging settings <logging-settings>`. Set this to ``False`` to
+manage the root logger yourself, e.g. from a custom command or from a
+:file:`settings.py` module executed before Scrapy configures logging.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_LEVEL
 
@@ -1818,29 +1897,6 @@ Example:
 
     NEWSPIDER_MODULE = "mybot.spiders_dev"
 
-.. setting:: RANDOMIZE_DOWNLOAD_DELAY
-
-RANDOMIZE_DOWNLOAD_DELAY
-------------------------
-
-Default: ``True``
-
-If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
-website.
-
-This randomization decreases the chance of the crawler being detected (and
-subsequently blocked) by sites which analyze requests looking for statistically
-significant similarities in the time between their requests.
-
-The randomization policy is the same used by `wget`_ ``--random-wait`` option.
-
-If :setting:`DOWNLOAD_DELAY` is zero this option has no effect.
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
-.. _wget: https://www.gnu.org/software/wget/manual/wget.html
-
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
 REACTOR_THREADPOOL_MAXSIZE
@@ -1944,10 +2000,21 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
+.. versionadded:: 2.19.0
+   The ``SQLite`` queue types.
+
 Type of disk queue that will be used by the scheduler. Other available types
 are ``scrapy.squeues.PickleFifoDiskQueue``,
 ``scrapy.squeues.MarshalFifoDiskQueue``,
-``scrapy.squeues.MarshalLifoDiskQueue``.
+``scrapy.squeues.MarshalLifoDiskQueue``,
+``scrapy.squeues.PickleFifoSQLiteQueue``,
+``scrapy.squeues.PickleLifoSQLiteQueue``,
+``scrapy.squeues.MarshalFifoSQLiteQueue`` and
+``scrapy.squeues.MarshalLifoSQLiteQueue``.
+
+The ``SQLite`` types store requests in an SQLite database, which makes writes
+slower but keeps the queue usable after an unclean shutdown. See
+:ref:`security-job-state`.
 
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
@@ -2126,6 +2193,8 @@ Default:
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+        "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 999,
+        "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy, and
@@ -2170,6 +2239,69 @@ Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
 finishes.
 
 For more info see: :ref:`topics-stats`.
+
+.. setting:: STICKY_META_KEYS
+
+STICKY_META_KEYS
+----------------
+
+Default: ``[]`` (empty list)
+
+The :attr:`Request.meta <scrapy.http.Request.meta>` keys to copy automatically
+from a response into the follow-up requests yielded by its callback, handled by
+:class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware`.
+
+Metadata keys already set on a follow-up request are not overwritten.
+
+For example, the following spider:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(
+                    a,
+                    meta={"start_url": response.meta["start_url"]},
+                )
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
+
+can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+        custom_settings = {
+            "STICKY_META_KEYS": ["start_url"],
+        }
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(a)
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
 
 .. setting:: TELNETCONSOLE_ENABLED
 
@@ -2409,13 +2541,15 @@ modifying generator function source code during runtime, skip AST parsing of
 callback functions, or improve performance in auto-reloading development
 environments.
 
-Settings documented elsewhere:
-------------------------------
+.. only:: html
 
-The following settings are documented elsewhere, please check each specific
-case to see how to enable and use them.
+    Settings documented elsewhere:
+    ------------------------------
 
-.. settingslist::
+    The following settings are documented elsewhere, please check each specific
+    case to see how to enable and use them.
+
+    .. settingslist::
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _Google Cloud Storage: https://cloud.google.com/storage/

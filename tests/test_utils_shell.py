@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pexpect import EOF
 
-from scrapy.utils.console import get_shell_embed_func, start_python_console
+from scrapy.utils._shell import get_shell_embed_func, start_python_console
 from scrapy.utils.test import get_testenv
 
 if TYPE_CHECKING:
@@ -198,13 +198,11 @@ def test_start_python_console_exit(monkeypatch: pytest.MonkeyPatch) -> None:
         raise SystemExit
 
     monkeypatch.setattr(
-        "scrapy.utils.console.get_shell_embed_func", lambda shells: embed
+        "scrapy.utils._shell.get_shell_embed_func", lambda shells: embed
     )
     start_python_console()
 
 
 def test_start_python_console_no_shell(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "scrapy.utils.console.get_shell_embed_func", lambda shells: None
-    )
+    monkeypatch.setattr("scrapy.utils._shell.get_shell_embed_func", lambda shells: None)
     start_python_console()

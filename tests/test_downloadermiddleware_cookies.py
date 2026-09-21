@@ -133,14 +133,18 @@ class TestCookiesMiddleware:
             (
                 "scrapy.downloadermiddlewares.cookies",
                 logging.DEBUG,
-                "Received cookies from: <200 http://scrapytest.org/>\n"
-                "Set-Cookie: C1=value1; path=/\n",
+                (
+                    "Received cookies from: <200 http://scrapytest.org/>\n"
+                    "Set-Cookie: C1=value1; path=/\n"
+                ),
             ),
             (
                 "scrapy.downloadermiddlewares.cookies",
                 logging.DEBUG,
-                "Sending cookies to: <GET http://scrapytest.org/sub1/>\n"
-                "Cookie: C1=value1\n",
+                (
+                    "Sending cookies to: <GET http://scrapytest.org/sub1/>\n"
+                    "Cookie: C1=value1\n"
+                ),
             ),
         ]
 
@@ -466,20 +470,26 @@ class TestCookiesMiddleware:
             (
                 "scrapy.utils.request",
                 logging.WARNING,
-                "Invalid cookie found in request <GET http://example.org/1>:"
-                " {'value': 'bar', 'secure': False} ('name' is missing)",
+                (
+                    "Invalid cookie found in request <GET http://example.org/1>:"
+                    " {'value': 'bar', 'secure': False} ('name' is missing)"
+                ),
             ),
             (
                 "scrapy.utils.request",
                 logging.WARNING,
-                "Invalid cookie found in request <GET http://example.org/2>:"
-                " {'name': 'foo', 'secure': False} ('value' is missing)",
+                (
+                    "Invalid cookie found in request <GET http://example.org/2>:"
+                    " {'name': 'foo', 'secure': False} ('value' is missing)"
+                ),
             ),
             (
                 "scrapy.utils.request",
                 logging.WARNING,
-                "Invalid cookie found in request <GET http://example.org/3>:"
-                " {'name': 'foo', 'value': None, 'secure': False} ('value' is missing)",
+                (
+                    "Invalid cookie found in request <GET http://example.org/3>:"
+                    " {'name': 'foo', 'value': None, 'secure': False} ('value' is missing)"
+                ),
             ),
         ]
         self.assertCookieValEqual(req1.headers["Cookie"], "key=value1")
@@ -874,3 +884,8 @@ class TestCookiesMiddleware:
             cookies2=False,
             cookies3=True,
         )
+
+    def test_hostless_url(self):
+        request = Request("data:,", cookies={"a": "b"})
+        assert self.mw.process_request(request) is None
+        assert "Cookie" not in request.headers
