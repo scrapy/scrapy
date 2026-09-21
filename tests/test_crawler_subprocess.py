@@ -253,20 +253,22 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined,unused-ignore]
         args = self.get_script_args(script, "10")
         p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
-        p.expect_exact("Spider opened")
-        p.expect_exact("Crawled (200)")
-        p.kill(sig)
-        p.expect_exact("shutting down gracefully")
-        # Sending a new signal too fast often causes problems, e.g. on
-        # Windows, where signal delivery is slower and more variable than on
-        # POSIX.
-        await sleep(0.1)
-        p.kill(sig)
-        p.expect_exact("dropping downloader requests")
-        await sleep(0.1)
-        p.kill(sig)
-        p.expect_exact("forcing unclean shutdown", timeout=20)
-        stop_spawn(p)
+        try:
+            p.expect_exact("Spider opened")
+            p.expect_exact("Crawled (200)")
+            p.kill(sig)
+            p.expect_exact("shutting down gracefully")
+            # Sending a new signal too fast often causes problems, e.g. on
+            # Windows, where signal delivery is slower and more variable than
+            # on POSIX.
+            await sleep(0.1)
+            p.kill(sig)
+            p.expect_exact("dropping downloader requests")
+            await sleep(0.1)
+            p.kill(sig)
+            p.expect_exact("forcing unclean shutdown", timeout=20)
+        finally:
+            stop_spawn(p)
 
     @coroutine_test
     async def test_shutdown_forced(self) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import sys
 from typing import TYPE_CHECKING, Any
 
@@ -23,9 +24,28 @@ from tests.utils.bases.download_handlers_http import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 pytestmark = pytest.mark.only_asyncio
+
+
+@pytest.fixture(autouse=True)
+def _fail_on_unclosed_session(caplog: pytest.LogCaptureFixture) -> Iterator[None]:
+    yield
+    # ClientSession.__del__() reports an unclosed session to the asyncio
+    # logger, not through the warnings module, so it survives regardless of
+    # which test happens to be running when the garbage collector gets to
+    # it. Forcing collection here, still within this test, makes that test
+    # fail instead of a later, unrelated one.
+    gc.collect()
+    unclosed = [
+        record.message
+        for record in caplog.records
+        if record.name == "asyncio" and "Unclosed" in record.message
+    ]
+    assert not unclosed
 
 
 class AiohttpDownloadHandlerMixin:
