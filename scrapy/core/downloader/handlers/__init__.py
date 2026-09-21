@@ -135,10 +135,9 @@ class DownloadHandlers:
             self._notconfigured[handler_id] = str(ex)
             return None
         except Exception as ex:
-            logger.error(
+            logger.exception(
                 'Loading "%(clspath)s" for handler ID "%(handler_id)s"',
                 {"clspath": path, "handler_id": handler_id},
-                exc_info=True,
                 extra={"crawler": self._crawler},
             )
             self._notconfigured[handler_id] = str(ex)
