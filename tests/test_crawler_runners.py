@@ -13,6 +13,7 @@ from scrapy.crawler import (
     CrawlerRunner,
     CrawlerRunnerBase,
 )
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_reactor_settings
@@ -54,12 +55,13 @@ class TestAsyncCrawlerRunner:
 
 class TestCrawlerProcess:
     def test_crawler_process_accepts_dict(self) -> None:
-        runner = CrawlerProcess({"foo": "bar"}, install_root_handler=False)
+        runner = CrawlerProcess({"foo": "bar", "LOG_INSTALL_ROOT_HANDLER": False})
         assert runner.settings["foo"] == "bar"
         assert_option_is_default(runner.settings, "RETRY_ENABLED")
 
     def test_crawler_process_accepts_None(self) -> None:
-        runner = CrawlerProcess(install_root_handler=False)
+        with pytest.warns(ScrapyDeprecationWarning, match="install_root_handler"):
+            runner = CrawlerProcess(install_root_handler=False)
         assert_option_is_default(runner.settings, "RETRY_ENABLED")
 
 
@@ -67,15 +69,19 @@ class TestCrawlerProcess:
 class TestAsyncCrawlerProcess:
     def test_crawler_process_accepts_dict(self, reactor_pytest: str) -> None:
         runner = AsyncCrawlerProcess(
-            {"foo": "bar", "TWISTED_REACTOR_ENABLED": reactor_pytest != "none"},
-            install_root_handler=False,
+            {
+                "foo": "bar",
+                "TWISTED_REACTOR_ENABLED": reactor_pytest != "none",
+                "LOG_INSTALL_ROOT_HANDLER": False,
+            }
         )
         assert runner.settings["foo"] == "bar"
         assert_option_is_default(runner.settings, "RETRY_ENABLED")
 
     @pytest.mark.requires_reactor  # can't pass TWISTED_REACTOR_ENABLED=False
     def test_crawler_process_accepts_None(self) -> None:
-        runner = AsyncCrawlerProcess(install_root_handler=False)
+        with pytest.warns(ScrapyDeprecationWarning, match="install_root_handler"):
+            runner = AsyncCrawlerProcess(install_root_handler=False)
         assert_option_is_default(runner.settings, "RETRY_ENABLED")
 
 

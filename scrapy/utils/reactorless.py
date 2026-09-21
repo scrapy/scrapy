@@ -5,7 +5,7 @@ import sys
 from importlib.abc import MetaPathFinder
 from typing import TYPE_CHECKING
 
-from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.asyncio import _has_running_loop
 from scrapy.utils.reactor import is_reactor_installed
 
 if TYPE_CHECKING:
@@ -22,13 +22,21 @@ def is_reactorless() -> bool:
     wrong when executed very early, before the reactor and/or the asyncio event
     loop are initialized.
 
-    .. note:: As this function uses
-        :func:`scrapy.utils.asyncio.is_asyncio_available()`, it has the same
-        limitations for detecting a running asyncio event loop as that one.
+    .. note:: As this function uses :func:`asyncio.get_running_loop()`, it will
+        only detect the event loop if called in the same thread and from the
+        code that runs inside that loop (this shouldn't be a problem when
+        calling it from code such as spiders and Scrapy components, if Scrapy
+        is run using one of the supported ways).
 
     .. versionadded:: 2.15.0
     """
-    return is_asyncio_available() and not is_reactor_installed()
+    if is_reactor_installed():
+        return False
+    if _has_running_loop():
+        return True
+    raise RuntimeError(
+        "is_reactorless() called without an installed reactor or running asyncio loop."
+    )
 
 
 class ReactorImportHook(MetaPathFinder):

@@ -34,7 +34,7 @@ class Selector(_ParselSelector, object_ref):
     An instance of :class:`Selector` is a wrapper over response to select
     certain parts of its content.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
        The type of a :class:`~scrapy.http.JsonResponse` selector is now
        ``json``, and the type of the selector of any other response that is
        neither HTML nor XML is determined from the response body.

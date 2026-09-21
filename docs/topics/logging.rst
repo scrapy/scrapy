@@ -4,9 +4,9 @@
 Logging
 =======
 
-Scrapy uses :mod:`logging` for event logging. We'll
-provide some simple examples to get you started, but for more advanced
-use-cases it's strongly suggested to read thoroughly its documentation.
+Scrapy uses :mod:`logging` for event logging. We'll provide some simple
+examples to get you started, but for more advanced use-cases it's strongly
+suggested to read its documentation thoroughly.
 
 Logging works out of the box, and can be configured to some extent with the
 Scrapy settings listed in :ref:`topics-logging-settings`.
@@ -21,8 +21,8 @@ Scrapy from scripts as described in :ref:`run-from-script`.
 Log levels
 ==========
 
-Python's builtin logging defines 5 different levels to indicate the severity of a
-given log message. Here are the standard ones, listed in decreasing order:
+Python's built-in logging defines 5 different levels to indicate the severity
+of a given log message. Here are the standard ones, listed in decreasing order:
 
 1. ``logging.CRITICAL`` - for critical errors (highest severity)
 2. ``logging.ERROR`` - for regular errors
@@ -57,10 +57,10 @@ example, a common practice is to create different loggers for every module).
 These loggers can be configured independently, and they allow hierarchical
 constructions.
 
-The previous examples use the root logger behind the scenes, which is a top level
-logger where all messages are propagated to (unless otherwise specified). Using
-``logging`` helpers is merely a shortcut for getting the root logger
-explicitly, so this is also an equivalent of the last snippets:
+The previous examples use the root logger behind the scenes, which is a
+top-level logger where all messages are propagated to (unless otherwise
+specified). Using ``logging`` helpers is merely a shortcut for getting the root
+logger explicitly, so this is also an equivalent of the last snippets:
 
 .. code-block:: python
 
@@ -80,8 +80,8 @@ You can use a different logger just by getting its name with the
     logger.warning("This is a warning")
 
 Finally, you can ensure having a custom logger for any module you're working on
-by using the ``__name__`` variable, which is populated with current module's
-path:
+by using the ``__name__`` variable, which is populated with the current
+module's path:
 
 .. code-block:: python
 
@@ -158,6 +158,7 @@ These settings can be used to configure the logging:
 
 * :setting:`LOG_FILE`
 * :setting:`LOG_FILE_APPEND`
+* :setting:`LOG_COLOR`
 * :setting:`LOG_ENABLED`
 * :setting:`LOG_ENCODING`
 * :setting:`LOG_LEVEL`
@@ -165,6 +166,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
+* :setting:`LOG_INSTALL_ROOT_HANDLER`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -174,6 +176,10 @@ messages will be displayed on the standard error. If :setting:`LOG_FILE` is set
 and :setting:`LOG_FILE_APPEND` is ``False``, the file will be overwritten
 (discarding the output from previous runs, if any). Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
+
+Set :setting:`LOG_INSTALL_ROOT_HANDLER` to ``False`` to prevent Scrapy from
+installing a root logging handler altogether, e.g. to configure the root
+logger yourself.
 
 :setting:`LOG_LEVEL` determines the minimum level of severity to display, those
 messages with lower severity will be filtered out. It ranges through the
@@ -188,6 +194,9 @@ respectively.
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
+
+When logging to a terminal, :setting:`LOG_COLOR` colorizes messages by log
+level.
 
 Rotating log files
 ------------------
@@ -211,7 +220,8 @@ For example, to rotate the log file every day:
     from myproject.spiders.myspider import MySpider
 
     settings = get_project_settings()
-    process = CrawlerProcess(settings, install_root_handler=False)
+    settings.set("LOG_INSTALL_ROOT_HANDLER", False)
+    process = CrawlerProcess(settings)
 
     handler = TimedRotatingFileHandler(
         "scrapy.log",
@@ -321,9 +331,8 @@ filter out unwanted messages:
             if match:
                 return False
 
-A project-level filter may be attached to the root
-handler created by Scrapy, this is a wieldy way to
-filter all loggers in different parts of the project
+A project-level filter may be attached to the root handler created by Scrapy.
+This is a useful way to filter all loggers in different parts of the project
 (middlewares, spider, etc.):
 
 .. code-block:: python
@@ -357,10 +366,7 @@ and hide it without affecting other loggers:
 scrapy.utils.log module
 =======================
 
-.. module:: scrapy.utils.log
-   :synopsis: Logging utils
-
-.. autofunction:: configure_logging
+.. autofunction:: scrapy.utils.log.configure_logging
 
     ``configure_logging`` is automatically called when using Scrapy commands
     or :class:`~scrapy.crawler.CrawlerProcess`, but needs to be called explicitly

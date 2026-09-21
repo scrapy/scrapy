@@ -175,5 +175,27 @@ scrapy_intersphinx_enable = [
     "w3lib",
 ]
 
+# sphinx_llms_txt -------------------------------------------------------------
+
+llms_txt_exclude = [
+    # Changelog, not useful for an LLM answering "how do I use Scrapy"
+    # questions, and the largest single contributor to llms-full.txt size.
+    "news.rst",
+    "news/*",
+    "contributing.rst",
+]
+
+
+def _exclude_llms_txt_docs_from_llms_full_txt(app):
+    # llms-full.txt is the output of the singlemarkdown builder.
+    if app.builder.name != "singlemarkdown":
+        return
+    app.config.exclude_patterns.extend(llms_txt_exclude)
+
+
+def setup(app):
+    app.connect("builder-inited", _exclude_llms_txt_docs_from_llms_full_txt)
+
+
 # -- Other options ------------------------------------------------------------
 default_dark_mode = False

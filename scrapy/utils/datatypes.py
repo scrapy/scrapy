@@ -94,8 +94,9 @@ class LocalCache(OrderedDict[_KT, _VT]):
         if self.limit is not None:
             if self.limit == 0:
                 return
-            while len(self) >= self.limit:
-                self.popitem(last=False)
+            if key not in self:
+                while len(self) >= self.limit:
+                    self.popitem(last=False)
         super().__setitem__(key, value)
 
 
@@ -130,8 +131,8 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary[_KT, _VT | None]):
 class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
-    def __init__(self, seq: Container[Any]):
-        self.seq: Container[Any] = seq
+    def __init__(self, seq: Container[object]):
+        self.seq: Container[object] = seq
 
-    def __contains__(self, item: Any) -> bool:
+    def __contains__(self, item: object) -> bool:
         return item not in self.seq
