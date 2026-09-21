@@ -116,12 +116,24 @@ def get_project_settings() -> Settings:
     Settings from sources with a higher precedence, such as :ref:`spider
     settings <spider-settings>`, are applied when a crawl starts.
     """
+    from_environ = ENVVAR in os.environ
     init_env(os.environ.get("SCRAPY_PROJECT", "default"))
 
     settings = Settings()
     settings_module_path = os.environ.get(ENVVAR)
     if settings_module_path:
-        settings.setmodule(settings_module_path, priority="project")
+        try:
+            settings.setmodule(settings_module_path, priority="project")
+        except ImportError as exc:
+            source = (
+                f"the {ENVVAR} environment variable"
+                if from_environ
+                else closest_config() or "a global scrapy.cfg file"
+            )
+            exc.msg = (
+                f"{exc.msg} (settings module {settings_module_path!r} set by {source})"
+            )
+            raise
 
     valid_envvars = {
         "CHECK",

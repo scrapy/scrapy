@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.misc import set_environ
 from scrapy.utils.project import (
     data_path,
@@ -136,6 +137,51 @@ class TestGetProjectSettings:
         monkeypatch.setenv("SCRAPY_SETTINGS_MODULE", "tests.test_cmdline.settings")
         get_project_settings()
         assert str(proj_path) in sys.path
+
+    def test_unimportable_module_from_envvar(self, no_proj_path: Path) -> None:
+        with (
+            set_environ(SCRAPY_SETTINGS_MODULE="no_such_module.settings"),
+            pytest.raises(
+                ImportError,
+                match=r"No module named 'no_such_module' \(settings module "
+                r"'no_such_module\.settings' set by the SCRAPY_SETTINGS_MODULE "
+                r"environment variable\)",
+            ),
+        ):
+            get_project_settings()
+
+    def test_unimportable_module_from_project_config(
+        self, proj_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE", raising=False)
+        Path("pyproject.toml").write_text(
+            '[tool.scrapy.settings]\ndefault = "no_such_module.settings"\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(
+            ImportError,
+            match=r"No module named 'no_such_module' \(settings module "
+            rf"'no_such_module\.settings' set by {re.escape(str(proj_path))}"
+            r"[/\\]pyproject\.toml\)",
+        ):
+            get_project_settings()
+
+    def test_unimportable_module_from_global_config(
+        self, no_proj_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE", raising=False)
+        (no_proj_path / ".scrapy.cfg").write_text(
+            "[settings]\ndefault = no_such_module.settings\n", encoding="utf-8"
+        )
+        with (
+            pytest.warns(ScrapyDeprecationWarning, match="Global scrapy.cfg files"),
+            pytest.raises(
+                ImportError,
+                match=r"No module named 'no_such_module' \(settings module "
+                r"'no_such_module\.settings' set by a global scrapy\.cfg file\)",
+            ),
+        ):
+            get_project_settings()
 
     def test_valid_and_invalid_envvars(self):
         value = "tests.test_cmdline.settings"
