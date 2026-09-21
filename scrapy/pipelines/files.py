@@ -15,6 +15,7 @@ import time
 import warnings
 from collections import defaultdict
 from contextlib import suppress
+from datetime import datetime, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -62,6 +63,30 @@ logger = logging.getLogger(__name__)
 
 def _to_string(path: str | PathLike[str]) -> str:
     return str(path)  # convert a Path object to string
+
+
+def _datetime_to_epoch(dt: datetime) -> float:
+    if dt.tzinfo is None:
+        # S3 and GCS report modification times in UTC. A naive value from
+        # those APIs is UTC, not local time.
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
+
+
+def _mdtm_to_epoch(reply: str) -> float:
+    # RFC 3659 MDTM: YYYYMMDDHHMMSS[.fff] in UTC, after the 3-digit reply code.
+    value = reply[4:].strip()
+    if "." in value:
+        dt_part, frac = value.split(".", 1)
+        microsecond = int((frac + "000000")[:6])
+    else:
+        dt_part = value
+        microsecond = 0
+    return (
+        datetime.strptime(dt_part, "%Y%m%d%H%M%S")
+        .replace(microsecond=microsecond, tzinfo=timezone.utc)
+        .timestamp()
+    )
 
 
 def _md5sum(file: IO[bytes]) -> str:
@@ -201,9 +226,8 @@ class S3FilesStore:
     @staticmethod
     def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
         checksum = boto_key["ETag"].strip('"')
-        last_modified = boto_key["LastModified"]
-        modified_stamp = time.mktime(last_modified.timetuple())
-        return {"checksum": checksum, "last_modified": modified_stamp}
+        last_modified = _datetime_to_epoch(boto_key["LastModified"])
+        return {"checksum": checksum, "last_modified": last_modified}
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
@@ -326,7 +350,7 @@ class GCSFilesStore:
     def _onsuccess(blob: Any) -> StatInfo:
         if blob:
             checksum = base64.b64decode(blob.md5_hash).hex()
-            last_modified = time.mktime(blob.updated.timetuple())
+            last_modified = _datetime_to_epoch(blob.updated)
             return {"checksum": checksum, "last_modified": last_modified}
         return {}
 
@@ -420,7 +444,7 @@ class FTPFilesStore:
                 if self.USE_ACTIVE_MODE:
                     ftp.set_pasv(False)
                 file_path = f"{self.basedir}/{path}"
-                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
+                last_modified = _mdtm_to_epoch(ftp.voidcmd(f"MDTM {file_path}"))
                 m = hashlib.md5()  # noqa: S324
                 ftp.retrbinary(f"RETR {file_path}", m.update)
             return {"last_modified": last_modified, "checksum": m.hexdigest()}

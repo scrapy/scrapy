@@ -2,10 +2,12 @@ import base64
 import dataclasses
 import logging
 import mimetypes
+import os
 import random
 import re
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from datetime import datetime, timezone
 from ftplib import FTP
 from io import BytesIO
@@ -47,6 +49,29 @@ from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 from .utils.cloud import mock_google_cloud_storage
 from .utils.media_pipelines import DUMMY_SPIDER_INFO, mocked_download_func
+
+# 2019-12-01 00:00:00 UTC
+_UTC_LAST_MODIFIED = datetime(2019, 12, 1, tzinfo=timezone.utc)
+_UTC_LAST_MODIFIED_EPOCH = _UTC_LAST_MODIFIED.timestamp()
+
+
+@pytest.fixture
+def non_utc_timezone() -> Generator[None]:
+    """Pin a timezone west of UTC so epoch assertions cannot be satisfied by
+    converting the wall clock as local time."""
+    if not hasattr(time, "tzset"):  # pragma: no cover
+        pytest.skip("time.tzset is not available")
+    old_tz = os.environ.get("TZ")
+    os.environ["TZ"] = "America/New_York"
+    time.tzset()
+    try:
+        yield
+    finally:
+        if old_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = old_tz
+        time.tzset()
 
 
 def get_ftp_content_and_delete(
@@ -947,14 +972,18 @@ class TestS3FilesStore:
         ):
             store._headers_to_botocore_kwargs({"X-Custom": "value"})
 
+    @pytest.mark.parametrize(
+        "last_modified",
+        [_UTC_LAST_MODIFIED, datetime(2019, 12, 1)],  # noqa: DTZ001
+        ids=["utc-aware", "naive-as-utc"],
+    )
+    @pytest.mark.usefixtures("non_utc_timezone")
     @inline_callbacks_test
-    def test_stat(self):
+    def test_stat(self, last_modified: datetime) -> None:
         bucket = "mybucket"
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
         checksum = "3187896a9657a28163abb31667df64c8"
-        # S3FilesStore needs to be fixed to emit tz-aware datetimes
-        last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
 
         store = S3FilesStore(uri)
         from botocore.stub import Stubber  # noqa: PLC0415
@@ -975,7 +1004,7 @@ class TestS3FilesStore:
             file_stats = yield store.stat_file("", info=DUMMY_SPIDER_INFO)
             assert file_stats == {
                 "checksum": checksum,
-                "last_modified": last_modified.timestamp(),
+                "last_modified": _UTC_LAST_MODIFIED_EPOCH,
             }
 
             stub.assert_no_pending_responses()
@@ -1105,13 +1134,13 @@ class TestGCSFilesStore:
         )
         assert blob.metadata == {}
 
+    @pytest.mark.usefixtures("non_utc_timezone")
     @coroutine_test
     async def test_stat(self) -> None:
         store, bucket, blob = self.build_gcs_files_store()
         checksum = "cdcda85605e46d0af6110752770dce3c"
         blob.md5_hash = base64.b64encode(bytes.fromhex(checksum)).decode()
-        updated = datetime(2019, 12, 1, tzinfo=timezone.utc)
-        blob.updated = updated
+        blob.updated = _UTC_LAST_MODIFIED
         bucket.get_blob.return_value = blob
         stat = await maybe_deferred_to_future(
             store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
@@ -1119,7 +1148,7 @@ class TestGCSFilesStore:
         bucket.get_blob.assert_called_once_with("my_prefix/full/filename")
         assert stat == {
             "checksum": checksum,
-            "last_modified": time.mktime(updated.timetuple()),
+            "last_modified": _UTC_LAST_MODIFIED_EPOCH,
         }
 
     @coroutine_test
@@ -1167,8 +1196,7 @@ class TestFTPFileStore:
                 path, buf, info=DUMMY_SPIDER_INFO, meta=meta, headers=None
             )
             stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
-            assert "last_modified" in stat
-            assert "checksum" in stat
+            assert stat["last_modified"] == pytest.approx(time.time(), abs=60)
             assert stat["checksum"] == "d113d66b2ec7258724a268bd88eef6b6"
             path = f"{store.basedir}/{path}"
             content = get_ftp_content_and_delete(
@@ -1202,6 +1230,35 @@ class TestFTPFileStore:
             ),
         ):
             FTPFilesStore("http://example.com/")
+
+    @pytest.mark.parametrize(
+        ("mdtm_reply", "expected"),
+        [
+            ("213 20191201000000", _UTC_LAST_MODIFIED_EPOCH),
+            ("213 20191201000000.5", _UTC_LAST_MODIFIED_EPOCH + 0.5),
+        ],
+    )
+    @inline_callbacks_test
+    def test_stat_mdtm(
+        self,
+        mdtm_reply: str,
+        expected: float,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(FTPFilesStore, "FTP_USERNAME", "anonymous")
+        monkeypatch.setattr(FTPFilesStore, "FTP_PASSWORD", "guest")
+        ftp = MagicMock()
+        ftp.voidcmd.return_value = mdtm_reply
+        ftp.retrbinary.side_effect = lambda _cmd, callback: callback(b"data")
+        with mock.patch("scrapy.pipelines.files.FTP") as ftp_cls:
+            ftp_cls.return_value.__enter__.return_value = ftp
+            store = FTPFilesStore("ftp://example.com:21/")
+            stat = yield store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
+        ftp.voidcmd.assert_called_once_with("MDTM /full/filename")
+        assert stat == {
+            "last_modified": expected,
+            "checksum": "8d777f385d3dfec8815d20f7496026dc",
+        }
 
 
 class ItemWithFiles(Item):
