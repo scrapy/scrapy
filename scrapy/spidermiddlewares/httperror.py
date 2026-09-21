@@ -34,9 +34,9 @@ class HttpError(IgnoreRequest):
     is not successful and that the spider does not handle itself. See
     :setting:`HANDLE_HTTP_CODES`."""
 
-    def __init__(self, response: Response, *args: Any, **kwargs: Any):
-        #: The response that was filtered out.
+    def __init__(self, response: Response, *args: object, **kwargs: object):
         self.response: Response = response
+        """The response that was filtered out."""
         super().__init__(*args, **kwargs)
 
 

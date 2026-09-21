@@ -22,6 +22,7 @@ import scrapy
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils._shell import DEFAULT_PYTHON_SHELLS, start_python_console
@@ -51,12 +52,11 @@ if TYPE_CHECKING:
 # reactor to be in a separate thread: the shell sends the request to
 # the reactor and waits for the result synchronously).
 #
-# Thus the only thing Shell needs an event loop for is fetch(). More machinery
-# is used for it to work. In chronological order:
-# 1. scrapy.commands.shell.Command.run() creates a crawler and an engine, then
-# calls
-# _schedule_coro(crawler.engine.start_async(_start_request_processing=False)),
-# which initializes the engine but doesn't start processing of requests.
+# Thus the only thing Shell needs an event loop for is fetch(). The engine is
+# never started as the shell doesn't need request processing and
+# download_async() still works.
+# In chronological order:
+# 1. scrapy.commands.shell.Command.run() creates a crawler and an engine.
 # 2. scrapy.commands.shell.Command.run() calls crawler_process.start() in a
 # thread which starts a reactor in that thread.
 # 3. When fetch() is called, it prepares a request and calls Shell._schedule()
@@ -67,7 +67,7 @@ if TYPE_CHECKING:
 # 6. Shell._schedule() calls engine.download_async(request), which completes
 # with the response.
 #
-# In the reactorless mode this is slightly different, the engine initialization
+# In the reactorless mode this is slightly different, the engine creation
 # happens in the event loop thread as many things need either a reactor or a
 # running event loop.
 #
@@ -76,12 +76,8 @@ if TYPE_CHECKING:
 #   immediately installs a reactor (which is maybe not thread-specific?) or an
 #   event loop (which *is* thread-specific, so the main thread will always have
 #   a (not running) loop installed.
-# * scrapy.commands.shell.Command.run() calls _schedule_coro() in the main
-#   thread, and various engine init code also calls similar things,
-#   conceptually this shouldn't work (and doesn't in the reactorless mode, so
-#   there the initialization is moved to the event loop thread).
-# * The engine has several code paths specifically for the shell, and the shell
-#   uses several private members of the engine and of AsyncCrawlerProcess.
+# * The shell uses several private members of Crawler (_create_engine(),
+#   _create_spider()) and of AsyncCrawlerProcess (_reactorless_loop).
 
 
 class Shell:
@@ -179,7 +175,7 @@ class Shell:
             )
 
     async def _schedule(self, request: Request, spider: Spider | None) -> Response:
-        """Send the request to the engine, wait for the result.
+        """Download the request through the engine and return the response.
 
         Runs in the reactor thread when using the reactor, or in the asyncio
         event loop thread otherwise.
@@ -205,14 +201,17 @@ class Shell:
     ) -> None:
         if isinstance(request_or_url, Request):
             request = request_or_url
-            if request.callback or request.errback:
+            if (
+                not (request.callback is None or request.callback is NO_CALLBACK)
+                or request.errback
+            ):
                 warnings.warn(
                     "Callbacks and errbacks of Request objects passed to fetch() are ignored.",
                     stacklevel=2,
                 )
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True, **kwargs)
+            request = Request(url, callback=NO_CALLBACK, dont_filter=True, **kwargs)
             if not redirect:
                 request.meta["dont_redirect"] = True
         response: Response | None = None
@@ -283,7 +282,7 @@ class Shell:
 
         return "\n".join(f"[s] {line}" for line in b) + "\n"
 
-    def _is_relevant(self, value: Any) -> bool:
+    def _is_relevant(self, value: object) -> bool:
         return isinstance(value, self.relevant_classes) or is_item(value)
 
 

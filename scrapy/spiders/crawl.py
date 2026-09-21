@@ -47,9 +47,10 @@ def _identity_process_request(request: Request, response: Response) -> Request |
     return request
 
 
-def _get_method(
-    method: Callable[..., Any] | str | None, spider: Spider
-) -> Callable[..., Any] | None:
+_CallableT = TypeVar("_CallableT", bound="Callable[..., Any]")
+
+
+def _get_method(method: _CallableT | str | None, spider: Spider) -> _CallableT | None:
     if callable(method):
         return method
     if isinstance(method, str):
@@ -91,10 +92,8 @@ class Rule:
 
     def _compile(self, spider: Spider) -> None:
         # this replaces method names with methods and we can't express this in type hints
-        self.callback = cast("CallbackT", _get_method(self.callback, spider))
-        self.errback = cast(
-            "Callable[[Failure], Any]", _get_method(self.errback, spider)
-        )
+        self.callback = _get_method(self.callback, spider)
+        self.errback = _get_method(self.errback, spider)
         self.process_links = cast(
             "ProcessLinksT", _get_method(self.process_links, spider)
         )

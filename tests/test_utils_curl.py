@@ -117,14 +117,18 @@ class TestCurlToRequestKwargs:
                 ("Upgrade-Insecure-Requests", "1"),
                 (
                     "User-Agent",
-                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
-                    ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
-                    "02.75 Safari/537.36",
+                    (
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
+                        ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
+                        "02.75 Safari/537.36"
+                    ),
                 ),
                 (
                     "Accept",
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
-                    "ge/webp,image/apng,*/*;q=0.8",
+                    (
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
+                        "ge/webp,image/apng,*/*;q=0.8"
+                    ),
                 ),
                 ("Referer", "http://httpbin.org/"),
                 ("Connection", "keep-alive"),
@@ -176,15 +180,19 @@ class TestCurlToRequestKwargs:
                 ("Upgrade-Insecure-Requests", "1"),
                 (
                     "User-Agent",
-                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
-                    ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
-                    "02.75 Safari/537.36",
+                    (
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
+                        ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
+                        "02.75 Safari/537.36"
+                    ),
                 ),
                 ("Content-Type", "application/x-www-form-urlencoded"),
                 (
                     "Accept",
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
-                    "ge/webp,image/apng,*/*;q=0.8",
+                    (
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
+                        "ge/webp,image/apng,*/*;q=0.8"
+                    ),
                 ),
                 ("Cache-Control", "max-age=0"),
                 ("Referer", "http://httpbin.org/forms/post"),
