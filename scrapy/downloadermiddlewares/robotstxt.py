@@ -76,7 +76,7 @@ class RobotsTxtMiddleware:
         self.crawler: Crawler = crawler
         self._stats: StatsCollector = crawler.stats
         self._parsers: dict[str, RobotParser | Deferred[RobotParser | None] | None] = {}
-        self._parserimpl: RobotParser = load_object(
+        self._parserimpl: type[RobotParser] = load_object(
             crawler.settings.get("ROBOTSTXT_PARSER")
         )
 
@@ -154,10 +154,8 @@ class RobotsTxtMiddleware:
                 await self._parse_robots(resp, netloc, request)
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    logger.error(
-                        "Error downloading %(request)s: %(f_exception)s",
-                        {"request": request, "f_exception": e},
-                        exc_info=True,
+                    logger.exception(
+                        f"Error downloading {request}",
                         extra={"spider": self.crawler.spider},
                     )
                 self._robots_error(e, netloc)
