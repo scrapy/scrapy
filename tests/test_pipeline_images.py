@@ -362,6 +362,14 @@ class TestImagesPipeline:
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
 
+        # grayscale case: L and PNG
+        im, buf = _create_image("PNG", "L", SIZE, 128)
+        converted, _ = self.pipeline.convert_image(
+            im, image_format="PNG", response_body=buf
+        )
+        assert converted.mode == "RGB"
+        assert converted.getcolors() == [(10000, (128, 128, 128))]
+
     def test_convert_image_legacy_resampling_filter(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
