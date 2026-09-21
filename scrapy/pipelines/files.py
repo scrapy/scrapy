@@ -247,7 +247,7 @@ class S3FilesStore:
             )
         )
 
-    def _headers_to_botocore_kwargs(self, headers: dict[str, Any]) -> dict[str, Any]:
+    def _headers_to_botocore_kwargs(self, headers: dict[str, str]) -> dict[str, str]:
         """Convert headers to botocore keyword arguments."""
         # This is required while we need to support both boto and botocore.
         mapping = CaseInsensitiveDict(
@@ -568,7 +568,7 @@ class FilesPipeline(MediaPipeline):
 
         age_seconds = time.time() - last_modified
         age_days = age_seconds / 60 / 60 / 24
-        if age_days > self.expires:
+        if self.expires >= 0 and age_days > self.expires:
             return None  # returning None force download
 
         referer = referer_str(request)
@@ -678,11 +678,10 @@ class FilesPipeline(MediaPipeline):
             )
             raise
         except Exception as exc:
-            logger.error(
+            logger.exception(
                 "File (unknown-error): Error processing file from %(request)s "
                 "referred in <%(referer)s>",
                 {"request": request, "referer": referer},
-                exc_info=True,
                 extra={"spider": info.spider},
             )
             raise _FileException(str(exc)) from exc

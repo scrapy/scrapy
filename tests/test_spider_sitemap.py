@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import gzip
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
@@ -169,7 +169,9 @@ Sitemap: /sitemap-relative-url.xml
         class FilteredSitemapSpider(self.spider_class):  # type: ignore[name-defined,misc]
             def sitemap_filter(self, entries):
                 for entry in entries:
-                    date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
+                    date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d").replace(
+                        tzinfo=timezone.utc
+                    )
                     if date_time.year > 2008:
                         yield entry
 
@@ -240,7 +242,7 @@ Sitemap: /sitemap-relative-url.xml
                 for entry in entries:
                     date_time = datetime.strptime(
                         entry["lastmod"].split("T")[0], "%Y-%m-%d"
-                    )
+                    ).replace(tzinfo=timezone.utc)
                     if date_time.year > 2004:
                         yield entry
 

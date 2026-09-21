@@ -4,7 +4,6 @@ import random
 import warnings
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime
 from time import monotonic, time
 from typing import TYPE_CHECKING, Any
 
@@ -153,7 +152,7 @@ class Slot:
             f"delay={self.delay:.2f} jitter={self.jitter!r} "
             f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
             f"len(transferring)={len(self.transferring)} "
-            f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
+            f"lastseen={self.lastseen:.2f}>"
         )
 
 
@@ -225,7 +224,7 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = build_from_crawler(
             DownloaderMiddlewareManager, crawler
         )
-        self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
+        self._slot_gc_loop: AsyncioLoopingCall[..., None] | LoopingCall | None = None
         self._accepting_requests: bool = True
         self._download_tasks: dict[Request, Deferred[None]] = {}
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(

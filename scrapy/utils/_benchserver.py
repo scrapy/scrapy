@@ -30,6 +30,7 @@ class Root(Resource):
 def _getarg(
     request: Request, name: bytes, default: Any = None, type_: type = str
 ) -> Any:
+    assert request.args is not None
     return type_(request.args[name][0]) if name in request.args else default
 
 
