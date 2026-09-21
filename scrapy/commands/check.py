@@ -1,15 +1,21 @@
 import argparse
+import asyncio
 import time
 from collections import defaultdict
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable
 from typing import Any, ClassVar
+from unittest import TestCase, TextTestRunner
 from unittest import TextTestResult as _TextTestResult
-from unittest import TextTestRunner
+
+from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
-from scrapy.utils.conf import build_component_list
+from scrapy.exceptions import UsageError
+from scrapy.settings import SETTINGS_PRIORITIES
+from scrapy.utils.conf import arglist_to_dict, build_component_list
 from scrapy.utils.misc import load_object, set_environ
 
 
@@ -42,6 +48,42 @@ class TextTestResult(_TextTestResult):
             write("\n")
 
 
+def _report_crawl_errors(
+    crawl: Awaitable[None], spidername: str, result: TextTestResult
+) -> None:
+    """Make an exception that stops *crawl* before its contracts can run show
+    up as an error in *result*, instead of being silently discarded."""
+
+    class CrawlTestCase(TestCase):
+        # unittest requires a test method, but this one is only reported, never run.
+        runTest = staticmethod(lambda: None)
+
+        def __str__(self) -> str:
+            return f"[{spidername}] crawl"
+
+    def report(exception: BaseException) -> None:
+        result.addError(
+            CrawlTestCase(),
+            (type(exception), exception, exception.__traceback__),  # type: ignore[arg-type]
+        )
+
+    if isinstance(crawl, Deferred):
+
+        def on_failure(failure: Failure) -> None:
+            assert failure.value is not None
+            report(failure.value)
+
+        crawl.addErrback(on_failure)
+    else:
+        assert isinstance(crawl, asyncio.Task)
+
+        def on_done(task: asyncio.Task[None]) -> None:
+            if not task.cancelled() and (exception := task.exception()) is not None:
+                report(exception)
+
+        crawl.add_done_callback(on_done)
+
+
 class Command(ScrapyCommand):
     requires_project = True
     default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
@@ -69,6 +111,32 @@ class Command(ScrapyCommand):
             action="store_true",
             help="print contract tests for all spiders",
         )
+        parser.add_argument(
+            "-a",
+            dest="spargs",
+            action="append",
+            default=[],
+            metavar="NAME=VALUE",
+            help="set spider argument (may be repeated)",
+        )
+
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        super().process_options(args, opts)
+        try:
+            opts.spargs = arglist_to_dict(opts.spargs)
+        except ValueError:
+            raise UsageError(
+                "Invalid -a value, use -a NAME=VALUE", print_help=False
+            ) from None
+        assert self.settings is not None
+        # Contracts discard the output of callbacks, so item pipelines and
+        # feed exports get no items, and opening them only causes side
+        # effects, such as an empty output file. The priority is above spider
+        # custom settings, which also define them, and below the command line,
+        # which can hence set them back.
+        priority = (SETTINGS_PRIORITIES["spider"] + SETTINGS_PRIORITIES["cmdline"]) // 2
+        self.settings.set("ITEM_PIPELINES", {}, priority=priority)
+        self.settings.set("FEEDS", {}, priority=priority)
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
@@ -100,7 +168,8 @@ class Command(ScrapyCommand):
                     for method in tested_methods:
                         contract_reqs[spidercls.name].append(method)
                 elif tested_methods:
-                    self.crawler_process.crawl(spidercls)
+                    crawl = self.crawler_process.crawl(spidercls, **opts.spargs)
+                    _report_crawl_errors(crawl, spidercls.name, result)
 
             # start checks
             if opts.list:
@@ -119,4 +188,6 @@ class Command(ScrapyCommand):
 
                 result.printErrors()
                 result.printSummary(start_time, stop)
-                self.exitcode = int(not result.wasSuccessful())
+                self.exitcode = int(
+                    not result.wasSuccessful() or self.crawler_process.bootstrap_failed
+                )

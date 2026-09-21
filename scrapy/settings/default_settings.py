@@ -68,6 +68,7 @@ __all__ = [
     "DOWNLOADER_STATS",
     "DOWNLOAD_BIND_ADDRESS",
     "DOWNLOAD_DELAY",
+    "DOWNLOAD_DELAY_JITTER",
     "DOWNLOAD_FAIL_ON_DATALOSS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
@@ -108,6 +109,7 @@ __all__ = [
     "FTP_PASSWORD",
     "FTP_USER",
     "GCS_PROJECT_ID",
+    "HTTP2_MAX_FRAME_SIZE",
     "HTTPAUTH_DOMAIN",
     "HTTPAUTH_PASS",
     "HTTPAUTH_USER",
@@ -136,6 +138,7 @@ __all__ = [
     "ITEM_PROCESSOR",
     "JOBDIR",
     "LOGSTATS_INTERVAL",
+    "LOG_COLOR",
     "LOG_DATEFORMAT",
     "LOG_ENABLED",
     "LOG_ENCODING",
@@ -143,6 +146,7 @@ __all__ = [
     "LOG_FILE_APPEND",
     "LOG_FORMAT",
     "LOG_FORMATTER",
+    "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
@@ -177,6 +181,12 @@ __all__ = [
     "REFERER_ENABLED",
     "REFERRER_POLICIES",
     "REFERRER_POLICY",
+    "REMOTE_CONTROL_ENABLED",
+    "REMOTE_CONTROL_JOBS_DIR",
+    "REMOTE_CONTROL_OUTPUT_MAX_BYTES",
+    "REMOTE_CONTROL_TIMEOUT_DEFAULT",
+    "REMOTE_CONTROL_TIMEOUT_MAX",
+    "REMOTE_CONTROL_TRACEBACK_MAX_BYTES",
     "REQUEST_FINGERPRINTER_CLASS",
     "RETRY_ENABLED",
     "RETRY_EXCEPTIONS",
@@ -205,6 +215,7 @@ __all__ = [
     "STATSMAILER_RCPTS",
     "STATS_CLASS",
     "STATS_DUMP",
+    "STICKY_META_KEYS",
     "TELNETCONSOLE_ENABLED",
     "TELNETCONSOLE_HOST",
     "TELNETCONSOLE_PASSWORD",
@@ -219,7 +230,7 @@ __all__ = [
     "WARN_ON_GENERATOR_RETURN_VALUE",
 ]
 
-ADDONS = {}
+ADDONS: dict[str, int] = {}
 
 ASYNCIO_EVENT_LOOP = None
 
@@ -282,10 +293,11 @@ DNS_TIMEOUT = 60
 DOWNLOAD_BIND_ADDRESS = None
 
 DOWNLOAD_DELAY = 0
+DOWNLOAD_DELAY_JITTER = 0.5
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
 
-DOWNLOAD_HANDLERS = {}
+DOWNLOAD_HANDLERS: dict[str, str] = {}
 DOWNLOAD_HANDLERS_BASE = {
     "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
     "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
@@ -298,7 +310,7 @@ DOWNLOAD_HANDLERS_BASE = {
 DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024  # 1024m
 DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
 
-DOWNLOAD_SLOTS = {}
+DOWNLOAD_SLOTS: dict[str, dict[str, Any]] = {}
 
 DOWNLOAD_TIMEOUT = 180  # 3mins
 
@@ -314,7 +326,7 @@ DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
-DOWNLOADER_MIDDLEWARES = {}
+DOWNLOADER_MIDDLEWARES: dict[str, int] = {}
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
@@ -343,7 +355,7 @@ EDITOR = "vi"
 if sys.platform == "win32":
     EDITOR = "%s -m idlelib.idle"
 
-EXTENSIONS = {}
+EXTENSIONS: dict[str, int] = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
     "scrapy.extensions.logcount.LogCount": 0,
@@ -355,14 +367,15 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.logstats.LogStats": 0,
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": 0,
+    "scrapy.extensions.remote_control.RemoteControl": 0,
 }
 
-FEEDS = {}
+FEEDS: dict[str | Path, dict[str, Any]] = {}
 FEED_EXPORT_BATCH_ITEM_COUNT = 0
 FEED_EXPORT_ENCODING = None
 FEED_EXPORT_FIELDS = None
 FEED_EXPORT_INDENT = 0
-FEED_EXPORTERS = {}
+FEED_EXPORTERS: dict[str, str] = {}
 FEED_EXPORTERS_BASE = {
     "json": "scrapy.exporters.JsonItemExporter",
     "jsonlines": "scrapy.exporters.JsonLinesItemExporter",
@@ -375,7 +388,7 @@ FEED_EXPORTERS_BASE = {
 }
 FEED_FORMAT = "jsonlines"
 FEED_STORE_EMPTY = True
-FEED_STORAGES = {}
+FEED_STORAGES: dict[str, str] = {}
 FEED_STORAGES_BASE = {
     "": "scrapy.extensions.feedexport.FileFeedStorage",
     "file": "scrapy.extensions.feedexport.FileFeedStorage",
@@ -404,6 +417,8 @@ FTP_PASSWORD = "guest"  # noqa: S105
 
 GCS_PROJECT_ID = None
 
+HTTP2_MAX_FRAME_SIZE = 16384
+
 HTTPAUTH_USER = ""
 HTTPAUTH_PASS = ""
 HTTPAUTH_DOMAIN = None
@@ -414,15 +429,15 @@ HTTPCACHE_DBM_MODULE = "dbm"
 HTTPCACHE_DIR = "httpcache"
 HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_GZIP = False
-HTTPCACHE_IGNORE_HTTP_CODES = []
+HTTPCACHE_IGNORE_HTTP_CODES: list[int] = []
 HTTPCACHE_IGNORE_MISSING = False
-HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS = []
+HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS: list[str] = []
 HTTPCACHE_IGNORE_SCHEMES = ["file"]
 HTTPCACHE_POLICY = "scrapy.extensions.httpcache.DummyPolicy"
 HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 HTTPERROR_ALLOW_ALL = False
-HTTPERROR_ALLOWED_CODES = []
+HTTPERROR_ALLOWED_CODES: list[int] = []
 
 HTTPPROXY_ENABLED = True
 HTTPPROXY_AUTH_ENCODING = "latin-1"
@@ -433,14 +448,16 @@ IMAGES_STORE = None
 IMAGES_STORE_GCS_ACL = ""
 IMAGES_STORE_S3_ACL = "private"
 
-ITEM_PIPELINES = {}
-ITEM_PIPELINES_BASE = {}
+ITEM_PIPELINES: dict[str, int] = {}
+ITEM_PIPELINES_BASE: dict[str, int] = {}
 
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
 
+LOG_COLOR = True
 LOG_ENABLED = True
+LOG_INSTALL_ROOT_HANDLER = True
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENCODING = "utf-8"
 LOG_FILE = None
@@ -473,7 +490,7 @@ MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
 
-MEDIA_STORAGES = {}
+MEDIA_STORAGES: dict[str, str] = {}
 MEDIA_STORAGES_BASE = {
     "": "scrapy.pipelines.files.FSFilesStore",
     "file": "scrapy.pipelines.files.FSFilesStore",
@@ -487,7 +504,7 @@ MEMDEBUG_ENABLED = False  # enable memory debugging
 MEMUSAGE_ENABLED = True
 MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
 MEMUSAGE_LIMIT_MB = 0
-MEMUSAGE_NOTIFY_MAIL = []
+MEMUSAGE_NOTIFY_MAIL: list[str] = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
@@ -510,7 +527,14 @@ REDIRECT_PRIORITY_ADJUST = +2
 
 REFERER_ENABLED = True
 REFERRER_POLICY = "scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"
-REFERRER_POLICIES = {}
+REFERRER_POLICIES: dict[str, str | None] = {}
+
+REMOTE_CONTROL_ENABLED = True
+REMOTE_CONTROL_JOBS_DIR = None
+REMOTE_CONTROL_TIMEOUT_DEFAULT = 30.0
+REMOTE_CONTROL_TIMEOUT_MAX = 600.0
+REMOTE_CONTROL_OUTPUT_MAX_BYTES = 64 * 1024
+REMOTE_CONTROL_TRACEBACK_MAX_BYTES = 16 * 1024
 
 REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 
@@ -548,11 +572,15 @@ SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
-SPIDER_CONTRACTS = {}
+SPIDER_CONTRACTS: dict[str, int] = {}
 SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.UrlContract": 1,
     "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
     "scrapy.contracts.default.MetadataContract": 1,
+    "scrapy.contracts.default.MethodContract": 1,
+    "scrapy.contracts.default.BodyContract": 1,
+    "scrapy.contracts.default.HeaderContract": 1,
+    "scrapy.contracts.default.CookieContract": 1,
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }
@@ -560,7 +588,7 @@ SPIDER_CONTRACTS_BASE = {
 SPIDER_LOADER_CLASS = "scrapy.spiderloader.SpiderLoader"
 SPIDER_LOADER_WARN_ONLY = False
 
-SPIDER_MIDDLEWARES = {}
+SPIDER_MIDDLEWARES: dict[str, int] = {}
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 25,
@@ -568,16 +596,19 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
-    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 1000,
+    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 999,
+    "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     # Spider side
 }
 
-SPIDER_MODULES = []
+SPIDER_MODULES: list[str] = []
 
 STATS_CLASS = "scrapy.statscollectors.MemoryStatsCollector"
 STATS_DUMP = True
 
-STATSMAILER_RCPTS = []
+STATSMAILER_RCPTS: list[str] = []
+
+STICKY_META_KEYS: list[str] = []
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_HOST = "127.0.0.1"

@@ -31,7 +31,6 @@ def crawler() -> Crawler:
 
 @pytest.fixture
 def stats(crawler: Crawler) -> StatsCollector:
-    assert crawler.stats is not None
     return crawler.stats
 
 

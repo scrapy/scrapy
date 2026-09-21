@@ -32,7 +32,7 @@ _VT = TypeVar("_VT")
 _P = ParamSpec("_P")
 
 
-def is_listlike(x: Any) -> bool:
+def is_listlike(x: object) -> bool:
     """
     >>> is_listlike("foo")
     False
@@ -101,7 +101,9 @@ def to_bytes(
     return text.encode(encoding, errors)
 
 
-def _chunk_iter(text: str, chunk_size: int) -> Iterable[tuple[str, int]]:
+def _chunk_iter(
+    text: str, chunk_size: int
+) -> Iterable[tuple[str, int]]:  # pragma: no cover
     offset = len(text)
     while True:
         offset -= chunk_size * 1024
@@ -161,7 +163,7 @@ def memoizemethod_noargs(
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
 
-    return new_method
+    return new_method  # type: ignore[return-value]
 
 
 _BINARYCHARS = {
@@ -213,17 +215,15 @@ def get_func_args_dict(
     except ValueError:
         return {}
 
-    if isinstance(func, partial):
-        partial_args = func.args
-        partial_kw = func.keywords
-
-        args = {}
-        for name, param in sig.parameters.items():
-            if name in partial_args:
-                continue
-            if partial_kw and name in partial_kw:
-                continue
-            args[name] = param
+    if isinstance(func, partial) and func.keywords:
+        # The signature of a partial already omits the parameters bound to
+        # positional arguments, but it keeps those bound to keyword arguments,
+        # turned into keyword-only parameters with a default.
+        args = {
+            name: param
+            for name, param in sig.parameters.items()
+            if name not in func.keywords
+        }
     else:
         args = sig.parameters
 
@@ -363,7 +363,7 @@ class MutableAsyncChain(AsyncIterator[_T]):
         return self
 
     async def __anext__(self) -> _T:
-        return await self.data.__anext__()
+        return await anext(self.data)
 
 
 def _looks_like_import_path(value: str) -> bool:

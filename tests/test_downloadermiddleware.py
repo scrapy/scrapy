@@ -70,6 +70,18 @@ class TestDefaults(TestManagerBase):
         assert isinstance(ret, Response), "Non-response returned"
 
     @coroutine_test
+    async def test_none_from_download_func(self):
+        async def download_func(request: Request) -> None:
+            return None
+
+        async with self.get_mwman() as mwman:
+            with pytest.raises(TypeError, match="Received None in process_response"):
+                await mwman.download_async(
+                    download_func,  # type: ignore[arg-type]
+                    Request("http://example.com/index.html"),
+                )
+
+    @coroutine_test
     async def test_3xx_and_invalid_gzipped_body_must_redirect(self):
         """Regression test for a failure when redirecting a compressed
         request.

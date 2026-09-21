@@ -21,7 +21,7 @@ Having trouble? We'd like to help!
 
 * Try the :doc:`FAQ <faq>` -- it's got answers to some common questions.
 * Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`.
-* Ask or search questions in `StackOverflow using the scrapy tag`_.
+* Ask or search questions on `Stack Overflow using the scrapy tag`_.
 * Ask or search questions in the `Scrapy subreddit`_.
 * Search for questions on the archives of the `scrapy-users mailing list`_.
 * Ask a question in the `#scrapy IRC channel`_.
@@ -30,7 +30,7 @@ Having trouble? We'd like to help!
 
 .. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
-.. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
+.. _Stack Overflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
@@ -69,6 +69,7 @@ Basic concepts
    :caption: Basic concepts
    :hidden:
 
+   topics/concepts
    topics/commands
    topics/spiders
    topics/selectors
@@ -82,6 +83,9 @@ Basic concepts
    topics/link-extractors
    topics/settings
    topics/exceptions
+
+:doc:`topics/concepts`
+    Get a quick map of Scrapy's main concepts and when to use each.
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
@@ -135,7 +139,7 @@ Built-in services
    topics/telnetconsole
 
 :doc:`topics/logging`
-    Learn how to use Python's built-in logging on Scrapy.
+    Learn how to use Python's built-in logging in Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
@@ -152,6 +156,7 @@ Solving specific problems
    :hidden:
 
    faq
+   topics/agents
    topics/debug
    topics/contracts
    topics/practices
@@ -170,6 +175,9 @@ Solving specific problems
 
 :doc:`faq`
     Get answers to most frequently asked questions.
+
+:doc:`topics/agents`
+    Learn how to use Scrapy with coding agents efficiently.
 
 :doc:`topics/debug`
     Learn how to debug common problems of your Scrapy spider.
@@ -200,7 +208,7 @@ Solving specific problems
     Download files and/or images associated with your scraped items.
 
 :doc:`topics/deploy`
-    Deploying your Scrapy spiders and run them in a remote server.
+    Deploy your Scrapy spiders and run them on a remote server.
 
 :doc:`topics/autothrottle`
     Adjust crawl rate dynamically based on load.
@@ -252,7 +260,7 @@ Extending Scrapy
     Customize the input and output of your spiders.
 
 :doc:`topics/extensions`
-    Extend Scrapy with your custom functionality
+    Extend Scrapy with your custom functionality.
 
 :doc:`topics/signals`
     See all available signals and how to work with them.
@@ -261,7 +269,7 @@ Extending Scrapy
     Understand the scheduler component.
 
 :doc:`topics/exporters`
-    Quickly export your scraped items to a file (XML, CSV, etc).
+    Quickly export your scraped items to a file (XML, CSV, etc.).
 
 :doc:`topics/download-handlers`
     Customize how requests are downloaded or add support for new URL schemes.
@@ -271,7 +279,7 @@ Extending Scrapy
     components.
 
 :doc:`topics/api`
-    Use it on extensions and middlewares to extend Scrapy functionality.
+    Use it in extensions and middlewares to extend Scrapy functionality.
 
 
 All the rest

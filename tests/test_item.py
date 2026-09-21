@@ -1,3 +1,4 @@
+import copy
 from abc import ABCMeta
 from typing import Any
 from unittest import mock
@@ -288,6 +289,15 @@ class TestItem:
         item = TestItem({"name": "lower"})
         copied_item = item.copy()
         assert id(item) != id(copied_item)
+        copied_item["name"] = copied_item["name"].upper()
+        assert item["name"] != copied_item["name"]
+
+    def test_copy_copy(self):
+        class TestItem(Item):
+            name = Field()
+
+        item = TestItem({"name": "lower"})
+        copied_item = copy.copy(item)
         copied_item["name"] = copied_item["name"].upper()
         assert item["name"] != copied_item["name"]
 
