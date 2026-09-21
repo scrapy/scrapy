@@ -350,7 +350,9 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.close_async())
 
-    async def close_async(self, *, reason: str = "shutdown") -> None:
+    async def close_async(
+        self, *, reason: str = "shutdown", error: bool = False
+    ) -> None:
         """
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
@@ -359,7 +361,8 @@ class ExecutionEngine:
             await self.stop_async()  # will also close spider and downloader
             return
         if self.spider is not None:
-            await self.close_spider_async(reason=reason)  # will also close downloader
+            # will also close downloader
+            await self.close_spider_async(reason=reason, error=error)
         else:
             self.downloader.close()
         if self._state not in (_EngineState.STOPPING, _EngineState.STOPPED):
@@ -385,7 +388,9 @@ class ExecutionEngine:
         except CloseSpider as exception:
             self._start = None
             _schedule_coro(
-                self.close_spider_async(reason=exception.reason or "cancelled")
+                self.close_spider_async(
+                    reason=exception.reason or "cancelled", error=exception.error
+                )
             )
         except Exception as exception:
             self._start = None
@@ -721,7 +726,7 @@ class ExecutionEngine:
             default_reason = "start_error" if self._start_error else "finished"
             ex = detected_ex.get(CloseSpider, CloseSpider(reason=default_reason))
             assert isinstance(ex, CloseSpider)  # typing
-            _schedule_coro(self.close_spider_async(reason=ex.reason))
+            _schedule_coro(self.close_spider_async(reason=ex.reason, error=ex.error))
 
     def close_spider(
         self,
@@ -769,6 +774,7 @@ class ExecutionEngine:
         *,
         reason: str = "cancelled",
         mode: _StopMode = "graceful",
+        error: bool = False,
     ) -> None:
         """Close (cancel) spider and clear all its outstanding requests.
 
@@ -825,6 +831,7 @@ class ExecutionEngine:
                 signal=signals.spider_closed,
                 spider=spider,
                 reason=reason,
+                error=error,
             )
         except Exception:
             logger.exception(

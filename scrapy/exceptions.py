@@ -62,7 +62,12 @@ class CloseSpider(Exception):
     .. versionchanged:: 2.18.0
        Added support for raising it while the spider is starting.
 
-    *reason* is a string with the reason for closing.
+    .. versionadded:: VERSION
+       The *error* parameter.
+
+    *reason* is a string with the reason for closing. *error*, keyword-only,
+    marks the crawl as failed, which commands such as :command:`crawl` report
+    through their process exit code.
 
     For example:
 
@@ -73,9 +78,10 @@ class CloseSpider(Exception):
                 raise CloseSpider("bandwidth_exceeded")
     """
 
-    def __init__(self, reason: str = "cancelled"):
+    def __init__(self, reason: str = "cancelled", *, error: bool = False):
         super().__init__()
         self.reason = reason
+        self.error = error
 
 
 class StopDownload(Exception):
