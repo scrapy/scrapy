@@ -4,13 +4,13 @@ from __future__ import annotations
 
 # used in global tests code
 from time import time  # noqa: F401
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from scrapy.core.engine import ExecutionEngine
 
 
-def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, Any]]:
+def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, object]]:
     """Return a report of the current engine status"""
     tests = [
         "time()-engine.start_time",
@@ -29,7 +29,7 @@ def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, Any]]:
         "engine.scraper.slot.needs_backout()",
     ]
 
-    checks: list[tuple[str, Any]] = []
+    checks: list[tuple[str, object]] = []
     for test in tests:
         try:
             checks += [(test, eval(test))]  # noqa: S307

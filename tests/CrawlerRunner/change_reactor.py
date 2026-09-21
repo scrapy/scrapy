@@ -28,5 +28,5 @@ d = runner.crawl(NoRequestsSpider)
 
 from twisted.internet import reactor  # noqa: E402,TID253
 
-d.addBoth(callback=lambda _: reactor.stop())
+d.addBoth(lambda _: reactor.stop())
 reactor.run()
