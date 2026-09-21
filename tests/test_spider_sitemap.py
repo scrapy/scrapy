@@ -377,7 +377,7 @@ Sitemap: /sitemap-relative-url.xml
     @coroutine_test
     async def test_sitemap_request(self, mockserver: MockServer):
         class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
-            def sitemap_request(self, loc, callback, entry):
+            def sitemap_request(self, loc, callback, entry, *, source, response):
                 return Request(loc, callback, meta={"lastmod": entry["lastmod"]})
 
             def parse(self, response):
@@ -396,35 +396,87 @@ Sitemap: /sitemap-relative-url.xml
         items, _ = await crawl_items(_Spider, mockserver)
         assert items == [{"url": mockserver.url("/text"), "lastmod": "2005-01-01"}]
 
-    def test_sitemap_request_from_sitemapindex(self):
-        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    @pytest.mark.parametrize(
+        ("url", "body", "expected"),
+        [
+            (
+                "http://www.example.com/robots.txt",
+                b"Sitemap: http://www.example.com/sitemap1.xml",
+                [
+                    (
+                        "http://www.example.com/sitemap1.xml",
+                        "_parse_sitemap",
+                        {"loc": "http://www.example.com/sitemap1.xml"},
+                        "robotstxt",
+                    )
+                ],
+            ),
+            (
+                "http://www.example.com/sitemap.xml",
+                b"""<?xml version="1.0" encoding="UTF-8"?>
     <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
         <sitemap>
             <loc>http://www.example.com/sitemap1.xml</loc>
             <lastmod>2005-01-01</lastmod>
         </sitemap>
-    </sitemapindex>"""
-        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+    </sitemapindex>""",
+                [
+                    (
+                        "http://www.example.com/sitemap1.xml",
+                        "_parse_sitemap",
+                        {
+                            "loc": "http://www.example.com/sitemap1.xml",
+                            "lastmod": "2005-01-01",
+                        },
+                        "sitemapindex",
+                    )
+                ],
+            ),
+            (
+                "http://www.example.com/sitemap.xml",
+                b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <lastmod>2005-01-01</lastmod>
+        </url>
+    </urlset>""",
+                [
+                    (
+                        "http://www.example.com/english/",
+                        "parse",
+                        {
+                            "loc": "http://www.example.com/english/",
+                            "lastmod": "2005-01-01",
+                        },
+                        "urlset",
+                    )
+                ],
+            ),
+        ],
+        ids=["robotstxt", "sitemapindex", "urlset"],
+    )
+    def test_sitemap_request_source(
+        self,
+        url: str,
+        body: bytes,
+        expected: list[tuple[str, str, dict[str, str], str]],
+    ):
+        response = TextResponse(url=url, body=body)
         calls = []
 
         class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
-            def sitemap_request(self, loc, callback, entry):
-                calls.append((loc, callback, entry))
-                return super().sitemap_request(loc, callback, entry)
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                calls.append((loc, callback.__name__, entry, source, response))
+                return super().sitemap_request(
+                    loc, callback, entry, source=source, response=response
+                )
 
         spider = _Spider("example.com")
-        requests = list(spider._parse_sitemap(r))
+        requests = list(spider._parse_sitemap(response))
 
-        assert [request.url for request in requests] == [
-            "http://www.example.com/sitemap1.xml"
-        ]
-        assert calls == [
-            (
-                "http://www.example.com/sitemap1.xml",
-                spider._parse_sitemap,
-                {"loc": "http://www.example.com/sitemap1.xml", "lastmod": "2005-01-01"},
-            )
-        ]
+        assert [request.url for request in requests] == [loc for loc, *_ in expected]
+        assert calls == [(*item, response) for item in expected]
 
     def test_sitemap_request_for_alternate_links(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -440,7 +492,7 @@ Sitemap: /sitemap-relative-url.xml
         class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
             sitemap_alternate_links = True
 
-            def sitemap_request(self, loc, callback, entry):
+            def sitemap_request(self, loc, callback, entry, *, source, response):
                 return Request(loc, callback, meta={"entry_loc": entry["loc"]})
 
         spider = _Spider("example.com")

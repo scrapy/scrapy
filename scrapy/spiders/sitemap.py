@@ -6,7 +6,7 @@ import warnings
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, XmlResponse
@@ -72,31 +72,54 @@ class SitemapSpider(Spider):
         yield from entries
 
     def sitemap_request(
-        self, loc: str, callback: CallbackT, entry: dict[str, Any]
+        self,
+        loc: str,
+        callback: CallbackT,
+        entry: dict[str, Any],
+        *,
+        source: Literal["robotstxt", "sitemapindex", "urlset"],
+        response: Response,
     ) -> Request:
         """Return the request for the *loc* URL of the sitemap *entry*, to be
         parsed with *callback*.
 
         .. versionadded:: VERSION
 
-        Override this method to build those requests differently, e.g. to make
-        sitemap data available to *callback*:
+        Override this method to build those requests differently, e.g. to
+        carry sitemap data and request metadata over to *callback*:
 
         .. code-block:: python
 
-            def sitemap_request(self, loc, callback, entry):
-                return Request(loc, callback, meta={"lastmod": entry.get("lastmod")})
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                meta = {**response.meta, "lastmod": entry.get("lastmod")}
+                return Request(loc, callback, meta=meta)
 
         *entry* is the sitemap entry that *loc* comes from, as described in
         :meth:`sitemap_filter`. When :attr:`sitemap_alternate_links` is
         enabled, the same entry is used for every alternate URL.
+
+        *source* tells where *loc* comes from: ``"urlset"`` for a URL to
+        crawl, ``"sitemapindex"`` for a sitemap linked from a sitemap index,
+        and ``"robotstxt"`` for a sitemap linked from a :file:`robots.txt`
+        file, where *entry* only has ``loc``.
+
+        *response* is the response that *entry* was read from.
         """
         return Request(loc, callback=callback)
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
-            return (Request(url, callback=self._parse_sitemap) for url in urls)
+            return (
+                self.sitemap_request(
+                    url,
+                    self._parse_sitemap,
+                    {"loc": url},
+                    source="robotstxt",
+                    response=response,
+                )
+                for url in urls
+            )
 
         body = self._get_sitemap_body(response)
         if not body:
@@ -114,7 +137,13 @@ class SitemapSpider(Spider):
                 self._get_urls_from_sitemapindex(self.sitemap_filter(s))
             )
             return (
-                self.sitemap_request(loc, self._parse_sitemap, entry)
+                self.sitemap_request(
+                    loc,
+                    self._parse_sitemap,
+                    entry,
+                    source="sitemapindex",
+                    response=response,
+                )
                 for loc, entry in index_entries
             )
 
@@ -123,7 +152,8 @@ class SitemapSpider(Spider):
                 self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
             )
             return (
-                self.sitemap_request(loc, c, entry) for loc, c, entry in urlset_entries
+                self.sitemap_request(loc, c, entry, source="urlset", response=response)
+                for loc, c, entry in urlset_entries
             )
 
         logger.warning(
