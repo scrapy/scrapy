@@ -979,7 +979,7 @@ class TestS3FilesStore:
     )
     @pytest.mark.usefixtures("non_utc_timezone")
     @inline_callbacks_test
-    def test_stat(self, last_modified: datetime) -> None:
+    def test_stat(self, last_modified: datetime):
         bucket = "mybucket"
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
@@ -1244,7 +1244,7 @@ class TestFTPFileStore:
         mdtm_reply: str,
         expected: float,
         monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    ):
         monkeypatch.setattr(FTPFilesStore, "FTP_USERNAME", "anonymous")
         monkeypatch.setattr(FTPFilesStore, "FTP_PASSWORD", "guest")
         ftp = MagicMock()
