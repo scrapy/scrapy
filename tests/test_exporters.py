@@ -5,7 +5,7 @@ import pickle
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any
 
@@ -75,11 +75,12 @@ class TestBaseItemExporter(ABC):
             exported_dict[k] = to_unicode(v)
         assert self.i == self.item_class(**exported_dict)
 
-    def _get_nonstring_types_item(self) -> dict[str, Any]:
+    @staticmethod
+    def _get_nonstring_types_item() -> dict[str, Any]:
         return {
             "boolean": False,
             "number": 22,
-            "time": datetime(2015, 1, 1, 1, 1, 1),
+            "time": datetime(2015, 1, 1, 1, 1, 1, tzinfo=timezone.utc),
             "float": 3.14,
         }
 
@@ -383,7 +384,7 @@ class TestCsvItemExporter(TestBaseItemExporter):
         self.assertExportResult(
             item=self._get_nonstring_types_item(),
             include_headers_line=False,
-            expected="22,False,3.14,2015-01-01 01:01:01\r\n",
+            expected="22,False,3.14,2015-01-01 01:01:01+00:00\r\n",
         )
 
     def test_errors_default(self):
@@ -528,7 +529,7 @@ class TestXmlItemExporter(TestBaseItemExporter):
                        <float>3.14</float>
                        <boolean>False</boolean>
                        <number>22</number>
-                       <time>2015-01-01 01:01:01</time>
+                       <time>2015-01-01 01:01:01+00:00</time>
                    </item>
                 </items>
             """,

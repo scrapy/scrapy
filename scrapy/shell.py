@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any
 
 from itemadapter import is_item
 from twisted.internet import threads
-from twisted.internet.defer import Deferred
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
@@ -23,12 +22,12 @@ import scrapy
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils._shell import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.conf import get_config
-from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 
@@ -53,12 +52,11 @@ if TYPE_CHECKING:
 # reactor to be in a separate thread: the shell sends the request to
 # the reactor and waits for the result synchronously).
 #
-# Thus the only thing Shell needs an event loop for is fetch(). More machinery
-# is used for it to work. In chronological order:
-# 1. scrapy.commands.shell.Command.run() creates a crawler and an engine, then
-# calls
-# _schedule_coro(crawler.engine.start_async(_start_request_processing=False)),
-# which initializes the engine but doesn't start processing of requests.
+# Thus the only thing Shell needs an event loop for is fetch(). The engine is
+# never started as the shell doesn't need request processing and
+# download_async() still works.
+# In chronological order:
+# 1. scrapy.commands.shell.Command.run() creates a crawler and an engine.
 # 2. scrapy.commands.shell.Command.run() calls crawler_process.start() in a
 # thread which starts a reactor in that thread.
 # 3. When fetch() is called, it prepares a request and calls Shell._schedule()
@@ -66,29 +64,20 @@ if TYPE_CHECKING:
 # 4. Shell._schedule() calls Shell._open_spider() (on the first call).
 # 5. Shell._open_spider() calls
 # engine.open_spider_async(close_if_idle=False).
-# 6. Shell._schedule() calls engine.crawl(request), scheduling the request.
-# 7. Shell._schedule() via _request_deferred() waits until the request callback
-# is called. When it's called, the response becomes available.
+# 6. Shell._schedule() calls engine.download_async(request), which completes
+# with the response.
 #
-# In the reactorless mode this is slightly different, the engine initialization
+# In the reactorless mode this is slightly different, the engine creation
 # happens in the event loop thread as many things need either a reactor or a
 # running event loop.
-#
-# Side note: it should be possible to remove _request_deferred() by using
-# engine.download_async() instead of engine.crawl(), losing the usual stuff
-# like spider middlewares (none of which should be important).
 #
 # Other architecture problems:
 # * scrapy.cmdline.execute() creates an AsyncCrawlerProcess instance which
 #   immediately installs a reactor (which is maybe not thread-specific?) or an
 #   event loop (which *is* thread-specific, so the main thread will always have
 #   a (not running) loop installed.
-# * scrapy.commands.shell.Command.run() calls _schedule_coro() in the main
-#   thread, and various engine init code also calls similar things,
-#   conceptually this shouldn't work (and doesn't in the reactorless mode, so
-#   there the initialization is moved to the event loop thread).
-# * The engine has several code paths specifically for the shell, and the shell
-#   uses several private members of the engine and of AsyncCrawlerProcess.
+# * The shell uses several private members of Crawler (_create_engine(),
+#   _create_spider()) and of AsyncCrawlerProcess (_reactorless_loop).
 
 
 class Shell:
@@ -186,17 +175,14 @@ class Shell:
             )
 
     async def _schedule(self, request: Request, spider: Spider | None) -> Response:
-        """Send the request to the engine, wait for the result.
+        """Download the request through the engine and return the response.
 
         Runs in the reactor thread when using the reactor, or in the asyncio
         event loop thread otherwise.
         """
         if not self.spider:
             await self._open_spider(spider)
-        # send the request to the engine
-        self.crawler.engine.crawl(request)
-        # this will fire when the request callback runs (via the callback hijacking in _request_deferred())
-        return await maybe_deferred_to_future(_request_deferred(request))
+        return await self.crawler.engine.download_async(request)
 
     async def _open_spider(self, spider: Spider | None) -> None:
         if spider is None:
@@ -215,15 +201,19 @@ class Shell:
     ) -> None:
         if isinstance(request_or_url, Request):
             request = request_or_url
+            if (
+                not (request.callback is None or request.callback is NO_CALLBACK)
+                or request.errback
+            ):
+                warnings.warn(
+                    "Callbacks and errbacks of Request objects passed to fetch() are ignored.",
+                    stacklevel=2,
+                )
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True, **kwargs)
-            if redirect:
-                request.meta["handle_httpstatus_list"] = SequenceExclude(
-                    range(300, 400)
-                )
-            else:
-                request.meta["handle_httpstatus_all"] = True
+            request = Request(url, callback=NO_CALLBACK, dont_filter=True, **kwargs)
+            if not redirect:
+                request.meta["dont_redirect"] = True
         response: Response | None = None
         if self._use_reactor:
             from twisted.internet import reactor
@@ -292,7 +282,7 @@ class Shell:
 
         return "\n".join(f"[s] {line}" for line in b) + "\n"
 
-    def _is_relevant(self, value: Any) -> bool:
+    def _is_relevant(self, value: object) -> bool:
         return isinstance(value, self.relevant_classes) or is_item(value)
 
 
@@ -307,33 +297,3 @@ def inspect_response(response: Response, spider: Spider) -> None:
         loop = None
     Shell(spider.crawler, loop=loop).start(response=response, spider=spider)
     signal.signal(signal.SIGINT, sigint_handler)
-
-
-def _request_deferred(request: Request) -> Deferred[Any]:
-    """Wrap a request inside a Deferred.
-
-    This function is harmful, do not use it until you know what you are doing.
-
-    This returns a Deferred whose first pair of callbacks are the request
-    callback and errback. The Deferred also triggers when the request
-    callback/errback is executed (i.e. when the request is downloaded)
-
-    WARNING: Do not call request.replace() until after the deferred is called.
-    """
-    request_callback = request.callback
-    request_errback = request.errback
-
-    def _restore_callbacks(result: Any) -> Any:
-        request.callback = request_callback
-        request.errback = request_errback
-        return result
-
-    d: Deferred[Any] = Deferred()
-    d.addBoth(_restore_callbacks)
-    if request.callback:
-        d.addCallback(request.callback)
-    if request.errback:
-        d.addErrback(request.errback)
-
-    request.callback, request.errback = d.callback, d.errback
-    return d
