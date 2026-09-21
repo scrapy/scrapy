@@ -159,7 +159,8 @@ crawl slower than a lower concurrency would have been. To find that limit:
 -   Crawl when the website is idle, in its own timezone, so that the capacity
     you take is capacity nobody else wanted.
 
--   Raise concurrency gradually and watch the website respond.
+-   Raise concurrency gradually and watch the website respond, changing it on
+    the running crawl from the :ref:`telnet console <telnet-concurrency>`.
     :stat:`downloader/response_status_count/{status_code}` counts for 429, 503
     or the ban page of the website, growing :stat:`retry/count`, or a
     :ref:`download latency <download-latency>` that climbs as you push harder,
@@ -192,6 +193,46 @@ Each of these trades memory for speed: a request produced before the downloader
 can take it waits in the scheduler, or on disk if you set :setting:`JOBDIR`.
 Pushed far enough, they turn memory or disk into your new bottleneck, which is
 why :ref:`optimize-memory` recommends the reverse of the last point.
+
+
+.. _optimize-blocking:
+
+Keeping the event loop free
+===========================
+
+Your callbacks, :ref:`spider middlewares <topics-spider-middleware>`,
+:ref:`downloader middlewares <topics-downloader-middleware>` and :ref:`item
+pipelines <topics-item-pipeline>` share a thread with the event loop. While any
+of them runs, Scrapy neither sends requests nor reads responses, so every
+download in flight waits for it.
+
+That shows up as a :ref:`download latency <download-latency>` that grows
+through the crawl, often into tens of seconds, while the target website answers
+as fast as ever: the latency of a response covers the time until Scrapy gets
+around to reading it, and every pending callback runs first.
+
+Move the slow code to a thread so that downloads continue while it runs:
+
+.. code-block:: python
+
+    from scrapy import Spider
+    from scrapy.utils.asyncio import run_in_thread
+
+
+    class SlowParseSpider(Spider):
+        name = "slow_parse"
+        start_urls = ["https://toscrape.com"]
+
+        async def parse(self, response):
+            yield await run_in_thread(self.extract_item, response)
+
+        def extract_item(self, response):
+            # CPU-heavy parsing
+            ...
+
+A thread does not give CPU-bound Python code more CPU to work with, since it
+still competes for the GIL; it only keeps that code from holding up downloads.
+See :ref:`distributed-crawls` to use more than one core.
 
 
 .. _optimize-resources:

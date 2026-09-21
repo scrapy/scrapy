@@ -392,11 +392,11 @@ class TestImagesPipelineFieldsDataClass(TestImagesPipelineFieldsMixin):
 class ImagesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    image_urls: list[str] = attr.ib(default=list)
-    images: list[dict[str, str]] = attr.ib(default=list)
+    image_urls: list[str] = attr.ib(factory=list)
+    images: list[dict[str, str]] = attr.ib(factory=list)
     # overridden fields
-    custom_image_urls: list[str] = attr.ib(default=list)
-    custom_images: list[dict[str, str]] = attr.ib(default=list)
+    custom_image_urls: list[str] = attr.ib(factory=list)
+    custom_images: list[dict[str, str]] = attr.ib(factory=list)
 
 
 class TestImagesPipelineFieldsAttrsItem(TestImagesPipelineFieldsMixin):

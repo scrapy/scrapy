@@ -332,10 +332,9 @@ class Scraper:
         try:
             yield dfd  # fired in _wait_for_processing()
         except Exception:
-            logger.error(
+            logger.exception(
                 "Scraper bug processing %(request)s",
                 {"request": request},
-                exc_info=True,
                 extra={"spider": self.crawler.spider},
             )
         finally:
