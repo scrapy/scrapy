@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import gc
 import os
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from weakref import WeakSet
 
 import pytest
 from twisted.web.http import H2_ENABLED
@@ -15,6 +15,11 @@ from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
 from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
+
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
@@ -82,6 +87,25 @@ def fast_engine_heartbeat(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.1)
 
 
+_aiohttp_sessions: WeakSet[aiohttp.ClientSession] = WeakSet()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _track_aiohttp_sessions() -> Iterator[None]:
+    if aiohttp is None:
+        yield
+        return
+    original_init = aiohttp.ClientSession.__init__
+
+    def init(self: aiohttp.ClientSession, *args: Any, **kwargs: Any) -> None:
+        original_init(self, *args, **kwargs)
+        _aiohttp_sessions.add(self)
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(aiohttp.ClientSession, "__init__", init)
+        yield
+
+
 @pytest.fixture(autouse=True)
 def _fail_on_unclosed_aiohttp_session(
     caplog: pytest.LogCaptureFixture,
@@ -89,22 +113,27 @@ def _fail_on_unclosed_aiohttp_session(
     """Fail the test that leaks an aiohttp ``ClientSession`` instead of a
     later, unrelated one.
 
-    ``ClientSession.__del__()`` reports an unclosed session to the asyncio
-    logger, not through the warnings module, so it survives regardless of
-    which test happens to be running when the garbage collector gets to it.
-    Under the ``none`` reactor, any test that downloads over HTTP or HTTPS
-    can end up going through :class:`~scrapy.core.downloader.handlers.
-    _aiohttp.AiohttpDownloadHandler`, not only the tests that target it
-    directly, so this runs for every test rather than a single module.
+    A leaked session usually sits in a reference cycle with its crawler, so it
+    is still alive at teardown and can be checked directly. One that was
+    already collected during the test reported itself through
+    ``ClientSession.__del__()``, which logs to the asyncio logger rather than
+    through the warnings module. Under the ``none`` reactor, any test that
+    downloads over HTTP or HTTPS can end up going through
+    :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`,
+    not only the tests that target it directly, so this runs for every test
+    rather than a single module.
     """
     yield
-    gc.collect()
-    unclosed = [
+    unclosed = [session for session in _aiohttp_sessions if not session.closed]
+    _aiohttp_sessions.clear()
+    reported = [
         record.message
-        for record in caplog.records
+        for when in ("setup", "call", "teardown")
+        for record in caplog.get_records(when)
         if record.name == "asyncio" and "Unclosed" in record.message
     ]
     assert not unclosed
+    assert not reported
 
 
 @pytest.fixture(scope="session")
