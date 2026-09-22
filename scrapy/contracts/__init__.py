@@ -88,10 +88,10 @@ class Contract:
     """
     name: str
 
-    def __init__(self, method: Callable[..., Any], *args: Any):
+    def __init__(self, method: Callable[..., Any], *args: str):
         self.testcase_pre = _create_testcase(method, f"@{self.name} pre-hook")
         self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
-        self.args: tuple[Any, ...] = args
+        self.args: tuple[str, ...] = args
 
     def add_pre_hook(self, request: Request, results: TestResult) -> Request:
         if hasattr(self, "pre_process"):

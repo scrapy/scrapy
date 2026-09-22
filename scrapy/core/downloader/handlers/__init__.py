@@ -120,10 +120,9 @@ class DownloadHandlers:
             self._notconfigured[scheme] = str(ex)
             return None
         except Exception as ex:
-            logger.error(
+            logger.exception(
                 'Loading "%(clspath)s" for scheme "%(scheme)s"',
                 {"clspath": path, "scheme": scheme},
-                exc_info=True,
                 extra={"crawler": self._crawler},
             )
             self._notconfigured[scheme] = str(ex)
