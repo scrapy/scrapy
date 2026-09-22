@@ -176,6 +176,10 @@ class TestShellCommand:
         _, out, _ = proc("shell", "-c", code)
         assert url in out
 
+    def test_engine_not_started(self) -> None:
+        _, out, _ = proc("shell", "-c", "crawler.engine.running")
+        assert out.strip() == "False"
+
 
 class TestShellCommandWithSpider(TestProjectBase):
     @pytest.fixture(autouse=True)

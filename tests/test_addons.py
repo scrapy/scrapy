@@ -115,7 +115,7 @@ class TestAddonManager:
             settings = {"ADDONS": {a: i for i, a in enumerate(ordered_addons)}}
             crawler = get_crawler(settings_dict=settings)
             manager = crawler.addons
-            assert [a.number for a in manager.addons] == expected_order
+            assert [a.number for a in manager.addons] == expected_order  # type: ignore[attr-defined]
             assert crawler.settings.getint("KEY1") == expected_order[-1]
 
     def test_build_from_crawler(self):
