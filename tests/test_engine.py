@@ -455,6 +455,29 @@ async def test_stop_without_spider_closes_downloader() -> None:
 
 
 @coroutine_test
+async def test_stop_while_item_in_pipelines() -> None:
+    """A stop that starts while an item is going through the item pipelines
+    completes once that item is done."""
+
+    class StoppingPipeline:
+        async def process_item(self, item: Any) -> Any:
+            _schedule_coro(crawler.stop_async())
+            await sleep(0.1)
+            return item
+
+    class ItemSpider(Spider):
+        name = "item"
+
+        async def start(self) -> AsyncIterator[Any]:
+            yield {"a": "b"}
+
+    crawler = get_crawler(ItemSpider, {"ITEM_PIPELINES": {StoppingPipeline: 1}})
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("item_scraped_count") == 1
+    assert crawler.stats.get_value("finish_reason") == "shutdown"
+
+
+@coroutine_test
 async def test_pause_unpause() -> None:
     engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
     try:

@@ -15,10 +15,13 @@ class NoRequestsSpider(scrapy.Spider):
 
 
 async def main() -> None:
-    crawler = await scrapy.run_async(NoRequestsSpider)
-    assert crawler.spider is not None
-    print(f"spider: {crawler.spider.name}", file=sys.stderr)
-    print(f"finish_reason: {crawler.stats.get_value('finish_reason')}", file=sys.stderr)
+    crawl = await scrapy.run_async(NoRequestsSpider)
+    assert crawl.crawler.spider is not None
+    print(f"spider: {crawl.crawler.spider.name}", file=sys.stderr)
+    print(
+        f"finish_reason: {crawl.crawler.stats.get_value('finish_reason')}",
+        file=sys.stderr,
+    )
 
 
 asyncio.run(main())

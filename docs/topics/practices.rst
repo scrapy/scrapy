@@ -38,18 +38,37 @@ To run a single spider, use :func:`scrapy.run`:
                 yield {"text": quote}
 
 
-    scrapy.run(MySpider, settings={"FEEDS": {"items.json": {}}})
+    crawl = scrapy.run(MySpider, settings={"FEEDS": {"items.json": {}}})
+    print(crawl.crawler.stats.get_value("item_scraped_count"))
 
 .. autofunction:: scrapy.run
+
+To get the scraped items, ask for them with ``items=True`` and iterate the
+returned object:
+
+.. code-block:: python
+
+    for item in scrapy.run(MySpider, items=True):
+        print(item)
 
 From code that already runs in an asyncio event loop, such as a notebook or an
 existing asyncio or Twisted application, use :func:`scrapy.run_async` instead:
 
 .. code-block:: python
 
-    await scrapy.run_async(MySpider)
+    crawl = await scrapy.run_async(MySpider)
 
 .. autofunction:: scrapy.run_async
+
+Iterating its return value asynchronously yields items as they are scraped:
+
+.. code-block:: python
+
+    async for item in scrapy.run_async(MySpider):
+        print(item)
+
+.. autoclass:: scrapy.crawler.Crawl
+   :members:
 
 To run several spiders in the same process, or to control the event loop
 yourself, use :class:`scrapy.crawler.AsyncCrawlerProcess` or

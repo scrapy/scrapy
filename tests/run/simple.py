@@ -13,7 +13,17 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-crawler = scrapy.run(NoRequestsSpider)
-assert crawler.spider is not None
-print(f"spider: {crawler.spider.name}", file=sys.stderr)
-print(f"finish_reason: {crawler.stats.get_value('finish_reason')}", file=sys.stderr)
+crawl = scrapy.run(NoRequestsSpider)
+assert crawl.crawler.spider is not None
+print(f"spider: {crawl.crawler.spider.name}", file=sys.stderr)
+print(
+    f"finish_reason: {crawl.crawler.stats.get_value('finish_reason')}", file=sys.stderr
+)
+try:
+    iter(crawl)
+except TypeError as exception:
+    print(f"TypeError: {exception}", file=sys.stderr)
+try:
+    scrapy.run_async(NoRequestsSpider)
+except RuntimeError as exception:
+    print(f"RuntimeError: {exception}", file=sys.stderr)
