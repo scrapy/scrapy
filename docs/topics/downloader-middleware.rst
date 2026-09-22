@@ -642,6 +642,11 @@ Default: ``[]``
 
 Don't cache response with these HTTP codes.
 
+If you also retry requests (see :setting:`RETRY_HTTP_CODES`), add those
+same status codes here. Otherwise, a response that gets retried may also
+get cached, and further retries of that request could be served that
+cached response instead of reaching the server again.
+
 .. setting:: HTTPCACHE_IGNORE_MISSING
 
 HTTPCACHE_IGNORE_MISSING
@@ -1089,6 +1094,10 @@ connections lost, etc) are always retried.
 In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
+
+If you also cache responses (see :setting:`HTTPCACHE_ENABLED`), see
+:setting:`HTTPCACHE_IGNORE_HTTP_CODES` to keep retried responses out of the
+cache.
 
 .. setting:: RETRY_EXCEPTIONS
 
