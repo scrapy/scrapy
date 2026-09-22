@@ -99,6 +99,21 @@ class TestArgumentDelivery:
         assert handler.spider == "SPIDER"
 
 
+class TestSignalName:
+    def test_shared_handler_tells_signals_apart_by_name(self) -> None:
+        received: list[str] = []
+
+        def handler(signal: Any = None, **kwargs: Any) -> None:
+            received.append(signal.name)
+
+        sm = SignalManager(object())
+        sm.connect(handler, signals.spider_opened)
+        sm.connect(handler, signals.spider_closed)
+        sm.send_catch_log(signals.spider_opened)
+        sm.send_catch_log(signals.spider_closed)
+        assert received == ["spider_opened", "spider_closed"]
+
+
 def _appending_handlers(calls: list[int], count: int) -> list[Callable[..., None]]:
     def make(n: int) -> Callable[..., None]:
         def handler(**kwargs: Any) -> None:

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from typing import Any as TypingAny
 from weakref import WeakKeyDictionary
 
-from blinker import ANY, Signal
+from blinker import ANY, NamedSignal, Signal
 
 from scrapy import signals as _builtin_signals
 from scrapy.utils.python import global_object_name
@@ -138,9 +138,8 @@ def _warn_unknown_args(receiver: TypingAny, signal: TypingAny) -> None:
 
 
 def _signal_name(signal: TypingAny) -> str:
-    for name, value in vars(_builtin_signals).items():
-        if value is signal:
-            return f"scrapy.signals.{name}"
+    if isinstance(signal, NamedSignal):
+        return f"scrapy.signals.{signal.name}"
     return repr(signal)
 
 
