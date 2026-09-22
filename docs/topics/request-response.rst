@@ -380,6 +380,35 @@ account:
         def fingerprint(self, request):
             return fingerprint(request, include_headers=["X-ID"])
 
+To deduplicate repeated query string parameters, such as those some sites
+add on every redirect and can otherwise cause redirect loops, build the
+deduplicated URL yourself and delegate the rest to
+:func:`scrapy.utils.request.fingerprint`:
+
+.. code-block:: python
+
+    # my_project/settings.py
+    REQUEST_FINGERPRINTER_CLASS = "my_project.utils.RequestFingerprinter"
+
+    # my_project/utils.py
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+    from weakref import WeakKeyDictionary
+
+    from scrapy.utils.request import fingerprint
+
+
+    class RequestFingerprinter:
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                parts = urlsplit(request.url)
+                query = urlencode(list(set(parse_qsl(parts.query))))
+                deduped_url = urlunsplit(parts._replace(query=query))
+                deduped_request = request.replace(url=deduped_url)
+                self.cache[request] = fingerprint(deduped_request)
+            return self.cache[request]
+
 You can also write your own fingerprinting logic from scratch.
 
 However, if you do not use :func:`scrapy.utils.request.fingerprint`, make sure

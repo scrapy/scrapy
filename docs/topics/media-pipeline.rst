@@ -521,6 +521,26 @@ Example of image files stored using ``small`` and ``big`` thumbnail names::
 
 The first one is the full image, as downloaded from the site.
 
+.. _preserving-image-format:
+
+Preserving the original image format
+------------------------------------
+
+.. setting:: IMAGES_PRESERVE_FORMAT
+
+By default, the Images Pipeline converts every image to JPEG, flattening
+transparency onto a white background. Set :setting:`IMAGES_PRESERVE_FORMAT`
+to ``True`` to keep each image, and its thumbnails, in the format it was
+downloaded in instead:
+
+.. code-block:: python
+
+    IMAGES_PRESERVE_FORMAT = True
+
+Stored files then get no extension, since the actual format is only known
+once the image has been downloaded; see :ref:`file-naming-response` to
+derive one from the response instead.
+
 Filtering out small images
 --------------------------
 

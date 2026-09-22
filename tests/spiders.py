@@ -608,6 +608,26 @@ class CrawlSpiderWithAsyncGeneratorCallback(CrawlSpiderWithParseMethod):
         )
 
 
+class CrawlSpiderWithCallbackException(CrawlSpiderWithParseMethod):
+    name = "crawl_spider_with_callback_exception"
+
+    async def start(self) -> AsyncIterator[Any]:
+        test_body = b"""
+        <html>
+            <head><title>Page title</title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- still followed -->
+            </body>
+        </html>
+        """
+        assert self.mockserver
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
+
+    def parse_start_url(self, response: Response, **kwargs: Any) -> None:
+        raise ValueError("callback exception")
+
+
 class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
     name = "crawl_spider_with_errback"
     rules = (Rule(LinkExtractor(), callback="parse", errback="errback", follow=True),)

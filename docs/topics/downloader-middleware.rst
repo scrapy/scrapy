@@ -205,6 +205,41 @@ requests as well, and the middleware above downloads a token for each of them.
 Cache the task that downloads the token, and not only its result, to download
 the token only once.
 
+.. _mw-oauth:
+
+Signing requests with OAuth
+===========================
+
+To sign requests, e.g. for two-legged OAuth, compute the signed headers in
+:meth:`process_request` with a third-party OAuth 1 client, such as the one from
+`oauthlib`_:
+
+.. skip: next
+
+.. code-block:: python
+
+    from oauthlib.oauth1 import Client
+
+
+    class OAuthMiddleware:
+        def __init__(self, client):
+            self.client = client
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            settings = crawler.settings
+            client = Client(
+                settings["OAUTH_CONSUMER_KEY"],
+                client_secret=settings["OAUTH_CONSUMER_SECRET"],
+            )
+            return cls(client)
+
+        def process_request(self, request):
+            _, headers, _ = self.client.sign(request.url, http_method=request.method)
+            request.headers["Authorization"] = headers["Authorization"]
+
+.. _oauthlib: https://oauthlib.readthedocs.io/
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -597,6 +632,11 @@ HTTPCACHE_IGNORE_HTTP_CODES
 Default: ``[]``
 
 Don't cache response with these HTTP codes.
+
+If you also retry requests (see :setting:`RETRY_HTTP_CODES`), add those
+same status codes here. Otherwise, a response that gets retried may also
+get cached, and further retries of that request could be served that
+cached response instead of reaching the server again.
 
 .. setting:: HTTPCACHE_IGNORE_MISSING
 
@@ -1045,6 +1085,10 @@ connections lost, etc) are always retried.
 In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
+
+If you also cache responses (see :setting:`HTTPCACHE_ENABLED`), see
+:setting:`HTTPCACHE_IGNORE_HTTP_CODES` to keep retried responses out of the
+cache.
 
 .. setting:: RETRY_EXCEPTIONS
 

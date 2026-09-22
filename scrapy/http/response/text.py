@@ -167,10 +167,6 @@ class TextResponse(Response):
         return self._cached_selector
 
     def jmespath(self, query: str, **kwargs: Any) -> SelectorList:
-        if not hasattr(self.selector, "jmespath"):
-            raise AttributeError(
-                "Please install parsel >= 1.8.1 to get jmespath support"
-            )
         return cast("SelectorList", self.selector.jmespath(query, **kwargs))
 
     def xpath(self, query: str, **kwargs: Any) -> SelectorList:
