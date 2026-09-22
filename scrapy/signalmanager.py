@@ -7,6 +7,7 @@ from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http.request import _active_crawler
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
 
@@ -98,7 +99,23 @@ class SignalManager:
         """
         # note that this returns exceptions instead of Failures in the second tuple member
         kwargs.setdefault("sender", self.sender)
-        return await _signal.send_catch_log_async(signal, **kwargs)
+
+        # circular import
+        from scrapy.crawler import Crawler  # noqa: PLC0415
+
+        # Lets Request.__await__() find the crawler while the signal handlers
+        # run. The sender is only a crawler for signal managers that Scrapy
+        # creates.
+        token = (
+            _active_crawler.set(self.sender)
+            if isinstance(self.sender, Crawler)
+            else None
+        )
+        try:
+            return await _signal.send_catch_log_async(signal, **kwargs)
+        finally:
+            if token is not None:
+                _active_crawler.reset(token)
 
     def disconnect_all(self, signal: object, **kwargs: Any) -> None:
         """

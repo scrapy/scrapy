@@ -30,6 +30,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
+from scrapy.http.request import _active_crawler
 from scrapy.utils._stopmode import _max_stop_mode, _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -378,6 +379,8 @@ class ExecutionEngine:
         pipelines.
         """
         assert self._start is not None
+        # Lets Request.__await__() find this crawler while Spider.start() runs.
+        token = _active_crawler.set(self.crawler)
         try:
             item_or_request = await anext(self._start)
         except StopAsyncIteration:
@@ -410,6 +413,8 @@ class ExecutionEngine:
                 assert self._slot is not None
                 self.scraper._start_itemproc_nowait(item_or_request)
                 self._slot.nextcall.schedule()
+        finally:
+            _active_crawler.reset(token)
 
     async def _start_request_processing(self) -> None:
         """Starts consuming Spider.start() output and sending scheduled
@@ -582,9 +587,12 @@ class ExecutionEngine:
     async def download_async(self, request: Request) -> Response:
         """Return a coroutine which fires with a Response as result.
 
-         Only downloader middlewares are applied.
-
         .. versionadded:: 2.14
+
+        Only downloader middlewares are applied.
+
+        For a request that you build yourself, prefer :ref:`awaiting it
+        <inline-requests>`.
         """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
@@ -608,6 +616,9 @@ class ExecutionEngine:
         assert self.spider is not None
 
         self._slot.add_request(request)
+        # Lets Request.__await__() find this crawler while the downloader
+        # middlewares run.
+        token = _active_crawler.set(self.crawler)
         try:
             result: Response | Request
             if self._downloader_fetch_needs_spider:
@@ -635,6 +646,7 @@ class ExecutionEngine:
             return result
         finally:
             self._slot.nextcall.schedule()
+            _active_crawler.reset(token)
 
     def open_spider(
         self, spider: Spider, close_if_idle: bool = True

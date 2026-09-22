@@ -194,6 +194,8 @@ Request objects
 
     .. autoattribute:: Request.attributes
 
+    .. automethod:: __await__
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:

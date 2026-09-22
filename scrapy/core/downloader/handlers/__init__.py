@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, NotSupported, ScrapyDeprecationWarning
+from scrapy.http.request import _in_download_handler
 from scrapy.utils.defer import (
     deferred_from_coro,
     ensure_awaitable,
@@ -44,7 +45,8 @@ class DownloadHandlerProtocol(Protocol):
 
     Besides implementing this protocol, the contract of a download handler
     includes **never** calling :meth:`crawler.engine.download_async()
-    <scrapy.core.engine.ExecutionEngine.download_async>`.
+    <scrapy.core.engine.ExecutionEngine.download_async>`, including
+    indirectly by awaiting a :class:`~scrapy.Request` object.
     """
 
     lazy: bool
@@ -157,14 +159,18 @@ class DownloadHandlers:
                 f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
             )
         assert self._crawler.spider
-        if scheme in self._old_style_handlers:  # pragma: no cover
-            return await maybe_deferred_to_future(
-                cast(
-                    "Deferred[Response]",
-                    handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+        token = _in_download_handler.set(True)
+        try:
+            if scheme in self._old_style_handlers:  # pragma: no cover
+                return await maybe_deferred_to_future(
+                    cast(
+                        "Deferred[Response]",
+                        handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+                    )
                 )
-            )
-        return await handler.download_request(request)
+            return await handler.download_request(request)
+        finally:
+            _in_download_handler.reset(token)
 
     async def _close(self) -> None:
         for dh in self._handlers.values():

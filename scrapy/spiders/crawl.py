@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 import warnings
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Callable
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -18,6 +18,7 @@ from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
+from scrapy.utils.defer import _is_awaitable
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iterate_spider_output
@@ -198,7 +199,7 @@ class CrawlSpider(Spider):
             cb_res = callback(response, **cb_kwargs) or ()
             if isinstance(cb_res, AsyncIterator):
                 cb_res = await collect_asyncgen(cb_res)
-            elif isinstance(cb_res, Awaitable):
+            elif _is_awaitable(cb_res):
                 cb_res = await cb_res
             cb_res = self.process_results(response, cb_res)
             for request_or_item in iterate_spider_output(cb_res):
