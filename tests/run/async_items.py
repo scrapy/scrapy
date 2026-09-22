@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import sys
 
 import scrapy
@@ -47,6 +48,7 @@ async def main() -> None:
     )
 
     scrapy.run_async(ItemSpider)
+    gc.collect()
 
 
 asyncio.run(main())
