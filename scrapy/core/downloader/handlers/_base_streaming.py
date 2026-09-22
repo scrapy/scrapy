@@ -309,5 +309,5 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
             base64.b64decode(token).decode(self._proxy_auth_encoding).split(":", 1)
         )
         parts = urlsplit(proxy_url)
-        netloc = f"{quote(user)}:{quote(password)}@{parts.netloc}"
+        netloc = f"{quote(user, safe='')}:{quote(password, safe='')}@{parts.netloc}"
         return parts._replace(netloc=netloc).geturl()

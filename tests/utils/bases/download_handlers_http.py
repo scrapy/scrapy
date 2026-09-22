@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import gzip
 import json
 import logging
@@ -1564,6 +1565,27 @@ class TestHttpProxyBase(ABC):
             with pytest.raises(DownloadTimeoutError) as exc_info:
                 await download_handler.download_request(request)
         assert domain in str(exc_info.value)
+
+    @pytest.mark.parametrize(
+        ("user", "password"),
+        [("user", "pa/ss"), ("us/er", "password")],
+        ids=["password", "user"],
+    )
+    @coroutine_test
+    async def test_download_with_proxy_slash_in_credentials(
+        self, proxy_mockserver: ProxyEchoMockServer, user: str, password: str
+    ) -> None:
+        http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
+        credentials = base64.b64encode(f"{user}:{password}".encode("latin-1"))
+        request = Request(
+            "http://example.com",
+            meta={"proxy": http_proxy},
+            headers={"Proxy-Authorization": b"Basic " + credentials},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.body == self.expected_http_proxy_request_body
 
     @coroutine_test
     async def test_download_with_proxy_without_http_scheme(
