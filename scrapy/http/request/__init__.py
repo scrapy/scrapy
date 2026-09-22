@@ -78,6 +78,23 @@ def _active_crawler_scope(crawler: Crawler) -> Generator[None, None, None]:
         _active_crawler.set(previous)
 
 
+@contextmanager
+def _in_download_handler_scope() -> Generator[None, None, None]:
+    """Set _in_download_handler to True for the duration of the block.
+
+    Restores the previous value with set() instead of reset(): on some
+    supported Twisted versions, the code after an ``await`` may resume in
+    a copied contextvars.Context, where the token from the original set()
+    is invalid.
+    """
+    previous = _in_download_handler.get()
+    _in_download_handler.set(True)
+    try:
+        yield
+    finally:
+        _in_download_handler.set(previous)
+
+
 class VerboseCookie(TypedDict):
     name: str | bytes
     value: str | bytes | bool | float | int

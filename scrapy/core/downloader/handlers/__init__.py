@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, NotSupported, ScrapyDeprecationWarning
-from scrapy.http.request import _in_download_handler
+from scrapy.http.request import _in_download_handler_scope
 from scrapy.utils.defer import (
     deferred_from_coro,
     ensure_awaitable,
@@ -159,8 +159,7 @@ class DownloadHandlers:
                 f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
             )
         assert self._crawler.spider
-        token = _in_download_handler.set(True)
-        try:
+        with _in_download_handler_scope():
             if scheme in self._old_style_handlers:  # pragma: no cover
                 return await maybe_deferred_to_future(
                     cast(
@@ -169,8 +168,6 @@ class DownloadHandlers:
                     )
                 )
             return await handler.download_request(request)
-        finally:
-            _in_download_handler.reset(token)
 
     async def _close(self) -> None:
         for dh in self._handlers.values():
