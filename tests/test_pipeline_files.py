@@ -7,7 +7,7 @@ import random
 import re
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -270,6 +270,32 @@ class TestFilesPipeline:
         assert result["files"][0]["status"] == "downloaded"
 
     @coroutine_test
+    async def test_file_never_expires(self):
+        pipeline = self._create_pipeline(FilesPipeline, {"FILES_EXPIRES": -1})
+        item_url = "http://example.com/file5.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={
+                    "checksum": "abc",
+                    "last_modified": time.time()
+                    - (self.pipeline.expires * 60 * 60 * 24 * 2),
+                },
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await pipeline.process_item(item)
+        assert result["files"][0]["checksum"] == "abc"
+        assert result["files"][0]["status"] == "uptodate"
+
+    @coroutine_test
     async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
@@ -484,7 +510,7 @@ class TestFilesPipeline:
             mock.patch.object(
                 FSFilesStore,
                 "stat_file",
-                return_value={"checksum": "abc", "last_modified": time.time()},
+                return_value={"checksum": "abc", "last_modified": time.time() - 1},
             ),
             mock.patch.object(
                 FilesPipeline, "get_media_requests", return_value=[request]
@@ -663,11 +689,11 @@ class TestFilesPipelineFieldsDataClass(TestFilesPipelineFieldsMixin):
 class FilesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    file_urls: list[str] = attr.ib(default=list)
-    files: list[dict[str, str]] = attr.ib(default=list)
+    file_urls: list[str] = attr.ib(factory=list)
+    files: list[dict[str, str]] = attr.ib(factory=list)
     # overridden fields
-    custom_file_urls: list[str] = attr.ib(default=list)
-    custom_files: list[dict[str, str]] = attr.ib(default=list)
+    custom_file_urls: list[str] = attr.ib(factory=list)
+    custom_files: list[dict[str, str]] = attr.ib(factory=list)
 
 
 class TestFilesPipelineFieldsAttrsItem(TestFilesPipelineFieldsMixin):
@@ -988,7 +1014,8 @@ class TestS3FilesStore:
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
         checksum = "3187896a9657a28163abb31667df64c8"
-        last_modified = datetime(2019, 12, 1)
+        # S3FilesStore needs to be fixed to emit tz-aware datetimes
+        last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
 
         store = S3FilesStore(uri)
         from botocore.stub import Stubber  # noqa: PLC0415
@@ -1018,7 +1045,8 @@ class TestS3FilesStore:
         when a different algorithm is configured."""
         bucket = "mybucket"
         key = "export.csv"
-        last_modified = datetime(2019, 12, 1)
+        # S3FilesStore needs to be fixed to emit tz-aware datetimes
+        last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
 
         store = S3FilesStore(f"s3://{bucket}/{key}")
         store.checksum_algorithm = "sha256"
@@ -1169,7 +1197,7 @@ class TestGCSFilesStore:
         store, bucket, blob = self.build_gcs_files_store()
         checksum = "cdcda85605e46d0af6110752770dce3c"
         blob.md5_hash = base64.b64encode(bytes.fromhex(checksum)).decode()
-        updated = datetime(2019, 12, 1)
+        updated = datetime(2019, 12, 1, tzinfo=timezone.utc)
         blob.updated = updated
         bucket.get_blob.return_value = blob
         stat = await maybe_deferred_to_future(
@@ -1190,7 +1218,7 @@ class TestGCSFilesStore:
         blob.md5_hash = base64.b64encode(
             bytes.fromhex("cdcda85605e46d0af6110752770dce3c")
         ).decode()
-        updated = datetime(2019, 12, 1)
+        updated = datetime(2019, 12, 1, tzinfo=timezone.utc)
         blob.updated = updated
         bucket.get_blob.return_value = blob
         stat = await maybe_deferred_to_future(

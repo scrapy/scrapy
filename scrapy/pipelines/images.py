@@ -58,6 +58,7 @@ class ImagesPipeline(FilesPipeline):
     MIN_HEIGHT: int = 0
     EXPIRES: int = 90
     THUMBS: ClassVar[dict[str, tuple[int, int]]] = {}
+    PRESERVE_FORMAT: bool = False
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 
@@ -119,6 +120,9 @@ class ImagesPipeline(FilesPipeline):
         self.thumbs: dict[str, tuple[int, int]] = settings.get(
             resolve("IMAGES_THUMBS"), self.THUMBS
         )
+        self.preserve_format: bool = settings.getbool(
+            resolve("IMAGES_PRESERVE_FORMAT"), self.PRESERVE_FORMAT
+        )
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -165,13 +169,14 @@ class ImagesPipeline(FilesPipeline):
                 buf.seek(0)
                 checksum = _checksum(buf, self.store.checksum_algorithm)
             width, height = image.size
+            content_type = self._Image.MIME.get(image.format or "JPEG", "image/jpeg")
             await ensure_awaitable(
                 self.store.persist_file(
                     path,
                     buf,
                     info,
                     meta={"width": width, "height": height},
-                    headers={"Content-Type": "image/jpeg"},
+                    headers={"Content-Type": content_type},
                 )
             )
         assert checksum is not None
@@ -187,6 +192,8 @@ class ImagesPipeline(FilesPipeline):
     ) -> Iterator[tuple[str, Image.Image, BytesIO]]:
         path = self.file_path(request, response=response, info=info, item=item)
         orig_image = self._Image.open(BytesIO(response.body))
+        assert orig_image.format is not None
+        image_format = orig_image.format
         transposed_image = self._ImageOps.exif_transpose(orig_image)
 
         width, height = transposed_image.size
@@ -198,7 +205,9 @@ class ImagesPipeline(FilesPipeline):
             )
 
         image, buf = self.convert_image(
-            transposed_image, response_body=BytesIO(response.body)
+            transposed_image,
+            image_format=image_format,
+            response_body=BytesIO(response.body),
         )
         yield path, image, buf
 
@@ -206,7 +215,9 @@ class ImagesPipeline(FilesPipeline):
             thumb_path = self.thumb_path(
                 request, thumb_id, response=response, info=info, item=item
             )
-            thumb_image, thumb_buf = self.convert_image(image, size, response_body=buf)
+            thumb_image, thumb_buf = self.convert_image(
+                image, size, image_format=image_format, response_body=buf
+            )
             yield thumb_path, thumb_image, thumb_buf
 
     def convert_image(
@@ -214,19 +225,22 @@ class ImagesPipeline(FilesPipeline):
         image: Image.Image,
         size: tuple[int, int] | None = None,
         *,
+        image_format: str,
         response_body: BytesIO,
     ) -> tuple[Image.Image, BytesIO]:
-        if image.format in {"PNG", "WEBP"} and image.mode == "RGBA":
-            background = self._Image.new("RGBA", image.size, (255, 255, 255))
-            background.paste(image, image)
-            image = background.convert("RGB")
-        elif image.mode == "P":
-            image = image.convert("RGBA")
-            background = self._Image.new("RGBA", image.size, (255, 255, 255))
-            background.paste(image, image)
-            image = background.convert("RGB")
-        elif image.mode != "RGB":
-            image = image.convert("RGB")
+        target_format = image_format if self.preserve_format else "JPEG"
+        if target_format == "JPEG":
+            if image_format in {"PNG", "WEBP"} and image.mode == "RGBA":
+                background = self._Image.new("RGBA", image.size, (255, 255, 255))
+                background.paste(image, image)
+                image = background.convert("RGB")
+            elif image.mode == "P":
+                image = image.convert("RGBA")
+                background = self._Image.new("RGBA", image.size, (255, 255, 255))
+                background.paste(image, image)
+                image = background.convert("RGB")
+            elif image.mode != "RGB":
+                image = image.convert("RGB")
 
         if size:
             image = image.copy()
@@ -238,11 +252,13 @@ class ImagesPipeline(FilesPipeline):
             except AttributeError:
                 resampling_filter = self._Image.ANTIALIAS  # type: ignore[attr-defined]
             image.thumbnail(size, resampling_filter)
-        elif image.format == "JPEG":
+        elif target_format == image_format:
+            image.format = target_format
             return image, response_body
 
         buf = BytesIO()
-        image.save(buf, "JPEG")
+        image.save(buf, target_format)
+        image.format = target_format
         return image, buf
 
     def get_media_requests(
@@ -271,7 +287,8 @@ class ImagesPipeline(FilesPipeline):
         item: Any = None,
     ) -> str:
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
-        return f"full/{image_guid}.jpg"
+        ext = "" if self.preserve_format else ".jpg"
+        return f"full/{image_guid}{ext}"
 
     def thumb_path(
         self,
@@ -283,4 +300,5 @@ class ImagesPipeline(FilesPipeline):
         item: Any = None,
     ) -> str:
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
-        return f"thumbs/{thumb_id}/{thumb_guid}.jpg"
+        ext = "" if self.preserve_format else ".jpg"
+        return f"thumbs/{thumb_id}/{thumb_guid}{ext}"

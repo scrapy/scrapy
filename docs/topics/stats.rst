@@ -5,10 +5,11 @@ Stats Collection
 ================
 
 Scrapy provides a convenient facility for collecting stats in the form of
-key/values, where values are often counters. The facility is called the Stats
-Collector, and can be accessed through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute of the :ref:`topics-api-crawler`, as illustrated by the examples in
-the :ref:`topics-stats-usecases` section below.
+key/value pairs, where values are often counters. The facility is called the
+Stats Collector, and can be accessed through the
+:attr:`~scrapy.crawler.Crawler.stats` attribute of the
+:ref:`topics-api-crawler`, as illustrated by the examples in the
+:ref:`topics-stats-usecases` section below.
 
 The Stats Collector API is always available, so you can always use it (to
 increment or set new stat keys), regardless
@@ -19,7 +20,7 @@ collecting stats in your spider, Scrapy extension, or whatever code you're
 using the Stats Collector from.
 
 Another feature of the Stats Collector is that it's very efficient (when
-enabled) and extremely efficient (almost unnoticeable) when disabled.
+enabled) and almost unnoticeable when disabled.
 
 See :ref:`topics-stats-reference` below for the stats that Scrapy sets.
 
@@ -29,7 +30,7 @@ Common Stats Collector uses
 ===========================
 
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute. Here is an example of an extension that access stats:
+attribute. Here is an example of an extension that accesses stats:
 
 .. code-block:: python
 
@@ -86,12 +87,18 @@ Get all stats:
 Available Stats Collectors
 ==========================
 
-.. currentmodule:: scrapy.statscollectors
+.. module:: scrapy.statscollectors
 
 Besides the basic :class:`StatsCollector` there are other Stats Collectors
 available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
 default Stats Collector used is the :class:`MemoryStatsCollector`.
+
+StatsCollector
+--------------
+
+.. autoclass:: StatsCollector
+   :members:
 
 MemoryStatsCollector
 --------------------

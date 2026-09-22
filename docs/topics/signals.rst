@@ -112,7 +112,6 @@ Built-in signals reference
 ==========================
 
 .. module:: scrapy.signals
-   :synopsis: Signals definitions
 
 Here's the list of Scrapy built-in signals and their meaning.
 
@@ -154,7 +153,7 @@ scheduler_empty
     Sent whenever the engine asks for a pending request from the
     :ref:`scheduler <topics-scheduler>` (i.e. calls its
     :meth:`~scrapy.core.scheduler.BaseScheduler.next_request` method) and the
-    scheduler returns none.
+    scheduler returns None.
 
     See :ref:`start-requests-lazy` for an example.
 
@@ -174,12 +173,11 @@ Item signals
 ------------
 
 .. note::
-    As at max :setting:`CONCURRENT_ITEMS` items are processed in
-    parallel, many deferreds are fired together using
-    :class:`~twisted.internet.defer.DeferredList`. Hence the next
-    batch waits for the :class:`~twisted.internet.defer.DeferredList`
-    to fire and then runs the respective item signal handler for
-    the next batch of scraped items.
+    At most :setting:`CONCURRENT_ITEMS` items are processed in parallel, many
+    deferreds are fired together using
+    :class:`~twisted.internet.defer.DeferredList`. Hence the next batch waits
+    for the :class:`~twisted.internet.defer.DeferredList` to fire and then runs
+    the respective item signal handler for the next batch of scraped items.
 
 item_scraped
 ~~~~~~~~~~~~
@@ -271,12 +269,12 @@ spider_closed
     :param spider: the spider which has been closed
     :type spider: :class:`~scrapy.Spider` object
 
-    :param reason: a string which describes the reason why the spider was closed. If
-        it was closed because the spider has completed scraping, the reason
-        is ``'finished'``. Otherwise, if the spider was manually closed by
-        calling the ``close_spider`` engine method, then the reason is the one
-        passed in the ``reason`` argument of that method (which defaults to
-        ``'cancelled'``). If the engine was shutdown (for example, by hitting
+    :param reason: a string which describes the reason why the spider was
+        closed. If it was closed because the spider has completed scraping, the
+        reason is ``'finished'``. Otherwise, if the spider was manually closed
+        by calling the ``close_spider`` engine method, then the reason is the
+        one passed in the ``reason`` argument of that method (which defaults to
+        ``'cancelled'``). If the engine was shut down (for example, by hitting
         Ctrl-C to stop it) the reason will be ``'shutdown'``.
     :type reason: str
 
@@ -290,7 +288,7 @@ spider_opened
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
        Added support for :exc:`~scrapy.exceptions.CloseSpider`.
 
     You may raise a :exc:`~scrapy.exceptions.CloseSpider` exception to close the
@@ -348,7 +346,7 @@ spider_error
     Sent when a spider callback or the :meth:`~scrapy.Spider.start` method of a
     spider generates an error (i.e. raises an exception).
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
        Exceptions from :meth:`~scrapy.Spider.start` are also reported, see
        :ref:`start-error`.
 
@@ -453,11 +451,11 @@ request_reached_downloader
 .. signal:: request_reached_downloader
 .. function:: request_reached_downloader(request, spider)
 
-    Sent when a :class:`~scrapy.Request` reached downloader.
+    Sent when a :class:`~scrapy.Request` reached the downloader.
 
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
-    :param request: the request that reached downloader
+    :param request: the request that reached the downloader
     :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider that yielded the request
@@ -486,11 +484,11 @@ bytes_received
 .. signal:: bytes_received
 .. function:: bytes_received(data, request, spider)
 
-    Sent by some download handlers when a group of bytes is
-    received for a specific request. This signal might be fired multiple
-    times for the same request, with partial data each time. For instance,
-    a possible scenario for a 25 kb response would be two signals fired
-    with 10 kb of data, and a final one with 5 kb of data.
+    Sent by some download handlers when a group of bytes is received for a
+    specific request. This signal might be fired multiple times for the same
+    request, with partial data each time. For instance, a possible scenario for
+    a 25 KB response would be two signals fired with 10 KB of data, and a final
+    one with 5 KB of data.
 
     Handlers for this signal can stop the download of a response while it
     is in progress by raising the :exc:`~scrapy.exceptions.StopDownload`
@@ -542,7 +540,7 @@ robots_parsed
 .. signal:: robots_parsed
 .. function:: robots_parsed(robotparser, request)
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.18.0
 
     Sent by
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after it

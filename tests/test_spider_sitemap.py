@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import gzip
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
@@ -55,7 +55,7 @@ class TestSitemapSpider(TestSpiderBase):
         assert spider._get_sitemap_body(response) == body
 
     def test_get_sitemap_body(self):
-        r = XmlResponse(url="http://www.example.com/", body=self.BODY)
+        r: Response = XmlResponse(url="http://www.example.com/", body=self.BODY)
         self.assertSitemapBody(r, self.BODY)
 
         r = HtmlResponse(url="http://www.example.com/", body=self.BODY)
@@ -152,6 +152,19 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/italiano/",
         ]
 
+    def test_relative_and_protocol_relative_locs(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url><loc>//www.example.com/protocol-relative/</loc></url>
+        <url><loc>/relative/</loc></url>
+    </urlset>"""
+        r = TextResponse(url="https://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "https://www.example.com/protocol-relative/",
+            "https://www.example.com/relative/",
+        ]
+
     def test_sitemap_filter(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -166,10 +179,12 @@ Sitemap: /sitemap-relative-url.xml
         </url>
     </urlset>"""
 
-        class FilteredSitemapSpider(self.spider_class):
+        class FilteredSitemapSpider(self.spider_class):  # type: ignore[name-defined,misc]
             def sitemap_filter(self, entries):
                 for entry in entries:
-                    date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
+                    date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d").replace(
+                        tzinfo=timezone.utc
+                    )
                     if date_time.year > 2008:
                         yield entry
 
@@ -201,7 +216,7 @@ Sitemap: /sitemap-relative-url.xml
         </url>
     </urlset>"""
 
-        class FilteredSitemapSpider(self.spider_class):
+        class FilteredSitemapSpider(self.spider_class):  # type: ignore[name-defined,misc]
             def sitemap_filter(self, entries):
                 for entry in entries:
                     alternate_links = entry.get("alternate", ())
@@ -235,12 +250,12 @@ Sitemap: /sitemap-relative-url.xml
         </sitemap>
     </sitemapindex>"""
 
-        class FilteredSitemapSpider(self.spider_class):
+        class FilteredSitemapSpider(self.spider_class):  # type: ignore[name-defined,misc]
             def sitemap_filter(self, entries):
                 for entry in entries:
                     date_time = datetime.strptime(
                         entry["lastmod"].split("T")[0], "%Y-%m-%d"
-                    )
+                    ).replace(tzinfo=timezone.utc)
                     if date_time.year > 2004:
                         yield entry
 
@@ -285,6 +300,7 @@ Sitemap: /sitemap-relative-url.xml
             sitemap_rules = [("", parse_item)]
 
             def raw_body(self):
+                assert self.mockserver
                 loc = self.mockserver.url("/text")
                 return (
                     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -303,6 +319,7 @@ Sitemap: /sitemap-relative-url.xml
                 yield {"url": response.url}
 
             def raw_body(self):
+                assert self.mockserver
                 loc = self.mockserver.url("/text")
                 return (
                     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -363,7 +380,7 @@ Sitemap: /sitemap-relative-url.xml
     </sitemapindex>"""
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
 
-        class _FollowSpider(self.spider_class):
+        class _FollowSpider(self.spider_class):  # type: ignore[name-defined,misc]
             sitemap_follow = [follow]
 
         spider = _FollowSpider("example.com")
@@ -382,7 +399,7 @@ Sitemap: /sitemap-relative-url.xml
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr(self):
-        class DownloadMaxSizeSpider(self.spider_class):
+        class DownloadMaxSizeSpider(self.spider_class):  # type: ignore[name-defined,misc]
             download_maxsize = 10_000_000
 
         crawler = get_crawler()
@@ -485,7 +502,7 @@ Sitemap: /sitemap-relative-url.xml
 
     @coroutine_test
     async def test_sitemap_urls(self):
-        class TestSpider(self.spider_class):
+        class TestSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             sitemap_urls = ["https://toscrape.com/sitemap.xml"]
 
