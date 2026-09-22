@@ -109,7 +109,13 @@ class SitemapSpider(Spider):
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
-            urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
+            urls = [
+                url
+                for url in sitemap_urls_from_robots(
+                    response.body, base_url=response.url
+                )
+                if any(x.search(url) for x in self._follow)
+            ]
             return (
                 self.sitemap_request(
                     url,

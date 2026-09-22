@@ -850,9 +850,12 @@ SitemapSpider
 
     .. attribute:: sitemap_follow
 
-        A list of regexes of sitemap that should be followed. This is only
-        for sites that use `Sitemap index files`_ that point to other sitemap
-        files.
+        A list of regexes of sitemap URLs that should be followed: those
+        linked from `Sitemap index files`_, and those declared through the
+        ``Sitemap`` directive of a :file:`robots.txt` file.
+
+        .. versionchanged:: VERSION
+            Now also applies to sitemaps declared in :file:`robots.txt`.
 
         By default, all sitemaps are followed.
 

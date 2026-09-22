@@ -374,6 +374,25 @@ Sitemap: /sitemap-relative-url.xml
         urls = [req.url for req in spider._parse_sitemap(r)]
         assert urls == result
 
+    @pytest.mark.parametrize(
+        ("follow", "result"),
+        [
+            (r"1.xml", ["http://www.example.com/sitemap1.xml"]),
+            (re.compile(r"sitemap\d"), ["http://www.example.com/sitemap1.xml"]),
+            (r"nonexistent", []),
+        ],
+    )
+    def test_sitemap_follow_robotstxt(self, follow, result):
+        robots = b"Sitemap: http://www.example.com/sitemap1.xml\n"
+        r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
+
+        class _FollowSpider(self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_follow = [follow]
+
+        spider = _FollowSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == result
+
     @coroutine_test
     async def test_sitemap_request(self, mockserver: MockServer):
         class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
