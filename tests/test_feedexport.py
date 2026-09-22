@@ -1299,6 +1299,28 @@ class TestFeedExporterSignals:
         assert self.feed_exporter_closed_received
 
 
+class TestFeedExporterOpenSpider:
+    @coroutine_test
+    async def test_bad_uri_placeholder_skips_only_that_feed(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with tempfile.NamedTemporaryFile(suffix="json") as tmp:
+            settings = {
+                "FEEDS": {
+                    printf_escape(path_to_url(tmp.name)): {"format": "json"},
+                    "file:///nonexistent/%(undefined_attr)s.json": {"format": "json"},
+                },
+            }
+            crawler = get_crawler(settings_dict=settings)
+            feed_exporter = build_from_crawler(FeedExporter, crawler)
+            spider = scrapy.Spider.from_crawler(crawler, "default")
+            with caplog.at_level(logging.ERROR):
+                feed_exporter.open_spider(spider)
+            assert len(feed_exporter.slots) == 1
+            assert "undefined_attr" in caplog.text
+            await feed_exporter.close_spider(spider)
+
+
 class TestItemFilter:
     def test_no_feed_options(self):
         item_filter = ItemFilter(None)

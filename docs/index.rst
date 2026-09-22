@@ -157,19 +157,20 @@ Solving specific problems
 
    faq
    topics/agents
+   topics/developer-tools
+   topics/extraction
+   topics/dynamic-content
+   topics/media-pipeline
    topics/debug
    topics/contracts
    topics/practices
-   topics/security
-   topics/optimize
-   topics/developer-tools
-   topics/dynamic-content
-   topics/leaks
-   topics/media-pipeline
-   topics/deploy
    topics/autothrottle
-   topics/benchmarking
+   topics/security
    topics/jobs
+   topics/deploy
+   topics/optimize
+   topics/benchmarking
+   topics/leaks
    topics/coroutines
    topics/asyncio
 
@@ -178,6 +179,19 @@ Solving specific problems
 
 :doc:`topics/agents`
     Learn how to use Scrapy with coding agents efficiently.
+
+:doc:`topics/developer-tools`
+    Learn how to scrape with your browser's developer tools.
+
+:doc:`topics/extraction`
+    Get the content of a page as clean text or markdown, and turn the strings
+    you select into values.
+
+:doc:`topics/dynamic-content`
+    Read webpage data that is loaded dynamically.
+
+:doc:`topics/media-pipeline`
+    Download files and/or images associated with your scraped items.
 
 :doc:`topics/debug`
     Learn how to debug common problems of your Scrapy spider.
@@ -188,36 +202,27 @@ Solving specific problems
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
 
+:doc:`topics/autothrottle`
+    Adjust crawl rate dynamically based on load.
+
 :doc:`topics/security`
     Understand the security implications of Scrapy defaults and how to harden
     them.
 
-:doc:`topics/optimize`
-    Find the bottleneck of your crawls and learn how to address it.
-
-:doc:`topics/developer-tools`
-    Learn how to scrape with your browser's developer tools.
-
-:doc:`topics/dynamic-content`
-    Read webpage data that is loaded dynamically.
-
-:doc:`topics/leaks`
-    Learn how to find and get rid of memory leaks in your crawler.
-
-:doc:`topics/media-pipeline`
-    Download files and/or images associated with your scraped items.
+:doc:`topics/jobs`
+    Learn how to pause and resume crawls for large spiders.
 
 :doc:`topics/deploy`
     Deploy your Scrapy spiders and run them on a remote server.
 
-:doc:`topics/autothrottle`
-    Adjust crawl rate dynamically based on load.
+:doc:`topics/optimize`
+    Find the bottleneck of your crawls and learn how to address it.
 
 :doc:`topics/benchmarking`
     Check how Scrapy performs on your hardware.
 
-:doc:`topics/jobs`
-    Learn how to pause and resume crawls for large spiders.
+:doc:`topics/leaks`
+    Learn how to find and get rid of memory leaks in your crawler.
 
 :doc:`topics/coroutines`
     Use the :ref:`coroutine syntax <async>`.

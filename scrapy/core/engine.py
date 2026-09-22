@@ -724,7 +724,10 @@ class ExecutionEngine:
             return
         if self.spider_is_idle():
             default_reason = "start_error" if self._start_error else "finished"
-            ex = detected_ex.get(CloseSpider, CloseSpider(reason=default_reason))
+            ex = detected_ex.get(
+                CloseSpider,
+                CloseSpider(reason=default_reason, error=self._start_error),
+            )
             assert isinstance(ex, CloseSpider)  # typing
             _schedule_coro(self.close_spider_async(reason=ex.reason, error=ex.error))
 
