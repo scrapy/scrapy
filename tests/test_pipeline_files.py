@@ -463,7 +463,7 @@ class TestFilesPipeline:
         assert result["files"][0]["checksum"] == hashlib.sha256(b"data").hexdigest()
 
     def test_checksum_algorithm_unsupported(self) -> None:
-        with pytest.raises(ValueError, match="unsupported hash type"):
+        with pytest.raises(ValueError, match=r"unsupported hash (type|algorithm)"):
             self._create_pipeline(FilesPipeline, {"FILES_CHECKSUM_ALGORITHM": "sha257"})
 
     def test_file_path_from_item(self):
