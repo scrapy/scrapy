@@ -21,7 +21,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
-from scrapy.http.request import _active_crawler
+from scrapy.http.request import _active_crawler_scope
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
@@ -253,8 +253,7 @@ class Scraper:
 
         # Lets Request.__await__() find this crawler for as long as the
         # callback, its spider middlewares and its item pipelines run.
-        token = _active_crawler.set(self.crawler)
-        try:
+        with _active_crawler_scope(self.crawler):
             output: Iterable[Any] | AsyncIterator[Any]
             if isinstance(result, Response):
                 try:
@@ -288,8 +287,6 @@ class Scraper:
                     self.handle_spider_error(Failure(), request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
-        finally:
-            _active_crawler.reset(token)
 
     async def _wait_for_processing(
         self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]

@@ -8,6 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import inspect
+from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import (
     TYPE_CHECKING,
@@ -58,6 +59,23 @@ _active_crawler: ContextVar[Crawler | None] = ContextVar(
 _in_download_handler: ContextVar[bool] = ContextVar(
     "_in_download_handler", default=False
 )
+
+
+@contextmanager
+def _active_crawler_scope(crawler: Crawler) -> Generator[None, None, None]:
+    """Set _active_crawler to *crawler* for the duration of the block.
+
+    Restores the previous value with set() instead of reset(): on some
+    supported Twisted versions, the code after an ``await`` may resume in
+    a copied contextvars.Context, where the token from the original set()
+    is invalid.
+    """
+    previous = _active_crawler.get()
+    _active_crawler.set(crawler)
+    try:
+        yield
+    finally:
+        _active_crawler.set(previous)
 
 
 class VerboseCookie(TypedDict):

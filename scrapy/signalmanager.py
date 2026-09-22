@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import warnings
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
 from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http.request import _active_crawler
+from scrapy.http.request import _active_crawler_scope
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
 
@@ -106,16 +107,13 @@ class SignalManager:
         # Lets Request.__await__() find the crawler while the signal handlers
         # run. The sender is only a crawler for signal managers that Scrapy
         # creates.
-        token = (
-            _active_crawler.set(self.sender)
+        scope = (
+            _active_crawler_scope(self.sender)
             if isinstance(self.sender, Crawler)
-            else None
+            else nullcontext()
         )
-        try:
+        with scope:
             return await _signal.send_catch_log_async(signal, **kwargs)
-        finally:
-            if token is not None:
-                _active_crawler.reset(token)
 
     def disconnect_all(self, signal: object, **kwargs: Any) -> None:
         """
