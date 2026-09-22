@@ -215,6 +215,19 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/italiano/",
         ]
 
+    def test_relative_and_protocol_relative_locs(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url><loc>//www.example.com/protocol-relative/</loc></url>
+        <url><loc>/relative/</loc></url>
+    </urlset>"""
+        r = TextResponse(url="https://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "https://www.example.com/protocol-relative/",
+            "https://www.example.com/relative/",
+        ]
+
     def test_sitemap_filter(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"

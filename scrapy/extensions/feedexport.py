@@ -552,10 +552,20 @@ class FeedExporter:
     def open_spider(self, spider: Spider) -> None:
         for uri, feed_options in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed_options["uri_params"])
+            try:
+                resolved_uri = apply_uri_params(uri, uri_params)
+            except KeyError as exc:
+                logger.error(
+                    f"Feed {uri!r} could not be opened: it contains a "
+                    f"placeholder for {exc}, which is not a spider "
+                    f"attribute and was not provided by the uri_params "
+                    f"function."
+                )
+                continue
             self.slots.append(
                 self._start_new_batch(
                     batch_id=1,
-                    uri=apply_uri_params(uri, uri_params),
+                    uri=resolved_uri,
                     feed_options=feed_options,
                     spider=spider,
                     uri_template=uri,
