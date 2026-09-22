@@ -128,28 +128,12 @@ class MiddlewareManager(ABC):
             )
             self._mw_methods_requiring_spider.add(method)
 
-    async def _process_chain(
-        self,
-        methodname: str,
-        obj: _T,
-        *args: Any,
-        add_spider: bool = False,
-        always_add_spider: bool = False,
-        warn_deferred: bool = False,
-    ) -> _T:
+    async def _process_chain(self, methodname: str, obj: _T, *args: Any) -> _T:
         methods = cast(
             "Iterable[Callable[Concatenate[_T, _P], _T]]", self.methods[methodname]
         )
         for method in methods:
-            warn = global_object_name(method) if warn_deferred else None
-            if always_add_spider or (
-                add_spider and method in self._mw_methods_requiring_spider
-            ):
-                obj = await ensure_awaitable(
-                    method(obj, *(*args, self._spider)), _warn=warn
-                )
-            else:
-                obj = await ensure_awaitable(method(obj, *args), _warn=warn)
+            obj = await ensure_awaitable(method(obj, *args))
         return obj
 
     def open_spider(self, spider: Spider) -> Deferred[list[None]]:  # pragma: no cover
