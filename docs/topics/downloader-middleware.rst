@@ -214,6 +214,41 @@ requests as well, and the middleware above downloads a token for each of them.
 Cache the task that downloads the token, and not only its result, to download
 the token only once.
 
+.. _mw-oauth:
+
+Signing requests with OAuth
+===========================
+
+To sign requests, e.g. for two-legged OAuth, compute the signed headers in
+:meth:`process_request` with a third-party OAuth 1 client, such as the one from
+`oauthlib`_:
+
+.. skip: next
+
+.. code-block:: python
+
+    from oauthlib.oauth1 import Client
+
+
+    class OAuthMiddleware:
+        def __init__(self, client):
+            self.client = client
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            settings = crawler.settings
+            client = Client(
+                settings["OAUTH_CONSUMER_KEY"],
+                client_secret=settings["OAUTH_CONSUMER_SECRET"],
+            )
+            return cls(client)
+
+        def process_request(self, request):
+            _, headers, _ = self.client.sign(request.url, http_method=request.method)
+            request.headers["Authorization"] = headers["Authorization"]
+
+.. _oauthlib: https://oauthlib.readthedocs.io/
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
