@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import gzip
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
@@ -154,6 +154,19 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/italiano/",
         ]
 
+    def test_relative_and_protocol_relative_locs(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url><loc>//www.example.com/protocol-relative/</loc></url>
+        <url><loc>/relative/</loc></url>
+    </urlset>"""
+        r = TextResponse(url="https://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "https://www.example.com/protocol-relative/",
+            "https://www.example.com/relative/",
+        ]
+
     def test_sitemap_filter(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -171,7 +184,9 @@ Sitemap: /sitemap-relative-url.xml
         class FilteredSitemapSpider(self.spider_class):  # type: ignore[name-defined,misc]
             def sitemap_filter(self, entries):
                 for entry in entries:
-                    date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
+                    date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d").replace(
+                        tzinfo=timezone.utc
+                    )
                     if date_time.year > 2008:
                         yield entry
 
@@ -242,7 +257,7 @@ Sitemap: /sitemap-relative-url.xml
                 for entry in entries:
                     date_time = datetime.strptime(
                         entry["lastmod"].split("T")[0], "%Y-%m-%d"
-                    )
+                    ).replace(tzinfo=timezone.utc)
                     if date_time.year > 2004:
                         yield entry
 

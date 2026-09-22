@@ -149,9 +149,11 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
         assert (
             "scrapy.core._http2.stream",
             logging.WARNING,
-            f"Ignoring bad Content-Length header "
-            f"{bad_content_length!r} of request {request}, sending "
-            f"{actual_content_length!r} instead",
+            (
+                f"Ignoring bad Content-Length header "
+                f"{bad_content_length!r} of request {request}, sending "
+                f"{actual_content_length!r} instead"
+            ),
         ) in caplog.record_tuples
 
     @coroutine_test

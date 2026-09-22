@@ -7,6 +7,7 @@ import warnings
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, Literal, cast
+from urllib.parse import urljoin
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, XmlResponse
@@ -140,7 +141,7 @@ class SitemapSpider(Spider):
 
         if s.type == "sitemapindex":
             index_entries = list(
-                self._get_urls_from_sitemapindex(self.sitemap_filter(s))
+                self._get_urls_from_sitemapindex(self.sitemap_filter(s), response.url)
             )
             return (
                 self.sitemap_request(
@@ -155,7 +156,9 @@ class SitemapSpider(Spider):
 
         if s.type == "urlset":
             urlset_entries = list(
-                self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
+                self._get_urls_and_callbacks_from_urlset(
+                    self.sitemap_filter(s), response.url
+                )
             )
             return (
                 self.sitemap_request(loc, c, entry, source="urlset", response=response)
@@ -171,16 +174,18 @@ class SitemapSpider(Spider):
         return ()
 
     def _get_urls_from_sitemapindex(
-        self, it: Iterable[dict[str, Any]]
+        self, it: Iterable[dict[str, Any]], base_url: str
     ) -> Iterable[tuple[str, dict[str, Any]]]:
         for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
+            loc = urljoin(base_url, loc)  # noqa: PLW2901
             if any(x.search(loc) for x in self._follow):
                 yield loc, entry
 
     def _get_urls_and_callbacks_from_urlset(
-        self, it: Iterable[dict[str, Any]]
+        self, it: Iterable[dict[str, Any]], base_url: str
     ) -> Iterable[tuple[str, CallbackT, dict[str, Any]]]:
         for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
+            loc = urljoin(base_url, loc)  # noqa: PLW2901
             for r, c in self._cbs:
                 if r.search(loc):
                     yield loc, c, entry

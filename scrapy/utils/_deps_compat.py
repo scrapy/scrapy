@@ -2,7 +2,6 @@ import sys
 
 from OpenSSL import __version__ as PYOPENSSL_VERSION_STRING
 from packaging.version import Version
-from parsel import __version__ as PARSEL_VERSION_STRING
 from twisted import version as TWISTED_VERSION
 from twisted.python.versions import Version as TxVersion
 
@@ -16,10 +15,6 @@ TWISTED_FAILURE_HAS_STACK = TWISTED_VERSION < TxVersion("twisted", 24, 10, 0)
 TWISTED_TLS_NEW_IMPL = TWISTED_VERSION >= TxVersion("twisted", 26, 4, 0)
 # lowerMaximumSecurityTo off-by-1, https://github.com/twisted/twisted/issues/10232
 TWISTED_TLS_LIMITS_OFFBY1 = TWISTED_VERSION < TxVersion("twisted", 26, 4, 0)
-
-PARSEL_VERSION = Version(PARSEL_VERSION_STRING)
-# Selector.jmespath() support
-PARSEL_SUPPORTS_JMESPATH = PARSEL_VERSION >= Version("1.8.0")
 
 PYOPENSSL_VERSION = Version(PYOPENSSL_VERSION_STRING)
 # SSL.Context.set_cipher_list() creates a temporary connection, making the context immutable

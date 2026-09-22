@@ -262,6 +262,13 @@ example:
 A component can be specified either as a class object or through an import
 path.
 
+A key that cannot be resolved into a component, such as the import path of a
+component that no longer exists, raises an exception, even if its priority is
+:data:`None`.
+
+.. versionchanged:: VERSION
+   Unresolvable keys used to be silently ignored in some cases.
+
 .. warning:: Component priority dictionaries are regular :class:`dict` objects.
     Be careful not to define the same component more than once, e.g. with
     different import path strings or defining both an import path and a

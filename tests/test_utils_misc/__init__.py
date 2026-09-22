@@ -40,7 +40,7 @@ def test_load_object_exceptions() -> None:
     with pytest.raises(NameError):
         load_object("scrapy.utils.misc.load_object999")
     with pytest.raises(TypeError):
-        load_object({})  # type: ignore[arg-type]
+        load_object({})  # type: ignore[call-overload]
 
 
 def test_walk_modules() -> None:

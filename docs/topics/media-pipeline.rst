@@ -462,7 +462,8 @@ specifies the delay in number of days:
     # 30 days of delay for images expiration
     IMAGES_EXPIRES = 30
 
-The default value for both settings is 90 days.
+The default value for both settings is 90 days. A negative value disables
+expiration, i.e. files are never re-downloaded once fetched.
 
 If you have a pipeline that subclasses FilesPipeline and you'd like to have a
 different setting for it, you can set setting keys preceded by the uppercase
@@ -519,6 +520,26 @@ Example of image files stored using ``small`` and ``big`` thumbnail names::
    <IMAGES_STORE>/thumbs/big/63bbfea82b8880ed33cdb762aa11fab722a90a24.jpg
 
 The first one is the full image, as downloaded from the site.
+
+.. _preserving-image-format:
+
+Preserving the original image format
+------------------------------------
+
+.. setting:: IMAGES_PRESERVE_FORMAT
+
+By default, the Images Pipeline converts every image to JPEG, flattening
+transparency onto a white background. Set :setting:`IMAGES_PRESERVE_FORMAT`
+to ``True`` to keep each image, and its thumbnails, in the format it was
+downloaded in instead:
+
+.. code-block:: python
+
+    IMAGES_PRESERVE_FORMAT = True
+
+Stored files then get no extension, since the actual format is only known
+once the image has been downloaded; see :ref:`file-naming-response` to
+derive one from the response instead.
 
 Filtering out small images
 --------------------------

@@ -45,6 +45,7 @@ from tests.spiders import (
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
     CrawlSpiderWithAsyncGeneratorCallback,
+    CrawlSpiderWithCallbackException,
     CrawlSpiderWithErrback,
     CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
@@ -541,6 +542,19 @@ class TestCrawlSpider:
         assert "[parse] status 200 (foo: None)" in caplog.text
         assert "[errback]" not in caplog.text
         assert crawler.stats.get_value("downloader/response_status_count/404") == 1
+
+    @coroutine_test
+    async def test_crawlspider_with_callback_exception(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithCallbackException)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        # The link is followed even though parse_start_url() raised, and the
+        # exception is still logged as a spider error.
+        assert "[parse] status 200 (foo: None)" in caplog.text
+        assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
 
     @coroutine_test
     async def test_crawlspider_process_request_cb_kwargs(

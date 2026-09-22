@@ -19,6 +19,7 @@ from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
+from uuid import uuid4
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
@@ -311,13 +312,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         assert u.hostname
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
-
-        if feed_options and feed_options.get("overwrite", True) is False:
-            logger.warning(
-                "GCS does not support appending to files. To "
-                "suppress this warning, remove the overwrite "
-                "option from your FEEDS setting or set it to True."
-            )
+        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
     @classmethod
     def from_crawler(
@@ -341,8 +336,24 @@ class GCSFeedStorage(BlockingFeedStorage):
 
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
-            blob = bucket.blob(self.blob_name)
-            blob.upload_from_file(file, predefined_acl=self.acl)
+            blob = None if self.overwrite else bucket.get_blob(self.blob_name)
+            if blob is None:
+                bucket.blob(self.blob_name).upload_from_file(
+                    file, predefined_acl=self.acl
+                )
+                return
+            # Appending uploads the new data as a separate object and composes
+            # it with the existing one, leaving the data already stored
+            # untouched. Composition resolves its sources by name, so it always
+            # appends to the latest version of the blob.
+            part = bucket.blob(f"{self.blob_name}.{uuid4().hex}.part")
+            part.upload_from_file(file, predefined_acl=self.acl)
+            try:
+                blob.compose([blob, part], client=client)
+            finally:
+                part.delete(client=client)
+            if self.acl:
+                blob.acl.save_predefined(self.acl, client=client)
         finally:
             file.close()
 
@@ -485,7 +496,7 @@ class FeedExporter:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
-        self.feeds = {}
+        self.feeds: dict[str, dict[str, Any]] = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
         self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
@@ -541,10 +552,20 @@ class FeedExporter:
     def open_spider(self, spider: Spider) -> None:
         for uri, feed_options in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed_options["uri_params"])
+            try:
+                resolved_uri = apply_uri_params(uri, uri_params)
+            except KeyError as exc:
+                logger.error(
+                    f"Feed {uri!r} could not be opened: it contains a "
+                    f"placeholder for {exc}, which is not a spider "
+                    f"attribute and was not provided by the uri_params "
+                    f"function."
+                )
+                continue
             self.slots.append(
                 self._start_new_batch(
                     batch_id=1,
-                    uri=apply_uri_params(uri, uri_params),
+                    uri=resolved_uri,
                     feed_options=feed_options,
                     spider=spider,
                     uri_template=uri,
@@ -616,10 +637,9 @@ class FeedExporter:
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
-            logger.error(
+            logger.exception(
                 "Error storing %s",
                 logmsg,
-                exc_info=True,
                 extra={"spider": spider},
             )
             self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")

@@ -100,7 +100,20 @@ class Selector(_ParselSelector, object_ref):
             response = _response_from_text(text, type)
 
         if response is not None:
-            text = response.text
+            # parsel only treats bytes and text equivalently for "html" and
+            # "xml", and treats an empty body as absent, unlike empty text.
+            if type in ("html", "xml") and response.body:
+                encoding = response.encoding
+                # None means the encoding was declared, not inferred from
+                # the body, so the body hasn't been decoded as a side effect.
+                if response._cached_ubody is None:
+                    kwargs["body"] = response.body
+                    kwargs["encoding"] = encoding
+                    text = None
+                else:
+                    text = response.text
+            else:
+                text = response.text
             kwargs.setdefault("base_url", get_base_url(response))
 
         self.response = response
