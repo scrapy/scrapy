@@ -35,6 +35,7 @@ jobs:
     name: Upload release to PyPI
     needs:
       - build
+      - release-notes
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -48,3 +49,44 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+  release-notes:
+    name: Build GitHub release notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: |
+          python -m pip install -r docs/requirements.txt
+          python -m pip install .
+          sphinx-build -b markdown -q docs docs/_build/markdown
+          python extras/github-release-notes.py "$GITHUB_REF_NAME" docs/_build/markdown/news.md > release-notes.md
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  github-release:
+    name: Create GitHub release
+    needs:
+      - publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-notes
+      - env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "The $GITHUB_REF_NAME release already exists"
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --notes-file release-notes.md
+          fi
