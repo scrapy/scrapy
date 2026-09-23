@@ -12,22 +12,26 @@ def _absolute_link(match: re.Match[str]) -> str:
 
 
 def release_notes(version: str, news_md: str) -> str:
-    """Return the GitHub release body of *version*: its highlights, if any,
-    and a link to its full release notes.
+    """Return the GitHub release body of *version*: its highlights, or its
+    whole release notes if it has no highlights, followed by a link to its
+    release notes in the documentation.
 
     *news_md* is the content of :file:`news.md` as built by the Sphinx
     ``markdown`` builder, which resolves cross-references into links.
     """
     section = news_md.split(f"\n## Scrapy {version} (", 1)[1].split("\n## ", 1)[0]
-    highlights = ""
-    if "\nHighlights:\n" in section:
-        block = section.split("\nHighlights:\n", 1)[1].split("\n#", 1)[0]
-        highlights = re.sub(r"\n +", " ", block.strip()) + "\n\n"
-        highlights = re.sub(
-            r"\]\((?P<target>(?!https?://)[^)]*)\)", _absolute_link, highlights
-        )
+    body = section.split("\n", 1)[1]
+    if "\nHighlights:\n" in body:
+        body = body.split("\nHighlights:\n", 1)[1].split("\n#", 1)[0]
+    body = re.sub(r"<a id=.*", "", body).strip()
+    # GitHub renders every newline of a release body as a line break.
+    body = re.sub(r"(?<=\S)\n(?! *([-*] |#|\n)) *", " ", body)
+    body = re.sub(r"\]\((?P<target>(?!https?://)[^)]*)\)", _absolute_link, body)
+    body = re.sub(
+        r"\[(#\d+)\]\(https://github\.com/scrapy/scrapy/issues/\d+\)", r"\1", body
+    )
     anchor = "release-" + version.replace(".", "-")
-    return f"{highlights}[Full changelog]({DOCS_URL}news.html#{anchor})\n"
+    return f"{body}\n\n[Full changelog]({DOCS_URL}news.html#{anchor})\n"
 
 
 if __name__ == "__main__":
