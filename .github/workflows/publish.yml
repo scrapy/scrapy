@@ -114,3 +114,11 @@ jobs:
           rtd -X PATCH -H "Content-Type: application/json" -d '{"active": true}' "$api/versions/$branch/"
           rtd -X PATCH -H "Content-Type: application/json" -d "{\"default_branch\": \"$branch\"}" "$api/"
           rtd -X POST "$api/versions/latest/builds/"
+
+  upgrade-ci-pins:
+    if: endsWith(github.ref_name, '.0')
+    needs:
+      - publish
+    uses: ./.github/workflows/upgrade-ci-pins.yml
+    secrets:
+      CI_PINS_APP_PRIVATE_KEY: ${{ secrets.CI_PINS_APP_PRIVATE_KEY }}

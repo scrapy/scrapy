@@ -525,6 +525,3 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
-
-[tool.sphinx-scrapy]
-python-version = "3.14"  # Keep in sync with .github/workflows/ci.yml.
