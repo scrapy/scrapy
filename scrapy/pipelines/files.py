@@ -15,6 +15,7 @@ import time
 import warnings
 from collections import defaultdict
 from contextlib import suppress
+from datetime import datetime, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -202,7 +203,7 @@ class S3FilesStore:
     def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
         checksum = boto_key["ETag"].strip('"')
         last_modified = boto_key["LastModified"]
-        modified_stamp = time.mktime(last_modified.timetuple())
+        modified_stamp = last_modified.timestamp()
         return {"checksum": checksum, "last_modified": modified_stamp}
 
     def stat_file(
@@ -326,7 +327,7 @@ class GCSFilesStore:
     def _onsuccess(blob: Any) -> StatInfo:
         if blob:
             checksum = base64.b64decode(blob.md5_hash).hex()
-            last_modified = time.mktime(blob.updated.timetuple())
+            last_modified = blob.updated.timestamp()
             return {"checksum": checksum, "last_modified": last_modified}
         return {}
 
@@ -420,7 +421,13 @@ class FTPFilesStore:
                 if self.USE_ACTIVE_MODE:
                     ftp.set_pasv(False)
                 file_path = f"{self.basedir}/{path}"
-                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
+                modified = ftp.voidcmd(f"MDTM {file_path}")[4:].strip()
+                time_format = "%Y%m%d%H%M%S.%f" if "." in modified else "%Y%m%d%H%M%S"
+                last_modified = (
+                    datetime.strptime(modified, time_format)
+                    .replace(tzinfo=timezone.utc)
+                    .timestamp()
+                )
                 m = hashlib.md5()  # noqa: S324
                 ftp.retrbinary(f"RETR {file_path}", m.update)
             return {"last_modified": last_modified, "checksum": m.hexdigest()}
