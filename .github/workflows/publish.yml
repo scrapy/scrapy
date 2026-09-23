@@ -90,3 +90,27 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" --verify-tag --notes-file release-notes.md
           fi
+
+  read-the-docs:
+    name: Make the new branch the Read the Docs default
+    if: endsWith(github.ref_name, '.0')
+    needs:
+      - publish
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    steps:
+      - env:
+          RTD_TOKEN: ${{ secrets.RTD_TOKEN }}
+        run: |
+          branch="${GITHUB_REF_NAME%.0}"
+          api=https://app.readthedocs.org/api/v3/projects/scrapy
+          rtd() { curl --fail-with-body -sS -H "Authorization: Token $RTD_TOKEN" "$@"; }
+          rtd -X POST "$api/sync-versions/"
+          for _ in $(seq 30); do
+            rtd -o /dev/null "$api/versions/$branch/" 2> /dev/null && break
+            sleep 10
+          done
+          rtd -X PATCH -H "Content-Type: application/json" -d '{"active": true}' "$api/versions/$branch/"
+          rtd -X PATCH -H "Content-Type: application/json" -d "{\"default_branch\": \"$branch\"}" "$api/"
+          rtd -X POST "$api/versions/latest/builds/"
