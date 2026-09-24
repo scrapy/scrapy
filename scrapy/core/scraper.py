@@ -366,7 +366,9 @@ class Scraper:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+                self.crawler.engine.close_spider_async(
+                    reason=exc.reason or "cancelled", error=exc.error
+                )
             )
             return
         logkws = self.logformatter.spider_error(
