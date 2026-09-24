@@ -53,6 +53,32 @@ class TestSendCatchLog:
         dispatcher.disconnect(self.error_handler, signal=test_signal)
         dispatcher.disconnect(self.ok_handler, signal=test_signal)
 
+    @coroutine_test
+    async def test_send_catch_log_dont_log(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        test_signal = object()
+        handlers_called: set[Callable[..., None]] = set()
+
+        dispatcher.connect(self.error_handler, signal=test_signal)
+        caplog.clear()
+        result = await ensure_awaitable(
+            self._get_result(
+                test_signal,
+                arg="test",
+                handlers_called=handlers_called,
+                dont_log=ZeroDivisionError,
+            )
+        )
+
+        assert self.error_handler in handlers_called
+        assert not caplog.records
+        assert isinstance(
+            result[0][1], Exception if self.returns_exceptions else Failure
+        )
+
+        dispatcher.disconnect(self.error_handler, signal=test_signal)
+
     def _get_result(self, signal: Any, *a: Any, **kw: Any) -> Any:
         return send_catch_log(signal, *a, **kw)
 

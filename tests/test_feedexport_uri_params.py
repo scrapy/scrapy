@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
@@ -49,8 +50,7 @@ class TestURIParams(ABC):
             uri="file:///tmp/%(name)s",
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
@@ -67,14 +67,13 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
 
         feed_exporter.open_spider(spider)
 
         assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}"
 
-    def test_empty_dict(self):
+    def test_empty_dict(self, caplog: pytest.LogCaptureFixture) -> None:
         def uri_params(params, spider):
             return {}
 
@@ -83,13 +82,15 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
-            with pytest.raises(KeyError):
+            with caplog.at_level(logging.ERROR):
                 feed_exporter.open_spider(spider)
+
+        assert feed_exporter.slots == []
+        assert "'name'" in caplog.text
 
     def test_params_as_is(self):
         def uri_params(params, spider):
@@ -100,8 +101,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
@@ -117,8 +117,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)

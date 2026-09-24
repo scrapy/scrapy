@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import mkstemp
@@ -10,14 +9,15 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from pytest_twisted import async_yield_fixture
 from twisted.cred import checkers, credentials, portal
+from twisted.internet.protocol import Factory, Protocol
 
 from scrapy import Spider
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 from scrapy.crawler import Crawler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
-from scrapy.utils.defer import deferred_f_from_coro_f
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
@@ -146,7 +146,7 @@ class TestFTPBase(ABC):
         meta.update(self.req_meta)
         request = Request(url=server_url + filename, meta=meta)
         r = await dh.download_request(request)
-        assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
+        assert type(r) is response_class
 
 
 class TestFTP(TestFTPBase):
@@ -171,19 +171,12 @@ class TestFTP(TestFTPBase):
 
     @deferred_f_from_coro_f
     async def test_invalid_credentials(
-        self, server_url: str, dh: FTPDownloadHandler, reactor_pytest: str
+        self, server_url: str, dh: FTPDownloadHandler
     ) -> None:
-        if reactor_pytest == "asyncio" and sys.platform == "win32":
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
-
-        from twisted.protocols.ftp import ConnectionLost
-
         meta = dict(self.req_meta)
         meta.update({"ftp_password": "invalid"})
         request = Request(url=server_url + "file.txt", meta=meta)
-        with pytest.raises(ConnectionLost):
+        with pytest.raises(DownloadFailedError):
             await dh.download_request(request)
 
 
@@ -212,4 +205,27 @@ class TestAnonymousFTP(TestFTPBase):
 def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
-        FTPDownloadHandler.from_crawler(crawler)
+        build_from_crawler(FTPDownloadHandler, crawler)
+
+
+@deferred_f_from_coro_f
+async def test_connection_lost() -> None:
+    from twisted.internet import reactor
+
+    class DropConnection(Protocol):
+        def connectionMade(self) -> None:
+            assert self.transport
+            self.transport.loseConnection()
+
+    port = reactor.listenTCP(
+        0, Factory.forProtocol(DropConnection), interface="127.0.0.1"
+    )
+    portno = port.getHost().port
+    crawler = get_crawler()
+    dh = build_from_crawler(FTPDownloadHandler, crawler)
+    try:
+        request = Request(url=f"ftp://127.0.0.1:{portno}/file.txt")
+        with pytest.raises(DownloadFailedError):
+            await dh.download_request(request)
+    finally:
+        await maybe_deferred_to_future(port.stopListening())

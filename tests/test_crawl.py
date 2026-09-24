@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
@@ -18,7 +19,11 @@ from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownloa
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.engine import format_engine_status, get_engine_status
+from scrapy.utils.engine import (
+    format_engine_status,
+    get_engine_status,
+    print_engine_status,
+)
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
@@ -40,6 +45,7 @@ from tests.spiders import (
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
     CrawlSpiderWithAsyncGeneratorCallback,
+    CrawlSpiderWithCallbackException,
     CrawlSpiderWithErrback,
     CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
@@ -71,11 +77,11 @@ class TestCrawl:
 
     @coroutine_test
     async def test_fixed_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.2)
+        await self._test_delay(mockserver, total=10, delay=0.2)
 
     @coroutine_test
     async def test_randomized_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.1, randomize=True)
+        await self._test_delay(mockserver, total=10, delay=0.1, randomize=True)
 
     @staticmethod
     async def _test_delay(
@@ -88,7 +94,10 @@ class TestCrawl:
         }
         tolerance = 1 - (0.6 if randomize else 0.2)
 
-        settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
+        settings = {
+            "DOWNLOAD_DELAY": delay,
+            "DOWNLOAD_DELAY_JITTER": 0.5 if randomize else 0,
+        }
         crawler = get_crawler(FollowAllSpider, settings)
         await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
@@ -359,7 +368,6 @@ with multiples lines
         est: list[list[tuple[str, Any]]] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(get_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -373,11 +381,27 @@ with multiples lines
         assert s["len(engine.scraper.slot.active)"] == 1
 
     @coroutine_test
+    async def test_print_engine_status(
+        self, mockserver: MockServer, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        def cb(response):
+            assert crawler.engine
+            print_engine_status(crawler.engine)
+
+        crawler = get_crawler(SingleRequestSpider)
+        await crawler.crawl_async(
+            seed=mockserver.url("/"), callback_func=cb, mockserver=mockserver
+        )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        out = capsys.readouterr().out
+        assert out.startswith("Execution engine status")
+        assert re.search(rf"engine\.spider\.name +: {crawler.spider.name}\n", out)
+
+    @coroutine_test
     async def test_format_engine_status(self, mockserver: MockServer) -> None:
         est: list[str] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(format_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -452,7 +476,6 @@ class TestCrawlSpider:
         await crawler.crawl_async(
             mockserver.url("/status?n=200"), mockserver=mockserver
         )
-        assert crawler.stats
         return items, crawler.stats
 
     @coroutine_test
@@ -518,8 +541,20 @@ class TestCrawlSpider:
         # so the failure is dropped silently and the crawl finishes normally.
         assert "[parse] status 200 (foo: None)" in caplog.text
         assert "[errback]" not in caplog.text
-        assert crawler.stats
         assert crawler.stats.get_value("downloader/response_status_count/404") == 1
+
+    @coroutine_test
+    async def test_crawlspider_with_callback_exception(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithCallbackException)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        # The link is followed even though parse_start_url() raised, and the
+        # exception is still logged as a spider error.
+        assert "[parse] status 200 (foo: None)" in caplog.text
+        assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
 
     @coroutine_test
     async def test_crawlspider_process_request_cb_kwargs(
@@ -691,20 +726,7 @@ class TestCrawlSpider:
     @pytest.mark.filterwarnings(
         r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
     )
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no certificate",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ssl_certificate(
         self, mockserver: MockServer, url: str
@@ -723,20 +745,7 @@ class TestCrawlSpider:
             assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
             assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no ip_address",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer, url: str) -> None:
         crawler = get_crawler(SingleRequestSpider)

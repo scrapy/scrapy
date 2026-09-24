@@ -18,7 +18,7 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -44,12 +44,12 @@ class RobotsTxtMiddleware:
         self.crawler: Crawler = crawler
         self._stats: StatsCollector = crawler.stats
         self._parsers: dict[str, RobotParser | Deferred[RobotParser | None] | None] = {}
-        self._parserimpl: RobotParser = load_object(
+        self._parserimpl: type[RobotParser] = load_object(
             crawler.settings.get("ROBOTSTXT_PARSER")
         )
 
         # check if parser dependencies are met, this should throw an error otherwise.
-        self._parserimpl.from_crawler(self.crawler, b"")
+        build_from_crawler(self._parserimpl, self.crawler, b"")
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -101,10 +101,8 @@ class RobotsTxtMiddleware:
                 await self._parse_robots(resp, netloc, request)
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    logger.error(
-                        "Error downloading %(request)s: %(f_exception)s",
-                        {"request": request, "f_exception": e},
-                        exc_info=True,
+                    logger.exception(
+                        f"Error downloading {request}",
                         extra={"spider": self.crawler.spider},
                     )
                 self._robots_error(e, netloc)
@@ -120,7 +118,7 @@ class RobotsTxtMiddleware:
     ) -> None:
         self._stats.inc_value("robotstxt/response_count")
         self._stats.inc_value(f"robotstxt/response_status_count/{response.status}")
-        rp = self._parserimpl.from_crawler(self.crawler, response.body)
+        rp = build_from_crawler(self._parserimpl, self.crawler, response.body)
         await self.crawler.signals.send_catch_log_async(
             signal=signals.robots_parsed,
             robotparser=rp,

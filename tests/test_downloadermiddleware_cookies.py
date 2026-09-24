@@ -10,6 +10,7 @@ from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import CookiesT, VerboseCookie
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import _to_verbose_cookies
 from scrapy.utils.spider import DefaultSpider
@@ -72,8 +73,8 @@ class TestCookiesMiddleware:
     def setup_method(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        self.mw = CookiesMiddleware.from_crawler(crawler)
-        self.redirect_middleware = RedirectMiddleware.from_crawler(crawler)
+        self.mw = build_from_crawler(CookiesMiddleware, crawler)
+        self.redirect_middleware = build_from_crawler(RedirectMiddleware, crawler)
 
     def teardown_method(self):
         del self.mw
@@ -94,19 +95,19 @@ class TestCookiesMiddleware:
 
     def test_setting_false_cookies_enabled(self):
         with pytest.raises(NotConfigured):
-            CookiesMiddleware.from_crawler(
-                get_crawler(settings_dict={"COOKIES_ENABLED": False})
+            build_from_crawler(
+                CookiesMiddleware, get_crawler(settings_dict={"COOKIES_ENABLED": False})
             )
 
     def test_setting_default_cookies_enabled(self):
         assert isinstance(
-            CookiesMiddleware.from_crawler(get_crawler()), CookiesMiddleware
+            build_from_crawler(CookiesMiddleware, get_crawler()), CookiesMiddleware
         )
 
     def test_setting_true_cookies_enabled(self):
         assert isinstance(
-            CookiesMiddleware.from_crawler(
-                get_crawler(settings_dict={"COOKIES_ENABLED": True})
+            build_from_crawler(
+                CookiesMiddleware, get_crawler(settings_dict={"COOKIES_ENABLED": True})
             ),
             CookiesMiddleware,
         )
@@ -115,7 +116,7 @@ class TestCookiesMiddleware:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": True})
-        mw = CookiesMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(CookiesMiddleware, crawler)
         caplog.clear()
         with caplog.at_level(
             logging.DEBUG, logger="scrapy.downloadermiddlewares.cookies"
@@ -132,20 +133,24 @@ class TestCookiesMiddleware:
             (
                 "scrapy.downloadermiddlewares.cookies",
                 logging.DEBUG,
-                "Received cookies from: <200 http://scrapytest.org/>\n"
-                "Set-Cookie: C1=value1; path=/\n",
+                (
+                    "Received cookies from: <200 http://scrapytest.org/>\n"
+                    "Set-Cookie: C1=value1; path=/\n"
+                ),
             ),
             (
                 "scrapy.downloadermiddlewares.cookies",
                 logging.DEBUG,
-                "Sending cookies to: <GET http://scrapytest.org/sub1/>\n"
-                "Cookie: C1=value1\n",
+                (
+                    "Sending cookies to: <GET http://scrapytest.org/sub1/>\n"
+                    "Cookie: C1=value1\n"
+                ),
             ),
         ]
 
     def test_debug_no_cookies(self, caplog: pytest.LogCaptureFixture) -> None:
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": True})
-        mw = CookiesMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(CookiesMiddleware, crawler)
         caplog.clear()
         with caplog.at_level(
             logging.DEBUG, logger="scrapy.downloadermiddlewares.cookies"
@@ -161,7 +166,7 @@ class TestCookiesMiddleware:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": False})
-        mw = CookiesMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(CookiesMiddleware, crawler)
         caplog.clear()
         with caplog.at_level(
             logging.DEBUG, logger="scrapy.downloadermiddlewares.cookies"
@@ -465,20 +470,26 @@ class TestCookiesMiddleware:
             (
                 "scrapy.utils.request",
                 logging.WARNING,
-                "Invalid cookie found in request <GET http://example.org/1>:"
-                " {'value': 'bar', 'secure': False} ('name' is missing)",
+                (
+                    "Invalid cookie found in request <GET http://example.org/1>:"
+                    " {'value': 'bar', 'secure': False} ('name' is missing)"
+                ),
             ),
             (
                 "scrapy.utils.request",
                 logging.WARNING,
-                "Invalid cookie found in request <GET http://example.org/2>:"
-                " {'name': 'foo', 'secure': False} ('value' is missing)",
+                (
+                    "Invalid cookie found in request <GET http://example.org/2>:"
+                    " {'name': 'foo', 'secure': False} ('value' is missing)"
+                ),
             ),
             (
                 "scrapy.utils.request",
                 logging.WARNING,
-                "Invalid cookie found in request <GET http://example.org/3>:"
-                " {'name': 'foo', 'value': None, 'secure': False} ('value' is missing)",
+                (
+                    "Invalid cookie found in request <GET http://example.org/3>:"
+                    " {'name': 'foo', 'value': None, 'secure': False} ('value' is missing)"
+                ),
             ),
         ]
         self.assertCookieValEqual(req1.headers["Cookie"], "key=value1")
@@ -873,3 +884,8 @@ class TestCookiesMiddleware:
             cookies2=False,
             cookies3=True,
         )
+
+    def test_hostless_url(self):
+        request = Request("data:,", cookies={"a": "b"})
+        assert self.mw.process_request(request) is None
+        assert "Cookie" not in request.headers

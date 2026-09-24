@@ -5,6 +5,7 @@ import json
 import logging
 import marshal
 import pickle
+import sys
 import tempfile
 from logging import getLogger
 from pathlib import Path
@@ -27,6 +28,7 @@ from scrapy.extensions.feedexport import (
     ItemFilter,
     apply_uri_params,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
@@ -318,7 +320,6 @@ class TestFeedExport(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
-        assert crawler.stats is not None
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
 
@@ -342,7 +343,6 @@ class TestFeedExport(TestFeedExportBase):
             side_effect=store,
         ):
             yield crawler.crawl(mockserver=self.mockserver)
-        assert crawler.stats is not None
         assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/failed_count/FileFeedStorage") == 1
 
@@ -360,7 +360,6 @@ class TestFeedExport(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
-        assert crawler.stats is not None
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert "feedexport/success_count/StdoutFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
@@ -537,6 +536,25 @@ class TestFeedExport(TestFeedExportBase):
             await self.exported_data(items, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 11), reason="BaseException.add_note() is 3.11+"
+    )
+    @coroutine_test
+    async def test_export_item_exception_mentions_item(
+        self, caplog: pytest.LogCaptureFixture
+    ):
+        items = [{"foo": {None: "bar"}}]
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {"format": "json"},
+            },
+            "FEED_EXPORTERS": {"json": ExceptionJsonItemExporter},
+        }
+        with caplog.at_level(logging.ERROR):
+            await self.exported_data(items, settings)
+        assert "RuntimeError: foo" in caplog.text
+        assert "Item: {'foo': {None: 'bar'}}" in caplog.text
 
     @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
@@ -1337,9 +1355,8 @@ class TestFeedExporterSignals:
         feed_slot_signal_handler: Callable[[Any], Awaitable[None] | None],
     ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
+        feed_exporter = build_from_crawler(FeedExporter, crawler)
+        spider = scrapy.Spider.from_crawler(crawler, "default")
         crawler.signals.connect(
             feed_exporter_signal_handler,
             signal=signals.feed_exporter_closed,
@@ -1377,6 +1394,28 @@ class TestFeedExporterSignals:
         assert self.feed_exporter_closed_received
 
 
+class TestFeedExporterOpenSpider:
+    @coroutine_test
+    async def test_bad_uri_placeholder_skips_only_that_feed(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with tempfile.NamedTemporaryFile(suffix="json") as tmp:
+            settings = {
+                "FEEDS": {
+                    printf_escape(path_to_url(tmp.name)): {"format": "json"},
+                    "file:///nonexistent/%(undefined_attr)s.json": {"format": "json"},
+                },
+            }
+            crawler = get_crawler(settings_dict=settings)
+            feed_exporter = build_from_crawler(FeedExporter, crawler)
+            spider = scrapy.Spider.from_crawler(crawler, "default")
+            with caplog.at_level(logging.ERROR):
+                feed_exporter.open_spider(spider)
+            assert len(feed_exporter.slots) == 1
+            assert "undefined_attr" in caplog.text
+            await feed_exporter.close_spider(spider)
+
+
 class TestItemFilter:
     def test_no_feed_options(self):
         item_filter = ItemFilter(None)
@@ -1393,7 +1432,7 @@ class TestFeedExportInit:
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
 
     def test_disabled_storage(self, caplog: pytest.LogCaptureFixture):
         class DisabledFeedStorage:
@@ -1408,7 +1447,7 @@ class TestFeedExportInit:
         }
         crawler = get_crawler(settings_dict=settings)
         with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
         assert (
             "Disabled feed storage scheme: disabled. Reason: not today" in caplog.text
         )
@@ -1423,7 +1462,28 @@ class TestFeedExportInit:
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
+
+    def test_format_inferred_from_uri(self):
+        settings: dict[str, Any] = {
+            "FEEDS": {
+                "output.json": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = build_from_crawler(FeedExporter, crawler)
+        assert exporter.feeds["output.json"]["format"] == "json"
+
+    def test_format_missing_and_not_inferable(self, caplog: pytest.LogCaptureFixture):
+        settings: dict[str, Any] = {
+            "FEEDS": {
+                "stdout:": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
+            build_from_crawler(FeedExporter, crawler)
+        assert "Feed format not set" in caplog.text
 
     def test_absolute_pathlib_as_uri(self):
         with tempfile.NamedTemporaryFile(suffix="json") as tmp:
@@ -1435,7 +1495,7 @@ class TestFeedExportInit:
                 },
             }
             crawler = get_crawler(settings_dict=settings)
-            exporter = FeedExporter.from_crawler(crawler)
+            exporter = build_from_crawler(FeedExporter, crawler)
             assert isinstance(exporter, FeedExporter)
 
     def test_relative_pathlib_as_uri(self):
@@ -1447,7 +1507,7 @@ class TestFeedExportInit:
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        exporter = FeedExporter.from_crawler(crawler)
+        exporter = build_from_crawler(FeedExporter, crawler)
         assert isinstance(exporter, FeedExporter)
 
 

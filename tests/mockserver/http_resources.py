@@ -3,7 +3,7 @@ from __future__ import annotations
 import gzip
 import json
 import random
-from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, ParamSpec, TypeVar, cast
 from urllib.parse import urlencode
 
 from twisted.internet.task import deferLater
@@ -12,12 +12,14 @@ from twisted.web.server import NOT_DONE_YET
 from twisted.web.util import Redirect, redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
+from tests import get_testdata
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from twisted.internet.defer import Deferred
     from twisted.python.failure import Failure
+    from twisted.web._http2 import H2Connection, H2Stream
     from twisted.web.http import Request as HTTPRequest
     from twisted.web.server import Request
 
@@ -32,6 +34,7 @@ def getarg(
     default: Any = None,
     type_: Callable[[bytes], Any] | None = None,
 ) -> Any:
+    assert request.args is not None
     if name in request.args:
         value = request.args[name][0]
         if type_ is not None:
@@ -161,6 +164,7 @@ class Follow(LeafResource):
 
     def renderRequest(self, request: Request, nlist: Sequence[int]) -> None:
         s = """<html> <head></head> <body>"""
+        assert request.args is not None
         args = request.args.copy()
         for nl in nlist:
             args[b"n"] = [to_bytes(str(nl))]
@@ -169,6 +173,27 @@ class Follow(LeafResource):
         s += """</body>"""
         request.write(to_bytes(s))
         request.finish()
+
+
+class Books(LeafResource):
+    """Serve a saved snapshot of two pages of https://books.toscrape.com/.
+
+    Any path directly under this resource, e.g. :file:`/books/1/`, gets the
+    saved listing page, and any path below it, which is where the relative
+    links of that page point, gets the saved book page. Listing paths are
+    interchangeable, so that a crawl can reach the same pair of pages under as
+    many distinct URLs as it needs.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._listing = get_testdata("books", "listing.html")
+        self._book = get_testdata("books", "book.html")
+
+    def render(self, request: Request) -> bytes:
+        assert request.postpath is not None
+        request.setHeader(b"Content-Type", b"text/html; charset=utf-8")
+        return self._book if b"catalogue" in request.postpath else self._listing
 
 
 class Delay(LeafResource):
@@ -427,6 +452,7 @@ class Compress(BaseResource):
     """Compress the data sent in the request url params and set Content-Encoding header"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         data = request.args[b"data"][0]
 
         accept_encoding_header = request.getHeader(b"accept-encoding")
@@ -445,8 +471,130 @@ class SetCookie(BaseResource):
     """Return a response with a Set-Cookie header for each request url parameter"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         for cookie_name, cookie_values in request.args.items():
             for cookie_value in cookie_values:
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
                 request.setHeader(b"Set-Cookie", cookie)
         return b""
+
+
+def _h2_connection(request: Request) -> H2Connection:
+    """Return the HTTP/2 connection that *request* was received on.
+
+    Only works for requests received over HTTP/2.
+    """
+    stream = cast("H2Stream", request.channel)
+    connection: H2Connection = stream._conn
+    return connection
+
+
+def _h2_write(request: Request, data: bytes) -> None:
+    """Write raw data into the HTTP/2 connection that *request* was received
+    on."""
+    transport = _h2_connection(request).transport
+    assert transport is not None
+    transport.write(data)
+
+
+def _h2_frame(
+    frame_type: int, payload: bytes = b"", stream_id: int = 0, flags: int = 0
+) -> bytes:
+    """Return an HTTP/2 frame (RFC 9113 §4.1)."""
+    return (
+        len(payload).to_bytes(3, "big")
+        + bytes((frame_type, flags))
+        + stream_id.to_bytes(4, "big")
+        + payload
+    )
+
+
+class H2ResetStream(LeafResource):
+    """Reset the HTTP/2 stream of the request instead of answering it"""
+
+    def render_GET(self, request: Request) -> int:
+        cast("H2Stream", request.channel).abortConnection()
+        return NOT_DONE_YET
+
+
+class H2GoAway(LeafResource):
+    """End the HTTP/2 connection of the request with a GOAWAY frame instead of
+    answering it"""
+
+    def render_GET(self, request: Request) -> int:
+        connection = _h2_connection(request).conn
+        connection.close_connection()
+        _h2_write(request, connection.data_to_send())
+        return NOT_DONE_YET
+
+
+class H2DataAndReset(LeafResource):
+    """Answer the request with response headers and then, within a single write,
+    a data frame and a reset of its HTTP/2 stream"""
+
+    def render_GET(self, request: Request) -> int:
+        stream_id = cast("H2Stream", request.channel).streamID
+        request.write(b"")  # sends the response headers
+        self.deferRequest(
+            request,
+            0.1,
+            _h2_write,
+            request,
+            _h2_frame(0x0, b"a" * 1024, stream_id=stream_id)
+            # RST_STREAM with the NO_ERROR code
+            + _h2_frame(0x3, bytes(4), stream_id=stream_id),
+        )
+        return NOT_DONE_YET
+
+
+class H2Raw(LeafResource):
+    """Write into the HTTP/2 connection of the request the raw data chosen with
+    the raw url parameter, and then answer the request"""
+
+    raw_data: ClassVar[dict[bytes, bytes]] = {
+        # a DATA frame above the default maximum frame size of 16 KiB
+        b"large-frame": _h2_frame(0x0, b"\0" * (2**14 + 1), stream_id=1),
+        # a frame of a type that is not part of HTTP/2
+        b"unknown-frame": _h2_frame(0xFF),
+    }
+
+    def render_GET(self, request: Request) -> bytes:
+        raw = getarg(request, b"raw")
+        _h2_write(request, self.raw_data[raw])
+        return b"Works"
+
+
+class H2NoSupport(LeafResource):
+    """Answer as servers without HTTP/2 support answer the connection preface,
+    with a 405 status line and nothing else"""
+
+    def render_GET(self, request: Request) -> int:
+        _h2_write(request, b"HTTP/2.0 405 Method Not Allowed\r\n\r\n")
+        return NOT_DONE_YET
+
+
+class H2Push(LeafResource):
+    """Push an empty response into the HTTP/2 connection of the request, and
+    then answer the request"""
+
+    def render_GET(self, request: Request) -> bytes:
+        stream_id = cast("H2Stream", request.channel).streamID
+        authority = request.getHeader(b"host") or b""
+        # HPACK (RFC 7541) indexed fields for ":method: GET", ":scheme: https"
+        # and ":path: /", followed by a literal ":authority" field
+        promised_request = b"\x82\x87\x84\x01" + bytes((len(authority),)) + authority
+        # HPACK indexed field for ":status: 200"
+        pushed_response = b"\x88"
+        _h2_write(
+            request,
+            # PUSH_PROMISE with the END_HEADERS flag set
+            _h2_frame(
+                0x5,
+                (2).to_bytes(4, "big") + promised_request,
+                stream_id=stream_id,
+                flags=0x4,
+            )
+            # HEADERS with the END_STREAM and END_HEADERS flags set
+            + _h2_frame(0x1, pushed_response, stream_id=2, flags=0x5),
+        )
+        return b"Works"

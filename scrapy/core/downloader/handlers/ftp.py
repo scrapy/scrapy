@@ -39,7 +39,7 @@ from urllib.parse import unquote
 from twisted.internet.protocol import ClientCreator, Protocol
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -94,7 +94,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
 
     async def download_request(self, request: Request) -> Response:
         from twisted.internet import reactor
-        from twisted.protocols.ftp import CommandFailed, FTPClient
+        from twisted.protocols.ftp import CommandFailed, ConnectionLost, FTPClient
 
         parsed_url = urlparse_cached(request)
         user = request.meta.get("ftp_user", self.default_user)
@@ -114,11 +114,14 @@ class FTPDownloadHandler(BaseDownloadHandler):
             await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
         except CommandFailed as e:
             message = str(e)
-            if m := _CODE_RE.search(message):
-                ftpcode = m.group()
-                httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
-                return Response(url=request.url, status=httpcode, body=message.encode())
-            raise
+            # Twisted only raises CommandFailed for a reply whose numeric code
+            # it has parsed, so the message always carries that code.
+            m = _CODE_RE.search(message)
+            assert m
+            httpcode = self.CODE_MAPPING.get(m.group(), self.CODE_MAPPING["default"])
+            return Response(url=request.url, status=httpcode, body=message.encode())
+        except ConnectionLost as e:
+            raise DownloadFailedError(str(e)) from e
         finally:
             protocol.close()
             assert client.transport
