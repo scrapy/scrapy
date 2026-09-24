@@ -175,7 +175,9 @@ class ExecutionEngine:
         self._slot: _Slot | None = None
         self.spider: Spider | None = None
         self._state: EngineState = EngineState.CREATED
-        self._pending_close_reason: str | None = None
+        # The reason and error flag of a close requested while the spider is
+        # opening.
+        self._pending_close: tuple[str, bool] | None = None
         self._stop_mode: _StopMode = "graceful"
         self._downloader_fast_stopped: bool = False
         self.paused: bool = False
@@ -731,11 +733,11 @@ class ExecutionEngine:
 
     async def _close_spider_if_pending(self) -> None:
         """Perform a close requested while the spider was opening."""
-        if self._pending_close_reason is None:
+        if self._pending_close is None:
             return
-        reason = self._pending_close_reason
-        self._pending_close_reason = None
-        await self.close_spider_async(reason=reason)
+        reason, error = self._pending_close
+        self._pending_close = None
+        await self.close_spider_async(reason=reason, error=error)
 
     def _spider_idle(self) -> None:
         """
@@ -855,8 +857,8 @@ class ExecutionEngine:
             # Waiting until it opens similarly may deadlock.
             # _close_spider_if_pending() will close it at the end of
             # open_spider_async().
-            if self._pending_close_reason is None:
-                self._pending_close_reason = reason
+            if self._pending_close is None:
+                self._pending_close = (reason, error)
             return
 
         assert self._slot is not None

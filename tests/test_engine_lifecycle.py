@@ -380,6 +380,26 @@ class TestCloseDuringOpen:
         assert recorder.close_reasons == ["early"]
 
     @coroutine_test
+    async def test_close_spider_during_open_with_error(self) -> None:
+        """A close requested while the spider is opening keeps its error
+        flag."""
+        crawler = get_crawler(DefaultSpider)
+        engine = make_engine(crawler)
+        errors: list[bool] = []
+
+        async def close(**kwargs: Any) -> None:
+            await engine.close_spider_async(reason="early", error=True)
+
+        def closed(error: bool, **kwargs: Any) -> None:
+            errors.append(error)
+
+        crawler.signals.connect(close, signals.spider_opened)
+        crawler.signals.connect(closed, signals.spider_closed)
+        await engine.open_spider_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert errors == [True]
+
+    @coroutine_test
     async def test_stop_during_open(self) -> None:
         """stop_async() while the spider is opening is performed once the
         spider is open."""
