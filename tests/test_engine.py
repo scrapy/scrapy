@@ -76,6 +76,11 @@ class ChangeCloseReasonSpider(MySpider):
         raise CloseSpider(reason="custom_reason")
 
 
+class ErrorCloseReasonSpider(ChangeCloseReasonSpider):
+    def spider_idle(self):
+        raise CloseSpider(reason="custom_reason", error=True)
+
+
 class TestEngine(TestEngineBase):
     @coroutine_test
     async def test_crawler(self, mockserver: MockServer) -> None:
@@ -117,7 +122,21 @@ class TestEngine(TestEngineBase):
         assert {
             "spider": run.crawler.spider,
             "reason": "custom_reason",
+            "error": False,
         } == run.signals_caught[signals.spider_closed]
+
+    @coroutine_test
+    async def test_crawler_change_close_reason_and_error_on_idle(
+        self, mockserver: MockServer
+    ) -> None:
+        run = CrawlerRun(ErrorCloseReasonSpider)
+        await run.run(mockserver)
+        assert {
+            "spider": run.crawler.spider,
+            "reason": "custom_reason",
+            "error": True,
+        } == run.signals_caught[signals.spider_closed]
+        assert run.crawler.stats.get_value("finish_reason_error") is True
 
     @coroutine_test
     async def test_close_downloader(self):

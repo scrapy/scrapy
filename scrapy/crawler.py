@@ -302,7 +302,9 @@ class Crawler:
             try:
                 yield deferred_from_coro(self.engine.open_spider_async())
             except CloseSpider as exc:
-                yield deferred_from_coro(self.engine.close_async(reason=exc.reason))
+                yield deferred_from_coro(
+                    self.engine.close_async(reason=exc.reason, error=exc.error)
+                )
             else:
                 yield deferred_from_coro(self.engine.start_async())
         except Exception:
@@ -336,7 +338,7 @@ class Crawler:
             try:
                 await self.engine.open_spider_async()
             except CloseSpider as exc:
-                await self.engine.close_async(reason=exc.reason)
+                await self.engine.close_async(reason=exc.reason, error=exc.error)
             else:
                 await self.engine.start_async()
         except Exception:

@@ -244,8 +244,8 @@ class BaseRunSpiderCommand(ScrapyCommand):
         self.crawler_process.crawl(crawler, **opts.spargs)
         self.crawler_process.start()
         if self.crawler_process.bootstrap_failed or crawler.stats.get_value(
-            "finish_reason"
-        ) in {"closespider_errorcount", "start_error"}:
+            "finish_reason_error", False
+        ):
             self.exitcode = 1
 
     def _warn_if_feeds_unused(self, sender: Crawler, **kwargs: Any) -> None:

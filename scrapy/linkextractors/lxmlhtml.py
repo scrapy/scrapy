@@ -397,7 +397,8 @@ class LxmlLinkExtractor:
         if self.canonicalize:
             for link in links:
                 link.url = canonicalize_url(link.url)
-        return self.link_extractor._process_links(links)
+            return self.link_extractor._process_links(links)
+        return links
 
     def _extract_links(self, *args: Any, **kwargs: Any) -> list[Link]:
         return self.link_extractor._extract_links(*args, **kwargs)
@@ -423,6 +424,6 @@ class LxmlLinkExtractor:
         for doc in docs:
             links = self._extract_links(doc, response.url, response.encoding, base_url)
             all_links.extend(self._process_links(links))
-        if self.link_extractor.unique:
+        if self.link_extractor.unique and len(docs) > 1:
             return unique_list(all_links, key=self.link_extractor.link_key)
         return all_links

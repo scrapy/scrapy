@@ -158,4 +158,5 @@ class TestEngineBase:
         assert {
             "spider": run.crawler.spider,
             "reason": "finished",
+            "error": False,
         } == run.signals_caught[signals.spider_closed]

@@ -317,6 +317,18 @@ one per actual value of the placeholder.
 
     Set by :class:`~scrapy.extensions.corestats.CoreStats`.
 
+.. stat:: finish_reason_error
+
+``finish_reason_error``
+    Boolean indicating whether :stat:`finish_reason` denotes a failed crawl.
+    It matches the *error* argument of the :signal:`spider_closed` signal, and
+    :ref:`commands <topics-commands>` such as :command:`crawl` use it to
+    decide their process exit code.
+
+    .. versionadded:: VERSION
+
+    Set by :class:`~scrapy.extensions.corestats.CoreStats`.
+
 .. stat:: finish_time
 
 ``finish_time``
