@@ -2,15 +2,21 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-from gzip import BadGzipFile
-from typing import TYPE_CHECKING
+from gzip import compress
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
 from twisted.internet.defer import Deferred, succeed
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
+from scrapy.exceptions import (
+    CloseSpider,
+    DecompressionError,
+    IgnoreRequest,
+    ScrapyDeprecationWarning,
+    _InvalidOutput,
+)
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -23,8 +29,37 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 
+def _invalid_gzipped_response(request: Request) -> Response:
+    body = b"<p>You are being redirected</p>"
+    return Response(
+        request.url,
+        status=200,
+        body=body,
+        headers={
+            "Content-Length": str(len(body)),
+            "Content-Type": "text/html",
+            "Content-Encoding": "gzip",
+            "Location": "http://example.com/login",
+        },
+    )
+
+
+def _truncated_gzipped_response(request: Request) -> Response:
+    body = compress(b"<p>You are being redirected</p>")[:10]
+    return Response(
+        request.url,
+        status=200,
+        body=body,
+        headers={
+            "Content-Length": str(len(body)),
+            "Content-Type": "text/html",
+            "Content-Encoding": "gzip",
+        },
+    )
+
+
 class TestManagerBase:
-    settings_dict = None
+    settings_dict: dict[str, Any] | None = None
 
     # should be a fixture but async fixtures that use Futures are problematic with pytest-twisted
     @asynccontextmanager
@@ -82,18 +117,10 @@ class TestDefaults(TestManagerBase):
                 )
 
     @coroutine_test
-    async def test_3xx_and_invalid_gzipped_body_must_redirect(self):
-        """Regression test for a failure when redirecting a compressed
-        request.
-
-        This happens when httpcompression middleware is executed before redirect
-        middleware and attempts to decompress a non-compressed body.
-        In particular when some website returns a 30x response with header
-        'Content-Encoding: gzip' giving as result the error below:
-
-            BadGzipFile: Not a gzipped file (...)
-
-        """
+    async def test_3xx_and_invalid_gzipped_body_fails(self):
+        # Without DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS,
+        # RedirectMiddleware.process_exception() is never consulted, even
+        # though the response has a usable Location header.
         req = Request("http://example.com")
         body = b"<p>You are being redirected</p>"
         resp = Response(
@@ -107,29 +134,15 @@ class TestDefaults(TestManagerBase):
                 "Location": "http://example.com/login",
             },
         )
-        async with self.get_mwman() as mwman:
-            ret = await self._download(mwman, req, resp)
-        assert isinstance(ret, Request), f"Not redirected: {ret!r}"
-        assert to_bytes(ret.url) == resp.headers["Location"], (
-            "Not redirected to location header"
-        )
+        with pytest.raises(DecompressionError):
+            async with self.get_mwman() as mwman:
+                await self._download(mwman, req, resp)
 
     @coroutine_test
     async def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request("http://example.com")
-        body = b"<p>You are being redirected</p>"
-        resp = Response(
-            req.url,
-            status=200,
-            body=body,
-            headers={
-                "Content-Length": str(len(body)),
-                "Content-Type": "text/html",
-                "Content-Encoding": "gzip",
-                "Location": "http://example.com/login",
-            },
-        )
-        with pytest.raises(BadGzipFile):
+        resp = _invalid_gzipped_response(req)
+        with pytest.raises(DecompressionError):
             async with self.get_mwman() as mwman:
                 await self._download(mwman, req, resp)
 
@@ -183,6 +196,241 @@ class TestResponseFromProcessException(TestManagerBase):
             "process_exception",
             "process_response",
         ]
+
+
+class TestResponseExceptions(TestManagerBase):
+    """Tests exceptions from process_response reaching process_exception."""
+
+    settings_dict = {"DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS": True}
+
+    @coroutine_test
+    async def test_request_from_process_exception(self):
+        req = Request("http://example.com/index.html")
+        retry_req = Request("http://example.com/index.html")
+        calls = []
+
+        class OuterMiddleware:
+            def process_response(self, request, response):
+                calls.append("outer.process_response")
+                return response
+
+            def process_exception(self, request, exception):
+                calls.append("outer.process_exception")
+                return retry_req
+
+        class InnerMiddleware:
+            def process_response(self, request, response):
+                calls.append("inner.process_response")
+                raise ValueError("test")
+
+            def process_exception(self, request, exception):
+                calls.append("inner.process_exception")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(OuterMiddleware())
+            mwman._add_middleware(InnerMiddleware())
+            result = await self._download(mwman, req)
+        assert result is retry_req
+        assert calls == ["inner.process_response", "outer.process_exception"]
+
+    @coroutine_test
+    async def test_response_from_process_exception(self):
+        req = Request("http://example.com/index.html")
+        recovered = Response("http://example.com/index.html")
+        calls = []
+
+        class OuterMiddleware:
+            def process_response(self, request, response):
+                calls.append("outer.process_response")
+                return response
+
+        class MiddleMiddleware:
+            def process_response(self, request, response):
+                calls.append("middle.process_response")
+                return response
+
+            def process_exception(self, request, exception):
+                calls.append("middle.process_exception")
+                return recovered
+
+        class InnerMiddleware:
+            def process_response(self, request, response):
+                calls.append("inner.process_response")
+                raise ValueError("test")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(OuterMiddleware())
+            mwman._add_middleware(MiddleMiddleware())
+            mwman._add_middleware(InnerMiddleware())
+            result = await self._download(mwman, req)
+        assert result is recovered
+        assert calls == [
+            "inner.process_response",
+            "middle.process_exception",
+            "outer.process_response",
+        ]
+
+    @coroutine_test
+    async def test_processed_middleware_not_called(self):
+        req = Request("http://example.com/index.html")
+        calls = []
+
+        class RaisingMiddleware:
+            def process_response(self, request, response):
+                calls.append("raising.process_response")
+                raise ValueError("test")
+
+        class InnerMiddleware:
+            def process_response(self, request, response):
+                calls.append("inner.process_response")
+                return response
+
+            def process_exception(self, request, exception):
+                calls.append("inner.process_exception")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(RaisingMiddleware())
+            mwman._add_middleware(InnerMiddleware())
+            with pytest.raises(ValueError, match="test"):
+                await self._download(mwman, req)
+        assert calls == ["inner.process_response", "raising.process_response"]
+
+    @coroutine_test
+    async def test_unhandled(self):
+        req = Request("http://example.com/index.html")
+
+        class RaisingMiddleware:
+            def process_response(self, request, response):
+                raise ValueError("test")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(RaisingMiddleware())
+            with pytest.raises(ValueError, match="test"):
+                await self._download(mwman, req)
+
+    @pytest.mark.parametrize(
+        "response_func", [_invalid_gzipped_response, _truncated_gzipped_response]
+    )
+    @coroutine_test
+    async def test_retry(self, response_func):
+        """Decompression failures are retried, as RETRY_EXCEPTIONS promises."""
+        req = Request("http://example.com")
+        async with self.get_mwman() as mwman:
+            result = await self._download(mwman, req, response_func(req))
+        assert isinstance(result, Request)
+        assert result.url == req.url
+
+    @coroutine_test
+    async def test_3xx_and_invalid_gzipped_body_must_redirect(self):
+        req = Request("http://example.com")
+        body = b"<p>You are being redirected</p>"
+        resp = Response(
+            req.url,
+            status=302,
+            body=body,
+            headers={
+                "Content-Length": str(len(body)),
+                "Content-Type": "text/html",
+                "Content-Encoding": "gzip",
+                "Location": "http://example.com/login",
+            },
+        )
+        async with self.get_mwman() as mwman:
+            ret = await self._download(mwman, req, resp)
+        assert isinstance(ret, Request), f"Not redirected: {ret!r}"
+        assert to_bytes(ret.url) == resp.headers["Location"], (
+            "Not redirected to location header"
+        )
+
+    @coroutine_test
+    async def test_close_spider(self):
+        req = Request("http://example.com/index.html")
+        calls = []
+
+        class OuterMiddleware:
+            def process_exception(self, request, exception):
+                calls.append("outer.process_exception")
+
+        class InnerMiddleware:
+            def process_response(self, request, response):
+                raise CloseSpider("test")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(OuterMiddleware())
+            mwman._add_middleware(InnerMiddleware())
+            with pytest.raises(CloseSpider):
+                await self._download(mwman, req)
+        assert not calls
+
+    @coroutine_test
+    async def test_close_spider_from_process_request(self):
+        req = Request("http://example.com/index.html")
+        calls = []
+
+        class Middleware:
+            def process_request(self, request):
+                raise CloseSpider("test")
+
+            def process_exception(self, request, exception):
+                calls.append("process_exception")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(Middleware())
+            with pytest.raises(CloseSpider):
+                await self._download(mwman, req)
+        assert not calls
+
+
+class TestResponseExceptionsDisabled(TestManagerBase):
+    """Tests the deprecated behavior, which the default value still gives."""
+
+    @pytest.mark.parametrize("exception", [ValueError, IgnoreRequest])
+    @coroutine_test
+    async def test_not_passed_to_process_exception(self, exception):
+        req = Request("http://example.com/index.html")
+        calls = []
+
+        class OuterMiddleware:
+            def process_exception(self, request, exception):
+                calls.append("outer.process_exception")
+
+        class InnerMiddleware:
+            def process_response(self, request, response):
+                raise exception("test")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(OuterMiddleware())
+            mwman._add_middleware(InnerMiddleware())
+            with (
+                pytest.raises(exception, match="test"),
+                pytest.warns(
+                    ScrapyDeprecationWarning,
+                    match="OuterMiddleware.process_exception",
+                ),
+            ):
+                await self._download(mwman, req)
+        assert not calls
+
+    @coroutine_test
+    async def test_only_built_in_process_exception(self):
+        """Nothing is warned about when only Scrapy's own process_exception()
+        methods would get the exception."""
+        req = Request("http://example.com/index.html")
+
+        class RaisingMiddleware:
+            def process_response(self, request, response):
+                raise ValueError("test")
+
+        async with self.get_mwman() as mwman:
+            mwman._add_middleware(RaisingMiddleware())
+            with pytest.raises(ValueError, match="test"):
+                await self._download(mwman, req)
+
+
+class TestResponseExceptionsDisabledExplicitly(TestResponseExceptionsDisabled):
+    """Asking for the deprecated behavior does not silence the warning."""
+
+    settings_dict = {"DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS": False}
 
 
 class TestInvalidOutput(TestManagerBase):

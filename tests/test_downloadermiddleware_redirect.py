@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import DecompressionError, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.referer import (
     POLICY_NO_REFERRER,
@@ -347,6 +347,33 @@ class TestRedirectMiddleware(TestRedirectBase):
         request = Request("https://example.com")
         response = Response(request.url, status=302)
         assert self.mw.process_response(request, response) is response
+
+    def test_process_exception_completes_redirect(self):
+        url = "https://example.com/301"
+        url2 = "https://example.com/redirected"
+        request = Request(url)
+        response = Response(url, headers={"Location": url2}, status=301)
+        exception = DecompressionError("could not decompress")
+        exception.response = response
+        result = self.mw.process_exception(request, exception)
+        assert isinstance(result, Request)
+        assert result.url == url2
+
+    def test_process_exception_ignores_other_exceptions(self):
+        request = Request("https://example.com")
+        assert self.mw.process_exception(request, ValueError("test")) is None
+
+    def test_process_exception_without_response(self):
+        request = Request("https://example.com")
+        exception = DecompressionError("could not decompress")
+        assert self.mw.process_exception(request, exception) is None
+
+    def test_process_exception_non_redirect_response(self):
+        request = Request("https://example.com")
+        response = Response(request.url, status=200)
+        exception = DecompressionError("could not decompress")
+        exception.response = response
+        assert self.mw.process_exception(request, exception) is None
 
 
 @pytest.mark.parametrize(SCHEME_PARAMS, REDIRECT_SCHEME_CASES)
