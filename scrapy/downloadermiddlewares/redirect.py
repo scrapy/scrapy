@@ -90,7 +90,9 @@ class BaseRedirectMiddleware:
             f"{referer_cls} (or a subclass), or {replacement}.",
         )
 
-    def _redirect(self, redirected: Request, request: Request, reason: Any) -> Request:
+    def _redirect(
+        self, redirected: Request, request: Request, reason: str | int
+    ) -> Request:
         ttl = request.meta.setdefault("redirect_ttl", self.max_redirect_times)
         redirects = request.meta.get("redirect_times", 0) + 1
 

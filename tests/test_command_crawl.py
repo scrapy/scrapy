@@ -134,6 +134,21 @@ class MySpider(scrapy.Spider):
         assert "Spider closed (closespider_errorcount)" in err
         assert returncode != 0
 
+    def test_start_error_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (start_error)" in err
+        assert returncode == 1
+
     def test_default_reactor(self, proj_path: Path) -> None:
         spider_code = """
 import scrapy
