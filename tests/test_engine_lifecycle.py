@@ -252,10 +252,12 @@ class TestEarlyClose:
         with pytest.raises(RuntimeError, match="in the STOPPED state"):
             await engine.start_async()
 
+    @pytest.mark.parametrize("use_deferred", [False, True])
     @coroutine_test
-    async def test_crawl_with_close_before_start(self) -> None:
-        """Crawler.crawl_async() does not start an engine whose spider was
-        closed while opening, and completes without hanging."""
+    async def test_crawl_with_close_before_start(self, use_deferred: bool) -> None:
+        """Crawler.crawl_async() and Crawler.crawl() do not start an engine
+        whose spider was closed while opening, and complete without
+        hanging."""
         crawler = get_crawler(DefaultSpider)
         recorder = SignalRecorder(crawler)
 
@@ -264,7 +266,10 @@ class TestEarlyClose:
             await crawler.engine.close_spider_async(reason="early")
 
         crawler.signals.connect(close, signals.spider_opened)
-        await crawler.crawl_async()
+        if use_deferred:
+            await maybe_deferred_to_future(crawler.crawl())
+        else:
+            await crawler.crawl_async()
         engine = crawler.engine
         assert engine is not None
         assert_state(engine, EngineState.STOPPED)
