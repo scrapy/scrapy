@@ -230,6 +230,7 @@ class TestAddonManager:
 
         settings = Settings()
         settings.setdict(get_reactor_settings())
+        settings.set("COMPRESSION_KEEP_ENCODING_HEADER", True)
         settings.set("KEY", "default", priority="default")
         runner_cls = (
             CrawlerRunner

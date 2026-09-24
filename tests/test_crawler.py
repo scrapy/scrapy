@@ -32,7 +32,7 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-BASE_SETTINGS: dict[str, Any] = {}
+BASE_SETTINGS: dict[str, Any] = {"COMPRESSION_KEEP_ENCODING_HEADER": True}
 
 
 def get_raw_crawler(

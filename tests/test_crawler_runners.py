@@ -89,7 +89,9 @@ class TestAsyncCrawlerProcess:
 class TestCrawlerRunnerHasSpider:
     @pytest.fixture
     def runner(self) -> CrawlerRunnerBase:
-        return CrawlerRunner(get_reactor_settings())
+        return CrawlerRunner(
+            {**get_reactor_settings(), "COMPRESSION_KEEP_ENCODING_HEADER": True}
+        )
 
     @staticmethod
     async def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> None:
@@ -145,6 +147,7 @@ class TestCrawlerRunnerHasSpider:
         if reactor_pytest != "asyncio":
             runner = CrawlerRunner(
                 settings={
+                    "COMPRESSION_KEEP_ENCODING_HEADER": True,
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 }
             )
@@ -156,6 +159,7 @@ class TestCrawlerRunnerHasSpider:
         else:
             runner = CrawlerRunner(
                 settings={
+                    "COMPRESSION_KEEP_ENCODING_HEADER": True,
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 }
             )
@@ -166,7 +170,9 @@ class TestCrawlerRunnerHasSpider:
 class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
     @pytest.fixture
     def runner(self) -> CrawlerRunnerBase:
-        return AsyncCrawlerRunner(get_reactor_settings())
+        return AsyncCrawlerRunner(
+            {**get_reactor_settings(), "COMPRESSION_KEEP_ENCODING_HEADER": True}
+        )
 
     def test_crawler_runner_asyncio_enabled_true(self) -> None:  # type: ignore[override]
         pytest.skip("This test is only for CrawlerRunner")
@@ -228,7 +234,10 @@ def test_crawl_rejects_spider_object(runner_cls: type[CrawlerRunnerBase]) -> Non
 async def test_crawlerrunner_accepts_crawler(
     caplog: pytest.LogCaptureFixture, mockserver: MockServer
 ) -> None:
-    crawler = Crawler(SimpleSpider, get_reactor_settings())
+    crawler = Crawler(
+        SimpleSpider,
+        {**get_reactor_settings(), "COMPRESSION_KEEP_ENCODING_HEADER": True},
+    )
     runner = CrawlerRunner()
     with caplog.at_level(logging.DEBUG):
         await maybe_deferred_to_future(
@@ -245,7 +254,7 @@ async def test_crawlerrunner_accepts_crawler(
 async def test_crawl_multiple(
     caplog: pytest.LogCaptureFixture, mockserver: MockServer
 ) -> None:
-    settings_dict = get_reactor_settings()
+    settings_dict = {**get_reactor_settings(), "COMPRESSION_KEEP_ENCODING_HEADER": True}
     runner_cls = (
         CrawlerRunner
         if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
