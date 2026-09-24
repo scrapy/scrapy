@@ -359,10 +359,7 @@ class Crawler:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
     def stop(self, *, mode: _StopMode = "graceful") -> Deferred[None]:
-        """Stop the crawler.
-
-        Return a deferred that is fired when :meth:`stop_async` would
-        complete."""
+        """Stop the crawler."""
         warnings.warn(
             "Crawler.stop() is deprecated, use stop_async() instead",
             ScrapyDeprecationWarning,
@@ -381,8 +378,7 @@ class Crawler:
 
         Completes when the crawl has finished, except when the spider is still
         being opened or the crawler is already stopping, in which case it
-        completes immediately. To wait for the crawl to finish in every case,
-        await :meth:`crawl_async`.
+        completes immediately.
         """
         mode = _normalize_stop_mode(mode)
         was_crawling = self.crawling
@@ -635,7 +631,7 @@ class CrawlerRunner(CrawlerRunnerBase):
 
         Returns a deferred that is fired when all their
         :meth:`Crawler.stop_async() <scrapy.crawler.Crawler.stop_async>` calls
-        have completed. To wait for the crawls to end, use :meth:`join`.
+        have completed.
         """
         mode = _normalize_stop_mode(mode)
         return DeferredList(
@@ -763,8 +759,7 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         Stops simultaneously all the crawling jobs taking place.
 
         Completes when all their :meth:`Crawler.stop_async()
-        <scrapy.crawler.Crawler.stop_async>` calls have completed. To wait for
-        the crawls to end, use :meth:`join`.
+        <scrapy.crawler.Crawler.stop_async>` calls have completed.
         """
         mode = _normalize_stop_mode(mode)
         if self.crawlers:
