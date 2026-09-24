@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -23,7 +22,6 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -140,7 +138,7 @@ class TestEngine(TestEngineBase):
 
     @coroutine_test
     async def test_close_downloader(self):
-        e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
+        e = ExecutionEngine(get_crawler(MySpider))
         await e.close_async()
 
     def test_close_without_downloader(self):
@@ -152,15 +150,13 @@ class TestEngine(TestEngineBase):
                 raise CustomException
 
         with pytest.raises(CustomException):
-            ExecutionEngine(
-                get_crawler(MySpider, {"DOWNLOADER": BadDownloader}), lambda _: None
-            )
+            ExecutionEngine(get_crawler(MySpider, {"DOWNLOADER": BadDownloader}))
 
     @inline_callbacks_test
     def test_start_already_running_exception(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        e = ExecutionEngine(crawler, lambda _: None)
+        e = ExecutionEngine(crawler)
         crawler.engine = e
         yield deferred_from_coro(e.open_spider_async())
         _schedule_coro(e.start_async())
@@ -170,56 +166,50 @@ class TestEngine(TestEngineBase):
 
     @coroutine_test
     async def test_stop_async_force_mode_not_supported(self) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
 
         with pytest.raises(ValueError, match="force stop mode is not supported"):
             await engine.stop_async(mode="force")
 
     @coroutine_test
     async def test_stop_async_not_running_raises(self) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
 
-        with pytest.raises(RuntimeError, match="Engine not running"):
+        with pytest.raises(RuntimeError, match="Spider not opened"):
             await engine.stop_async()
 
     @coroutine_test
-    async def test_stop_async_reentrant_fast_waits_for_closewait(self) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        engine.spider = Mock()
-        engine._state = EngineState.STOPPING
-        engine._closewait = defer.Deferred()
+    async def test_stop_async_reentrant_fast_drops_downloads(self) -> None:
+        """A fast stop requested while the spider is already closing drops
+        the in-flight downloads, and returns without waiting for the close."""
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        engine._state = EngineState.SPIDER_CLOSING
 
         with patch.object(
-            engine, "close_spider_async", new_callable=AsyncMock
-        ) as close:
-            stop_dfd = deferred_from_coro(engine.stop_async(mode="fast"))
-            await sleep(0)
-            close.assert_called_once_with(reason="shutdown", mode="fast")
-            assert not stop_dfd.called
+            engine, "_fast_stop_downloader", new_callable=AsyncMock
+        ) as fast_stop:
+            await engine.stop_async(mode="fast")
 
-            assert engine._closewait
-            engine._closewait.callback(None)
-            await maybe_deferred_to_future(stop_dfd)
+        fast_stop.assert_awaited_once()
+        assert engine._stop_mode == "fast"
 
     @coroutine_test
-    async def test_stop_async_reentrant_graceful_without_spider_or_closewait(
-        self,
-    ) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        engine._state = EngineState.STOPPING
+    async def test_stop_async_reentrant_graceful_is_noop(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        engine._state = EngineState.SPIDER_CLOSING
 
         with patch.object(
-            engine, "close_spider_async", new_callable=AsyncMock
-        ) as close:
+            engine, "_fast_stop_downloader", new_callable=AsyncMock
+        ) as fast_stop:
             await engine.stop_async(mode="graceful")
 
-        close.assert_not_called()
+        fast_stop.assert_not_called()
 
     @coroutine_test
     async def test_handle_downloader_output_ignores_fast_cancelled_failures(
         self,
     ) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
         engine.spider = Mock()
         engine._stop_mode = "fast"
 
@@ -238,7 +228,7 @@ class TestEngine(TestEngineBase):
     async def test_start_already_running_exception_asyncio(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        e = ExecutionEngine(crawler, lambda _: None)
+        e = ExecutionEngine(crawler)
         crawler.engine = e
         await e.open_spider_async()
         with pytest.raises(RuntimeError, match="Engine already running"):
@@ -312,7 +302,7 @@ async def test_request_scheduled_signal():
             raise IgnoreRequest
 
     crawler = get_crawler(MySpider)
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     scheduler = build_from_crawler(TestScheduler, crawler)
 
     async def start() -> AsyncIterator[Any]:
@@ -385,9 +375,9 @@ class TestMisuse:
 
     @coroutine_test
     async def test_stop_not_running(self) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
         try:
-            with pytest.raises(RuntimeError, match="Engine not running"):
+            with pytest.raises(RuntimeError, match="Spider not opened"):
                 await engine.stop_async()
         finally:
             await engine.close_async()
@@ -399,14 +389,11 @@ class TestMisuse:
         with pytest.raises(
             TypeError, match="does not fully implement the scheduler interface"
         ):
-            ExecutionEngine(
-                get_crawler(DefaultSpider, {"SCHEDULER": NotAScheduler}),
-                lambda _: None,
-            )
+            ExecutionEngine(get_crawler(DefaultSpider, {"SCHEDULER": NotAScheduler}))
 
     @coroutine_test
     async def test_spider_is_idle_without_slot(self) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
         try:
             with pytest.raises(RuntimeError, match="Engine slot not assigned"):
                 engine.spider_is_idle()
@@ -415,7 +402,7 @@ class TestMisuse:
 
     @coroutine_test
     async def test_crawl_without_spider(self) -> None:
-        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
         try:
             with pytest.raises(RuntimeError, match="No open spider to crawl"):
                 engine.crawl(Request("data:,"))
@@ -426,7 +413,7 @@ class TestMisuse:
     async def test_open_spider_twice(self) -> None:
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        engine = crawler.engine = ExecutionEngine(crawler, lambda _: None)
+        engine = crawler.engine = ExecutionEngine(crawler)
         await engine.open_spider_async()
         try:
             with pytest.raises(RuntimeError, match="No free spider slot"):
@@ -464,23 +451,18 @@ async def test_scheduler_creation_error() -> None:
 
 
 @coroutine_test
-async def test_stop_without_spider_closes_downloader(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    crawler = get_crawler(DefaultSpider)
-    engine = crawler.engine = ExecutionEngine(crawler, lambda _: None)
-    engine.downloader.close = Mock(wraps=engine.downloader.close)  # type: ignore[method-assign]
-    with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
-        await engine.start_async()
-    # Starting without a spider is not part of the engine lifecycle.
-    assert "Invalid engine state transition: CREATED → STARTING" in caplog.text
-    await engine.stop_async()
-    engine.downloader.close.assert_called_once()
+async def test_start_without_spider() -> None:
+    engine = ExecutionEngine(get_crawler(DefaultSpider))
+    try:
+        with pytest.raises(RuntimeError, match="Spider not opened"):
+            await engine.start_async()
+    finally:
+        await engine.close_async()
 
 
 @coroutine_test
 async def test_pause_unpause() -> None:
-    engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+    engine = ExecutionEngine(get_crawler(DefaultSpider))
     try:
         engine.pause()
         assert engine.paused
