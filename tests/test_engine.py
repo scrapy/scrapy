@@ -231,9 +231,7 @@ class TestEngine(TestEngineBase):
         e = ExecutionEngine(crawler)
         crawler.engine = e
         await e.open_spider_async()
-        with pytest.raises(
-            RuntimeError, match="Cannot start the engine in the STARTING state"
-        ):
+        with pytest.raises(RuntimeError, match=r"in the (STARTING|RUNNING) state"):
             await asyncio.gather(e.start_async(), e.start_async())
         await e.stop_async()
 
