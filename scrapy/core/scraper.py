@@ -267,6 +267,16 @@ class Scraper:
                     await self.handle_spider_output_async(output, request, result)
                 return
 
+            if result.check(CloseSpider):
+                exc = result.value
+                assert isinstance(exc, CloseSpider)  # typing
+                _schedule_coro(
+                    self.crawler.engine.close_spider_async(
+                        reason=exc.reason or "cancelled"
+                    )
+                )
+                return
+
             try:
                 # call the request errback with the downloader error
                 output = await self.call_spider_async(result, request)

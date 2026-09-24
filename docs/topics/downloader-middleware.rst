@@ -119,9 +119,15 @@ defines one or more of these methods:
       halted and the returned request is rescheduled to be downloaded in the future.
       This is the same behavior as if a request is returned from :meth:`process_request`.
 
-      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the errback
-      function of the request (``Request.errback``) is called. If no code handles the raised
-      exception, it is ignored and not logged (unlike other exceptions).
+      If it raises an exception, and the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      the :meth:`process_exception` methods of the downloader middlewares that
+      have not processed the response yet are called.
+
+      If no middleware handles the exception, the errback function of the
+      request (``Request.errback``) is called. If no code handles an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception, it is ignored and not
+      logged, unlike other exceptions.
 
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.Request` object
@@ -134,7 +140,9 @@ defines one or more of these methods:
       Scrapy calls :meth:`process_exception` when a :ref:`download handler
       <topics-download-handlers>` or a :meth:`process_request` (from a
       downloader middleware) raises an exception (including an
-      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception), and, if the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      when a :meth:`process_response` does.
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
@@ -143,9 +151,12 @@ defines one or more of these methods:
       executing any other :meth:`process_exception` methods of installed middleware,
       until no middleware is left and the default exception handling kicks in.
 
-      If it returns a :class:`~scrapy.http.Response` object, the :meth:`process_response`
-      method chain of installed middleware is started, and Scrapy won't bother calling
-      any other :meth:`process_exception` methods of middleware.
+      If it returns a :class:`~scrapy.http.Response` object, the
+      :meth:`process_response` method chain of installed middleware is started,
+      and Scrapy won't bother calling any other :meth:`process_exception`
+      methods of middleware. For an exception from a :meth:`process_response`,
+      that chain resumes at the middlewares that have not processed the
+      response yet.
 
       If it returns a :class:`~scrapy.Request` object, the returned request is
       rescheduled to be downloaded in the future. This stops the execution of
@@ -828,6 +839,11 @@ Default: ``"latin-1"``
 
 The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
+JsonValidationMiddleware
+------------------------
+
+.. autoclass:: scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware
+
 OffsiteMiddleware
 -----------------
 
@@ -1099,10 +1115,12 @@ Default::
 
     [
         'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DecompressionError',
         'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadFailedError',
         'scrapy.exceptions.DownloadTimeoutError',
         'scrapy.exceptions.ResponseDataLossError',
+        'json.JSONDecodeError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
