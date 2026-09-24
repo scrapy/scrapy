@@ -13,7 +13,7 @@ from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.downloader import Downloader
-from scrapy.core.engine import ExecutionEngine, _EngineState, _Slot
+from scrapy.core.engine import EngineState, ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import (
     CloseSpider,
@@ -186,7 +186,7 @@ class TestEngine(TestEngineBase):
     async def test_stop_async_reentrant_fast_waits_for_closewait(self) -> None:
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
         engine.spider = Mock()
-        engine._state = _EngineState.STOPPING
+        engine._state = EngineState.STOPPING
         engine._closewait = defer.Deferred()
 
         with patch.object(
@@ -206,7 +206,7 @@ class TestEngine(TestEngineBase):
         self,
     ) -> None:
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        engine._state = _EngineState.STOPPING
+        engine._state = EngineState.STOPPING
 
         with patch.object(
             engine, "close_spider_async", new_callable=AsyncMock

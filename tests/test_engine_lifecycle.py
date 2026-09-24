@@ -7,7 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from scrapy import Request, signals
-from scrapy.core.engine import ExecutionEngine, _EngineState
+from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -27,7 +27,7 @@ class SignalRecorder:
 
     def __init__(self, crawler: Crawler) -> None:
         self.crawler = crawler
-        self.calls: list[tuple[str, _EngineState]] = []
+        self.calls: list[tuple[str, EngineState]] = []
         # Keep strong references to the handlers: signal connections are weak.
         self._handlers = [self._make_handler(name) for name in self.SIGNALS]
         for name, handler in zip(self.SIGNALS, self._handlers, strict=True):
@@ -36,7 +36,7 @@ class SignalRecorder:
     def _make_handler(self, name: str) -> Callable[..., None]:
         def handler(**kwargs: Any) -> None:
             assert self.crawler.engine is not None
-            self.calls.append((name, self.crawler.engine._state))
+            self.calls.append((name, self.crawler.engine.state))
 
         return handler
 
@@ -45,12 +45,12 @@ class SignalRecorder:
         return [call[0] for call in self.calls]
 
     @property
-    def states(self) -> list[_EngineState]:
+    def states(self) -> list[EngineState]:
         return [call[1] for call in self.calls]
 
 
-def assert_state(engine: ExecutionEngine, state: _EngineState) -> None:
-    assert engine._state is state
+def assert_state(engine: ExecutionEngine, state: EngineState) -> None:
+    assert engine.state is state
 
 
 def make_engine(crawler: Crawler) -> ExecutionEngine:
@@ -76,7 +76,7 @@ async def test_state_progression(caplog: pytest.LogCaptureFixture) -> None:
     assert_no_invalid_transition(caplog)
     engine = crawler.engine
     assert engine is not None
-    assert_state(engine, _EngineState.STOPPED)
+    assert_state(engine, EngineState.STOPPED)
     assert not engine.running
     assert recorder.names == [
         "spider_opened",
@@ -85,10 +85,10 @@ async def test_state_progression(caplog: pytest.LogCaptureFixture) -> None:
         "engine_stopped",
     ]
     assert recorder.states == [
-        _EngineState.SPIDER_OPENING,
-        _EngineState.STARTING,
-        _EngineState.RUNNING,
-        _EngineState.STOPPING,
+        EngineState.SPIDER_OPENING,
+        EngineState.STARTING,
+        EngineState.RUNNING,
+        EngineState.STOPPING,
     ]
 
 
@@ -99,16 +99,16 @@ async def test_fetch_only_lifecycle(caplog: pytest.LogCaptureFixture) -> None:
     crawler = get_crawler(DefaultSpider)
     recorder = SignalRecorder(crawler)
     engine = make_engine(crawler)
-    assert_state(engine, _EngineState.CREATED)
+    assert_state(engine, EngineState.CREATED)
     with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
         await engine.open_spider_async(close_if_idle=False)
-        assert_state(engine, _EngineState.SPIDER_OPEN)
+        assert_state(engine, EngineState.SPIDER_OPEN)
         assert not engine.running
         response = await engine.download_async(Request("data:,"))
         assert response.status == 200
-        assert_state(engine, _EngineState.SPIDER_OPEN)
+        assert_state(engine, EngineState.SPIDER_OPEN)
         await engine.close_async()
-    assert_state(engine, _EngineState.STOPPED)
+    assert_state(engine, EngineState.STOPPED)
     assert_no_invalid_transition(caplog)
     assert recorder.names == ["spider_opened", "spider_closed"]
 
@@ -118,7 +118,7 @@ async def test_close_created() -> None:
     engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
     engine.downloader.close = Mock(wraps=engine.downloader.close)  # type: ignore[method-assign]
     await engine.close_async()
-    assert_state(engine, _EngineState.STOPPED)
+    assert_state(engine, EngineState.STOPPED)
     engine.downloader.close.assert_called()
 
 
@@ -128,10 +128,10 @@ async def test_close_stopped(caplog: pytest.LogCaptureFixture) -> None:
     await crawler.crawl_async()
     engine = crawler.engine
     assert engine is not None
-    assert_state(engine, _EngineState.STOPPED)
+    assert_state(engine, EngineState.STOPPED)
     with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
         await engine.close_async()
-    assert_state(engine, _EngineState.STOPPED)
+    assert_state(engine, EngineState.STOPPED)
     assert_no_invalid_transition(caplog)
 
 
