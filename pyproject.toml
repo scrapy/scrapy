@@ -11,13 +11,13 @@ dependencies = [
     "aiohttp>=3.13.3",
     "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
-    "cssselect>=0.9.1",
+    "cssselect>=1.2.0",
     "defusedxml>=0.7.1",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.1",
     "lxml>=4.6.4",
     "packaging",
-    "parsel>=1.5.0",
+    "parsel>=1.8.1",
     "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=24.3.0",
@@ -157,6 +157,9 @@ current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
+# Fail on VERSION and PREVIOUS_VERSION placeholders left in docs or code.
+allow_shell_hooks = true
+setup_hooks = ['''! git grep -nE '(^|[^/"_A-Z`])(PREVIOUS_)?VERSION\b' -- docs scrapy''']
 
 [[tool.bumpversion.files]]
 filename = "docs/news.rst"
@@ -522,6 +525,3 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
-
-[tool.sphinx-scrapy]
-python-version = "3.14"  # Keep in sync with .github/workflows/ci.yml.

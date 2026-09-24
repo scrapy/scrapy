@@ -5,6 +5,7 @@ import json
 import logging
 import marshal
 import pickle
+import sys
 import tempfile
 from logging import getLogger
 from pathlib import Path
@@ -526,6 +527,25 @@ class TestFeedExport(TestFeedExportBase):
             await self.exported_data(items, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 11), reason="BaseException.add_note() is 3.11+"
+    )
+    @coroutine_test
+    async def test_export_item_exception_mentions_item(
+        self, caplog: pytest.LogCaptureFixture
+    ):
+        items = [{"foo": {None: "bar"}}]
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {"format": "json"},
+            },
+            "FEED_EXPORTERS": {"json": ExceptionJsonItemExporter},
+        }
+        with caplog.at_level(logging.ERROR):
+            await self.exported_data(items, settings)
+        assert "RuntimeError: foo" in caplog.text
+        assert "Item: {'foo': {None: 'bar'}}" in caplog.text
 
     @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
@@ -1297,6 +1317,28 @@ class TestFeedExporterSignals:
         )
         assert self.feed_slot_closed_received
         assert self.feed_exporter_closed_received
+
+
+class TestFeedExporterOpenSpider:
+    @coroutine_test
+    async def test_bad_uri_placeholder_skips_only_that_feed(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with tempfile.NamedTemporaryFile(suffix="json") as tmp:
+            settings = {
+                "FEEDS": {
+                    printf_escape(path_to_url(tmp.name)): {"format": "json"},
+                    "file:///nonexistent/%(undefined_attr)s.json": {"format": "json"},
+                },
+            }
+            crawler = get_crawler(settings_dict=settings)
+            feed_exporter = build_from_crawler(FeedExporter, crawler)
+            spider = scrapy.Spider.from_crawler(crawler, "default")
+            with caplog.at_level(logging.ERROR):
+                feed_exporter.open_spider(spider)
+            assert len(feed_exporter.slots) == 1
+            assert "undefined_attr" in caplog.text
+            await feed_exporter.close_spider(spider)
 
 
 class TestItemFilter:
