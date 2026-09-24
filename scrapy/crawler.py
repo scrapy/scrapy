@@ -378,7 +378,8 @@ class Crawler:
 
         Completes when the crawl has finished, except when the spider is still
         being opened or the crawler is already stopping, in which case it
-        completes immediately.
+        completes immediately, and when :signal:`engine_started` handlers are
+        still running, in which case it completes once the spider is closed.
         """
         mode = _normalize_stop_mode(mode)
         was_crawling = self.crawling

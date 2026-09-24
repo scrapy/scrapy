@@ -554,6 +554,19 @@ async def test_stop_is_idempotent(tmp_path: Path) -> None:
 
 
 @coroutine_test
+async def test_stop_during_start(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    extension = _get_extension({"REMOTE_CONTROL_JOBS_DIR": str(tmp_path)})
+    with caplog.at_level(logging.INFO):
+        await asyncio.gather(extension.start(), extension.stop())
+    assert "Remote control HTTP server listening" in caplog.text
+    assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
+    assert extension._runner is None
+    assert list(tmp_path.glob("*.json")) == []
+
+
+@coroutine_test
 async def test_start_failure_disables_the_extension(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:

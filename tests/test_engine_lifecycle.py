@@ -214,6 +214,29 @@ class TestEarlyClose:
         assert recorder.close_reasons == ["shutdown"]
 
     @coroutine_test
+    async def test_close_during_engine_started_handler(self) -> None:
+        """If the spider is closed while an engine_started handler is still
+        running, engine_stopped is sent only after that handler finishes."""
+        crawler = get_crawler(DefaultSpider)
+        events: list[str] = []
+
+        async def engine_started(**kwargs: Any) -> None:
+            assert crawler.engine is not None
+            await crawler.engine.close_spider_async(reason="early")
+            assert_state(crawler.engine, EngineState.STOPPING)
+            events.append("engine_started handler finished")
+
+        def engine_stopped(**kwargs: Any) -> None:
+            events.append("engine_stopped")
+
+        crawler.signals.connect(engine_started, signals.engine_started)
+        crawler.signals.connect(engine_stopped, signals.engine_stopped)
+        await crawler.crawl_async()
+        assert crawler.engine is not None
+        assert_state(crawler.engine, EngineState.STOPPED)
+        assert events == ["engine_started handler finished", "engine_stopped"]
+
+    @coroutine_test
     async def test_close_spider_before_start(self) -> None:
         """A spider close that completes before start_async() (e.g. triggered
         by the CloseSpider or MemoryUsage extensions) stops the never-started

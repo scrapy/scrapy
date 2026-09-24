@@ -96,8 +96,8 @@ class EngineState(Enum):
     #: are no longer sent.
     SPIDER_CLOSING = "spider_closing"
 
-    #: The spider has been closed. The :signal:`engine_stopped` signal may be
-    #: in flight.
+    #: The spider has been closed. The :signal:`engine_started` or
+    #: :signal:`engine_stopped` signal may be in flight.
     STOPPING = "stopping"
 
     #: The engine has been stopped and cannot be reused.
@@ -196,6 +196,7 @@ class ExecutionEngine:
         # never have reached the engine.
         self._start_error: bool = False
         self._closewait: Deferred[None] | None = None
+        self._sending_engine_started: bool = False
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
         ) = None
@@ -307,9 +308,11 @@ class ExecutionEngine:
             )
         self.start_time = time()
         self._transition_to(EngineState.STARTING)
-        # Fired by close_spider_async() once the engine is stopped.
+        # Fired by _finish_stop() once the engine is stopped.
         self._closewait = Deferred()
+        self._sending_engine_started = True
         await self.signals.send_catch_log_async(signal=signals.engine_started)
+        self._sending_engine_started = False
         # Make sure that the engine_started handler didn't initiate stopping.
         if self.state is EngineState.STARTING:
             self._transition_to(EngineState.RUNNING)
@@ -320,6 +323,10 @@ class ExecutionEngine:
                 self._start_request_processing_awaitable = asyncio.ensure_future(coro)
             else:
                 self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
+        elif self.state is EngineState.STOPPING:
+            # The spider was closed while engine_started handlers were
+            # running, and close_spider_async() left the rest to this method.
+            await self._finish_stop()
         with contextlib.suppress(asyncio.exceptions.CancelledError):
             await maybe_deferred_to_future(self._closewait)
 
@@ -827,7 +834,9 @@ class ExecutionEngine:
         completes immediately.
 
         Otherwise, this method completes after the spider has been closed and
-        the engine has stopped.
+        the engine has stopped. If :signal:`engine_started` handlers are still
+        running at that point, the engine stops once they finish, and this
+        method completes without waiting for that.
         """
         mode = _normalize_stop_mode(mode, allow_force=False)
         if self._state is EngineState.CREATED:
@@ -943,6 +952,17 @@ class ExecutionEngine:
             self._transition_to(EngineState.STOPPED)
             return
         self._transition_to(EngineState.STOPPING)
+        if self._sending_engine_started:
+            # engine_stopped handlers may undo what engine_started handlers do,
+            # so start_async() sends engine_stopped once the latter finish.
+            # Waiting for them here would deadlock if one of them awaits this
+            # method.
+            return
+        await self._finish_stop()
+
+    async def _finish_stop(self) -> None:
+        """Send :signal:`engine_stopped` and mark the engine as stopped."""
+        assert self._closewait is not None
         await self.signals.send_catch_log_async(signal=signals.engine_stopped)
         # Firing _closewait can resume start_async(), and with it the code
         # awaiting start_async(), before this method continues, so the
