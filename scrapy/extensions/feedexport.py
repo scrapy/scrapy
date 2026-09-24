@@ -814,7 +814,12 @@ class FeedExporter:
                     self._skip(slot)
             if not slot._skipped:
                 assert slot.exporter
-                slot.exporter.export_item(item)
+                try:
+                    slot.exporter.export_item(item)
+                except Exception as e:
+                    if sys.version_info >= (3, 11):
+                        e.add_note(f"Item: {item!r}")
+                    raise
             # Skipped items are counted, so that the following files of this
             # feed still cover the same items as those of any other feed.
             slot.itemcount += 1
