@@ -38,7 +38,7 @@ def send_catch_log(
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> list[tuple[TypingAny, TypingAny]]:
+) -> list[tuple[Callable[..., TypingAny], TypingAny]]:
     """Like ``pydispatch.robust.sendRobust()`` but it also logs errors and returns
     Failures instead of exceptions.
     """
@@ -46,7 +46,7 @@ def send_catch_log(
     dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
     dont_log += (StopDownload,)
     spider = named.get("spider")
-    responses: list[tuple[TypingAny, TypingAny]] = []
+    responses: list[tuple[Callable[..., TypingAny], TypingAny]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         result: TypingAny
         try:
@@ -63,10 +63,9 @@ def send_catch_log(
             result = Failure()
         except Exception:
             result = Failure()
-            logger.error(
+            logger.exception(
                 "Error caught on signal handler: %(receiver)s",
                 {"receiver": receiver},
-                exc_info=True,
                 extra={"spider": spider},
             )
         else:
@@ -80,7 +79,7 @@ def send_catch_log_deferred(
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> Deferred[list[tuple[TypingAny, TypingAny]]]:
+) -> Deferred[list[tuple[Callable[..., TypingAny], TypingAny]]]:
     """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
     <signal-deferred>`.
 
@@ -100,7 +99,9 @@ def _send_catch_log_deferred(
     sender: TypingAny,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> Generator[Deferred[TypingAny], TypingAny, list[tuple[TypingAny, TypingAny]]]:
+) -> Generator[
+    Deferred[TypingAny], TypingAny, list[tuple[Callable[..., TypingAny], TypingAny]]
+]:
     def logerror(failure: Failure, recv: TypingAny) -> Failure:
         if dont_log is None or not isinstance(failure.value, dont_log):
             logger.error(
@@ -141,7 +142,7 @@ async def send_catch_log_async(
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> list[tuple[TypingAny, TypingAny]]:
+) -> list[tuple[Callable[..., TypingAny], TypingAny]]:
     """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
     <signal-deferred>`.
 
@@ -166,7 +167,7 @@ async def _send_catch_log_asyncio(
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> list[tuple[TypingAny, TypingAny]]:
+) -> list[tuple[Callable[..., TypingAny], TypingAny]]:
     """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
     <signal-deferred>`.
 
@@ -184,8 +185,8 @@ async def _send_catch_log_asyncio(
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
 
         async def handler(
-            receiver: Callable[..., Any],
-        ) -> tuple[Callable[..., Any], TypingAny]:
+            receiver: Callable[..., TypingAny],
+        ) -> tuple[Callable[..., TypingAny], TypingAny]:
             result: TypingAny
             try:
                 result = await ensure_awaitable(
@@ -197,10 +198,9 @@ async def _send_catch_log_asyncio(
             except dont_log as ex:  # pylint: disable=catching-non-exception
                 result = ex
             except Exception as ex:
-                logger.error(
+                logger.exception(
                     "Error caught on signal handler: %(receiver)s",
                     {"receiver": receiver},
-                    exc_info=True,
                     extra={"spider": spider},
                 )
                 result = ex
@@ -209,7 +209,7 @@ async def _send_catch_log_asyncio(
         handlers.append(handler(receiver))
 
     return cast(
-        "list[tuple[TypingAny, TypingAny]]",
+        "list[tuple[Callable[..., TypingAny], TypingAny]]",
         await asyncio.gather(*handlers, return_exceptions=True),
     )
 

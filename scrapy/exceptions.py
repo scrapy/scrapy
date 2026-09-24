@@ -56,13 +56,22 @@ class DontCloseSpider(Exception):
 
 
 class CloseSpider(Exception):
-    """Raised from a :ref:`spider callback <topics-spiders>`, or while the
+    """Raised from a :ref:`spider callback <topics-spiders>`, a
+    :ref:`downloader middleware <topics-downloader-middleware>`, or while the
     spider is starting, to request the spider to be closed/stopped.
 
     .. versionchanged:: 2.18.0
        Added support for raising it while the spider is starting.
 
-    *reason* is a string with the reason for closing.
+    .. versionchanged:: VERSION
+       Added support for raising it from a downloader middleware.
+
+    .. versionadded:: VERSION
+       The *error* parameter.
+
+    *reason* is a string with the reason for closing. *error*, keyword-only,
+    marks the crawl as failed, which commands such as :command:`crawl` report
+    through their process exit code.
 
     For example:
 
@@ -73,9 +82,10 @@ class CloseSpider(Exception):
                 raise CloseSpider("bandwidth_exceeded")
     """
 
-    def __init__(self, reason: str = "cancelled"):
+    def __init__(self, reason: str = "cancelled", *, error: bool = False):
         super().__init__()
         self.reason = reason
+        self.error = error
 
 
 class StopDownload(Exception):
@@ -91,7 +101,7 @@ class StopDownload(Exception):
       exception, which is in turn stored as the ``value`` attribute of the
       received :class:`~twisted.python.failure.Failure` object. This means that
       in an errback defined as ``def errback(self, failure)``, the response can
-      be accessed though ``failure.value.response``.
+      be accessed through ``failure.value.response``.
 
     * If ``fail=False``, the request callback is called instead.
 
@@ -138,6 +148,15 @@ class ResponseHeadersTooLargeError(DownloadFailedError):
     :setting:`DOWNLOAD_HEADERS_MAXSIZE`, or the equivalent limit of the
     underlying HTTP client for :ref:`download handlers
     <download-handlers-ref>` that do not support that setting."""
+
+
+class DecompressionError(Exception):
+    """Raised by
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    when a response body cannot be decompressed.
+
+    .. versionadded:: VERSION
+    """
 
 
 class UnsupportedURLSchemeError(Exception):

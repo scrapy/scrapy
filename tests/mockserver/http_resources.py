@@ -34,6 +34,7 @@ def getarg(
     default: Any = None,
     type_: Callable[[bytes], Any] | None = None,
 ) -> Any:
+    assert request.args is not None
     if name in request.args:
         value = request.args[name][0]
         if type_ is not None:
@@ -163,6 +164,7 @@ class Follow(LeafResource):
 
     def renderRequest(self, request: Request, nlist: Sequence[int]) -> None:
         s = """<html> <head></head> <body>"""
+        assert request.args is not None
         args = request.args.copy()
         for nl in nlist:
             args[b"n"] = [to_bytes(str(nl))]
@@ -464,6 +466,7 @@ class Compress(BaseResource):
     """Compress the data sent in the request url params and set Content-Encoding header"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         data = request.args[b"data"][0]
 
         accept_encoding_header = request.getHeader(b"accept-encoding")
@@ -482,6 +485,7 @@ class SetCookie(BaseResource):
     """Return a response with a Set-Cookie header for each request url parameter"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         for cookie_name, cookie_values in request.args.items():
             for cookie_value in cookie_values:
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
