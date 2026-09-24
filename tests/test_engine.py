@@ -160,7 +160,7 @@ class TestEngine(TestEngineBase):
         crawler.engine = e
         yield deferred_from_coro(e.open_spider_async())
         _schedule_coro(e.start_async())
-        with pytest.raises(RuntimeError, match="Engine already running"):
+        with pytest.raises(RuntimeError, match=r"in the (STARTING|RUNNING) state"):
             yield deferred_from_coro(e.start_async())
         yield deferred_from_coro(e.stop_async())
 
@@ -231,7 +231,9 @@ class TestEngine(TestEngineBase):
         e = ExecutionEngine(crawler)
         crawler.engine = e
         await e.open_spider_async()
-        with pytest.raises(RuntimeError, match="Engine already running"):
+        with pytest.raises(
+            RuntimeError, match="Cannot start the engine in the STARTING state"
+        ):
             await asyncio.gather(e.start_async(), e.start_async())
         await e.stop_async()
 
@@ -454,7 +456,7 @@ async def test_scheduler_creation_error() -> None:
 async def test_start_without_spider() -> None:
     engine = ExecutionEngine(get_crawler(DefaultSpider))
     try:
-        with pytest.raises(RuntimeError, match="Spider not opened"):
+        with pytest.raises(RuntimeError, match="in the CREATED state"):
             await engine.start_async()
     finally:
         await engine.close_async()

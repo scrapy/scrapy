@@ -226,7 +226,7 @@ class TestEarlyClose:
         assert_state(engine, EngineState.STOPPED)
         assert recorder.names == NEVER_STARTED_SIGNAL_ORDER
         assert recorder.close_reasons == ["early"]
-        with pytest.raises(RuntimeError, match="Engine stopping or stopped"):
+        with pytest.raises(RuntimeError, match="in the STOPPED state"):
             await engine.start_async()
 
     @coroutine_test
@@ -546,11 +546,26 @@ class TestInvalidTransitions:
         engine = make_engine(crawler)
         await engine.open_spider_async()
         await engine.close_async()
-        with pytest.raises(RuntimeError, match="Engine stopping or stopped"):
+        with pytest.raises(RuntimeError, match="in the STOPPED state"):
             await engine.start_async()
 
+    @pytest.mark.parametrize(
+        ("signal", "message"),
+        [
+            (
+                signals.spider_opened,
+                "Cannot start the engine in the SPIDER_OPENING state",
+            ),
+            (
+                signals.spider_closed,
+                "Cannot start the engine in the SPIDER_CLOSING state",
+            ),
+        ],
+    )
     @coroutine_test
-    async def test_start_while_closing(self) -> None:
+    async def test_start_while_opening_or_closing(
+        self, signal: object, message: str
+    ) -> None:
         crawler = get_crawler(DefaultSpider)
         engine = make_engine(crawler)
         errors: list[str] = []
@@ -561,10 +576,10 @@ class TestInvalidTransitions:
             except RuntimeError as exc:
                 errors.append(str(exc))
 
-        crawler.signals.connect(start, signals.spider_closed)
+        crawler.signals.connect(start, signal)
         await engine.open_spider_async()
         await engine.close_spider_async()
-        assert errors == ["Engine stopping or stopped"]
+        assert errors == [message]
 
     @coroutine_test
     async def test_close_spider_never_opened(self) -> None:

@@ -301,16 +301,10 @@ class ExecutionEngine:
             Now raises :exc:`RuntimeError` instead of returning if the spider
             is not open.
         """
-        if self._state is EngineState.CREATED:
-            raise RuntimeError("Spider not opened")
-        if self._state in (
-            EngineState.SPIDER_CLOSING,
-            EngineState.STOPPING,
-            EngineState.STOPPED,
-        ):
-            raise RuntimeError("Engine stopping or stopped")
         if self._state is not EngineState.SPIDER_OPEN:
-            raise RuntimeError("Engine already running")
+            raise RuntimeError(
+                f"Cannot start the engine in the {self._state.name} state"
+            )
         self.start_time = time()
         self._transition_to(EngineState.STARTING)
         # Fired by close_spider_async() once the engine is stopped.
