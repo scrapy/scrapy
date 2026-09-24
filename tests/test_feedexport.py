@@ -5,6 +5,7 @@ import json
 import logging
 import marshal
 import pickle
+import sys
 import tempfile
 from logging import getLogger
 from pathlib import Path
@@ -526,6 +527,25 @@ class TestFeedExport(TestFeedExportBase):
             await self.exported_data(items, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 11), reason="BaseException.add_note() is 3.11+"
+    )
+    @coroutine_test
+    async def test_export_item_exception_mentions_item(
+        self, caplog: pytest.LogCaptureFixture
+    ):
+        items = [{"foo": {None: "bar"}}]
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {"format": "json"},
+            },
+            "FEED_EXPORTERS": {"json": ExceptionJsonItemExporter},
+        }
+        with caplog.at_level(logging.ERROR):
+            await self.exported_data(items, settings)
+        assert "RuntimeError: foo" in caplog.text
+        assert "Item: {'foo': {None: 'bar'}}" in caplog.text
 
     @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
