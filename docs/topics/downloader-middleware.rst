@@ -848,6 +848,11 @@ Default: ``"latin-1"``
 
 The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
+JsonValidationMiddleware
+------------------------
+
+.. autoclass:: scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware
+
 OffsiteMiddleware
 -----------------
 
@@ -1124,6 +1129,7 @@ Default::
         'scrapy.exceptions.DownloadFailedError',
         'scrapy.exceptions.DownloadTimeoutError',
         'scrapy.exceptions.ResponseDataLossError',
+        'json.JSONDecodeError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
