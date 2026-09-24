@@ -1095,7 +1095,8 @@ Default:
         "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
-        "ftp": None,
+        "ftp": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+        "ftps": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
     }
 
 (when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
@@ -1216,7 +1217,8 @@ Use ``0`` to disable this limit.
 .. note::
 
     This limit can be set per-request using the :reqmeta:`download_warnsize`
-    :attr:`.Request.meta` key.
+    :attr:`.Request.meta` key. Requests that set :reqmeta:`download_maxsize`
+    but not :reqmeta:`download_warnsize` log no warning.
 
 .. note::
 

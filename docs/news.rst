@@ -24,6 +24,16 @@ Backward-incompatible changes
 
     (:gh:`TBD`)
 
+-   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now
+    enforces :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE`, also
+    when using :reqmeta:`ftp_local_filename`, so downloads bigger than 1 GiB
+    now fail by default. To download bigger files, raise the limit to a size
+    that fits them, with :setting:`DOWNLOAD_MAXSIZE` or with the
+    :reqmeta:`download_maxsize` request meta key for specific requests. You can
+    also set the limit to ``0`` to lift it altogether.
+
+    (:gh:`TBD`)
+
 .. _release-2.19.0:
 
 Scrapy 2.19.0 (2026-09-10)

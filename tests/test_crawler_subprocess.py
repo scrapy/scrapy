@@ -412,8 +412,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
         assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: AioftpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 4
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_custom_settings(self) -> None:
         """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
@@ -435,8 +434,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
         assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: AioftpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 4
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_import_hook(self) -> None:
         log = self.run_script("reactorless_import_hook.py")
@@ -652,8 +650,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
         assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: AioftpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 4
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_custom_settings(self) -> None:
         """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
@@ -672,8 +669,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
         assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: AioftpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 4
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_reactor(self) -> None:
         log = self.run_script("reactorless_reactor.py")

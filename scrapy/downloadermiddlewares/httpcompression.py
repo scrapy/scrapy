@@ -16,6 +16,7 @@ from scrapy.utils._compression import (
     _unzstd,
     gunzip,
 )
+from scrapy.utils._download_handlers import get_warnsize
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
@@ -90,7 +91,7 @@ class HttpCompressionMiddleware:
         content_encoding = response.headers.getlist("Content-Encoding")
         if content_encoding:
             max_size = request.meta.get("download_maxsize", self._max_size)
-            warn_size = request.meta.get("download_warnsize", self._warn_size)
+            warn_size = get_warnsize(request.meta, self._warn_size)
             try:
                 decoded_body, content_encoding = self._handle_encoding(
                     response.body, content_encoding, max_size

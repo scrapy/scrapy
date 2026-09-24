@@ -13,7 +13,7 @@ from twisted.cred import checkers, credentials, portal
 from scrapy import Spider
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 from scrapy.crawler import Crawler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import DownloadCancelledError, NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
 from scrapy.utils.defer import deferred_f_from_coro_f
@@ -39,6 +39,7 @@ class TestFTPBase(ABC):
         ("file.txt", b"I have the power!"),
         ("file with spaces.txt", b"Moooooooooo power!"),
         ("html-file-without-extension", b"<!DOCTYPE html>\n<title>.</title>"),
+        ("big.bin", b"x" * 2**20),
     )
 
     @abstractmethod
@@ -125,6 +126,50 @@ class TestFTPBase(ABC):
         assert local_path.exists()
         assert local_path.read_bytes() == b"I have the power!"
         local_path.unlink()
+
+    @pytest.mark.parametrize("filename", ["file.txt", "big.bin"])
+    @pytest.mark.parametrize("local", [False, True])
+    @deferred_f_from_coro_f
+    async def test_maxsize(
+        self,
+        server_url: str,
+        dh: FTPDownloadHandler,
+        tmp_path: Path,
+        filename: str,
+        local: bool,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        meta = {**self.req_meta, "download_maxsize": 10}
+        if local:
+            meta["ftp_local_filename"] = str(tmp_path / "local.txt").encode()
+        request = Request(url=server_url + filename, meta=meta)
+        with pytest.raises(DownloadCancelledError):
+            await dh.download_request(request)
+        assert "which is larger than download max size (10)" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_maxsize_disabled(self, server_url: str, tmp_path: Path) -> None:
+        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 10})
+        dh = build_from_crawler(FTPDownloadHandler, crawler)
+        meta = {**self.req_meta, "download_maxsize": 0}
+        request = Request(url=server_url + "file.txt", meta=meta)
+        r = await dh.download_request(request)
+        assert r.body == b"I have the power!"
+
+    @pytest.mark.parametrize("filename", ["file.txt", "big.bin"])
+    @deferred_f_from_coro_f
+    async def test_warnsize(
+        self,
+        server_url: str,
+        dh: FTPDownloadHandler,
+        filename: str,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        meta = {**self.req_meta, "download_warnsize": 10}
+        request = Request(url=server_url + filename, meta=meta)
+        r = await dh.download_request(request)
+        assert r.status == 200
+        assert caplog.text.count("which is larger than download warn size (10)") == 1
 
     @pytest.mark.parametrize(
         ("filename", "response_class"),
