@@ -22,8 +22,6 @@ Backward-incompatible changes
       ``errback`` are no longer called, and a warning is issued if they are
       set.
 
-    (:gh:`TBD`)
-
 .. _release-2.19.0:
 
 Scrapy 2.19.0 (2026-09-10)

@@ -59,6 +59,20 @@ def collect_scrapy_settings_refs(app: Sphinx, doctree: document) -> None:
         )
 
 
+def purge_scrapy_settings(app: Sphinx, env: Any, docname: str) -> None:
+    env.scrapy_all_settings = [
+        d for d in getattr(env, "scrapy_all_settings", []) if d["docname"] != docname
+    ]
+
+
+def merge_scrapy_settings(
+    app: Sphinx, env: Any, docnames: set[str], other: Any
+) -> None:
+    env.scrapy_all_settings = getattr(env, "scrapy_all_settings", []) + getattr(
+        other, "scrapy_all_settings", []
+    )
+
+
 def make_setting_element(
     setting_data: SettingData, app: Sphinx, fromdocname: str
 ) -> Any:
@@ -75,17 +89,6 @@ def make_setting_element(
     item = nodes.list_item()
     item += p
     return item
-
-
-def make_setting_markdown_item(
-    setting_data: SettingData, app: Sphinx, fromdocname: str
-) -> str:
-    uri = app.builder.get_relative_uri(fromdocname, setting_data["docname"])
-    if uri.startswith("#"):
-        target = f"#{setting_data['refid']}"
-    else:
-        target = f"{uri}#{setting_data['refid']}"
-    return f"* [{setting_data['setting_name']}]({target})"
 
 
 def _iter_sorted_settings(env: Any, fromdocname: str) -> list[SettingData]:
@@ -110,23 +113,6 @@ def replace_settingslist_nodes(
             ]
         )
         node.replace_self(settings_list)
-
-
-def visit_settingslist_node_markdown(translator: Any, _node: Node) -> None:
-    builder = translator.builder
-    env = builder.env
-    fromdocname = getattr(builder, "current_doc_name", env.docname)
-    lines = [
-        make_setting_markdown_item(setting_data, builder.app, fromdocname)
-        for setting_data in _iter_sorted_settings(env, fromdocname)
-    ]
-    if lines:
-        translator.add("\n".join(lines), prefix_eol=2, suffix_eol=2)
-    raise nodes.SkipNode
-
-
-def depart_settingslist_node_markdown(_translator: Any, _node: Node) -> None:
-    return None
 
 
 def source_role(
@@ -158,19 +144,11 @@ def setup(app: Sphinx) -> dict[str, Any]:
     app.add_role("commit", commit_role)
     app.add_role("rev", rev_role)
 
-    app.add_node(
-        SettingslistNode,
-        llm_markdown=(
-            visit_settingslist_node_markdown,
-            depart_settingslist_node_markdown,
-        ),
-        llm_singlemarkdown=(
-            visit_settingslist_node_markdown,
-            depart_settingslist_node_markdown,
-        ),
-    )
+    app.add_node(SettingslistNode)
     app.add_directive("settingslist", SettingsListDirective)
 
     app.connect("doctree-read", collect_scrapy_settings_refs)
+    app.connect("env-purge-doc", purge_scrapy_settings)
+    app.connect("env-merge-info", merge_scrapy_settings)
     app.connect("doctree-resolved", replace_settingslist_nodes)
     return {"parallel_read_safe": True}

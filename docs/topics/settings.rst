@@ -2567,7 +2567,7 @@ modifying generator function source code during runtime, skip AST parsing of
 callback functions, or improve performance in auto-reloading development
 environments.
 
-.. only:: html
+.. only:: not llm
 
     Settings documented elsewhere:
     ------------------------------
