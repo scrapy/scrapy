@@ -160,8 +160,11 @@ def setup(app: Sphinx) -> dict[str, Any]:
 
     app.add_node(
         SettingslistNode,
-        markdown=(visit_settingslist_node_markdown, depart_settingslist_node_markdown),
-        singlemarkdown=(
+        llm_markdown=(
+            visit_settingslist_node_markdown,
+            depart_settingslist_node_markdown,
+        ),
+        llm_singlemarkdown=(
             visit_settingslist_node_markdown,
             depart_settingslist_node_markdown,
         ),

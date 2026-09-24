@@ -159,7 +159,7 @@ def main() -> None:
     assert rev
     for path in (Path("tox.ini"), Path("docs/requirements.in")):
         text = re.sub(
-            r"(sphinx-scrapy\.git@)\S+",
+            r"(sphinx-scrapy(?:\[tox\])?==)\S+",
             rf"\g<1>{rev[1]}",
             path.read_text(encoding="utf-8"),
         )
