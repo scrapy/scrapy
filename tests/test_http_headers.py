@@ -3,6 +3,7 @@ import copy
 import pytest
 
 from scrapy.http import Headers
+from scrapy.http.headers import _sort_header_items
 
 
 def test_basics() -> None:
@@ -203,3 +204,24 @@ def test_invalid_value() -> None:
         Headers().setdefault("foo", object())
     with pytest.raises(TypeError, match="Unsupported value type"):
         Headers().setlist("foo", [object()])  # type: ignore[list-item]
+
+
+_ITEMS = [(b"X-A", 1), (b"x-b", 2), (b"X-C", 3), (b"X-B", 4)]
+
+
+@pytest.mark.parametrize(
+    ("order", "expected"),
+    [
+        ((), _ITEMS),
+        ((b"x-c",), [(b"X-C", 3), (b"X-A", 1), (b"x-b", 2), (b"X-B", 4)]),
+        ((b"x-b", b"x-a"), [(b"x-b", 2), (b"X-B", 4), (b"X-A", 1), (b"X-C", 3)]),
+        (
+            (b"x-c", b"x-d", b"x-c"),
+            [(b"X-C", 3), (b"X-A", 1), (b"x-b", 2), (b"X-B", 4)],
+        ),
+    ],
+)
+def test_sort_header_items(
+    order: tuple[bytes, ...], expected: list[tuple[bytes, int]]
+) -> None:
+    assert _sort_header_items(_ITEMS, order) == expected

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from w3lib.http import headers_dict_to_raw
 
@@ -9,7 +9,7 @@ from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -186,3 +186,23 @@ class Headers(dict):  # type: ignore[type-arg]
         return self.__class__(self)
 
     copy = __copy__
+
+
+_T = TypeVar("_T")
+
+
+def _sort_header_items(
+    items: Iterable[tuple[bytes, _T]], order: Sequence[bytes]
+) -> list[tuple[bytes, _T]]:
+    """Sort ``(name, value)`` pairs so that names in *order* come first, in
+    that order, and other names follow in their original order.
+
+    Names are matched case-insensitively. *order* must be lowercase.
+    """
+    if not order:
+        return list(items)
+    rank: dict[bytes, int] = {}
+    for i, name in enumerate(order):
+        rank.setdefault(name, i)
+    unlisted = len(rank)
+    return sorted(items, key=lambda item: rank.get(item[0].lower(), unlisted))
