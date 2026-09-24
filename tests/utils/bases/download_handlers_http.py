@@ -51,6 +51,7 @@ from tests.spiders import (
     SingleRequestSpider,
 )
 from tests.utils.decorators import coroutine_test
+from tests.utils.raw_http import capturing_server
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
@@ -260,6 +261,27 @@ class TestHttpBase(ABC):
         } | self.always_present_req_headers
         extra_headers = received_headers - allowed_headers
         assert not extra_headers, body["headers"]
+
+    async def _send_to_capturing_server(
+        self, headers: list[tuple[str, str]]
+    ) -> list[bytes]:
+        """Return the names of *headers* as the server received them, in the
+        order it received them."""
+        if self.is_secure:
+            pytest.skip("The capturing server only supports plain HTTP")
+        wanted = {name.lower().encode() for name, _ in headers}
+        with capturing_server() as server:
+            request = Request(server.url, headers=headers)
+            async with self.get_dh() as download_handler:
+                await download_handler.download_request(request)
+        return [name for name in server.header_names() if name.lower() in wanted]
+
+    @coroutine_test
+    async def test_wire_header_case(self) -> None:
+        names = await self._send_to_capturing_server(
+            [("x-API-key", "a"), ("dnt", "1"), ("ETag", "b")]
+        )
+        assert names == [b"x-API-key", b"dnt", b"ETag"]
 
     @coroutine_test
     async def test_server_receives_correct_request_body(

@@ -20,9 +20,13 @@ from twisted.python.failure import Failure
 from twisted.web._newclient import (
     HEADER,
     STATUS,
+    BadHeaders,
     HTTP11ClientProtocol,
     HTTPClientParser,
+    _ensureValidMethod,
+    _ensureValidURI,
 )
+from twisted.web._newclient import Request as TxRequest
 from twisted.web.client import (
     URI,
     Agent,
@@ -67,9 +71,10 @@ from scrapy.utils.url import add_http_if_no_scheme
 from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from twisted.internet.base import ReactorBase
-    from twisted.internet.interfaces import IAddress, IConsumer
-    from twisted.web._newclient import Request as TxRequest
+    from twisted.internet.interfaces import IAddress, IConsumer, ITransport
 
     # typing.NotRequired requires Python 3.11
     from typing_extensions import NotRequired
@@ -504,7 +509,10 @@ class _ScrapyAgent:
         # request details
         url = urldefrag(request.url)[0]
         method = to_bytes(request.method)
-        headers = TxHeaders(request.headers)
+        headers = _ScrapyTxHeaders(
+            request.headers,
+            names={name.lower(): name for name in request.headers},
+        )
         if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
@@ -829,10 +837,98 @@ class _LenientHTTPClientParser(HTTPClientParser):
             self._partialHeader.append(line)  # type: ignore[union-attr]
 
 
+class _ScrapyTxHeaders(TxHeaders):
+    """Twisted headers that also keep the header names as Scrapy spelled them,
+    keyed by lowercase name.
+
+    Twisted changes the case of the header names it stores, so
+    :class:`_ScrapyTxRequest` uses these to write the header block.
+    """
+
+    def __init__(
+        self,
+        rawHeaders: Any = None,
+        names: dict[bytes, bytes] | None = None,
+    ):
+        super().__init__(rawHeaders)
+        self._names: dict[bytes, bytes] = names or {}
+
+    def copy(self) -> _ScrapyTxHeaders:
+        # Agent._requestWithEndpoint() copies headers to add Host.
+        return _ScrapyTxHeaders(dict(self.getAllRawHeaders()), names=self._names)
+
+
+class _ScrapyTxRequest(TxRequest):
+    """Request that writes header names as Scrapy spelled them.
+
+    Based on twisted.web._newclient.Request._writeHeaders(). Headers that
+    Twisted generates (Content-Length or Transfer-Encoding, Connection) replace
+    user headers with the same name instead of being written in addition to
+    them.
+    """
+
+    def _writeHeaders(self, transport: ITransport, TEorCL: bytes | None) -> None:
+        headers = cast("_ScrapyTxHeaders", self.headers)
+        if len(headers.getRawHeaders(b"Host", ())) != 1:
+            raise BadHeaders("Exactly one Host header required")
+
+        generated: list[tuple[bytes, Sequence[bytes]]] = []
+        if not self.persistent:
+            generated.append((b"Connection", [b"close"]))
+        if TEorCL is not None:
+            name, value = TEorCL.rstrip(b"\r\n").split(b": ", 1)
+            generated.append((name, [value]))
+        generated = [
+            (headers._names.get(name.lower(), name), values)
+            for name, values in generated
+        ]
+        generated_values = {name.lower(): values for name, values in generated}
+        replaced = set(generated_values)
+        if TEorCL is not None:
+            replaced |= {b"content-length", b"transfer-encoding"}
+
+        items = list(generated)
+        for name, values in headers.getAllRawHeaders():
+            lower_name = name.lower()
+            if lower_name not in replaced:
+                items.append((headers._names.get(lower_name, name), values))
+            elif values != generated_values.get(lower_name):
+                logger.warning(
+                    "Ignoring the %r request header with value %r, sending "
+                    "the generated headers %r instead",
+                    headers._names.get(lower_name, name),
+                    values,
+                    generated,
+                )
+
+        lines = [
+            b" ".join(
+                [
+                    _ensureValidMethod(self.method),
+                    _ensureValidURI(self.uri),
+                    b"HTTP/1.1\r\n",
+                ]
+            )
+        ]
+        for name, values in items:
+            lines.extend(name + b": " + value + b"\r\n" for value in values)
+        lines.append(b"\r\n")
+        transport.writeSequence(lines)
+
+
 class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
-    """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
+    """Protocol that parses responses with :class:`_LenientHTTPClientParser`
+    and writes requests with :class:`_ScrapyTxRequest`."""
 
     def request(self, request: TxRequest) -> Deferred[IResponse]:
+        request = _ScrapyTxRequest._construct(  # type: ignore[no-untyped-call]
+            request.method,
+            request.uri,
+            request.headers,
+            request.bodyProducer,
+            request.persistent,
+            request._parsedURI,
+        )
         d: Deferred[IResponse] = super().request(request)
         # HTTP11ClientProtocol.request() hardcodes the parser class, so the
         # only way to use a different one is to replace the class of the parser
