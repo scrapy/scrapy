@@ -22,7 +22,12 @@ Backward-incompatible changes
       ``errback`` are no longer called, and a warning is issued if they are
       set.
 
-    (:gh:`TBD`)
+    (:gh:`8176`)
+
+-   Setting the :attr:`ExecutionEngine.running
+    <scrapy.core.engine.ExecutionEngine.running>` attribute no longer has any
+    effect.
+    (:gh:`8181`)
 
 .. _release-2.19.0:
 
