@@ -92,14 +92,7 @@ to how you :ref:`configure the downloader middlewares
         For an introduction on extensions and a list of available extensions on
         Scrapy see :ref:`topics-extensions`.
 
-    .. attribute:: engine
-
-        The execution engine, which coordinates the core crawling logic
-        between the scheduler, downloader and spiders.
-
-        Some extensions may want to access the Scrapy engine to inspect or
-        modify the downloader and scheduler behaviour, although this is an
-        advanced use and this API is not yet stable.
+    .. autoattribute:: engine
 
     .. attribute:: spider
 
@@ -215,4 +208,4 @@ Engine API
 ==========
 
 .. autoclass:: scrapy.core.engine.ExecutionEngine()
-   :members: needs_backout, running, scheduler
+   :members: close_spider_async, needs_backout, running, scheduler
