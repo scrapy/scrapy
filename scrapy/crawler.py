@@ -17,6 +17,7 @@ from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
+from scrapy.sessions import Sessions
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
@@ -125,6 +126,11 @@ class Crawler:
     request_fingerprinter: _LateAttribute[RequestFingerprinterProtocol] = (
         _LateAttribute()
     )
+    sessions: _LateAttribute[Sessions] = _LateAttribute()
+    """The :class:`~scrapy.sessions.Sessions` registry of this crawler.
+
+    See :ref:`sessions`.
+    """
     stats: _LateAttribute[StatsCollector] = _LateAttribute()
 
     def __init__(
@@ -160,6 +166,7 @@ class Crawler:
         self._extensions: ExtensionManager | None = None
         self._logformatter: LogFormatter | None = None
         self._request_fingerprinter: RequestFingerprinterProtocol | None = None
+        self._sessions: Sessions | None = None
         self._stats: StatsCollector | None = None
 
     def _set_force_stop_callback(
@@ -183,6 +190,7 @@ class Crawler:
             "max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
+        self.sessions = Sessions(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = build_from_crawler(lf_cls, self)
