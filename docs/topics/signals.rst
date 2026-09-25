@@ -129,9 +129,17 @@ engine_started
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
-.. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
-    depending on how the spider was started. So **don't** rely on this signal
-    getting fired before :signal:`spider_opened`.
+.. note::
+    For a normal crawl (:meth:`~scrapy.crawler.Crawler.crawl` /
+    :meth:`~scrapy.crawler.Crawler.crawl_async`), the engine opens the spider
+    first and only then starts, so :signal:`spider_opened` always fires
+    **before** this signal. Use :signal:`spider_opened` for per-spider setup,
+    and this signal for work that should run once the engine itself is
+    running.
+
+    The Scrapy shell opens a spider without calling
+    :meth:`~scrapy.core.engine.ExecutionEngine.start_async`, so this signal is
+    not sent there at all.
 
 engine_stopped
 ~~~~~~~~~~~~~~
@@ -143,6 +151,10 @@ engine_stopped
     process has finished).
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+.. note::
+    On a normal shutdown the engine closes the spider first, so
+    :signal:`spider_closed` handlers finish before this signal is sent.
 
 scheduler_empty
 ~~~~~~~~~~~~~~~
