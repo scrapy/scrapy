@@ -38,4 +38,7 @@ Priority queues
 ===============
 
 .. autoclass:: scrapy.pqueues.DownloaderAwarePriorityQueue
+    :members: changed, state
+
 .. autoclass:: scrapy.pqueues.ScrapyPriorityQueue
+    :members: changed, state

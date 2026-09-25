@@ -138,6 +138,7 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JOBDIR_SYNC_EVERY",
     "JSONVALIDATION_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
@@ -456,6 +457,7 @@ ITEM_PIPELINES_BASE: dict[str, int] = {}
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
+JOBDIR_SYNC_EVERY = 0
 
 JSONVALIDATION_ENABLED = False
 
