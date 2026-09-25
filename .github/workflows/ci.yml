@@ -1,0 +1,327 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: ${{github.workflow}}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Make uv use the interpreter that actions/setup-python installed instead
+  # of downloading one of its own.
+  UV_PYTHON_PREFERENCE: only-system
+
+jobs:
+  # pre-commit and the static checks gate the test jobs except the slowest
+  # ones, so that a pull request that fails them costs a couple of minutes of
+  # CI instead of dozens of test jobs. The gated jobs still finish well before
+  # the ungated ones, so the gate does not lengthen the overall CI time.
+  pre-commit:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+    - name: Explain the failure
+      if: failure()
+      run: |
+        message="pre-commit failed. Run 'pre-commit run --all-files' locally, commit the changes it makes and fix what it cannot fix by itself. See https://docs.scrapy.org/en/latest/contributing.html#pre-commit"
+        echo "::error::$message"
+        echo "$message" >> "$GITHUB_STEP_SUMMARY"
+
+  checks:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: "3.14"
+          env:
+            TOXENV: pylint
+        - python-version: "3.10"
+          env:
+            TOXENV: mypy
+        - python-version: "3.10"
+          env:
+            TOXENV: mypy-tests
+        # Keep in sync with .readthedocs.yml.
+        - python-version: "3.14"
+          env:
+            TOXENV: docs
+        - python-version: "3.13"
+          env:
+            TOXENV: docs-tests
+        - python-version: "3.14"
+          env:
+            TOXENV: twinecheck
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        cache-dependency-glob: |
+          docs/requirements.txt
+          pyproject.toml
+          tox.ini
+
+    - name: Run check
+      env: ${{ matrix.env }}
+      run: uvx --with tox-uv tox
+
+    - name: Explain the failure
+      if: failure()
+      env: ${{ matrix.env }}
+      run: |
+        message="$TOXENV failed. Run 'uvx tox -e $TOXENV' locally to reproduce."
+        echo "::error::$message"
+        echo "$message" >> "$GITHUB_STEP_SUMMARY"
+
+  # PyPy is the slowest test job, so it runs without waiting for the gate to
+  # keep the overall CI time unchanged.
+  pypy:
+    if: github.event.action != 'closed'
+    name: tests (ubuntu, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        # pinned due to https://github.com/pypy/pypy/issues/5388
+        - python-version: pypy3.11-7.3.20
+          env:
+            TOXENV: min-pypy3
+        - python-version: pypy3.11-7.3.20
+          env:
+            TOXENV: pypy3-extra-deps
+          coverage: true
+
+    steps: &test-steps
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system libraries
+      if: runner.os == 'Linux' && (contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'min'))
+      run: |
+        sudo apt-get update
+        sudo apt-get install libxml2-dev libxslt-dev
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+
+    - name: Install mitmproxy
+      env:
+        # mitmproxy needs a newer Python than the oldest matrix entries, so let
+        # uv download one where no system interpreter is new enough.
+        UV_PYTHON_PREFERENCE: system
+      # mitmproxy has no PyPy wheels, so run it on CPython regardless of the
+      # interpreter under test.
+      run: uv tool install --python cpython mitmproxy
+
+    - name: Run tests
+      env: ${{ matrix.env }}
+      run: uvx --with tox-uv tox
+
+    - name: Upload coverage report
+      if: ${{ matrix.coverage }}
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      with:
+        report_type: test_results
+
+  ubuntu:
+    needs: [pre-commit, checks]
+    name: tests (ubuntu, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.11"
+          env:
+            TOXENV: py
+        - python-version: "3.12"
+          env:
+            TOXENV: py
+        - python-version: "3.13"
+          env:
+            TOXENV: py
+        - python-version: "3.14"
+          env:
+            TOXENV: py
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: default-reactor
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: no-reactor
+          coverage: true
+
+        # min deps
+        - python-version: "3.10.19"
+          env:
+            TOXENV: min
+          coverage: true
+        - python-version: "3.10.19"
+          env:
+            TOXENV: min-default-reactor
+          coverage: true
+        - python-version: "3.10.19"
+          env:
+            TOXENV: min-extra-deps
+          coverage: true
+        - python-version: "3.10.19"
+          env:
+            TOXENV: min-botocore
+          coverage: true
+
+        - python-version: "3.14"
+          env:
+            TOXENV: extra-deps
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: no-reactor-extra-deps
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: botocore
+          coverage: true
+
+        # 3.15 pre-release
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: py
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: default-reactor
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: no-reactor
+
+    steps: *test-steps
+
+  windows:
+    needs: [pre-commit, checks]
+    name: tests (windows, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.14"
+          env:
+            TOXENV: py
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: no-reactor
+
+        # min deps
+        - python-version: "3.10.11"
+          env:
+            TOXENV: min
+        - python-version: "3.10.11"
+          env:
+            TOXENV: min-extra-deps
+
+        - python-version: "3.14"
+          env:
+            TOXENV: extra-deps
+
+        # 3.15 pre-release
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: py
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: default-reactor
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: no-reactor
+
+    steps: *test-steps
+
+  macos:
+    needs: [pre-commit, checks]
+    name: tests (macos, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.14"
+          env:
+            TOXENV: py
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: no-reactor
+
+        # 3.15 pre-release
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: py
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: no-reactor
+
+    steps: *test-steps

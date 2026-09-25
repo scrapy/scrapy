@@ -65,6 +65,7 @@ __all__ = [
     "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
     "DOWNLOADER_MIDDLEWARES",
     "DOWNLOADER_MIDDLEWARES_BASE",
+    "DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS",
     "DOWNLOADER_STATS",
     "DOWNLOAD_BIND_ADDRESS",
     "DOWNLOAD_DELAY",
@@ -137,6 +138,7 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JSONVALIDATION_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
     "LOG_DATEFORMAT",
@@ -213,6 +215,7 @@ __all__ = [
     "STATSMAILER_RCPTS",
     "STATS_CLASS",
     "STATS_DUMP",
+    "STICKY_META_KEYS",
     "TELNETCONSOLE_ENABLED",
     "TELNETCONSOLE_HOST",
     "TELNETCONSOLE_PASSWORD",
@@ -333,6 +336,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
+    "scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware": 560,
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -342,6 +346,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware": 900,
     # Downloader side
 }
+DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS = False
 
 DOWNLOADER_STATS = True
 
@@ -452,6 +457,8 @@ ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
 
+JSONVALIDATION_ENABLED = False
+
 LOG_COLOR = True
 LOG_ENABLED = True
 LOG_INSTALL_ROOT_HANDLER = True
@@ -529,15 +536,15 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
     "scrapy.exceptions.CannotResolveHostError",
+    "scrapy.exceptions.DecompressionError",
     "scrapy.exceptions.DownloadConnectionRefusedError",
     "scrapy.exceptions.DownloadFailedError",
     "scrapy.exceptions.DownloadTimeoutError",
     "scrapy.exceptions.ResponseDataLossError",
+    "json.JSONDecodeError",
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    # OSError is raised by the HttpCompression middleware when trying to
-    # decompress an empty response
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
@@ -584,7 +591,8 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
-    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 1000,
+    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 999,
+    "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     # Spider side
 }
 
@@ -594,6 +602,8 @@ STATS_CLASS = "scrapy.statscollectors.MemoryStatsCollector"
 STATS_DUMP = True
 
 STATSMAILER_RCPTS: list[str] = []
+
+STICKY_META_KEYS: list[str] = []
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_HOST = "127.0.0.1"

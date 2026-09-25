@@ -18,8 +18,8 @@ TWISTED_TLS_NEW_IMPL = TWISTED_VERSION >= TxVersion("twisted", 26, 4, 0)
 TWISTED_TLS_LIMITS_OFFBY1 = TWISTED_VERSION < TxVersion("twisted", 26, 4, 0)
 
 PARSEL_VERSION = Version(PARSEL_VERSION_STRING)
-# Selector.jmespath() support
-PARSEL_SUPPORTS_JMESPATH = PARSEL_VERSION >= Version("1.8.0")
+# body decoding fixes for non-UTF-8 encodings, https://github.com/scrapy/parsel/pull/356
+PARSEL_BODY_ENCODING_FIXED = PARSEL_VERSION >= Version("1.12.0")
 
 PYOPENSSL_VERSION = Version(PYOPENSSL_VERSION_STRING)
 # SSL.Context.set_cipher_list() creates a temporary connection, making the context immutable

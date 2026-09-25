@@ -11,13 +11,13 @@ dependencies = [
     "aiohttp>=3.13.3",
     "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
-    "cssselect>=0.9.1",
+    "cssselect>=1.2.0",
     "defusedxml>=0.7.1",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.1",
     "lxml>=4.6.4",
     "packaging",
-    "parsel>=1.5.0",
+    "parsel>=1.8.1",
     "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=24.3.0",
@@ -108,7 +108,6 @@ pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 strict = true
-extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
 ]
@@ -117,6 +116,7 @@ untyped_calls_exclude = [
 module = "tests.*"
 allow_untyped_defs = true
 allow_incomplete_defs = true # 59 errors
+extra_checks = false # weird addErrback() errors with untyped log.err
 
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
@@ -157,6 +157,7 @@ current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
+setup_hooks = ["python3 extras/pre-bump.py"]
 
 [[tool.bumpversion.files]]
 filename = "docs/news.rst"
@@ -351,6 +352,12 @@ extend-select = [
     "COM",
     # pydocstyle
     "D",
+    # pycodestyle
+    "E4",
+    "E7",
+    "E9",
+    # Pyflakes
+    "F",
     # flake8-future-annotations
     "FA",
     # flynt
@@ -405,8 +412,8 @@ extend-select = [
     "YTT",
 ]
 ignore = [
-    # Ones we want to ignore
-
+    # Do not catch blind exception
+    "BLE001",
     # Trailing comma missing
     "COM812",
     # Missing docstring in public module
@@ -447,6 +454,8 @@ ignore = [
     "PLR0911",
     # Too many arguments in function definition
     "PLR0913",
+    # Too many positional arguments
+    "PLR0917",
     # Magic value used in comparison
     "PLR2004",
     # String contains ambiguous {}.
@@ -463,6 +472,8 @@ ignore = [
     "SIM115",
     # Yoda condition detected
     "SIM300",
+    # Prefer `TypeError` exception for invalid type
+    "TRY004",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -512,6 +523,3 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
-
-[tool.sphinx-scrapy]
-python-version = "3.14"  # Keep in sync with .github/workflows/checks.yml.
