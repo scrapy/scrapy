@@ -440,6 +440,10 @@ This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
 
+A path ending in ``/`` is listed instead of downloaded. The response
+body is the plain-text output of the FTP ``NLST`` command, one file or
+directory name per line.
+
 .. _s3-handler:
 
 S3DownloadHandler
