@@ -75,9 +75,16 @@ class ItemPipelineManager(MiddlewareManager):
         return deferred_from_coro(self.process_item_async(item))
 
     async def process_item_async(self, item: Any) -> Any:
-        return await self._process_chain(
-            "process_item", item, add_spider=True, warn_deferred=True
-        )
+        methods = cast("Iterable[Callable[..., Any]]", self.methods["process_item"])
+        for method in methods:
+            warn = global_object_name(method)
+            if method in self._mw_methods_requiring_spider:
+                item = await ensure_awaitable(method(item, self._spider), _warn=warn)
+            else:
+                item = await ensure_awaitable(method(item), _warn=warn)
+            if item is None:
+                raise TypeError(f"{warn} must return an item, got None instead")
+        return item
 
     def _get_dfd(
         self,
