@@ -52,6 +52,7 @@ class _ClientResponse(aiohttp.ClientResponse):
 
 class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     experimental: ClassVar[bool] = True
+    lazy = True
 
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
