@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
-from scrapy import Spider
+from scrapy import Spider, signals
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
@@ -47,7 +47,14 @@ from scrapy.utils.reactorless import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Generator, Iterable
+    from collections.abc import (
+        AsyncGenerator,
+        Awaitable,
+        Callable,
+        Generator,
+        Iterable,
+        Iterator,
+    )
     from types import FrameType
 
     from scrapy.logformatter import LogFormatter
@@ -1295,3 +1302,184 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
         self._setup_reactor(install_signal_handlers)
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
+
+
+def _run_settings(
+    settings: dict[str, Any] | Settings | None, *, use_reactor: bool
+) -> Settings:
+    if not isinstance(settings, Settings):
+        settings = Settings(settings)
+    settings.set("TWISTED_REACTOR_ENABLED", use_reactor, priority="default")
+    return settings
+
+
+class Crawl:
+    """Handle of a crawl started with :func:`scrapy.run` or
+    :func:`scrapy.run_async`.
+
+    .. versionadded:: VERSION
+
+    Awaiting an object returned by :func:`scrapy.run_async` runs the crawl and
+    returns that same object, while iterating it asynchronously runs the crawl
+    and yields items as they are scraped, without keeping them in memory.
+    """
+
+    def __init__(
+        self,
+        crawler: Crawler,
+        start: Callable[[], asyncio.Task[None]],
+        *,
+        items: bool = False,
+    ):
+        self.crawler: Crawler = crawler
+        """:class:`~scrapy.crawler.Crawler` of the crawl."""
+
+        self.items: list[Any] | None = [] if items else None
+        """Scraped items, or ``None`` if *items* was ``False``."""
+
+        self._start = start
+        self._task: asyncio.Task[None] | None = None
+
+    def __del__(self) -> None:
+        if self._task is None:
+            warnings.warn(
+                f"The {self.crawler.spidercls.__name__} crawl was never started,"
+                f" await or iterate the object returned by scrapy.run_async()"
+                f" to start it.",
+                RuntimeWarning,
+                stacklevel=1,
+            )
+
+    def __iter__(self) -> Iterator[Any]:
+        if self.items is None:
+            raise TypeError("Iterating a crawl requires items=True.")
+        return iter(self.items)
+
+    def __await__(self) -> Generator[Any, None, Crawl]:
+        return self._run().__await__()
+
+    async def _run(self) -> Crawl:
+        await self._begin(self._append if self.items is not None else None)
+        return self
+
+    async def __aiter__(self) -> AsyncGenerator[Any, None]:
+        if self._task is not None:
+            raise RuntimeError("This crawl has already started.")
+        # A full queue keeps the item_scraped signal handler waiting, so that
+        # items are not scraped faster than they are consumed below.
+        queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=1)
+        end = object()
+
+        async def put(item: Any) -> None:
+            if self.items is not None:
+                self.items.append(item)
+            await queue.put(item)
+
+        async def drain() -> None:
+            while True:
+                await queue.get()
+
+        task = self._begin(put)
+        # The queue is FIFO, so items scraped before the crawl finishes reach
+        # the code below before this mark does.
+        task.add_done_callback(lambda _: asyncio.ensure_future(queue.put(end)))
+        try:
+            while (item := await queue.get()) is not end:
+                yield item
+        finally:
+            if not task.done():
+                # Items on their way to the queue must still be taken from it,
+                # or stopping the crawl waits for them forever.
+                drainer = asyncio.ensure_future(drain())
+                await self.crawler.stop_async()
+                await asyncio.wait({task})
+                drainer.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await drainer
+        await task
+
+    def _begin(self, sink: Callable[[Any], Any] | None) -> asyncio.Task[None]:
+        if self._task is None:
+            if sink is not None:
+                self.crawler.signals.connect(sink, signals.item_scraped, weak=False)
+            self._task = self._start()
+        return self._task
+
+    def _append(self, item: Any) -> None:
+        assert self.items is not None
+        self.items.append(item)
+
+
+def run(
+    spider: type[Spider],
+    args: dict[str, Any] | None = None,
+    *,
+    settings: dict[str, Any] | Settings | None = None,
+    items: bool = False,
+) -> Crawl:
+    """Run a single spider, blocking until the crawl finishes, and return a
+    :class:`~scrapy.crawler.Crawl` object.
+
+    .. versionadded:: VERSION
+
+    *spider* is a :class:`~scrapy.Spider` subclass, *args* are :ref:`spider
+    arguments <spiderargs>` for it, and *settings* are :ref:`settings
+    <topics-settings>` for the crawl, with :setting:`TWISTED_REACTOR_ENABLED`
+    defaulting to ``False``.
+
+    If *items* is ``True``, scraped items are kept in memory, and the returned
+    object can be iterated to get them.
+
+    Use :func:`scrapy.run_async` from code that runs in an asyncio event loop.
+
+    See :ref:`run-from-script`.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+    else:
+        raise RuntimeError(
+            "scrapy.run() starts an asyncio event loop, so it cannot be "
+            "called while one is already running. Use scrapy.run_async() "
+            "instead."
+        )
+    process = AsyncCrawlerProcess(_run_settings(settings, use_reactor=False))
+    crawler = process.create_crawler(spider)
+    crawl = Crawl(crawler, partial(process.crawl, crawler, **(args or {})), items=items)
+    crawl._begin(crawl._append if items else None)
+    process.start()
+    return crawl
+
+
+def run_async(
+    spider: type[Spider],
+    args: dict[str, Any] | None = None,
+    *,
+    settings: dict[str, Any] | Settings | None = None,
+    items: bool = False,
+) -> Crawl:
+    """Run a single spider in the running asyncio event loop and return a
+    :class:`~scrapy.crawler.Crawl` object.
+
+    .. versionadded:: VERSION
+
+    Takes the same arguments as :func:`scrapy.run`, except that
+    :setting:`TWISTED_REACTOR_ENABLED` defaults to whether a
+    :mod:`~twisted.internet.reactor` is installed. Unlike :func:`scrapy.run`,
+    it neither starts the event loop nor installs signal handlers, and the
+    crawl only starts once the returned object is awaited or iterated.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        raise RuntimeError(
+            "scrapy.run_async() requires a running asyncio event loop. Use "
+            "scrapy.run() instead."
+        ) from None
+    settings = _run_settings(settings, use_reactor=is_reactor_installed())
+    configure_logging(settings)
+    log_scrapy_info(settings)
+    runner = AsyncCrawlerRunner(settings)
+    crawler = runner.create_crawler(spider)
+    return Crawl(crawler, partial(runner.crawl, crawler, **(args or {})), items=items)

@@ -1155,3 +1155,10 @@ def test_async_crawler_process_schedule_reactorless_shutdown_runtime_error() -> 
     assert loop.scheduled
     assert loop.create_task_called
     assert coro.closed
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_run_within_running_loop() -> None:
+    with pytest.raises(RuntimeError, match=r"scrapy\.run_async"):
+        scrapy.run(DefaultSpider)
