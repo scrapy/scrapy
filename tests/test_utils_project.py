@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.misc import set_environ
 from scrapy.utils.project import (
     data_path,
@@ -28,7 +29,7 @@ def proj_path(tmp_path: Path) -> Generator[Path]:
 
     try:
         os.chdir(project_dir)
-        Path("scrapy.cfg").touch()
+        Path("pyproject.toml").write_text("[tool.scrapy]\n", encoding="utf-8")
 
         yield project_dir
     finally:
@@ -42,7 +43,11 @@ def no_proj_path(tmp_path: Path) -> Generator[Path]:
     prev_dir = Path.cwd()
     try:
         os.chdir(tmp_path)
-        with set_environ(HOME=str(tmp_path), XDG_CONFIG_HOME=str(tmp_path)):
+        with set_environ(
+            HOME=str(tmp_path),
+            USERPROFILE=str(tmp_path),
+            XDG_CONFIG_HOME=str(tmp_path),
+        ):
             yield tmp_path
     finally:
         os.chdir(prev_dir)
@@ -59,6 +64,16 @@ def test_data_path_inside_project(proj_path: Path) -> None:
     assert expected.resolve() == Path(data_path("somepath")).resolve()
     abspath = str(Path(os.path.sep, "absolute", "path").resolve())
     assert abspath == data_path(abspath)
+
+
+def test_project_data_dir_without_config_file(no_proj_path: Path) -> None:
+    """A project defined only through the environment has no folder to infer
+    its data dir from."""
+    with (
+        set_environ(SCRAPY_SETTINGS_MODULE="tests.test_cmdline.settings"),
+        pytest.raises(NotConfigured, match=r"Unable to find a pyproject\.toml file"),
+    ):
+        project_data_dir()
 
 
 def test_data_path_createdir(no_proj_path: Path) -> None:
@@ -83,14 +98,6 @@ def test_project_data_dir_outside_project(no_proj_path: Path) -> None:
         project_data_dir()
 
 
-def test_project_data_dir_without_scrapy_cfg(no_proj_path: Path) -> None:
-    with (
-        set_environ(SCRAPY_SETTINGS_MODULE="tests.test_cmdline.settings"),
-        pytest.raises(NotConfigured, match=r"Unable to find scrapy\.cfg file"),
-    ):
-        project_data_dir()
-
-
 def test_project_data_dir_default(proj_path: Path) -> None:
     expected = (proj_path / ".scrapy").resolve()
     assert Path(project_data_dir()) == expected
@@ -99,9 +106,11 @@ def test_project_data_dir_default(proj_path: Path) -> None:
     assert Path(project_data_dir()) == expected
 
 
-def test_project_data_dir_from_scrapy_cfg(proj_path: Path) -> None:
+def test_project_data_dir_from_config(proj_path: Path) -> None:
     datadir = proj_path / "custom-datadir"
-    Path("scrapy.cfg").write_text(f"[datadir]\ndefault = {datadir}\n")
+    Path("pyproject.toml").write_text(
+        f'[tool.scrapy.datadir]\ndefault = "{datadir.as_posix()}"\n', encoding="utf-8"
+    )
     assert Path(project_data_dir()) == datadir
     assert datadir.is_dir()
 
@@ -132,6 +141,51 @@ class TestGetProjectSettings:
         monkeypatch.setenv("SCRAPY_SETTINGS_MODULE", "tests.test_cmdline.settings")
         get_project_settings()
         assert str(proj_path) in sys.path
+
+    def test_unimportable_module_from_envvar(self, no_proj_path: Path) -> None:
+        with (
+            set_environ(SCRAPY_SETTINGS_MODULE="no_such_module.settings"),
+            pytest.raises(
+                ImportError,
+                match=r"No module named 'no_such_module' \(settings module "
+                r"'no_such_module\.settings' set by the SCRAPY_SETTINGS_MODULE "
+                r"environment variable\)",
+            ),
+        ):
+            get_project_settings()
+
+    def test_unimportable_module_from_project_config(
+        self, proj_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE", raising=False)
+        Path("pyproject.toml").write_text(
+            '[tool.scrapy.settings]\ndefault = "no_such_module.settings"\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(
+            ImportError,
+            match=r"No module named 'no_such_module' \(settings module "
+            rf"'no_such_module\.settings' set by {re.escape(str(proj_path))}"
+            r"[/\\]pyproject\.toml\)",
+        ):
+            get_project_settings()
+
+    def test_unimportable_module_from_global_config(
+        self, no_proj_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE", raising=False)
+        (no_proj_path / ".scrapy.cfg").write_text(
+            "[settings]\ndefault = no_such_module.settings\n", encoding="utf-8"
+        )
+        with (
+            pytest.warns(ScrapyDeprecationWarning, match="Global scrapy.cfg files"),
+            pytest.raises(
+                ImportError,
+                match=r"No module named 'no_such_module' \(settings module "
+                r"'no_such_module\.settings' set by a global scrapy\.cfg file\)",
+            ),
+        ):
+            get_project_settings()
 
     def test_valid_and_invalid_envvars(self):
         value = "tests.test_cmdline.settings"
