@@ -75,6 +75,9 @@ class TestHttpBase(ABC):
     # h2.connection.H2Connection.receive_data()), thus closing all streams that
     # were using it, and we handle this as a normal exception.
     handler_supports_http2_dataloss: bool = True
+    # whether the handler sends a request Content-Length header as is, instead
+    # of building its own (https://github.com/scrapy/scrapy/issues/4919)
+    handler_supports_custom_content_length: bool = True
     # whether the handler can request hostnames that the idna package rejects
     # (see IDNA_REJECTED_HOSTNAMES)
     handler_supports_idna_rejected_hostnames: bool = True
@@ -477,6 +480,40 @@ class TestHttpBase(ABC):
         contentlengths = headers.getlist("Content-Length")
         assert len(contentlengths) == 1
         assert contentlengths == [b"0"]
+
+    @coroutine_test
+    async def test_custom_content_length(self, mockserver: MockServer) -> None:
+        body = b"1" * 100
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            method="POST",
+            body=body,
+            headers={"Content-Length": str(len(body))},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        if not self.handler_supports_custom_content_length:
+            # The server gets two Content-Length headers and rejects the
+            # request.
+            assert response.status == 400
+            return
+        echo = json.loads(response.text)
+        assert Headers(echo["headers"]).getlist("Content-Length") == [b"100"]
+        assert echo["body"] == body.decode()
+
+    @coroutine_test
+    async def test_custom_content_length_bodyless(self, mockserver: MockServer) -> None:
+        request = Request(
+            mockserver.url("/contentlength", is_secure=self.is_secure),
+            method="POST",
+            headers={"Content-Length": "0"},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        if not self.handler_supports_custom_content_length:
+            assert response.status == 400
+            return
+        assert response.body == b"0"
 
     @coroutine_test
     async def test_payload(self, mockserver: MockServer) -> None:
