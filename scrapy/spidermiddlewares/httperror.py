@@ -54,7 +54,9 @@ class HttpErrorMiddleware:
     def process_spider_input(
         self, response: Response, spider: Spider | None = None
     ) -> None:
-        if 200 <= response.status < 300:  # common case
+        # 101 (Switching Protocols) means the request got the protocol switch
+        # that it asked for, e.g. a WebSocket connection.
+        if 200 <= response.status < 300 or response.status == 101:  # common case
             return
         meta = response.meta
         if meta.get("handle_httpstatus_all", False):
