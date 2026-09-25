@@ -18,7 +18,13 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.pipelines.files import (
+    FilesPipeline,
+    GCSFilesStore,
+    S3FilesStore,
+    _checksum,
+    _checksum_algorithm,
+)
 from scrapy.pipelines.media import FileException
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
@@ -89,6 +95,9 @@ class ImagesPipeline(FilesPipeline):
             base_class_name="ImagesPipeline",
             settings=settings,
         )
+        self.store.checksum_algorithm = _checksum_algorithm(
+            settings, resolve("IMAGES_CHECKSUM_ALGORITHM")
+        )
         self.expires: int = settings.getint(resolve("IMAGES_EXPIRES"), self.EXPIRES)
 
         if not hasattr(self, "IMAGES_RESULT_FIELD"):
@@ -158,7 +167,7 @@ class ImagesPipeline(FilesPipeline):
         for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
-                checksum = _md5sum(buf)
+                checksum = _checksum(buf, self.store.checksum_algorithm)
             width, height = image.size
             content_type = self._Image.MIME.get(image.format or "JPEG", "image/jpeg")
             await ensure_awaitable(
