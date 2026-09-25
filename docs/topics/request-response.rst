@@ -874,6 +874,7 @@ Those are:
 * :reqmeta:`download_slot`
 * :reqmeta:`download_timeout`
 * :reqmeta:`download_warnsize`
+* :reqmeta:`expected_checksum`
 * :reqmeta:`ftp_local_filename`
 * :reqmeta:`ftp_passive`
 * :reqmeta:`ftp_password`
