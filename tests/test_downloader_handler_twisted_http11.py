@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from twisted.internet.error import ConnectionClosed
 from twisted.internet.protocol import Factory, Protocol
 
 from scrapy import Request, Spider
@@ -15,6 +16,7 @@ from scrapy.crawler import Crawler
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadConnectionRefusedError,
+    DownloadFailedError,
     NotConfigured,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -116,14 +118,11 @@ class TestHttpProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
 
 class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
-    # not implemented
-    handler_supports_tls_in_tls = False
 
 
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
-    # not implemented
-    handler_supports_tls_in_tls = False
+    pass
 
 
 @pytest.mark.requires_internet
@@ -134,7 +133,8 @@ class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
 
 
 class _CannedConnectProxy(Protocol):
-    """Answers any request with a canned response."""
+    """Answers any request with a canned response, or drops the connection when
+    the response is ``None``."""
 
     factory: _CannedConnectProxyFactory
 
@@ -143,6 +143,9 @@ class _CannedConnectProxy(Protocol):
 
         assert self.transport
         response = self.factory.response
+        if response is None:
+            self.transport.loseConnection()
+            return
         if not self.factory.split_at:
             self.transport.write(response)
             return
@@ -153,13 +156,15 @@ class _CannedConnectProxy(Protocol):
 class _CannedConnectProxyFactory(Factory):
     protocol = _CannedConnectProxy  # type: ignore[assignment]
 
-    def __init__(self, response: bytes, split_at: int = 0):
+    def __init__(self, response: bytes | None, split_at: int = 0):
         self.response = response
         self.split_at = split_at
 
 
 @asynccontextmanager
-async def _canned_proxy(response: bytes, split_at: int = 0) -> AsyncGenerator[str]:
+async def _canned_proxy(
+    response: bytes | None, split_at: int = 0
+) -> AsyncGenerator[str]:
     from twisted.internet import reactor
 
     port = reactor.listenTCP(
@@ -199,6 +204,26 @@ class TestTunnelingErrors:
             request = Request("https://example.com", meta={"proxy": proxy})
             async with _get_dh() as dh:
                 with pytest.raises(TunnelError, match="not an HTTP response"):
+                    await dh.download_request(request)
+
+    @coroutine_test
+    async def test_proxy_closes_connection(self) -> None:
+        """The proxy drops the connection instead of answering CONNECT."""
+        async with _canned_proxy(None) as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
+                with pytest.raises(ConnectionClosed):
+                    await dh.download_request(request)
+
+    @coroutine_test
+    async def test_trailing_bytes(self) -> None:
+        """Bytes right after a successful CONNECT response belong to the
+        tunneled protocol, whose TLS handshake they corrupt."""
+        response = b"HTTP/1.1 200 Connection established\r\n\r\ntrailing-bytes"
+        async with _canned_proxy(response) as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
+                with pytest.raises(DownloadFailedError):
                     await dh.download_request(request)
 
     @coroutine_test
