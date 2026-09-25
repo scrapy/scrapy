@@ -5,6 +5,7 @@ from typing import Any, Literal
 from parsel import Selector as _ParselSelector
 
 from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
+from scrapy.utils._deps_compat import PARSEL_BODY_ENCODING_FIXED
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import get_base_url
 from scrapy.utils.trackref import object_ref
@@ -102,7 +103,7 @@ class Selector(_ParselSelector, object_ref):
         if response is not None:
             # parsel only treats bytes and text equivalently for "html" and
             # "xml", and treats an empty body as absent, unlike empty text.
-            if type in ("html", "xml") and response.body:
+            if PARSEL_BODY_ENCODING_FIXED and type in ("html", "xml") and response.body:
                 encoding = response.encoding
                 # None means the encoding was declared, not inferred from
                 # the body, so the body hasn't been decoded as a side effect.
