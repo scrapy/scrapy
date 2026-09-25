@@ -273,7 +273,10 @@ class Crawler:
             self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
                 "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler"
             )
-        self.settings["DOWNLOAD_HANDLERS_BASE"]["ftp"] = None
+        for scheme in ("ftp", "ftps"):
+            self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
+                "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler"
+            )
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside

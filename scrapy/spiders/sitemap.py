@@ -135,7 +135,10 @@ class SitemapSpider(Spider):
         if gzip_magic_number(response):
             uncompressed_size = len(response.body)
             max_size = response.meta.get("download_maxsize", self._max_size)
-            warn_size = response.meta.get("download_warnsize", self._warn_size)
+            # circular import
+            from scrapy.utils._download_handlers import get_warnsize  # noqa: PLC0415
+
+            warn_size = get_warnsize(response.meta, self._warn_size)
             try:
                 body = gunzip(response.body, max_size=max_size)
             except _DecompressionMaxSizeExceeded:

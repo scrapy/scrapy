@@ -401,6 +401,49 @@ Whether to enable HTTP/2 support in this handler.
 Built-in non-HTTP download handlers reference
 =============================================
 
+.. _aioftp-handler:
+
+AioftpDownloadHandler
+---------------------
+
+.. versionadded:: VERSION
+
+.. autoclass:: scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler
+
+| Supported schemes: ``ftp``, ``ftps``.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``ftp://host/path`` FTP URIs and ``ftps://host/path``
+FTPS URIs. FTPS uses `implicit TLS`_ on port 990 and `explicit TLS`_ on any
+other port.
+
+.. _implicit TLS: https://en.wikipedia.org/wiki/FTPS#Implicit
+.. _explicit TLS: https://en.wikipedia.org/wiki/FTPS#Explicit
+
+It's implemented using the aioftp_ library.
+
+.. _aioftp: https://aioftp.rtfd.io/
+
+It supports SOCKS4 and SOCKS5 :reqmeta:`proxies <proxy>` if you install the
+:ref:`ftp-socks <extras>` extra.
+
+.. warning::
+
+    This handler is experimental, and not yet recommended for production
+    environments. Future Scrapy versions may introduce related changes without
+    a deprecation period or warning or even remove it altogether.
+
+Limitations:
+
+-   Only passive mode is supported: the handler cannot be used if
+    :setting:`FTP_PASSIVE_MODE` is ``False``, and requests that set the
+    :reqmeta:`ftp_passive` request meta key to ``False`` are downloaded in
+    passive mode, with an error logged.
+
+-   On Python 3.10, ``ftps://`` URLs only work on port 990.
+
 DataURIDownloadHandler
 ----------------------
 
