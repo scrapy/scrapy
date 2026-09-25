@@ -157,9 +157,7 @@ current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
-# Fail on VERSION and PREVIOUS_VERSION placeholders left in docs or code.
-allow_shell_hooks = true
-setup_hooks = ['''! git grep -nE '(^|[^/"_A-Z`])(PREVIOUS_)?VERSION\b' -- docs scrapy''']
+setup_hooks = ["python3 extras/pre-bump.py"]
 
 [[tool.bumpversion.files]]
 filename = "docs/news.rst"
