@@ -318,6 +318,20 @@ class TestHttpBase(ABC):
             ]
 
     @coroutine_test
+    async def test_download_has_correct_response_status_and_headers(
+        self, mockserver: MockServer
+    ) -> None:
+        request = Request(
+            mockserver.url("/response-headers?n=302", is_secure=self.is_secure),
+            headers={"content-type": "application/json"},
+            body=json.dumps({"Set-Cookie": "status=302"}),
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 302
+        assert response.headers.getlist("Set-Cookie") == [b"status=302"]
+
+    @coroutine_test
     async def test_download_no_extra_response_headers(
         self, mockserver: MockServer
     ) -> None:
