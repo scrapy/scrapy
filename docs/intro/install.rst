@@ -111,6 +111,8 @@ The following extras are available:
      - Provides
    * - ``bpython``
      - :ref:`bpython shell <shell-config>`
+   * - ``clipboard``
+     - Reading the system clipboard with :command:`genrequest`
    * - ``color``
      - :setting:`LOG_COLOR`
    * - ``gcs``
