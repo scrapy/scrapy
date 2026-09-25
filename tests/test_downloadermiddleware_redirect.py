@@ -19,15 +19,17 @@ from scrapy.utils.test import get_crawler
 from tests.utils.bases.redirect import TestRedirectBase
 from tests.utils.redirect import REDIRECT_SCHEME_CASES, SCHEME_PARAMS
 
+from .test_dupefilters import _get_dupefilter
+
 
 class TestRedirectMiddleware(TestRedirectBase):
     mwcls = RedirectMiddleware
     reason = 302
 
     def setup_method(self):
-        crawler = get_crawler(DefaultSpider)
-        crawler.spider = crawler._create_spider()
-        self.mw = build_from_crawler(self.mwcls, crawler)
+        self.crawler = get_crawler(DefaultSpider)
+        self.crawler.spider = self.crawler._create_spider()
+        self.mw = build_from_crawler(self.mwcls, self.crawler)
 
     def get_response(self, request, location, status=302):
         headers = {"Location": location}
@@ -347,6 +349,96 @@ class TestRedirectMiddleware(TestRedirectBase):
         request = Request("https://example.com")
         response = Response(request.url, status=302)
         assert self.mw.process_response(request, response) is response
+
+    def test_self_redirect_direct(self):
+        dupefilter = _get_dupefilter(crawler=self.crawler)
+        request1 = Request("https://example.com/a")
+        assert not dupefilter.request_seen(request1)
+
+        response1 = Response(
+            request1.url,
+            status=302,
+            headers={"Location": "/a"},
+        )
+        request2 = self.mw.process_response(request1, response1)
+        assert isinstance(request2, Request)
+        fingerprint1 = self.crawler.request_fingerprinter.fingerprint(request1)
+        fingerprint2 = self.crawler.request_fingerprinter.fingerprint(request2)
+        assert fingerprint1 == fingerprint2
+
+        assert not dupefilter.request_seen(request2)
+
+    def test_self_redirect_indirect(self):
+        dupefilter = _get_dupefilter(crawler=self.crawler)
+        request1 = Request("https://example.com/a")
+        assert not dupefilter.request_seen(request1)
+
+        response1 = Response(
+            request1.url,
+            status=302,
+            headers={"Location": "/b"},
+        )
+        request2 = self.mw.process_response(request1, response1)
+        assert isinstance(request2, Request)
+        fingerprint1 = self.crawler.request_fingerprinter.fingerprint(request1)
+        fingerprint2 = self.crawler.request_fingerprinter.fingerprint(request2)
+        assert fingerprint1 != fingerprint2
+
+        assert not dupefilter.request_seen(request2)
+
+        response2 = Response(
+            request2.url,
+            status=302,
+            headers={"Location": "/a"},
+        )
+        request3 = self.mw.process_response(request2, response2)
+        assert isinstance(request3, Request)
+        fingerprint3 = self.crawler.request_fingerprinter.fingerprint(request3)
+        assert fingerprint1 == fingerprint3
+
+        assert not dupefilter.request_seen(request3)
+
+    def test_self_redirect_zigzag(self):
+        dupefilter = _get_dupefilter(crawler=self.crawler)
+        request1 = Request("https://example.com/a")
+        assert not dupefilter.request_seen(request1)
+
+        response1 = Response(
+            request1.url,
+            status=302,
+            headers={"Location": "/b"},
+        )
+        request2 = self.mw.process_response(request1, response1)
+        assert isinstance(request2, Request)
+        fingerprint1 = self.crawler.request_fingerprinter.fingerprint(request1)
+        fingerprint2 = self.crawler.request_fingerprinter.fingerprint(request2)
+        assert fingerprint1 != fingerprint2
+
+        assert not dupefilter.request_seen(request2)
+
+        response2 = Response(
+            request2.url,
+            status=302,
+            headers={"Location": "/a"},
+        )
+        request3 = self.mw.process_response(request2, response2)
+        assert isinstance(request3, Request)
+        fingerprint3 = self.crawler.request_fingerprinter.fingerprint(request3)
+        assert fingerprint1 == fingerprint3
+
+        assert not dupefilter.request_seen(request3)
+
+        response3 = Response(
+            request3.url,
+            status=302,
+            headers={"Location": "/b"},
+        )
+        request4 = self.mw.process_response(request3, response3)
+        assert isinstance(request4, Request)
+        fingerprint4 = self.crawler.request_fingerprinter.fingerprint(request4)
+        assert fingerprint2 == fingerprint4
+
+        assert not dupefilter.request_seen(request4)
 
 
 @pytest.mark.parametrize(SCHEME_PARAMS, REDIRECT_SCHEME_CASES)
