@@ -31,7 +31,10 @@ class TestStartprojectCommand:
     def test_startproject(self, tmp_path: Path) -> None:
         # with no dir argument creates the project in the "self.project_name" subdir of cwd
         assert call("startproject", self.project_name, cwd=tmp_path) == 0
-        self._assert_files_exist(tmp_path / self.project_name, self.project_name)
+        project_dir = tmp_path / self.project_name
+        self._assert_files_exist(project_dir, self.project_name)
+        settings = (project_dir / self.project_name / "settings.py").read_text()
+        assert "COMPRESSION_KEEP_ENCODING_HEADER = True" in settings
 
         assert call("startproject", self.project_name, cwd=tmp_path) == 1
         assert call("startproject", "wrong---project---name") == 1

@@ -779,6 +779,27 @@ Default: ``True``
 Whether the Compression middleware will be enabled.
 
 
+.. setting:: COMPRESSION_KEEP_ENCODING_HEADER
+
+COMPRESSION_KEEP_ENCODING_HEADER
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Fallback: ``False``
+
+Whether to keep the original ``Content-Encoding`` header of a response after
+:class:`HttpCompressionMiddleware` has decompressed its body. The default value
+is set by :command:`startproject`; the fallback preserves the behavior of
+existing projects.
+
+When enabled, the header describes the response body as received, while
+``response.body`` contains the decompressed body. Whenever the middleware
+decompresses at least one encoding layer, the response has ``"decoded"`` in
+:attr:`Response.flags <scrapy.http.Response.flags>`, regardless of this
+setting. Responses with that flag are not decompressed again.
+
+
 HttpProxyMiddleware
 -------------------
 
