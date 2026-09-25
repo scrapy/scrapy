@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
 
 from scrapy.http import Request, Response, XmlResponse
+from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils._compression import (
     _DecompressionMaxSizeExceeded,
@@ -130,7 +131,16 @@ class SitemapSpider(Spider):
         """Return the sitemap body contained in the given response,
         or None if the response is not a sitemap.
         """
-        if isinstance(response, XmlResponse):
+        # Download handlers other than the built-in ones may use their own
+        # response classes, so the content type, the URL and the body are taken
+        # into account as well.
+        if (
+            isinstance(response, XmlResponse)
+            or responsetypes.from_args(
+                headers=response.headers, url=response.url, body=response.body
+            )
+            is XmlResponse
+        ):
             return response.body
         if gzip_magic_number(response):
             uncompressed_size = len(response.body)
