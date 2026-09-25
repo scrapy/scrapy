@@ -889,6 +889,7 @@ Those are:
 * :reqmeta:`max_retry_times`
 * :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
+* :reqmeta:`redirect_http_codes`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_times`
 * :reqmeta:`redirect_ttl`
@@ -1324,6 +1325,8 @@ Response objects
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
+
+    .. automethod:: Response.follow_redirect
 
     .. automethod:: Response.to_dict
 
