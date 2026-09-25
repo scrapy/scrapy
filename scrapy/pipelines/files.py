@@ -235,50 +235,38 @@ class S3FilesStore:
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
+        kwargs: dict[str, Any] = {
+            "Metadata": {k: str(v) for k, v in meta.items()} if meta else {},
+            "ACL": self.POLICY,
+            **extra,
+        }
         return deferred_from_coro(
             run_in_thread(
                 self.s3_client.put_object,  # type: ignore[attr-defined]
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in meta.items()} if meta else {},
-                ACL=self.POLICY,
-                **extra,
+                **kwargs,
             )
+        )
+
+    @functools.cached_property
+    def _botocore_header_kwargs(self) -> CaseInsensitiveDict:
+        input_shape = self.s3_client.meta.service_model.operation_model(
+            "PutObject"
+        ).input_shape
+        assert input_shape is not None
+        return CaseInsensitiveDict(
+            {
+                shape.serialization["name"]: name
+                for name, shape in input_shape.members.items()
+                if shape.serialization.get("location") == "header"
+            }
         )
 
     def _headers_to_botocore_kwargs(self, headers: dict[str, str]) -> dict[str, str]:
         """Convert headers to botocore keyword arguments."""
-        # This is required while we need to support both boto and botocore.
-        mapping = CaseInsensitiveDict(
-            {
-                "Content-Type": "ContentType",
-                "Cache-Control": "CacheControl",
-                "Content-Disposition": "ContentDisposition",
-                "Content-Encoding": "ContentEncoding",
-                "Content-Language": "ContentLanguage",
-                "Content-Length": "ContentLength",
-                "Content-MD5": "ContentMD5",
-                "Expires": "Expires",
-                "X-Amz-Grant-Full-Control": "GrantFullControl",
-                "X-Amz-Grant-Read": "GrantRead",
-                "X-Amz-Grant-Read-ACP": "GrantReadACP",
-                "X-Amz-Grant-Write-ACP": "GrantWriteACP",
-                "X-Amz-Object-Lock-Legal-Hold": "ObjectLockLegalHoldStatus",
-                "X-Amz-Object-Lock-Mode": "ObjectLockMode",
-                "X-Amz-Object-Lock-Retain-Until-Date": "ObjectLockRetainUntilDate",
-                "X-Amz-Request-Payer": "RequestPayer",
-                "X-Amz-Server-Side-Encryption": "ServerSideEncryption",
-                "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": "SSEKMSKeyId",
-                "X-Amz-Server-Side-Encryption-Context": "SSEKMSEncryptionContext",
-                "X-Amz-Server-Side-Encryption-Customer-Algorithm": "SSECustomerAlgorithm",
-                "X-Amz-Server-Side-Encryption-Customer-Key": "SSECustomerKey",
-                "X-Amz-Server-Side-Encryption-Customer-Key-Md5": "SSECustomerKeyMD5",
-                "X-Amz-Storage-Class": "StorageClass",
-                "X-Amz-Tagging": "Tagging",
-                "X-Amz-Website-Redirect-Location": "WebsiteRedirectLocation",
-            }
-        )
+        mapping = self._botocore_header_kwargs
         extra: dict[str, Any] = {}
         for key, value in headers.items():
             try:
