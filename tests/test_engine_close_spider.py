@@ -8,6 +8,7 @@ from twisted.internet import defer
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.statscollectors import MemoryStatsCollector
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -26,22 +27,8 @@ def crawler() -> Crawler:
 
 
 @coroutine_test
-async def test_no_slot(crawler: Crawler) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
-    crawler.engine = engine
-    await engine.open_spider_async()
-    slot = engine._slot
-    engine._slot = None
-    with pytest.raises(RuntimeError, match="Engine slot not assigned"):
-        await engine.close_spider_async()
-    # close it correctly
-    engine._slot = slot
-    await engine.close_spider_async()
-
-
-@coroutine_test
 async def test_no_spider(crawler: Crawler) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     with pytest.raises(RuntimeError, match="Spider not opened"):
         await engine.close_spider_async()
     engine.downloader.close()  # cleanup
@@ -51,7 +38,7 @@ async def test_no_spider(crawler: Crawler) -> None:
 async def test_exception_slot(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
     assert engine._slot
@@ -64,7 +51,7 @@ async def test_exception_slot(
 async def test_exception_downloader(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
     del engine.downloader.slots
@@ -76,7 +63,7 @@ async def test_exception_downloader(
 async def test_exception_scraper(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
     engine.scraper.slot = None
@@ -88,7 +75,7 @@ async def test_exception_scraper(
 async def test_exception_scheduler(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
     assert engine._slot
@@ -101,7 +88,7 @@ async def test_exception_scheduler(
 async def test_exception_signal(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
     signal_manager = engine.signals
@@ -120,7 +107,7 @@ async def test_exception_signal(
 async def test_exception_stats(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
     assert isinstance(crawler.stats, MemoryStatsCollector)
@@ -133,7 +120,8 @@ async def test_exception_stats(
 async def test_exception_callback(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: defer.fail(ValueError()))
+    with pytest.warns(ScrapyDeprecationWarning, match="spider_closed_callback"):
+        engine = ExecutionEngine(crawler, lambda _: defer.fail(ValueError()))
     crawler.engine = engine
     await engine.open_spider_async()
     await engine.close_spider_async()
@@ -147,7 +135,8 @@ async def test_exception_async_callback(
     async def cb(_):
         raise ValueError
 
-    engine = ExecutionEngine(crawler, cb)
+    with pytest.warns(ScrapyDeprecationWarning, match="spider_closed_callback"):
+        engine = ExecutionEngine(crawler, cb)
     crawler.engine = engine
     await engine.open_spider_async()
     await engine.close_spider_async()
@@ -158,7 +147,7 @@ async def test_exception_async_callback(
 async def test_fast_close_stops_downloader_and_records_dropped_requests(
     crawler: Crawler,
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
 
@@ -181,7 +170,7 @@ async def test_fast_close_stops_downloader_and_records_dropped_requests(
 async def test_fast_close_tolerates_downloader_without_stop(
     crawler: Crawler, caplog: pytest.LogCaptureFixture
 ) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
 
@@ -203,7 +192,7 @@ async def test_fast_close_tolerates_downloader_without_stop(
 
 @coroutine_test
 async def test_fast_stop_downloader_is_idempotent(crawler: Crawler) -> None:
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
 

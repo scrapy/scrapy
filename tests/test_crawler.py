@@ -13,6 +13,7 @@ import pytest
 
 import scrapy
 from scrapy import Spider
+from scrapy.core.engine import EngineState
 from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
@@ -886,12 +887,12 @@ async def test_crawler_stop_async_invalid_mode() -> None:
 
 
 @coroutine_test
-async def test_crawler_graceful_stop_non_running_engine_is_noop() -> None:
+async def test_crawler_graceful_stop_created_engine_is_noop() -> None:
     crawler = get_crawler(DefaultSpider)
     crawler.crawling = True
 
     class DummyEngine:
-        running = False
+        state = EngineState.CREATED
         called = False
 
         async def stop_async(self, *, mode: str = "graceful") -> None:
@@ -912,6 +913,7 @@ async def test_crawler_force_stop_falls_back_to_fast(
     crawler = get_crawler(DefaultSpider)
 
     class DummyEngine:
+        state = EngineState.RUNNING
         called_mode: str | None = None
 
         async def stop_async(self, *, mode: str = "graceful") -> None:
@@ -949,44 +951,6 @@ async def test_crawler_stop_async_without_engine_is_noop() -> None:
     await crawler.stop_async(mode="graceful")
 
     assert crawler.crawling is False
-
-
-@coroutine_test
-async def test_crawler_stop_async_ignores_engine_not_running_runtime_error() -> None:
-    crawler = get_crawler(DefaultSpider)
-    crawler.crawling = True
-
-    class DummyEngine:
-        running = True
-        called = False
-
-        async def stop_async(self, *, mode: str = "graceful") -> None:
-            self.called = True
-            raise RuntimeError("Engine not running")
-
-    dummy_engine = DummyEngine()
-    crawler.engine = dummy_engine  # type: ignore[assignment]
-
-    await crawler.stop_async(mode="graceful")
-
-    assert dummy_engine.called is True
-
-
-@coroutine_test
-async def test_crawler_stop_async_reraises_other_runtime_errors() -> None:
-    crawler = get_crawler(DefaultSpider)
-    crawler.crawling = True
-
-    class DummyEngine:
-        running = True
-
-        async def stop_async(self, *, mode: str = "graceful") -> None:
-            raise RuntimeError("different runtime error")
-
-    crawler.engine = DummyEngine()  # type: ignore[assignment]
-
-    with pytest.raises(RuntimeError, match="different runtime error"):
-        await crawler.stop_async(mode="graceful")
 
 
 @pytest.mark.requires_reactor

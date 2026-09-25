@@ -22,7 +22,47 @@ Backward-incompatible changes
       ``errback`` are no longer called, and a warning is issued if they are
       set.
 
+    (:gh:`8176`)
+
+-   Changes to the behavior of :class:`~scrapy.core.engine.ExecutionEngine`
+    methods that change its state:
+
+    - :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async` now also
+      stops the engine. Calling it while the spider is closing now completes
+      immediately instead of waiting for the in-flight requests, and calling it
+      after the spider has been closed no longer raises :exc:`RuntimeError`.
+
+    - :meth:`~scrapy.core.engine.ExecutionEngine.stop_async` now just calls
+      :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async` with the
+      ``shutdown`` reason. Calling it after
+      :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async` and before
+      :meth:`~scrapy.core.engine.ExecutionEngine.start_async` now closes the
+      spider instead of raising :exc:`RuntimeError`. Calling it while the
+      spider is closing or after the engine has stopped now completes
+      immediately, instead of raising :exc:`RuntimeError` or waiting for the
+      in-flight requests.
+
+    - :meth:`~scrapy.core.engine.ExecutionEngine.start_async` now raises
+      :exc:`RuntimeError` if called before
+      :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async` has
+      finished, instead of sending the :signal:`engine_started` signal
+      anyway.
+
+    - If the spider is closed before the engine is started, for example by
+      calling :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async`
+      from a :signal:`spider_opened` handler, the :signal:`engine_started` and
+      :signal:`engine_stopped` signals are not sent.
+
+    - :meth:`Crawler.stop_async() <scrapy.crawler.Crawler.stop_async>`, when
+      called while the spider is being opened, now closes the spider as soon
+      as it is open, instead of being ignored.
+
     (:gh:`TBD`)
+
+-   Setting the :attr:`ExecutionEngine.running
+    <scrapy.core.engine.ExecutionEngine.running>` attribute no longer has any
+    effect.
+    (:gh:`8181`)
 
 .. _release-2.19.0:
 
