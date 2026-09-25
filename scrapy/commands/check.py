@@ -1,18 +1,15 @@
 import argparse
-import asyncio
 import time
 from collections import defaultdict
-from collections.abc import AsyncIterator, Awaitable
+from collections.abc import AsyncIterator
 from typing import Any, ClassVar
 from unittest import TestCase, TextTestRunner
 from unittest import TextTestResult as _TextTestResult
 
-from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
-
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
+from scrapy.crawler import Crawler
 from scrapy.exceptions import UsageError
 from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.conf import arglist_to_dict, build_component_list
@@ -48,40 +45,16 @@ class TextTestResult(_TextTestResult):
             write("\n")
 
 
-def _report_crawl_errors(
-    crawl: Awaitable[None], spidername: str, result: TextTestResult
-) -> None:
-    """Make an exception that stops *crawl* before its contracts can run show
-    up as an error in *result*, instead of being silently discarded."""
+class _CrawlTestCase(TestCase):
+    # unittest requires a test method, but this one is only reported, never run.
+    runTest = staticmethod(lambda: None)
 
-    class CrawlTestCase(TestCase):
-        # unittest requires a test method, but this one is only reported, never run.
-        runTest = staticmethod(lambda: None)
+    def __init__(self, spidername: str):
+        super().__init__()
+        self.spidername = spidername
 
-        def __str__(self) -> str:
-            return f"[{spidername}] crawl"
-
-    def report(exception: BaseException) -> None:
-        result.addError(
-            CrawlTestCase(),
-            (type(exception), exception, exception.__traceback__),  # type: ignore[arg-type]
-        )
-
-    if isinstance(crawl, Deferred):
-
-        def on_failure(failure: Failure) -> None:
-            assert failure.value is not None
-            report(failure.value)
-
-        crawl.addErrback(on_failure)
-    else:
-        assert isinstance(crawl, asyncio.Task)
-
-        def on_done(task: asyncio.Task[None]) -> None:
-            if not task.cancelled() and (exception := task.exception()) is not None:
-                report(exception)
-
-        crawl.add_done_callback(on_done)
+    def __str__(self) -> str:
+        return f"[{self.spidername}] crawl"
 
 
 class Command(ScrapyCommand):
@@ -158,6 +131,16 @@ class Command(ScrapyCommand):
             for request in conman.from_spider(self, result):
                 yield request
 
+        def report_crawl_error(crawler: Crawler, exception: BaseException) -> bool:
+            assert crawler.spidercls.name
+            result.addError(
+                _CrawlTestCase(crawler.spidercls.name),
+                (type(exception), exception, exception.__traceback__),  # type: ignore[arg-type]
+            )
+            return True
+
+        self.crawler_process._handle_crawl_error = report_crawl_error  # type: ignore[assignment]
+
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
@@ -168,8 +151,7 @@ class Command(ScrapyCommand):
                     for method in tested_methods:
                         contract_reqs[spidercls.name].append(method)
                 elif tested_methods:
-                    crawl = self.crawler_process.crawl(spidercls, **opts.spargs)
-                    _report_crawl_errors(crawl, spidercls.name, result)
+                    self.crawler_process.crawl(spidercls, **opts.spargs)
 
             # start checks
             if opts.list:
