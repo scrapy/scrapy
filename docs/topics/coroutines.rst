@@ -54,6 +54,26 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: 2.14
 
+-   The following methods of :ref:`item exporters <topics-exporters>`, when the
+    exporter is used by the :ref:`feed exports <topics-feed-exports>`:
+
+    - :meth:`~scrapy.exporters.BaseItemExporter.start_exporting`
+
+    - :meth:`~scrapy.exporters.BaseItemExporter.export_item`
+
+    - :meth:`~scrapy.exporters.BaseItemExporter.finish_exporting`
+
+    .. versionadded:: VERSION
+
+-   Methods of :ref:`custom feed storages <topics-feed-storage-custom>` (see
+    :setting:`FEED_STORAGES`):
+
+    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.open`
+
+    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
+
+    .. versionadded:: VERSION
+
 
 .. _coroutine-deferred-apis:
 
@@ -106,7 +126,7 @@ return coroutines are listed in :ref:`coroutine-support`):
 
 -   Custom feed storages (see :setting:`FEED_STORAGES`):
 
-    - ``store()``
+    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
 
 -   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
 

@@ -161,6 +161,15 @@ binary file, wrap it with :class:`io.TextIOWrapper` and call
 :meth:`~BaseItemExporter.finish_exporting`; otherwise the wrapper closes the
 underlying file when it is garbage-collected.
 
+:meth:`~BaseItemExporter.start_exporting`,
+:meth:`~BaseItemExporter.export_item` and
+:meth:`~BaseItemExporter.finish_exporting` may be coroutines. Feed exports
+export one item at a time, though, so awaiting slow work in
+:meth:`~BaseItemExporter.export_item` delays the export of every other item, in
+every feed, until it completes. Do it in batches instead, and in
+:meth:`~BaseItemExporter.finish_exporting`, which runs at the end of the crawl
+and once per batch when using :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
+
 For example, the following item exporter writes items as blocks of
 ``name: value`` lines:
 
@@ -228,9 +237,7 @@ BaseItemExporter
    :attr:`fields_to_export`, :attr:`export_empty_fields`, :attr:`encoding`,
    :attr:`indent`.
 
-   .. method:: export_item(item)
-
-      Exports the given item. This method must be implemented in subclasses.
+   .. automethod:: BaseItemExporter.export_item
 
    .. automethod:: BaseItemExporter.get_serialized_fields
 
@@ -255,19 +262,9 @@ BaseItemExporter
 
       :param value: the value being serialized
 
-   .. method:: start_exporting()
+   .. automethod:: BaseItemExporter.start_exporting
 
-      Signal the beginning of the exporting process. Some exporters may use
-      this to generate some required header (for example, the
-      :class:`XmlItemExporter`). You must call this method before exporting any
-      items.
-
-   .. method:: finish_exporting()
-
-      Signal the end of the exporting process. Some exporters may use this to
-      generate some required footer (for example, the
-      :class:`XmlItemExporter`). You must always call this method after you
-      have no more items to export.
+   .. automethod:: BaseItemExporter.finish_exporting
 
    .. attribute:: fields_to_export
 
