@@ -24,11 +24,7 @@ from scrapy.exceptions import (
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.asyncio import sleep
-from scrapy.utils.defer import (
-    _schedule_coro,
-    deferred_from_coro,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -163,10 +159,11 @@ class TestEngine(TestEngineBase):
         e = ExecutionEngine(crawler, lambda _: None)
         crawler.engine = e
         yield deferred_from_coro(e.open_spider_async())
-        _schedule_coro(e.start_async())
+        start_deferred = deferred_from_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield deferred_from_coro(e.start_async())
         yield deferred_from_coro(e.stop_async())
+        yield start_deferred
 
     @coroutine_test
     async def test_stop_async_force_mode_not_supported(self) -> None:
