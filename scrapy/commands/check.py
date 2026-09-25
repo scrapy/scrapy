@@ -166,7 +166,7 @@ class Command(ScrapyCommand):
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:
                     for method in tested_methods:
-                        contract_reqs[spidercls.name].append(method)
+                        contract_reqs[spidername].append(method)
                 elif tested_methods:
                     crawl = self.crawler_process.crawl(spidercls, **opts.spargs)
                     _report_crawl_errors(crawl, spidercls.name, result)

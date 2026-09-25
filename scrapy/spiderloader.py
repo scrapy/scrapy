@@ -55,6 +55,7 @@ class SpiderLoader:
     """
 
     def __init__(self, settings: BaseSettings):
+        self.require_name: bool = settings.getbool("SPIDER_LOADER_REQUIRE_NAME")
         self.spider_modules: list[str] = settings.getlist("SPIDER_MODULES")
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders: dict[str, type[Spider]] = {}
@@ -82,9 +83,10 @@ class SpiderLoader:
             )
 
     def _load_spiders(self, module: ModuleType) -> None:
-        for spcls in iter_spider_classes(module):
-            self._found[spcls.name].append((module.__name__, spcls.__name__))
-            self._spiders[spcls.name] = spcls
+        for spcls in iter_spider_classes(module, require_name=self.require_name):
+            name = spcls._default_name()
+            self._found[name].append((module.__name__, spcls.__name__))
+            self._spiders[name] = spcls
 
     def _load_all_spiders(self) -> None:
         for name in self.spider_modules:
