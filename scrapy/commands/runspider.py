@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import sys
-from importlib import import_module
+import importlib.util
+import os
+from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -17,15 +18,19 @@ if TYPE_CHECKING:
 
 
 def _import_file(filepath: str | PathLike[str]) -> ModuleType:
-    abspath = Path(filepath).resolve()
-    if abspath.suffix not in {".py", ".pyw"}:
+    # os.path.abspath(), not Path.resolve(), to avoid following symlinks:
+    # fd paths such as /dev/fd/63 resolve to an unopenable pipe: target.
+    abspath = Path(os.path.abspath(filepath))  # noqa: PTH100
+    if abspath.suffix and abspath.suffix not in {".py", ".pyw"}:
         raise ValueError(f"Not a Python source file: {abspath}")
-    dirname = str(abspath.parent)
-    sys.path = [dirname, *sys.path]
-    try:
-        module = import_module(abspath.stem)
-    finally:
-        sys.path.pop(0)
+    module_name = abspath.stem or "spidermodule"
+    # An explicit loader is required: without it extensionless file paths, such
+    # as the /dev/fd paths of process substitution, get no loader assigned.
+    loader = SourceFileLoader(module_name, str(abspath))
+    spec = importlib.util.spec_from_file_location(module_name, abspath, loader=loader)
+    assert spec
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
     return module
 
 

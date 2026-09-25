@@ -34,7 +34,7 @@ defusedxml==0.7.1
 docutils==0.22.4
     # via
     #   sphinx
-    #   sphinx-markdown-builder
+    #   sphinx-llm-friendly
     #   sphinx-rtd-theme
     #   sphinx-scrapy
 filelock==3.25.2
@@ -132,8 +132,7 @@ sphinx==9.1.0
     #   -r requirements.in
     #   sphinx-copybutton
     #   sphinx-last-updated-by-git
-    #   sphinx-llms-txt
-    #   sphinx-markdown-builder
+    #   sphinx-llm-friendly
     #   sphinx-notfound-page
     #   sphinx-reredirects
     #   sphinx-rtd-theme
@@ -143,9 +142,7 @@ sphinx-copybutton==0.5.2
     # via sphinx-scrapy
 sphinx-last-updated-by-git==0.3.8
     # via sphinx-sitemap
-sphinx-llms-txt @ git+https://github.com/zytedata/sphinx-llms-txt.git@5e8866cb0cc249aa2017ad9050b3b83a7ca16f69
-    # via sphinx-scrapy
-sphinx-markdown-builder @ git+https://github.com/zytedata/sphinx-markdown-builder.git@bb3121247d5e179df44e97214828f48b80b78238
+sphinx-llm-friendly==0.2.0
     # via sphinx-scrapy
 sphinx-notfound-page==1.1.0
     # via -r requirements.in
@@ -157,7 +154,7 @@ sphinx-rtd-theme==3.1.0
     # via
     #   -r requirements.in
     #   sphinx-rtd-dark-mode
-sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@788b5a281d1e73dcd1e055ffa8021510114cd08b
+sphinx-scrapy==0.10.0
     # via -r requirements.in
 sphinx-sitemap==2.9.0
     # via sphinx-scrapy
@@ -176,7 +173,7 @@ sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 tabulate==0.10.0
-    # via sphinx-markdown-builder
+    # via sphinx-llm-friendly
 tldextract==5.3.1
     # via scrapy
 twisted==25.5.0

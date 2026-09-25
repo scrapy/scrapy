@@ -227,10 +227,9 @@ class Scraper:
         try:
             yield dfd  # fired in _wait_for_processing()
         except Exception:
-            logger.error(
+            logger.exception(
                 "Scraper bug processing %(request)s",
                 {"request": request},
-                exc_info=True,
                 extra={"spider": self.crawler.spider},
             )
         finally:
@@ -262,6 +261,14 @@ class Scraper:
                 self.handle_spider_error(Failure(), request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
+            return
+
+        if result.check(CloseSpider):
+            exc = result.value
+            assert isinstance(exc, CloseSpider)  # typing
+            _schedule_coro(
+                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+            )
             return
 
         try:
@@ -359,7 +366,9 @@ class Scraper:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+                self.crawler.engine.close_spider_async(
+                    reason=exc.reason or "cancelled", error=exc.error
+                )
             )
             return
         logkws = self.logformatter.spider_error(
