@@ -45,6 +45,7 @@ from tests.spiders import (
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
     CrawlSpiderWithAsyncGeneratorCallback,
+    CrawlSpiderWithCallbackException,
     CrawlSpiderWithErrback,
     CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
@@ -64,6 +65,16 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
     from tests.mockserver.http import MockServer
+
+
+class CloseSpiderProcessRequestMiddleware:
+    def process_request(self, request):
+        raise CloseSpider("my_reason")
+
+
+class CloseSpiderProcessResponseMiddleware:
+    def process_response(self, request, response):
+        raise CloseSpider("my_reason")
 
 
 class TestCrawl:
@@ -543,6 +554,19 @@ class TestCrawlSpider:
         assert crawler.stats.get_value("downloader/response_status_count/404") == 1
 
     @coroutine_test
+    async def test_crawlspider_with_callback_exception(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithCallbackException)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        # The link is followed even though parse_start_url() raised, and the
+        # exception is still logged as a spider error.
+        assert "[parse] status 200 (foo: None)" in caplog.text
+        assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
+
+    @coroutine_test
     async def test_crawlspider_process_request_cb_kwargs(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
@@ -1011,3 +1035,22 @@ class TestCrawlSpider:
             await crawler.crawl_async(seed=mockserver.url("/"), callback_func=cb)
         assert "Closing spider (my_reason)" in caplog.text
         assert "Spider error processing" not in caplog.text
+
+    @pytest.mark.parametrize(
+        "middleware",
+        [CloseSpiderProcessRequestMiddleware, CloseSpiderProcessResponseMiddleware],
+    )
+    @coroutine_test
+    async def test_raise_closespider_downloader_middleware(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        middleware: type,
+    ) -> None:
+        crawler = get_crawler(
+            SingleRequestSpider, {"DOWNLOADER_MIDDLEWARES": {middleware: 1}}
+        )
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(seed=mockserver.url("/"))
+        assert "Closing spider (my_reason)" in caplog.text
+        assert "Error downloading" not in caplog.text

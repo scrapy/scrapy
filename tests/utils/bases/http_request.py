@@ -459,14 +459,18 @@ class TestRequestBase(ABC):
             b"Accept-Language": [b"en-US,en;q=0.9,ru;q=0.8,es;q=0.7"],
             b"Upgrade-Insecure-Requests": [b"1"],
             b"User-Agent": [
-                b"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537."
-                b"36 (KHTML, like Gecko) Ubuntu Chromium/62.0.3202"
-                b".75 Chrome/62.0.3202.75 Safari/537.36"
+                (
+                    b"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537."
+                    b"36 (KHTML, like Gecko) Ubuntu Chromium/62.0.3202"
+                    b".75 Chrome/62.0.3202.75 Safari/537.36"
+                )
             ],
             b"Content-Type": [b"application /x-www-form-urlencoded"],
             b"Accept": [
-                b"text/html,application/xhtml+xml,application/xml;q=0."
-                b"9,image/webp,image/apng,*/*;q=0.8"
+                (
+                    b"text/html,application/xhtml+xml,application/xml;q=0."
+                    b"9,image/webp,image/apng,*/*;q=0.8"
+                )
             ],
             b"Cache-Control": [b"max-age=0"],
             b"Referer": [b"http://httpbin.org/forms/post"],

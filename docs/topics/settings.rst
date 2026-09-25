@@ -4,7 +4,7 @@
 Settings
 ========
 
-The Scrapy settings allows you to customize the behaviour of all Scrapy
+The Scrapy settings allow you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
 The infrastructure of the settings provides a global namespace of key-value mappings
@@ -261,6 +261,13 @@ example:
 
 A component can be specified either as a class object or through an import
 path.
+
+A key that cannot be resolved into a component, such as the import path of a
+component that no longer exists, raises an exception, even if its priority is
+:data:`None`.
+
+.. versionchanged:: VERSION
+   Unresolvable keys used to be silently ignored in some cases.
 
 .. warning:: Component priority dictionaries are regular :class:`dict` objects.
     Be careful not to define the same component more than once, e.g. with
@@ -926,7 +933,8 @@ Default:
         "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
         "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
         "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
-        "scrapy.downloadermiddlewares.checksum.ChecksumMiddleware": 560,
+        "scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware": 560,
+        "scrapy.downloadermiddlewares.checksum.ChecksumMiddleware": 570,
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
         "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -941,6 +949,32 @@ orders are closer to the engine, high orders are closer to the downloader. You
 should never modify this setting in your project, modify
 :setting:`DOWNLOADER_MIDDLEWARES` instead.  For more info see
 :ref:`topics-downloader-middleware-setting`.
+
+.. setting:: DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
+
+DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
+-----------------------------------------
+
+.. versionadded:: VERSION
+
+Default: ``False``
+
+Whether an exception raised by the
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method of a downloader middleware is passed to the
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
+method of the downloader middlewares that have not processed the response yet.
+
+Enabling this lets :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`
+retry those exceptions, e.g. a response that cannot be decompressed.
+
+Before enabling it, check that the ``process_exception`` methods of your
+downloader middlewares handle those exceptions as intended. They also get the
+:exc:`~scrapy.exceptions.IgnoreRequest` exceptions that middlewares raise to
+drop a response, so one that returns a request for every exception it gets
+turns such a drop into a new request.
+
+``True`` will become the only supported value in a future version of Scrapy.
 
 .. setting:: DOWNLOADER_STATS
 
@@ -1232,7 +1266,7 @@ response was not properly finished. If ``True``, these responses raise a
 responses are passed through and the flag ``dataloss`` is added to the
 response, i.e.: ``'dataloss' in response.flags`` is ``True``.
 
-Optionally, this can be set per-request basis by using the
+Optionally, this can be set on a per-request basis by using the
 :reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
 
 .. note::
@@ -2187,6 +2221,8 @@ Default:
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+        "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 999,
+        "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy, and
@@ -2231,6 +2267,69 @@ Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
 finishes.
 
 For more info see: :ref:`topics-stats`.
+
+.. setting:: STICKY_META_KEYS
+
+STICKY_META_KEYS
+----------------
+
+Default: ``[]`` (empty list)
+
+The :attr:`Request.meta <scrapy.http.Request.meta>` keys to copy automatically
+from a response into the follow-up requests yielded by its callback, handled by
+:class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware`.
+
+Metadata keys already set on a follow-up request are not overwritten.
+
+For example, the following spider:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(
+                    a,
+                    meta={"start_url": response.meta["start_url"]},
+                )
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
+
+can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+        custom_settings = {
+            "STICKY_META_KEYS": ["start_url"],
+        }
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(a)
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
 
 .. setting:: TELNETCONSOLE_ENABLED
 

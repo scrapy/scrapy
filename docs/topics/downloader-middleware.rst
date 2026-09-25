@@ -118,9 +118,15 @@ defines one or more of these methods:
       halted and the returned request is rescheduled to be downloaded in the future.
       This is the same behavior as if a request is returned from :meth:`process_request`.
 
-      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the errback
-      function of the request (``Request.errback``) is called. If no code handles the raised
-      exception, it is ignored and not logged (unlike other exceptions).
+      If it raises an exception, and the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      the :meth:`process_exception` methods of the downloader middlewares that
+      have not processed the response yet are called.
+
+      If no middleware handles the exception, the errback function of the
+      request (``Request.errback``) is called. If no code handles an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception, it is ignored and not
+      logged, unlike other exceptions.
 
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.Request` object
@@ -133,7 +139,9 @@ defines one or more of these methods:
       Scrapy calls :meth:`process_exception` when a :ref:`download handler
       <topics-download-handlers>` or a :meth:`process_request` (from a
       downloader middleware) raises an exception (including an
-      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception), and, if the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      when a :meth:`process_response` does.
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
@@ -142,9 +150,12 @@ defines one or more of these methods:
       executing any other :meth:`process_exception` methods of installed middleware,
       until no middleware is left and the default exception handling kicks in.
 
-      If it returns a :class:`~scrapy.http.Response` object, the :meth:`process_response`
-      method chain of installed middleware is started, and Scrapy won't bother calling
-      any other :meth:`process_exception` methods of middleware.
+      If it returns a :class:`~scrapy.http.Response` object, the
+      :meth:`process_response` method chain of installed middleware is started,
+      and Scrapy won't bother calling any other :meth:`process_exception`
+      methods of middleware. For an exception from a :meth:`process_response`,
+      that chain resumes at the middlewares that have not processed the
+      response yet.
 
       If it returns a :class:`~scrapy.Request` object, the returned request is
       rescheduled to be downloaded in the future. This stops the execution of
@@ -213,6 +224,41 @@ While the first token response is in transit, ``process_request`` runs for other
 requests as well, and the middleware above downloads a token for each of them.
 Cache the task that downloads the token, and not only its result, to download
 the token only once.
+
+.. _mw-oauth:
+
+Signing requests with OAuth
+===========================
+
+To sign requests, e.g. for two-legged OAuth, compute the signed headers in
+:meth:`process_request` with a third-party OAuth 1 client, such as the one from
+`oauthlib`_:
+
+.. skip: next
+
+.. code-block:: python
+
+    from oauthlib.oauth1 import Client
+
+
+    class OAuthMiddleware:
+        def __init__(self, client):
+            self.client = client
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            settings = crawler.settings
+            client = Client(
+                settings["OAUTH_CONSUMER_KEY"],
+                client_secret=settings["OAUTH_CONSUMER_SECRET"],
+            )
+            return cls(client)
+
+        def process_request(self, request):
+            _, headers, _ = self.client.sign(request.url, http_method=request.method)
+            request.headers["Authorization"] = headers["Authorization"]
+
+.. _oauthlib: https://oauthlib.readthedocs.io/
 
 .. _topics-downloader-middleware-ref:
 
@@ -643,6 +689,11 @@ Default: ``[]``
 
 Don't cache response with these HTTP codes.
 
+If you also retry requests (see :setting:`RETRY_HTTP_CODES`), add those
+same status codes here. Otherwise, a response that gets retried may also
+get cached, and further retries of that request could be served that
+cached response instead of reaching the server again.
+
 .. setting:: HTTPCACHE_IGNORE_MISSING
 
 HTTPCACHE_IGNORE_MISSING
@@ -832,6 +883,11 @@ HTTPPROXY_AUTH_ENCODING
 Default: ``"latin-1"``
 
 The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
+
+JsonValidationMiddleware
+------------------------
+
+.. autoclass:: scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware
 
 OffsiteMiddleware
 -----------------
@@ -1091,6 +1147,10 @@ In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
 
+If you also cache responses (see :setting:`HTTPCACHE_ENABLED`), see
+:setting:`HTTPCACHE_IGNORE_HTTP_CODES` to keep retried responses out of the
+cache.
+
 .. setting:: RETRY_EXCEPTIONS
 
 RETRY_EXCEPTIONS
@@ -1100,10 +1160,12 @@ Default::
 
     [
         'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DecompressionError',
         'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadFailedError',
         'scrapy.exceptions.DownloadTimeoutError',
         'scrapy.exceptions.ResponseDataLossError',
+        'json.JSONDecodeError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',

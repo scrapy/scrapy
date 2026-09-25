@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Concatenate, Generic, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall, deferLater
@@ -147,7 +147,7 @@ async def _parallel_asyncio(
     await asyncio.wait([fill_task, *work_tasks])
 
 
-class AsyncioLoopingCall:
+class AsyncioLoopingCall(Generic[_P, _T]):
     """A simple implementation of a periodic call using asyncio, keeping
     some API and behavior compatibility with
     :class:`~twisted.internet.task.LoopingCall`.
@@ -233,7 +233,7 @@ class AsyncioLoopingCall:
 
 def create_looping_call(
     func: Callable[_P, _T], *args: _P.args, **kwargs: _P.kwargs
-) -> AsyncioLoopingCall | LoopingCall:
+) -> AsyncioLoopingCall[_P, _T] | LoopingCall:
     """Create an instance of a looping call class.
 
     This creates an instance of

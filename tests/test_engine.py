@@ -13,7 +13,7 @@ from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.downloader import Downloader
-from scrapy.core.engine import ExecutionEngine, _Slot
+from scrapy.core.engine import ExecutionEngine, _EngineState, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import (
     CloseSpider,
@@ -76,6 +76,11 @@ class ChangeCloseReasonSpider(MySpider):
         raise CloseSpider(reason="custom_reason")
 
 
+class ErrorCloseReasonSpider(ChangeCloseReasonSpider):
+    def spider_idle(self):
+        raise CloseSpider(reason="custom_reason", error=True)
+
+
 class TestEngine(TestEngineBase):
     @coroutine_test
     async def test_crawler(self, mockserver: MockServer) -> None:
@@ -117,7 +122,21 @@ class TestEngine(TestEngineBase):
         assert {
             "spider": run.crawler.spider,
             "reason": "custom_reason",
+            "error": False,
         } == run.signals_caught[signals.spider_closed]
+
+    @coroutine_test
+    async def test_crawler_change_close_reason_and_error_on_idle(
+        self, mockserver: MockServer
+    ) -> None:
+        run = CrawlerRun(ErrorCloseReasonSpider)
+        await run.run(mockserver)
+        assert {
+            "spider": run.crawler.spider,
+            "reason": "custom_reason",
+            "error": True,
+        } == run.signals_caught[signals.spider_closed]
+        assert run.crawler.stats.get_value("finish_reason_error") is True
 
     @coroutine_test
     async def test_close_downloader(self):
@@ -167,7 +186,7 @@ class TestEngine(TestEngineBase):
     async def test_stop_async_reentrant_fast_waits_for_closewait(self) -> None:
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
         engine.spider = Mock()
-        engine._stopping = True
+        engine._state = _EngineState.STOPPING
         engine._closewait = defer.Deferred()
 
         with patch.object(
@@ -187,7 +206,7 @@ class TestEngine(TestEngineBase):
         self,
     ) -> None:
         engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        engine._stopping = True
+        engine._state = _EngineState.STOPPING
 
         with patch.object(
             engine, "close_spider_async", new_callable=AsyncMock
@@ -414,6 +433,49 @@ class TestMisuse:
                 await engine.open_spider_async()
         finally:
             await engine.close_async()
+
+
+class BrokenScheduler(BaseScheduler):
+    """A scheduler that cannot be built."""
+
+    @classmethod
+    def from_crawler(cls, crawler: Any) -> BrokenScheduler:
+        raise ValueError("broken scheduler")
+
+    def has_pending_requests(self) -> bool:
+        return False
+
+    def enqueue_request(self, request: Request) -> bool:
+        return True
+
+    def next_request(self) -> Request | None:
+        return None
+
+
+@coroutine_test
+async def test_scheduler_creation_error() -> None:
+    """An error while building the scheduler is reported directly, instead of
+    other errors such as "Engine slot not assigned"."""
+    crawler = get_crawler(DefaultSpider, {"SCHEDULER": BrokenScheduler})
+    with pytest.raises(ValueError, match="broken scheduler"):
+        await crawler.crawl_async()
+    assert crawler.engine is not None
+    assert crawler.engine.spider is None
+
+
+@coroutine_test
+async def test_stop_without_spider_closes_downloader(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    crawler = get_crawler(DefaultSpider)
+    engine = crawler.engine = ExecutionEngine(crawler, lambda _: None)
+    engine.downloader.close = Mock(wraps=engine.downloader.close)  # type: ignore[method-assign]
+    with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
+        await engine.start_async()
+    # Starting without a spider is not part of the engine lifecycle.
+    assert "Invalid engine state transition: CREATED → STARTING" in caplog.text
+    await engine.stop_async()
+    engine.downloader.close.assert_called_once()
 
 
 @coroutine_test
