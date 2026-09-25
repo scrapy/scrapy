@@ -860,6 +860,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`body_file`
 * :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
 * :reqmeta:`depth`
@@ -941,6 +942,36 @@ This meta key is not supported by
 :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
 :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
 the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
+
+.. reqmeta:: body_file
+
+body_file
+---------
+
+.. versionadded:: VERSION
+
+File where the body of the response is written as it is downloaded, leaving the
+response with an empty body:
+
+.. code-block:: python
+
+    Request("https://example.org/big.zip", meta={"body_file": "big.zip"})
+
+Use it to download files of any size without having to fit them in memory.
+
+The value can be a path, which Scrapy opens for writing and closes once the
+response is downloaded, or an open, writable binary file object, which Scrapy
+writes to and leaves open. Prefer a path for requests that may be retried or
+redirected, since each attempt then starts the file over.
+
+The :ref:`compression middleware <http-compression>` does not ask for a
+compressed response for these requests, so that what reaches the file is the
+response body itself.
+
+If the download fails, e.g. because the response exceeds
+:setting:`DOWNLOAD_MAXSIZE`, the file may hold part of the body.
+
+Only the built-in HTTP download handlers support this key.
 
 .. reqmeta:: download_timeout
 
