@@ -30,6 +30,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
+from scrapy.http.request import _active_crawler_scope
 from scrapy.utils._stopmode import _max_stop_mode, _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -381,40 +382,42 @@ class ExecutionEngine:
         pipelines.
         """
         assert self._start is not None
-        try:
-            item_or_request = await anext(self._start)
-        except StopAsyncIteration:
-            self._start = None
-        except CloseSpider as exception:
-            self._start = None
-            _schedule_coro(
-                self.close_spider_async(
-                    reason=exception.reason or "cancelled", error=exception.error
+        # Lets Request.__await__() find this crawler while Spider.start() runs.
+        with _active_crawler_scope(self.crawler):
+            try:
+                item_or_request = await anext(self._start)
+            except StopAsyncIteration:
+                self._start = None
+            except CloseSpider as exception:
+                self._start = None
+                _schedule_coro(
+                    self.close_spider_async(
+                        reason=exception.reason or "cancelled", error=exception.error
+                    )
                 )
-            )
-        except Exception as exception:
-            self._start = None
-            self._start_error = True
-            logger.exception("Error while reading start items and requests")
-            self.signals.send_catch_log(
-                signal=signals.spider_error,
-                failure=Failure(),
-                response=None,
-                spider=self.spider,
-            )
-            self.crawler.stats.inc_value("spider_exceptions/count")
-            self.crawler.stats.inc_value(
-                f"spider_exceptions/{type(exception).__name__}"
-            )
-        else:
-            if not self.spider:
-                return  # spider already closed
-            if isinstance(item_or_request, Request):
-                self.crawl(item_or_request)
+            except Exception as exception:
+                self._start = None
+                self._start_error = True
+                logger.exception("Error while reading start items and requests")
+                self.signals.send_catch_log(
+                    signal=signals.spider_error,
+                    failure=Failure(),
+                    response=None,
+                    spider=self.spider,
+                )
+                self.crawler.stats.inc_value("spider_exceptions/count")
+                self.crawler.stats.inc_value(
+                    f"spider_exceptions/{type(exception).__name__}"
+                )
             else:
-                assert self._slot is not None
-                self.scraper._start_itemproc_nowait(item_or_request)
-                self._slot.nextcall.schedule()
+                if not self.spider:
+                    return  # spider already closed
+                if isinstance(item_or_request, Request):
+                    self.crawl(item_or_request)
+                else:
+                    assert self._slot is not None
+                    self.scraper._start_itemproc_nowait(item_or_request)
+                    self._slot.nextcall.schedule()
 
     async def _start_request_processing(self) -> None:
         """Starts consuming Spider.start() output and sending scheduled
@@ -587,9 +590,12 @@ class ExecutionEngine:
     async def download_async(self, request: Request) -> Response:
         """Return a coroutine which fires with a Response as result.
 
-         Only downloader middlewares are applied.
-
         .. versionadded:: 2.14
+
+        Only downloader middlewares are applied.
+
+        For a request that you build yourself, prefer :ref:`awaiting it
+        <inline-requests>`.
         """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
@@ -613,33 +619,39 @@ class ExecutionEngine:
         assert self.spider is not None
 
         self._slot.add_request(request)
-        try:
-            result: Response | Request
-            if self._downloader_fetch_needs_spider:
-                result = yield self.downloader.fetch(request, self.spider)
-            else:
-                result = yield self.downloader.fetch(request)
-            if not isinstance(result, (Response, Request)):
-                raise TypeError(
-                    f"Incorrect type: expected Response or Request, got {type(result)}: {result!r}"
-                )
-            if isinstance(result, Response):
-                if result.request is None:
-                    result.request = request
-                logkws = self.logformatter.crawled(result.request, result, self.spider)
-                if logkws is not None:
-                    logger.log(
-                        *logformatter_adapter(logkws), extra={"spider": self.spider}
+        # Lets Request.__await__() find this crawler while the downloader
+        # middlewares run.
+        with _active_crawler_scope(self.crawler):
+            try:
+                result: Response | Request
+                if self._downloader_fetch_needs_spider:
+                    result = yield self.downloader.fetch(request, self.spider)
+                else:
+                    result = yield self.downloader.fetch(request)
+                if not isinstance(result, (Response, Request)):
+                    raise TypeError(
+                        f"Incorrect type: expected Response or Request, got {type(result)}: {result!r}"
                     )
-                self.signals.send_catch_log(
-                    signal=signals.response_received,
-                    response=result,
-                    request=result.request,
-                    spider=self.spider,
-                )
-            return result
-        finally:
-            self._slot.nextcall.schedule()
+                if isinstance(result, Response):
+                    if result.request is None:
+                        result.request = request
+                    logkws = self.logformatter.crawled(
+                        result.request, result, self.spider
+                    )
+                    if logkws is not None:
+                        logger.log(
+                            *logformatter_adapter(logkws),
+                            extra={"spider": self.spider},
+                        )
+                    self.signals.send_catch_log(
+                        signal=signals.response_received,
+                        response=result,
+                        request=result.request,
+                        spider=self.spider,
+                    )
+                return result
+            finally:
+                self._slot.nextcall.schedule()
 
     def open_spider(
         self, spider: Spider, close_if_idle: bool = True

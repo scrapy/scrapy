@@ -195,7 +195,6 @@ item.
 
     import scrapy
     from itemadapter import ItemAdapter
-    from scrapy.http.request import NO_CALLBACK
 
 
     class ScreenshotPipeline:
@@ -204,19 +203,11 @@ item.
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
-        def __init__(self, crawler):
-            self.crawler = crawler
-
-        @classmethod
-        def from_crawler(cls, crawler):
-            return cls(crawler)
-
         async def process_item(self, item):
             adapter = ItemAdapter(item)
             encoded_item_url = quote(adapter["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
-            request = scrapy.Request(screenshot_url, callback=NO_CALLBACK)
-            response = await self.crawler.engine.download_async(request)
+            response = await scrapy.Request(screenshot_url)
 
             if response.status != 200:
                 # An error occurred, so return the item.

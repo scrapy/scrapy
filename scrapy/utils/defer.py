@@ -5,6 +5,7 @@ Helper functions for dealing with Twisted deferreds
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import inspect
 import sys
 import warnings
@@ -28,6 +29,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http.request import Request
 from scrapy.utils.asyncio import is_asyncio_available, sleep
 from scrapy.utils.python import global_object_name
 
@@ -35,6 +37,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from twisted.python.failure import Failure
+
+    # typing.TypeIs requires Python 3.13
+    from typing_extensions import TypeIs
 
 
 _T = TypeVar("_T")
@@ -191,7 +196,12 @@ def parallel(
     Taken from: https://jcalderone.livejournal.com/24285.html
     """
     coop = Cooperator()
-    work: Iterator[_T2] = (callable(elem, *args, **named) for elem in iterable)
+    # Cooperator ticks are scheduled through the reactor, which does not
+    # preserve contextvars, so each call is run in the context captured here.
+    context = contextvars.copy_context()
+    work: Iterator[_T2] = (
+        context.run(callable, elem, *args, **named) for elem in iterable
+    )
     return DeferredList([coop.coiterate(work) for _ in range(count)])
 
 
@@ -255,14 +265,18 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         self.finished: bool = False
         self.waiting_deferreds: deque[Deferred[Any]] = deque()
         self.anext_deferred: Deferred[_T] | None = None
+        # Cooperator ticks are scheduled through the reactor, which does not
+        # preserve contextvars, so both anext() and the callable run in the
+        # context captured here.
+        self._context: contextvars.Context = contextvars.copy_context()
 
     def _callback(self, result: _T) -> None:
         # This gets called when the result from aiterator.__anext__() is available.
         # It calls the callable on it and sends the result to the oldest waiting Deferred
         # (by chaining if the result is a Deferred too or by firing if not).
         self.anext_deferred = None
-        callable_result = self.callable(
-            result, *self.callable_args, **self.callable_kwargs
+        callable_result = self._context.run(
+            self.callable, result, *self.callable_args, **self.callable_kwargs
         )
         d = self.waiting_deferreds.popleft()
         if isinstance(callable_result, Deferred):
@@ -284,7 +298,9 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(anext(self.aiterator))
+        self.anext_deferred = self._context.run(
+            deferred_from_coro, anext(self.aiterator)
+        )
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred[Any]:
@@ -402,6 +418,15 @@ async def aiter_errback(
             errback(failure.Failure(), *a, **kw)
 
 
+def _is_awaitable(o: Any) -> TypeIs[Awaitable[Any]]:
+    """Return ``True`` if *o* is meant to be awaited.
+
+    Request objects support ``await`` to send them, but one returned by a
+    callable is a value to process, not something to await.
+    """
+    return inspect.isawaitable(o) and not isinstance(o, Request)
+
+
 @overload
 def deferred_from_coro(o: Awaitable[_T]) -> Deferred[_T]: ...
 
@@ -415,7 +440,7 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
     or return the object as is if it isn't a coroutine."""
     if isinstance(o, Deferred):
         return o
-    if inspect.isawaitable(o):
+    if _is_awaitable(o):
         if not is_asyncio_available():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
@@ -594,7 +619,7 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
                 stacklevel=2,
             )
         return maybe_deferred_to_future(o)
-    if inspect.isawaitable(o):
+    if _is_awaitable(o):
         return o
 
     async def coro() -> _T:

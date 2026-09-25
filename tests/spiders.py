@@ -330,6 +330,62 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
         yield {"index2": response.meta["index"]}
 
 
+class AwaitRequestSpider(SimpleSpider):
+    name = "await_request"
+
+    async def parse(self, response: Response) -> AsyncIterator[Any]:
+        assert self.mockserver
+        additional_response = await Request(self.mockserver.url("/status?n=200"))
+        yield {"status": additional_response.status}
+
+
+class AwaitRequestInStartSpider(MetaSpider):
+    name = "await_request_in_start"
+
+    async def start(self) -> AsyncIterator[Any]:
+        assert self.mockserver
+        response = await Request(self.mockserver.url("/status?n=200"))
+        yield {"status": response.status}
+
+
+class AwaitRequestDownloaderMiddleware:
+    async def process_request(self, request: Request) -> None:
+        if request.meta.get("probe"):
+            return
+        probe_response = await Request(request.url, meta={"probe": True})
+        request.meta["probed_status"] = probe_response.status
+
+
+class AwaitRequestInDownloaderMiddlewareSpider(SimpleSpider):
+    name = "await_request_in_downloader_middleware"
+
+    def parse(self, response: Response) -> Any:
+        yield {"probed_status": response.meta.get("probed_status")}
+
+
+class AwaitRequestItemPipeline:
+    async def process_item(self, item: Any) -> Any:
+        response = await Request(item["url"])
+        return {"status": response.status}
+
+
+class AwaitRequestInItemPipelineSpider(SimpleSpider):
+    name = "await_request_in_item_pipeline"
+
+    def parse(self, response: Response) -> Any:
+        assert self.mockserver
+        for status in (200, 201, 202):
+            yield {"url": self.mockserver.url(f"/status?n={status}")}
+
+
+class AsyncAwaitRequestInItemPipelineSpider(AwaitRequestInItemPipelineSpider):
+    name = "async_await_request_in_item_pipeline"
+
+    async def parse(self, response: Response) -> AsyncIterator[Any]:
+        for item in super().parse(response):
+            yield item
+
+
 class ItemSpider(FollowAllSpider):
     name = "item"
 
@@ -514,6 +570,22 @@ class CrawlSpiderWithAsyncCallback(CrawlSpiderWithParseMethod):
         return Request(
             self.mockserver.url("/status?n=202"),
             self.parse_async,
+            cb_kwargs={"foo": "bar"},
+        )
+
+
+class CrawlSpiderWithSyncRequestCallback(CrawlSpiderWithParseMethod):
+    """A CrawlSpider whose sync callback returns a single Request directly"""
+
+    name = "crawl_spider_with_sync_request_callback"
+    rules = (Rule(LinkExtractor(), callback="parse_sync", follow=True),)
+
+    def parse_sync(self, response: Response, foo: str | None = None) -> Request:
+        self.logger.info("[parse_sync] status %i (foo: %s)", response.status, foo)
+        assert self.mockserver
+        return Request(
+            self.mockserver.url("/status?n=202"),
+            self.parse_sync,
             cb_kwargs={"foo": "bar"},
         )
 

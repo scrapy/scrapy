@@ -21,6 +21,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
+from scrapy.http.request import _active_crawler_scope
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
@@ -250,47 +251,52 @@ class Scraper:
                 f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}"
             )
 
-        output: Iterable[Any] | AsyncIterator[Any]
-        if isinstance(result, Response):
-            try:
-                # call the spider middlewares and the request callback with the response
-                output = await self.spidermw.scrape_response_async(
-                    self.call_spider_async, result, request
+        # Lets Request.__await__() find this crawler for as long as the
+        # callback, its spider middlewares and its item pipelines run.
+        with _active_crawler_scope(self.crawler):
+            output: Iterable[Any] | AsyncIterator[Any]
+            if isinstance(result, Response):
+                try:
+                    # call the spider middlewares and the request callback with the response
+                    output = await self.spidermw.scrape_response_async(
+                        self.call_spider_async, result, request
+                    )
+                except Exception:
+                    self.handle_spider_error(Failure(), request, result)
+                else:
+                    await self.handle_spider_output_async(output, request, result)
+                return
+
+            if result.check(CloseSpider):
+                exc = result.value
+                assert isinstance(exc, CloseSpider)  # typing
+                _schedule_coro(
+                    self.crawler.engine.close_spider_async(
+                        reason=exc.reason or "cancelled"
+                    )
                 )
-            except Exception:
-                self.handle_spider_error(Failure(), request, result)
+                return
+
+            try:
+                # call the request errback with the downloader error
+                output = await self.call_spider_async(result, request)
+            except Exception as spider_exc:
+                # the errback didn't silence the exception
+                assert self.crawler.spider
+                if not result.check(IgnoreRequest):
+                    logkws = self.logformatter.download_error(
+                        result, request, self.crawler.spider
+                    )
+                    logger.log(
+                        *logformatter_adapter(logkws),
+                        extra={"spider": self.crawler.spider},
+                        exc_info=failure_to_exc_info(result),
+                    )
+                if spider_exc is not result.value:
+                    # the errback raised a different exception, handle it
+                    self.handle_spider_error(Failure(), request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
-            return
-
-        if result.check(CloseSpider):
-            exc = result.value
-            assert isinstance(exc, CloseSpider)  # typing
-            _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
-            )
-            return
-
-        try:
-            # call the request errback with the downloader error
-            output = await self.call_spider_async(result, request)
-        except Exception as spider_exc:
-            # the errback didn't silence the exception
-            assert self.crawler.spider
-            if not result.check(IgnoreRequest):
-                logkws = self.logformatter.download_error(
-                    result, request, self.crawler.spider
-                )
-                logger.log(
-                    *logformatter_adapter(logkws),
-                    extra={"spider": self.crawler.spider},
-                    exc_info=failure_to_exc_info(result),
-                )
-            if spider_exc is not result.value:
-                # the errback raised a different exception, handle it
-                self.handle_spider_error(Failure(), request, result)
-        else:
-            await self.handle_spider_output_async(output, request, result)
 
     async def _wait_for_processing(
         self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]

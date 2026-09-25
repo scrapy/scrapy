@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import random
 from typing import TYPE_CHECKING, Any
 from unittest import mock
@@ -16,6 +17,7 @@ from scrapy.utils.asyncio import (
     is_asyncio_available,
     sleep,
 )
+from scrapy.utils.defer import maybe_deferred_to_future
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -26,6 +28,19 @@ if TYPE_CHECKING:
 async def test_is_asyncio_available(reactor_pytest: str) -> None:
     # the result should depend only on the pytest --reactor argument
     assert is_asyncio_available() == (reactor_pytest != "default")
+
+
+_context_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "_context_var", default=None
+)
+
+
+@coroutine_test
+async def test_call_later_preserves_context() -> None:
+    _context_var.set("hello")
+    d: Deferred[str | None] = Deferred()
+    call_later(0.05, lambda: d.callback(_context_var.get()))
+    assert await maybe_deferred_to_future(d) == "hello"
 
 
 @coroutine_test

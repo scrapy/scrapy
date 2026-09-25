@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import logging
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
@@ -265,7 +266,12 @@ def call_later(
 
     from twisted.internet import reactor
 
-    return CallLaterResult.from_twisted(reactor.callLater(delay, func, *args))
+    # Unlike loop.call_later(), reactor.callLater() does not preserve the
+    # current contextvars.Context, so it is copied and restored explicitly.
+    context = contextvars.copy_context()
+    return CallLaterResult.from_twisted(
+        reactor.callLater(delay, context.run, func, *args)
+    )
 
 
 class CallLaterResult:
