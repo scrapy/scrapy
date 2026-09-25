@@ -73,6 +73,7 @@ __all__ = [
     "DOWNLOAD_FAIL_ON_DATALOSS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
+    "DOWNLOAD_HANDLERS_BY_NAME",
     "DOWNLOAD_MAXSIZE",
     "DOWNLOAD_SLOTS",
     "DOWNLOAD_TIMEOUT",
@@ -306,6 +307,7 @@ DOWNLOAD_HANDLERS_BASE = {
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
+DOWNLOAD_HANDLERS_BY_NAME: dict[str, str] = {}
 
 DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024  # 1024m
 DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
