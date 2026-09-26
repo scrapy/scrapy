@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+from urllib.parse import urlencode
 
 import pytest
 from twisted.internet.error import ConnectError, ConnectionDone, ConnectionLost
 
+from scrapy.core.scheduler import Scheduler
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadConnectionRefusedError,
     DownloadTimeoutError,
     IgnoreRequest,
+    ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
 from scrapy.settings.default_settings import RETRY_EXCEPTIONS
@@ -19,6 +22,12 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from tests.mockserver.http import MockServer
 
 
 class TestRetry:
@@ -308,7 +317,7 @@ class TestGetRetryRequest:
             )
         assert isinstance(new_request, Request)
         assert new_request != request
-        assert new_request.dont_filter
+        assert new_request.meta["skip_dupefilter_once"] is True
         expected_retry_times = 1
         assert new_request.meta["retry_times"] == expected_retry_times
         assert new_request.priority == -1
@@ -358,7 +367,7 @@ class TestGetRetryRequest:
             )
         assert isinstance(new_request, Request)
         assert new_request != request
-        assert new_request.dont_filter
+        assert new_request.meta["skip_dupefilter_once"] is True
         expected_retry_times = 1
         assert new_request.meta["retry_times"] == expected_retry_times
         assert new_request.priority == -1
@@ -392,7 +401,7 @@ class TestGetRetryRequest:
                 )
             assert isinstance(new_request, Request)
             assert new_request != request
-            assert new_request.dont_filter
+            assert new_request.meta["skip_dupefilter_once"] is True
             expected_retry_times = index + 1
             assert new_request.meta["retry_times"] == expected_retry_times
             assert new_request.priority == -expected_retry_times
@@ -751,3 +760,67 @@ class TestGetRetryRequest:
             f"{stats_key}/reason_count/{expected_reason}",
         ):
             assert spider.crawler.stats.get_value(stat) == 1
+
+
+class _RetryThenRedirectSpider(Spider):
+    """Retries two requests whose retries redirect to an already-seen URL."""
+
+    name = "retry_then_redirect"
+    mockserver: MockServer
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.seen_parsed = 0
+
+    async def start(self) -> AsyncIterator[Any]:
+        seen = self.mockserver.url("/status?n=200")
+        yield Request(seen)
+        for n in range(2):
+            url = self.mockserver.url(
+                "/redirect-to?" + urlencode({"goto": seen, "n": n})
+            )
+            yield Request(
+                url, meta={"dont_redirect": True, "handle_httpstatus_list": [302]}
+            )
+
+    def parse(self, response: Response) -> Request | None:
+        if response.status == 200:
+            self.seen_parsed += 1
+            return None
+        assert response.request is not None
+        request = get_retry_request(response.request, spider=self)
+        assert request is not None
+        del request.meta["dont_redirect"]
+        del request.meta["handle_httpstatus_list"]
+        return request
+
+
+class _LegacyScheduler(Scheduler):
+    supports_skip_dupefilter_once = False
+
+
+@coroutine_test
+async def test_retry_redirect_dupefilter(mockserver: MockServer) -> None:
+    crawler = get_crawler(_RetryThenRedirectSpider)
+    await crawler.crawl_async(mockserver=mockserver)
+    assert crawler.spider is not None
+    assert cast("_RetryThenRedirectSpider", crawler.spider).seen_parsed == 1
+    assert crawler.stats is not None
+    assert crawler.stats.get_value("dupefilter/filtered") == 2
+
+
+@coroutine_test
+async def test_retry_redirect_dupefilter_legacy_scheduler(
+    mockserver: MockServer,
+) -> None:
+    crawler = get_crawler(
+        _RetryThenRedirectSpider,
+        {"SCHEDULER": f"{__name__}._LegacyScheduler"},
+    )
+    with pytest.warns(
+        ScrapyDeprecationWarning, match="supports_skip_dupefilter_once"
+    ) as record:
+        await crawler.crawl_async(mockserver=mockserver)
+    assert sum("supports_skip_dupefilter_once" in str(w.message) for w in record) == 1
+    assert crawler.spider is not None
+    assert cast("_RetryThenRedirectSpider", crawler.spider).seen_parsed == 3

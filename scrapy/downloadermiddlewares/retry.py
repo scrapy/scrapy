@@ -108,7 +108,7 @@ def get_retry_request(
         )
         new_request: Request = request.copy()
         new_request.meta["retry_times"] = retry_times
-        new_request.dont_filter = True
+        new_request.meta["skip_dupefilter_once"] = True
         if priority_adjust is None:
             priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
         new_request.priority = request.priority + priority_adjust
