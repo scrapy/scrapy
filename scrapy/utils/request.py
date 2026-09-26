@@ -175,7 +175,10 @@ def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Req
         kwargs["callback"] = _get_method(spider, d["callback"])
     if d.get("errback") and spider:
         kwargs["errback"] = _get_method(spider, d["errback"])
-    return request_cls(**kwargs)
+    request = request_cls(**kwargs)
+    if "id" in d:
+        request._id = d["id"]
+    return request
 
 
 def _get_method(obj: Any, name: object) -> Any:

@@ -306,6 +306,7 @@ class Response(object_ref):
             errback=errback,
             cb_kwargs=cb_kwargs,
             flags=flags,
+            parent_id=self.request.id if self.request else None,
         )
 
     def follow_all(

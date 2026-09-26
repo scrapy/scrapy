@@ -43,6 +43,8 @@ def _assert_same_request(r1: Request, r2: Request) -> None:
     assert r1.priority == r2.priority
     assert r1.dont_filter == r2.dont_filter
     assert r1.flags == r2.flags
+    assert r1.id == r2.id
+    assert r1.parent_id == r2.parent_id
     if isinstance(r1, JsonRequest):
         assert isinstance(r2, JsonRequest)
         assert r1.dumps_kwargs == r2.dumps_kwargs
@@ -51,6 +53,13 @@ def _assert_same_request(r1: Request, r2: Request) -> None:
 def test_basic() -> None:
     r = Request("http://www.example.com")
     _assert_serializes_ok(r)
+
+
+def test_no_id() -> None:
+    r = Request("http://www.example.com")
+    d = r.to_dict()
+    del d["id"]
+    assert request_from_dict(d).id != r.id
 
 
 def test_all_attributes(spider: MethodsSpider) -> None:
@@ -67,6 +76,7 @@ def test_all_attributes(spider: MethodsSpider) -> None:
         meta={"a": "b"},
         cb_kwargs={"k": "v"},
         flags=["testFlag"],
+        parent_id=1,
     )
     _assert_serializes_ok(r, spider=spider)
 

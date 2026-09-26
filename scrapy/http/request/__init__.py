@@ -8,6 +8,9 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import inspect
+import itertools
+import secrets
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -57,6 +60,12 @@ CookiesT: TypeAlias = (
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
+# Request IDs are unique across processes: process start time in milliseconds,
+# 48 random bits, and a 40-bit per-process counter.
+_request_ids = itertools.count(
+    (time.time_ns() // 1_000_000 << 88) | (secrets.randbits(48) << 40)
+)
+
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
     """When assigned to the ``callback`` parameter of
@@ -84,7 +93,40 @@ def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
 
 class Request(object_ref):
     """Represents an HTTP request, which is usually generated in a Spider and
-    executed by the Downloader, thus generating a :class:`~scrapy.http.Response`.
+    executed by the Downloader, thus generating a
+    :class:`~scrapy.http.Response`.
+
+    *url* is the URL of the request. If it is invalid, :exc:`ValueError` is
+    raised.
+
+    *method* is the HTTP method of the request.
+
+    *headers* are the request headers. Header values can be strings, for
+    single-valued headers, or lists, for multi-valued headers. Headers with a
+    ``None`` value are not sent.
+
+    .. caution:: The :ref:`cookie middleware <cookies>` ignores cookies set
+        through the ``Cookie`` header. Use *cookies* instead.
+
+    *body* is the request body. A string body is encoded with *encoding*.
+
+    *cookies* are the request cookies, as a dict of cookie names and values or
+    as a list of dicts with a cookie each. See :ref:`cookies`.
+
+    *encoding* is used to percent-encode *url*, unless the
+    :reqmeta:`verbatim_url` request meta key is set, and to encode *body* if it
+    is a string.
+
+    *flags* is a list of labels for the request, which are included in log
+    messages about it.
+
+    *meta* and *cb_kwargs* are shallow copied into :attr:`meta` and
+    :attr:`cb_kwargs`.
+
+    *callback*, *errback*, *priority*, *dont_filter* and *parent_id* set the
+    attributes of the same name. Set *parent_id* when building a request on
+    behalf of another request, e.g. in a downloader middleware:
+    ``Request(url, parent_id=request.id)``.
     """
 
     __attrs_and_slots = ("callback", "dont_filter", "errback", "method", "priority")
@@ -97,6 +139,7 @@ class Request(object_ref):
         "encoding",
         "flags",
         "cb_kwargs",
+        "parent_id",
         *__attrs_and_slots,
     )
     """A tuple of :class:`str` objects containing the name of all public
@@ -115,8 +158,10 @@ class Request(object_ref):
         "_encoding",
         "_flags",
         "_headers",
+        "_id",
         "_meta",
         "_url",
+        "parent_id",
         *__attrs_and_slots,
     )
     del __attrs_and_slots
@@ -139,7 +184,9 @@ class Request(object_ref):
         errback: Callable[[Failure], Any] | None = None,
         flags: list[str] | None = None,
         cb_kwargs: dict[str, Any] | None = None,
+        parent_id: int | None = None,
     ) -> None:
+        self._id: int = next(_request_ids)
         self._encoding: str = encoding  # this one has to be set first
         self.method: str = str(method).upper()
         self._meta: dict[str, Any] | None = dict(meta) if meta else None
@@ -239,6 +286,26 @@ class Request(object_ref):
 
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
         self._flags: list[str] | None = list(flags) if flags else None
+
+        self.parent_id: int | None = parent_id
+        """:attr:`id` of the request this request derives from, or ``None``.
+
+        Unless set explicitly, Scrapy sets it to the :attr:`id` of:
+
+        -   The original request, for requests created with :meth:`replace`
+            or :meth:`copy`, e.g. redirects and retries.
+
+        -   The request of the response, for requests created with
+            :meth:`Response.follow() <scrapy.http.Response.follow>` or
+            :meth:`~scrapy.http.Response.follow_all`.
+
+        -   The request whose callback or errback yielded the request.
+        """
+
+    @property
+    def id(self) -> int:
+        """Unique identifier of this request."""
+        return self._id
 
     @property
     def cb_kwargs(self) -> dict[str, Any]:
@@ -344,7 +411,18 @@ class Request(object_ref):
     def replace(
         self, *args: Any, cls: type[Request] | None = None, **kwargs: Any
     ) -> Request:
-        """Create a new Request with the same attributes except for those given new values"""
+        """Return a new request with the same attributes as this one, except
+        for those given new values as keyword arguments named after
+        :attr:`attributes`.
+
+        :attr:`cb_kwargs` and :attr:`meta` are :doc:`shallow copied
+        <library/copy>` unless given new values. The new request gets a new
+        :attr:`id`, and :attr:`parent_id` defaults to the :attr:`id` of this
+        request. *cls* sets the class of the new request.
+
+        See also :ref:`callback-data`.
+        """
+        kwargs.setdefault("parent_id", self.id)
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
         if cls is None:
@@ -424,6 +502,7 @@ class Request(object_ref):
                 else self.errback
             ),
             "headers": dict(self.headers),
+            "id": self.id,
         }
         for attr in self.attributes:
             d.setdefault(attr, getattr(self, attr))
