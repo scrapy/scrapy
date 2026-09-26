@@ -55,6 +55,13 @@ def test_basic() -> None:
     _assert_serializes_ok(r)
 
 
+def test_no_id() -> None:
+    r = Request("http://www.example.com")
+    d = r.to_dict()
+    del d["id"]
+    assert request_from_dict(d).id != r.id
+
+
 def test_all_attributes(spider: MethodsSpider) -> None:
     r = Request(
         url="http://www.example.com",
