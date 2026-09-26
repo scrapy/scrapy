@@ -6,7 +6,7 @@ import random
 import re
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -635,11 +635,11 @@ class TestFilesPipelineFieldsDataClass(TestFilesPipelineFieldsMixin):
 class FilesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    file_urls: list[str] = attr.ib(default=list)
-    files: list[dict[str, str]] = attr.ib(default=list)
+    file_urls: list[str] = attr.ib(factory=list)
+    files: list[dict[str, str]] = attr.ib(factory=list)
     # overridden fields
-    custom_file_urls: list[str] = attr.ib(default=list)
-    custom_files: list[dict[str, str]] = attr.ib(default=list)
+    custom_file_urls: list[str] = attr.ib(factory=list)
+    custom_files: list[dict[str, str]] = attr.ib(factory=list)
 
 
 class TestFilesPipelineFieldsAttrsItem(TestFilesPipelineFieldsMixin):
@@ -953,7 +953,8 @@ class TestS3FilesStore:
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
         checksum = "3187896a9657a28163abb31667df64c8"
-        last_modified = datetime(2019, 12, 1)
+        # S3FilesStore needs to be fixed to emit tz-aware datetimes
+        last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
 
         store = S3FilesStore(uri)
         from botocore.stub import Stubber  # noqa: PLC0415
@@ -1109,7 +1110,7 @@ class TestGCSFilesStore:
         store, bucket, blob = self.build_gcs_files_store()
         checksum = "cdcda85605e46d0af6110752770dce3c"
         blob.md5_hash = base64.b64encode(bytes.fromhex(checksum)).decode()
-        updated = datetime(2019, 12, 1)
+        updated = datetime(2019, 12, 1, tzinfo=timezone.utc)
         blob.updated = updated
         bucket.get_blob.return_value = blob
         stat = await maybe_deferred_to_future(

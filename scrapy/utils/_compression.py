@@ -23,6 +23,15 @@ if TYPE_CHECKING:
 
 _CHUNK_SIZE = 65536  # 64 KiB
 
+_DECOMPRESSION_ERRORS: tuple[type[Exception], ...] = (
+    EOFError,
+    OSError,
+    brotli.error,
+    struct.error,
+    zlib.error,
+    zstd.ZstdError,
+)
+
 
 class _DecompressionMaxSizeExceeded(ValueError):
     def __init__(self, decompressed_size: int, max_size: int) -> None:

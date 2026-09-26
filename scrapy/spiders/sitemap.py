@@ -6,6 +6,7 @@ import re
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
+from urllib.parse import urljoin
 
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
@@ -186,12 +187,16 @@ class SitemapSpider(Spider):
         s = Sitemap(body)
 
         if s.type == "sitemapindex":
-            urls = list(self._get_urls_from_sitemapindex(self.sitemap_filter(s)))
+            urls = list(
+                self._get_urls_from_sitemapindex(self.sitemap_filter(s), response.url)
+            )
             return (Request(loc, callback=self._parse_sitemap) for loc in urls)
 
         if s.type == "urlset":
             url_callback_pairs = list(
-                self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
+                self._get_urls_and_callbacks_from_urlset(
+                    self.sitemap_filter(s), response.url
+                )
             )
             return (Request(loc, callback=c) for loc, c in url_callback_pairs)
 
@@ -204,16 +209,18 @@ class SitemapSpider(Spider):
         return ()
 
     def _get_urls_from_sitemapindex(
-        self, it: Iterable[dict[str, Any]]
+        self, it: Iterable[dict[str, Any]], base_url: str
     ) -> Iterable[str]:
         for loc in iterloc(it, self.sitemap_alternate_links):
+            loc = urljoin(base_url, loc)  # noqa: PLW2901
             if any(x.search(loc) for x in self._follow):
                 yield loc
 
     def _get_urls_and_callbacks_from_urlset(
-        self, it: Iterable[dict[str, Any]]
+        self, it: Iterable[dict[str, Any]], base_url: str
     ) -> Iterable[tuple[str, CallbackT]]:
         for loc in iterloc(it, self.sitemap_alternate_links):
+            loc = urljoin(base_url, loc)  # noqa: PLW2901
             for r, c in self._cbs:
                 if r.search(loc):
                     yield loc, c

@@ -87,6 +87,7 @@ def test_closespider_errorcount(mockserver: MockServer):
     errorcount = crawler.stats.get_value(key)
     assert crawler.stats.get_value("spider_exceptions/count") >= close_on
     assert errorcount >= close_on
+    assert crawler.stats.get_value("finish_reason_error") is True
 
 
 @inline_callbacks_test

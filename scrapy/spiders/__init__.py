@@ -149,23 +149,19 @@ class Spider(object_ref):
         attributes in the new instance so they can be accessed later inside the
         spider's code.
 
+        The settings in ``crawler.settings`` can be modified in this method,
+        which is handy if you want to modify them based on arguments. As a
+        consequence, these settings aren't the final values as they can be
+        modified later by e.g. :ref:`add-ons <topics-addons>`. For the same
+        reason, most of the :class:`~scrapy.crawler.Crawler` attributes aren't
+        initialized at this point.
+
+        The settings are final and those :class:`~scrapy.crawler.Crawler`
+        attributes are initialized by the time the :meth:`start` method runs
+        and the :signal:`engine_started` signal is sent, which is the earliest
+        point where your spider code can rely on them.
+
         .. seealso:: :ref:`from-crawler`
-
-        .. versionchanged:: 2.11
-
-            The settings in ``crawler.settings`` can now be modified in this
-            method, which is handy if you want to modify them based on
-            arguments. As a consequence, these settings aren't the final values
-            as they can be modified later by e.g. :ref:`add-ons
-            <topics-addons>`. For the same reason, most of the
-            :class:`~scrapy.crawler.Crawler` attributes aren't initialized at
-            this point.
-
-            The settings are final and those
-            :class:`~scrapy.crawler.Crawler` attributes are initialized by the
-            time the :meth:`start` method runs and the :signal:`engine_started`
-            signal is sent, which is the earliest point where your spider code
-            can rely on them.
         """
         spider = cls(*args, **kwargs)
         spider._set_crawler(crawler)
