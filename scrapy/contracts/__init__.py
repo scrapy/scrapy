@@ -17,7 +17,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import get_spec
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
 
     from twisted.python.failure import Failure
 
@@ -182,36 +182,55 @@ class ContractsManager:
                 )
             self.contracts[contract.name] = contract
 
-    def tested_methods_from_spidercls(self, spidercls: type[Spider]) -> list[str]:
-        is_method = re.compile(r"^\s*@", re.MULTILINE).search
-        methods = []
-        for key, value in getmembers(spidercls):
-            if callable(value) and value.__doc__ and is_method(value.__doc__):
-                methods.append(key)
+    def _iter_contract_batches(self, docstring: str) -> Iterator[list[tuple[str, str]]]:
+        """Yield the ``(name, args)`` pairs of the lines of *docstring* that
+        declare a registered contract, grouped into batches, one per blank line
+        found after the first contract line.
 
-        return methods
+        Lines that start with ``@`` but do not name a registered contract are
+        ignored, so that docstrings may include unrelated content such as
+        decorators in code examples.
+        """
+        batch: list[tuple[str, str]] = []
+        for line_ in docstring.split("\n"):
+            line = line_.strip()
+            if not line:
+                if batch:
+                    yield batch
+                    batch = []
+                continue
+            if not line.startswith("@"):
+                continue
+            m = re.match(r"@(\w+)\s*(.*)", line)
+            if m is None:
+                continue
+            name, args = m.groups()
+            if name in self.contracts:
+                batch.append((name, args))
+        if batch:
+            yield batch
+
+    def tested_methods_from_spidercls(self, spidercls: type[Spider]) -> list[str]:
+        return [
+            key
+            for key, value in getmembers(spidercls)
+            if callable(value)
+            and value.__doc__
+            and any(self._iter_contract_batches(value.__doc__))
+        ]
 
     def extract_contracts(self, method: Callable[..., Any]) -> list[list[Contract]]:
         """Group the contracts of a callback docstring into batches, one per
         blank line found after the first contract line.
         """
-        batches: list[list[Contract]] = [[]]
         assert method.__doc__ is not None
-        for line_ in method.__doc__.split("\n"):
-            line = line_.strip()
-
-            if line.startswith("@"):
-                m = re.match(r"@(\w+)\s*(.*)", line)
-                if m is None:
-                    continue
-                name, args = m.groups()
-                args = re.split(r"\s+", args)
-
-                batches[-1].append(self.contracts[name](method, *args))
-            elif not line and batches[-1]:
-                batches.append([])
-
-        return [batch for batch in batches if batch]
+        return [
+            [
+                self.contracts[name](method, *re.split(r"\s+", args))
+                for name, args in batch
+            ]
+            for batch in self._iter_contract_batches(method.__doc__)
+        ]
 
     def from_spider(self, spider: Spider, results: TestResult) -> list[Request]:
         requests: list[Request] = []
