@@ -294,6 +294,27 @@ class TestRequestBase(ABC):
         assert isinstance(r5, custom_request_cls)
         assert r5.url == r1.url
 
+    def test_id(self):
+        requests = [self.request_class("http://www.example.com") for _ in range(3)]
+        ids = [r.id for r in requests]
+        assert len(set(ids)) == len(ids)
+        assert requests[0].parent_id is None
+        with pytest.raises(AttributeError):
+            requests[0].id = 1  # type: ignore[misc]
+
+    def test_parent_id(self):
+        r = self.request_class("http://www.example.com", parent_id=1)
+        assert r.parent_id == 1
+
+    @pytest.mark.parametrize("method", ["copy", "replace"])
+    def test_copy_lineage(self, method):
+        r1 = self.request_class("http://www.example.com", parent_id=1)
+        r2 = getattr(r1, method)()
+        assert r2.id != r1.id
+        assert r2.parent_id == r1.id
+        r3 = r1.replace(parent_id=None)
+        assert r3.parent_id is None
+
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method="POST")
         assert isinstance(r.method, str)
