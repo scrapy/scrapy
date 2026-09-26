@@ -152,6 +152,7 @@ class ExecutionEngine:
         self.signals: SignalManager = crawler.signals
         self.logformatter: LogFormatter = crawler.logformatter
         self._slot: _Slot | None = None
+        self._warned_skip_dupefilter_once: bool = False
         self.spider: Spider | None = None
         self._state: _EngineState = _EngineState.CREATED
         self._stop_mode: _StopMode = "graceful"
@@ -570,7 +571,24 @@ class ExecutionEngine:
         for _, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
+        assert self._slot is not None
+        if request.meta.get("skip_dupefilter_once") and not getattr(
+            self._slot.scheduler, "supports_skip_dupefilter_once", False
+        ):
+            del request.meta["skip_dupefilter_once"]
+            request.dont_filter = True
+            if not self._warned_skip_dupefilter_once:
+                self._warned_skip_dupefilter_once = True
+                warnings.warn(
+                    f"{global_object_name(type(self._slot.scheduler))} does "
+                    f"not set supports_skip_dupefilter_once to True, so "
+                    f"requests with the skip_dupefilter_once meta key get "
+                    f"dont_filter=True instead, which requests derived from "
+                    f"them inherit. Support for such schedulers is deprecated.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+        if not self._slot.scheduler.enqueue_request(request):
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=self.spider
             )
