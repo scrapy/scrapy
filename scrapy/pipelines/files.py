@@ -15,6 +15,7 @@ import time
 import warnings
 from collections import defaultdict
 from contextlib import suppress
+from datetime import datetime, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -185,6 +186,7 @@ class S3FilesStore:
     # Overridden from settings.AWS_MAX_POOL_CONNECTIONS in
     # FilesPipeline.from_crawler(); None means the botocore default
     AWS_MAX_POOL_CONNECTIONS: int | None = None
+    UPLOAD_TIMEOUT: float | None = None
 
     POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
     HEADERS: ClassVar[dict[str, str]] = {
@@ -197,11 +199,11 @@ class S3FilesStore:
         import botocore.session  # noqa: PLC0415
         from botocore.config import Config  # noqa: PLC0415
 
-        config = (
-            Config(max_pool_connections=self.AWS_MAX_POOL_CONNECTIONS)
-            if self.AWS_MAX_POOL_CONNECTIONS is not None
-            else None
-        )
+        config_kwargs: dict[str, Any] = {}
+        if self.AWS_MAX_POOL_CONNECTIONS is not None:
+            config_kwargs["max_pool_connections"] = self.AWS_MAX_POOL_CONNECTIONS
+        if self.UPLOAD_TIMEOUT is not None:
+            config_kwargs["read_timeout"] = self.UPLOAD_TIMEOUT
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
             "s3",
@@ -212,7 +214,7 @@ class S3FilesStore:
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
             verify=self.AWS_VERIFY,
-            config=config,
+            config=Config(**config_kwargs),
         )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
@@ -220,7 +222,7 @@ class S3FilesStore:
 
     def _onsuccess(self, boto_key: dict[str, Any]) -> StatInfo:
         last_modified = boto_key["LastModified"]
-        modified_stamp = time.mktime(last_modified.timetuple())
+        modified_stamp = last_modified.timestamp()
         if self.checksum_algorithm != "md5":
             return {"last_modified": modified_stamp}
         checksum = boto_key["ETag"].strip('"')
@@ -318,6 +320,7 @@ class GCSFilesStore:
     checksum_algorithm: str = "md5"
 
     GCS_PROJECT_ID = None
+    UPLOAD_TIMEOUT: float | None = None
 
     CACHE_CONTROL = "max-age=172800"
 
@@ -350,7 +353,7 @@ class GCSFilesStore:
     def _onsuccess(self, blob: Any) -> StatInfo:
         if not blob:
             return {}
-        last_modified = time.mktime(blob.updated.timetuple())
+        last_modified = blob.updated.timestamp()
         if self.checksum_algorithm != "md5":
             return {"last_modified": last_modified}
         checksum = base64.b64decode(blob.md5_hash).hex()
@@ -386,12 +389,15 @@ class GCSFilesStore:
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in meta.items()} if meta else {}
+        timeout = self.UPLOAD_TIMEOUT
+        kwargs = {} if timeout is None else {"timeout": timeout}
         return deferred_from_coro(
             run_in_thread(
                 blob.upload_from_string,
                 data=buf.getvalue(),
                 content_type=self._get_content_type(headers),
                 predefined_acl=self.POLICY,
+                **kwargs,
             )
         )
 
@@ -402,6 +408,7 @@ class FTPFilesStore:
     FTP_USERNAME: str | None = None
     FTP_PASSWORD: str | None = None
     USE_ACTIVE_MODE: bool | None = None
+    UPLOAD_TIMEOUT: float | None = None
 
     def __init__(self, uri: str):
         if not uri.startswith("ftp://"):
@@ -437,6 +444,7 @@ class FTPFilesStore:
                 username=self.username,
                 password=self.password,
                 use_active_mode=bool(self.USE_ACTIVE_MODE),
+                timeout=self.UPLOAD_TIMEOUT,
             )
         )
 
@@ -448,7 +456,13 @@ class FTPFilesStore:
                 if self.USE_ACTIVE_MODE:
                     ftp.set_pasv(False)
                 file_path = f"{self.basedir}/{path}"
-                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
+                modified = ftp.voidcmd(f"MDTM {file_path}")[4:].strip()
+                time_format = "%Y%m%d%H%M%S.%f" if "." in modified else "%Y%m%d%H%M%S"
+                last_modified = (
+                    datetime.strptime(modified, time_format)
+                    .replace(tzinfo=timezone.utc)
+                    .timestamp()
+                )
                 m = hashlib.new(self.checksum_algorithm)
                 ftp.retrbinary(f"RETR {file_path}", m.update)
             return {"last_modified": last_modified, "checksum": m.hexdigest()}
@@ -553,6 +567,8 @@ class FilesPipeline(MediaPipeline):
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:
+        upload_timeout: float | None = settings.getfloat("UPLOAD_TIMEOUT") or None
+
         s3store: type[S3FilesStore] = cast(
             "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
         )
@@ -565,12 +581,14 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
         s3store.AWS_MAX_POOL_CONNECTIONS = _get_max_pool_connections(settings)
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
+        s3store.UPLOAD_TIMEOUT = upload_timeout
 
         gcs_store: type[GCSFilesStore] = cast(
             "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
         )
         gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
         gcs_store.POLICY = settings["FILES_STORE_GCS_ACL"] or None
+        gcs_store.UPLOAD_TIMEOUT = upload_timeout
 
         ftp_store: type[FTPFilesStore] = cast(
             "type[FTPFilesStore]", cls.STORE_SCHEMES["ftp"]
@@ -578,6 +596,7 @@ class FilesPipeline(MediaPipeline):
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
+        ftp_store.UPLOAD_TIMEOUT = upload_timeout
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
         # to support win32 paths like: C:\\some\dir

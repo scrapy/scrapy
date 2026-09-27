@@ -70,7 +70,7 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
 color = ["colorlog>=6.6.0"]
-gcs = ["google-cloud-storage>=1.29.0"]
+gcs = ["google-cloud-storage>=1.30.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
 ipython = ["ipython>=8.15.0"]
@@ -157,6 +157,7 @@ current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
+setup_hooks = ["python3 extras/pre-bump.py"]
 
 [[tool.bumpversion.files]]
 filename = "docs/news.rst"
@@ -522,6 +523,3 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
-
-[tool.sphinx-scrapy]
-python-version = "3.14"  # Keep in sync with .github/workflows/ci.yml.
