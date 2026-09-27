@@ -87,7 +87,7 @@ class CloseSpider:
     def error_count(self, failure: Failure, response: Response, spider: Spider) -> None:
         self.counter["errorcount"] += 1
         if self.counter["errorcount"] == self.close_on["errorcount"]:
-            self._close_spider("closespider_errorcount")
+            self._close_spider("closespider_errorcount", error=True)
 
     def page_count(self, response: Response, request: Request, spider: Spider) -> None:
         self.counter["pagecount"] += 1
@@ -144,5 +144,7 @@ class CloseSpider:
             )
             self._close_spider("closespider_timeout_no_item")
 
-    def _close_spider(self, reason: str) -> None:
-        _schedule_coro(self.crawler.engine.close_spider_async(reason=reason))
+    def _close_spider(self, reason: str, *, error: bool = False) -> None:
+        _schedule_coro(
+            self.crawler.engine.close_spider_async(reason=reason, error=error)
+        )

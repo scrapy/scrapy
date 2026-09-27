@@ -15,6 +15,7 @@ import time
 import warnings
 from collections import defaultdict
 from contextlib import suppress
+from datetime import datetime, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -164,6 +165,7 @@ class S3FilesStore:
     AWS_VERIFY = None
     # None means the botocore default
     AWS_MAX_POOL_CONNECTIONS: int | None = None
+    UPLOAD_TIMEOUT: float | None = None
 
     POLICY = "private"
     HEADERS: ClassVar[dict[str, str]] = {
@@ -186,6 +188,7 @@ class S3FilesStore:
             AWS_VERIFY=settings["AWS_VERIFY"],
             AWS_MAX_POOL_CONNECTIONS=_get_max_pool_connections(settings),
             POLICY=settings[resolve("FILES_STORE_S3_ACL")],
+            UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
     def __init__(self, uri: str, **config: Any):
@@ -195,11 +198,11 @@ class S3FilesStore:
         import botocore.session  # noqa: PLC0415
         from botocore.config import Config  # noqa: PLC0415
 
-        botocore_config = (
-            Config(max_pool_connections=self.AWS_MAX_POOL_CONNECTIONS)
-            if self.AWS_MAX_POOL_CONNECTIONS is not None
-            else None
-        )
+        config_kwargs: dict[str, Any] = {}
+        if self.AWS_MAX_POOL_CONNECTIONS is not None:
+            config_kwargs["max_pool_connections"] = self.AWS_MAX_POOL_CONNECTIONS
+        if self.UPLOAD_TIMEOUT is not None:
+            config_kwargs["read_timeout"] = self.UPLOAD_TIMEOUT
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
             "s3",
@@ -210,7 +213,7 @@ class S3FilesStore:
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
             verify=self.AWS_VERIFY,
-            config=botocore_config,
+            config=Config(**config_kwargs),
         )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
@@ -220,7 +223,7 @@ class S3FilesStore:
     def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
         checksum = boto_key["ETag"].strip('"')
         last_modified = boto_key["LastModified"]
-        modified_stamp = time.mktime(last_modified.timetuple())
+        modified_stamp = last_modified.timestamp()
         return {"checksum": checksum, "last_modified": modified_stamp}
 
     def stat_file(
@@ -311,6 +314,7 @@ class S3FilesStore:
 
 class GCSFilesStore:
     GCS_PROJECT_ID = None
+    UPLOAD_TIMEOUT: float | None = None
 
     CACHE_CONTROL = "max-age=172800"
 
@@ -326,6 +330,7 @@ class GCSFilesStore:
             uri,
             GCS_PROJECT_ID=settings["GCS_PROJECT_ID"],
             POLICY=settings[resolve("FILES_STORE_GCS_ACL")] or None,
+            UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
     def __init__(self, uri: str, **config: Any):
@@ -355,7 +360,7 @@ class GCSFilesStore:
     def _onsuccess(blob: Any) -> StatInfo:
         if blob:
             checksum = base64.b64decode(blob.md5_hash).hex()
-            last_modified = time.mktime(blob.updated.timetuple())
+            last_modified = blob.updated.timestamp()
             return {"checksum": checksum, "last_modified": last_modified}
         return {}
 
@@ -389,12 +394,15 @@ class GCSFilesStore:
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in meta.items()} if meta else {}
+        timeout = self.UPLOAD_TIMEOUT
+        kwargs = {} if timeout is None else {"timeout": timeout}
         return deferred_from_coro(
             run_in_thread(
                 blob.upload_from_string,
                 data=buf.getvalue(),
                 content_type=self._get_content_type(headers),
                 predefined_acl=self.POLICY,
+                **kwargs,
             )
         )
 
@@ -403,6 +411,7 @@ class FTPFilesStore:
     FTP_USERNAME: str | None = None
     FTP_PASSWORD: str | None = None
     USE_ACTIVE_MODE: bool | None = None
+    UPLOAD_TIMEOUT: float | None = None
 
     @classmethod
     def from_crawler(
@@ -414,6 +423,7 @@ class FTPFilesStore:
             FTP_USERNAME=settings["FTP_USER"],
             FTP_PASSWORD=settings["FTP_PASSWORD"],
             USE_ACTIVE_MODE=settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
+            UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
     def __init__(self, uri: str, **config: Any):
@@ -451,6 +461,7 @@ class FTPFilesStore:
                 username=self.username,
                 password=self.password,
                 use_active_mode=bool(self.USE_ACTIVE_MODE),
+                timeout=self.UPLOAD_TIMEOUT,
             )
         )
 
@@ -462,7 +473,13 @@ class FTPFilesStore:
                 if self.USE_ACTIVE_MODE:
                     ftp.set_pasv(False)
                 file_path = f"{self.basedir}/{path}"
-                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
+                modified = ftp.voidcmd(f"MDTM {file_path}")[4:].strip()
+                time_format = "%Y%m%d%H%M%S.%f" if "." in modified else "%Y%m%d%H%M%S"
+                last_modified = (
+                    datetime.strptime(modified, time_format)
+                    .replace(tzinfo=timezone.utc)
+                    .timestamp()
+                )
                 m = hashlib.md5()  # noqa: S324
                 ftp.retrbinary(f"RETR {file_path}", m.update)
             return {"last_modified": last_modified, "checksum": m.hexdigest()}
