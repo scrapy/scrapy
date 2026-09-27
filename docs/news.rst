@@ -29,7 +29,7 @@ Backward-incompatible changes
     To deploy such a project you need ``scrapyd`` TODO or higher,
     ``scrapyd-client`` TODO or higher, or ``shub`` TODO or higher. Earlier
     versions of those tools only read :file:`scrapy.cfg` files.
-    (:issue:`7030`)
+    (:gh:`7030`)
 
 ..  TODO: Fill in the ``scrapyd``, ``scrapyd-client`` and ``shub`` versions
     above. Those releases, with support for the ``[tool.scrapy]`` table of
