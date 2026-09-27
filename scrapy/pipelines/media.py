@@ -5,7 +5,7 @@ import functools
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
 
 from twisted.internet.defer import Deferred, DeferredList
@@ -80,7 +80,7 @@ class MediaPipeline(ABC):
         def __init__(self, spider: Spider):
             self.spider: Spider = spider
             self.downloading: set[bytes] = set()
-            self.downloaded: dict[bytes, FileInfo | Failure] = {}
+            self.downloaded: OrderedDict[bytes, FileInfo | Failure] = OrderedDict()
             self.waiting: defaultdict[bytes, list[Deferred[FileInfo]]] = defaultdict(
                 list
             )
@@ -111,6 +111,7 @@ class MediaPipeline(ABC):
             resolve("MEDIA_ALLOW_REDIRECTS"), False
         )
         self._handle_statuses(self.allow_redirects)
+        self._cache_size: int = settings.getint(resolve("MEDIA_CACHE_SIZE"))
 
     def _handle_statuses(self, allow_redirects: bool) -> None:
         self.handle_httpstatus_list = None
@@ -177,6 +178,7 @@ class MediaPipeline(ABC):
         # Return cached result if request was already seen
         if fp in info.downloaded:
             await _process_pending_io()
+            info.downloaded.move_to_end(fp)
             cached_result = info.downloaded[fp]
             if isinstance(cached_result, Failure):
                 if eb:
@@ -276,6 +278,8 @@ class MediaPipeline(ABC):
 
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result
+        if 0 <= self._cache_size < len(info.downloaded):
+            info.downloaded.popitem(last=False)
         for wad in info.waiting.pop(fp):
             if isinstance(result, Failure):
                 wad.errback(result)

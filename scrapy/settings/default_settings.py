@@ -161,6 +161,7 @@ __all__ = [
     "MAIL_SSL",
     "MAIL_TLS",
     "MAIL_USER",
+    "MEDIA_CACHE_SIZE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -496,6 +497,8 @@ MAIL_USER = None
 MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
+
+MEDIA_CACHE_SIZE = -1
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 
