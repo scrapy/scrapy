@@ -216,6 +216,7 @@ class S3FeedStorage(BlockingFeedStorage):
         session_token: str | None = None,
         region_name: str | None = None,
         max_pool_connections: int | None = None,
+        upload_timeout: float | None = None,
     ):
         try:
             import boto3.session  # noqa: PLC0415
@@ -234,6 +235,13 @@ class S3FeedStorage(BlockingFeedStorage):
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
         self.max_pool_connections: int | None = max_pool_connections
+        self.upload_timeout: float | None = upload_timeout
+
+        config_kwargs: dict[str, Any] = {}
+        if max_pool_connections is not None:
+            config_kwargs["max_pool_connections"] = max_pool_connections
+        if upload_timeout is not None:
+            config_kwargs["read_timeout"] = upload_timeout
 
         boto3_session = boto3.session.Session()
         self.s3_client = boto3_session.client(
@@ -243,11 +251,7 @@ class S3FeedStorage(BlockingFeedStorage):
             aws_session_token=self.session_token,
             endpoint_url=self.endpoint_url,
             region_name=self.region_name,
-            config=(
-                Config(max_pool_connections=self.max_pool_connections)
-                if self.max_pool_connections is not None
-                else None
-            ),
+            config=Config(**config_kwargs),
         )
 
         if feed_options and feed_options.get("overwrite", True) is False:
@@ -274,6 +278,7 @@ class S3FeedStorage(BlockingFeedStorage):
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
             max_pool_connections=_get_max_pool_connections(crawler.settings),
+            upload_timeout=crawler.settings.getfloat("UPLOAD_TIMEOUT") or None,
             feed_options=feed_options,
         )
 
@@ -305,9 +310,11 @@ class GCSFeedStorage(BlockingFeedStorage):
         acl: str | None,
         *,
         feed_options: dict[str, Any] | None = None,
+        timeout: float | None = None,
     ):
         self.project_id: str | None = project_id
         self.acl: str | None = acl
+        self.timeout: float | None = timeout
         u = urlparse(uri)
         assert u.hostname
         self.bucket_name: str = u.hostname
@@ -327,6 +334,7 @@ class GCSFeedStorage(BlockingFeedStorage):
             crawler.settings["GCS_PROJECT_ID"],
             crawler.settings["FEED_STORAGE_GCS_ACL"] or None,
             feed_options=feed_options,
+            timeout=crawler.settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -336,10 +344,11 @@ class GCSFeedStorage(BlockingFeedStorage):
 
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
-            blob = None if self.overwrite else bucket.get_blob(self.blob_name)
+            kwargs = {} if self.timeout is None else {"timeout": self.timeout}
+            blob = None if self.overwrite else bucket.get_blob(self.blob_name, **kwargs)
             if blob is None:
                 bucket.blob(self.blob_name).upload_from_file(
-                    file, predefined_acl=self.acl
+                    file, predefined_acl=self.acl, **kwargs
                 )
                 return
             # Appending uploads the new data as a separate object and composes
@@ -347,13 +356,13 @@ class GCSFeedStorage(BlockingFeedStorage):
             # untouched. Composition resolves its sources by name, so it always
             # appends to the latest version of the blob.
             part = bucket.blob(f"{self.blob_name}.{uuid4().hex}.part")
-            part.upload_from_file(file, predefined_acl=self.acl)
+            part.upload_from_file(file, predefined_acl=self.acl, **kwargs)
             try:
-                blob.compose([blob, part], client=client)
+                blob.compose([blob, part], client=client, **kwargs)
             finally:
-                part.delete(client=client)
+                part.delete(client=client, **kwargs)
             if self.acl:
-                blob.acl.save_predefined(self.acl, client=client)
+                blob.acl.save_predefined(self.acl, client=client, **kwargs)
         finally:
             file.close()
 
@@ -365,6 +374,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         use_active_mode: bool = False,
         *,
         feed_options: dict[str, Any] | None = None,
+        timeout: float | None = None,
     ):
         u = urlparse(uri)
         if not u.hostname:
@@ -376,6 +386,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.path: str = u.path
         self.tls: bool = u.scheme == "ftps"
         self.use_active_mode: bool = use_active_mode
+        self.timeout: float | None = timeout
         self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
     @classmethod
@@ -390,6 +401,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             uri,
             use_active_mode=crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
             feed_options=feed_options,
+            timeout=crawler.settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -403,6 +415,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             use_active_mode=self.use_active_mode,
             overwrite=self.overwrite,
             tls=self.tls,
+            timeout=self.timeout,
         )
 
 

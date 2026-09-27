@@ -447,6 +447,7 @@ These are the settings used for configuring the feed exports:
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`FEED_EXPORTERS`
 -   :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
+-   :setting:`UPLOAD_TIMEOUT`
 
 .. setting:: FEEDS
 
