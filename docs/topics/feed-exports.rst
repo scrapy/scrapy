@@ -686,7 +686,7 @@ A dict containing additional feed storage backends supported by your project.
 The keys are URI schemes and the values are paths to storage classes, which must
 follow this protocol:
 
-.. autoclass:: FeedStorageProtocol
+.. autoclass:: scrapy.extensions.feedexport.FeedStorageProtocol
     :members:
 
     .. attribute:: supported_modes
