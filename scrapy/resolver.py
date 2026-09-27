@@ -66,7 +66,7 @@ class CachingThreadedResolver(ThreadedResolver):
             d.addCallback(self._cache_result, name)
         return d
 
-    def _cache_result(self, result: Any, name: str) -> Any:
+    def _cache_result(self, result: str, name: str) -> str:
         dnscache[name] = result
         return result
 

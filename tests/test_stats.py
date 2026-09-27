@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -39,7 +39,7 @@ class TestCoreStatsExtension:
         crawler: Crawler,
         spider: Spider,
     ) -> None:
-        fixed_datetime = datetime(2019, 12, 1, 11, 38)
+        fixed_datetime = datetime(2019, 12, 1, 11, 38, tzinfo=timezone.utc)
         mock_datetime.now = mock.Mock(return_value=fixed_datetime)
         crawler.stats = StatsCollector(crawler)
         ext = build_from_crawler(CoreStats, crawler)
@@ -56,6 +56,7 @@ class TestCoreStatsExtension:
             "item_dropped_count": 1,
             "item_dropped_reasons_count/ZeroDivisionError": 1,
             "finish_reason": "finished",
+            "finish_reason_error": False,
             "elapsed_time_seconds": 0.0,
         }
 
