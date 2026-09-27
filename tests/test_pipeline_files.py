@@ -6,7 +6,7 @@ import random
 import re
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -953,8 +953,12 @@ class TestS3FilesStore:
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
         checksum = "3187896a9657a28163abb31667df64c8"
-        # S3FilesStore needs to be fixed to emit tz-aware datetimes
-        last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
+        last_modified = datetime(
+            2019,
+            12,
+            1,
+            tzinfo=timezone(timedelta(hours=9, minutes=37)),
+        )
 
         store = S3FilesStore(uri)
         from botocore.stub import Stubber  # noqa: PLC0415
@@ -984,6 +988,25 @@ class TestS3FilesStore:
         store = S3FilesStore("s3://mybucket/prefix/")
         config: Any = store.s3_client.meta.config
         assert config.max_pool_connections == 10
+
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, 60),
+            ({"UPLOAD_TIMEOUT": 300}, 300),
+        ],
+    )
+    def test_upload_timeout(
+        self, monkeypatch: pytest.MonkeyPatch, settings: dict[str, Any], expected: float
+    ) -> None:
+        monkeypatch.setattr(S3FilesStore, "UPLOAD_TIMEOUT", None)
+        crawler = get_crawler(
+            settings_dict={"FILES_STORE": "s3://mybucket/prefix/", **settings}
+        )
+        store = build_from_crawler(FilesPipeline, crawler).store
+        assert isinstance(store, S3FilesStore)
+        config: Any = store.s3_client.meta.config
+        assert config.read_timeout == expected
 
     @pytest.mark.parametrize(
         ("settings", "expected"),
@@ -1054,13 +1077,19 @@ class TestGCSFilesStore:
     def test_update_stores(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(GCSFilesStore, "GCS_PROJECT_ID", None)
         monkeypatch.setattr(GCSFilesStore, "POLICY", None)
+        monkeypatch.setattr(GCSFilesStore, "UPLOAD_TIMEOUT", None)
 
         settings = Settings(
-            {"GCS_PROJECT_ID": "my-project", "FILES_STORE_GCS_ACL": "publicRead"}
+            {
+                "GCS_PROJECT_ID": "my-project",
+                "FILES_STORE_GCS_ACL": "publicRead",
+                "UPLOAD_TIMEOUT": 300,
+            }
         )
         FilesPipeline._update_stores(settings)
         assert GCSFilesStore.GCS_PROJECT_ID == "my-project"
         assert GCSFilesStore.POLICY == "publicRead"
+        assert GCSFilesStore.UPLOAD_TIMEOUT == 300
 
         # An empty FILES_STORE_GCS_ACL is normalised to None.
         settings = Settings({"GCS_PROJECT_ID": "my-project", "FILES_STORE_GCS_ACL": ""})
@@ -1106,11 +1135,27 @@ class TestGCSFilesStore:
         assert blob.metadata == {}
 
     @coroutine_test
+    async def test_persist_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(GCSFilesStore, "UPLOAD_TIMEOUT", 300)
+        store, _, blob = self.build_gcs_files_store()
+        await maybe_deferred_to_future(
+            store.persist_file(
+                "full/filename", BytesIO(b"hello"), info=DUMMY_SPIDER_INFO
+            )
+        )
+        assert blob.upload_from_string.call_args.kwargs["timeout"] == 300
+
+    @coroutine_test
     async def test_stat(self) -> None:
         store, bucket, blob = self.build_gcs_files_store()
         checksum = "cdcda85605e46d0af6110752770dce3c"
         blob.md5_hash = base64.b64encode(bytes.fromhex(checksum)).decode()
-        updated = datetime(2019, 12, 1, tzinfo=timezone.utc)
+        updated = datetime(
+            2019,
+            12,
+            1,
+            tzinfo=timezone(timedelta(hours=9, minutes=37)),
+        )
         blob.updated = updated
         bucket.get_blob.return_value = blob
         stat = await maybe_deferred_to_future(
@@ -1119,7 +1164,7 @@ class TestGCSFilesStore:
         bucket.get_blob.assert_called_once_with("my_prefix/full/filename")
         assert stat == {
             "checksum": checksum,
-            "last_modified": time.mktime(updated.timetuple()),
+            "last_modified": updated.timestamp(),
         }
 
     @coroutine_test
@@ -1168,6 +1213,7 @@ class TestFTPFileStore:
             )
             stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
             assert "last_modified" in stat
+            assert stat["last_modified"] == pytest.approx(time.time(), abs=60)
             assert "checksum" in stat
             assert stat["checksum"] == "d113d66b2ec7258724a268bd88eef6b6"
             path = f"{store.basedir}/{path}"
@@ -1180,6 +1226,33 @@ class TestFTPFileStore:
                 bool(store.USE_ACTIVE_MODE),
             )
         assert data == content
+
+    @pytest.mark.parametrize(
+        ("response", "expected"),
+        [
+            ("213 20191201010203", 1575162123.0),
+            ("213 20191201010203.123456", 1575162123.123456),
+        ],
+    )
+    @inline_callbacks_test
+    def test_stat_timestamp(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        response: str,
+        expected: float,
+    ):
+        ftp = MagicMock()
+        ftp.__enter__.return_value = ftp
+        ftp.voidcmd.return_value = response
+        ftp.retrbinary.side_effect = lambda command, callback: callback(b"data")
+        monkeypatch.setattr(files, "FTP", lambda: ftp)
+        monkeypatch.setattr(FTPFilesStore, "FTP_USERNAME", "anonymous")
+        monkeypatch.setattr(FTPFilesStore, "FTP_PASSWORD", "guest")
+
+        store = FTPFilesStore("ftp://example.com:21/")
+        stat = yield store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
+
+        assert stat["last_modified"] == expected
 
     @inline_callbacks_test
     def test_persist_active_mode(self, monkeypatch: pytest.MonkeyPatch):

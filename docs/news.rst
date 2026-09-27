@@ -22,8 +22,6 @@ Backward-incompatible changes
       ``errback`` are no longer called, and a warning is issued if they are
       set.
 
-    (:gh:`TBD`)
-
 -   New projects created with the :command:`startproject` command define their
     configuration in a :file:`pyproject.toml` file, instead of the now
     deprecated :file:`scrapy.cfg` file.
