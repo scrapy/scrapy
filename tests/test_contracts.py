@@ -349,7 +349,7 @@ class UnregisteredAtLineSpider(Spider):
 
     def parse(self, response):
         """
-        @url http://scrapy.org
+        @url http://example.com
         @returns items 1 1
 
         An unregistered line must not break the registered ones:

@@ -69,6 +69,13 @@ class TextResponse(Response):
                     f"{type(self).__name__} has no encoding"
                 )
             self._body = body.encode(self._encoding)
+            # Keep body as text only if decoding _body gives it back
+            # unchanged. html_to_unicode() may resolve the encoding to
+            # another codec (e.g. latin-1 to cp1252) and strips a BOM.
+            if resolve_encoding(self._encoding) == "utf-8" and not body.startswith(
+                "\ufeff"
+            ):
+                self._cached_ubody = body
         else:
             super()._set_body(body)
 
