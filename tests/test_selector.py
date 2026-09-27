@@ -108,6 +108,20 @@ class TestSelector:
         )
         Selector(r1).xpath("//text()").getall()
 
+    @pytest.mark.parametrize(
+        ("body", "headers"),
+        [
+            ("﻿<p>£€</p>".encode("utf-16-le"), {}),
+            (
+                "<p>£€</p>".encode("utf-16-le"),
+                {"Content-Type": "text/html; charset=utf-16-le"},
+            ),
+        ],
+    )
+    def test_utf16(self, body: bytes, headers: dict[str, str]) -> None:
+        response = HtmlResponse("https://example.com", body=body, headers=headers)
+        assert response.css("p::text").get() == "£€"
+
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
         x = Selector(text="")
