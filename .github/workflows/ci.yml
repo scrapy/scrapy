@@ -107,7 +107,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+      # A hanging test would otherwise keep the job running until GitHub kills
+      # it, without telling which test hung.
+      PYTEST_ADDOPTS: --timeout=120 ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
@@ -173,7 +175,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+      # A hanging test would otherwise keep the job running until GitHub kills
+      # it, without telling which test hung.
+      PYTEST_ADDOPTS: --timeout=120 ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
