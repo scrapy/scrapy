@@ -5,6 +5,7 @@ import json
 import logging
 import marshal
 import pickle
+import sys
 import tempfile
 from logging import getLogger
 from pathlib import Path
@@ -141,6 +142,15 @@ class ExceptionJsonItemExporter(JsonItemExporter):
 
     def export_item(self, _):
         raise RuntimeError("foo")
+
+
+def split_foo(item):
+    for value in item["foo"].split(","):
+        yield {"foo": value}
+
+
+def drop_item(item):
+    return []
 
 
 class TestFeedExport(TestFeedExportBase):
@@ -527,6 +537,25 @@ class TestFeedExport(TestFeedExportBase):
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 11), reason="BaseException.add_note() is 3.11+"
+    )
+    @coroutine_test
+    async def test_export_item_exception_mentions_item(
+        self, caplog: pytest.LogCaptureFixture
+    ):
+        items = [{"foo": {None: "bar"}}]
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {"format": "json"},
+            },
+            "FEED_EXPORTERS": {"json": ExceptionJsonItemExporter},
+        }
+        with caplog.at_level(logging.ERROR):
+            await self.exported_data(items, settings)
+        assert "RuntimeError: foo" in caplog.text
+        assert "Item: {'foo': {None: 'bar'}}" in caplog.text
+
     @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
         items: list[Any] = []
@@ -771,6 +800,72 @@ class TestFeedExport(TestFeedExportBase):
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
+
+    @coroutine_test
+    async def test_export_based_on_item_processors(self):
+        items = [
+            MyItem({"foo": "bar1,bar2"}),
+            {"foo": "bar3"},
+        ]
+
+        formats = {
+            "jsonlines": b'{"foo": "bar1"}\n{"foo": "bar2"}\n{"foo": "bar3"}\n',
+            "json": b'[\n{"foo": "bar1"},\n{"foo": "bar2"},\n{"foo": "bar3"}\n]',
+            "xml": (
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n'
+                b"<item><foo>bar1</foo></item>\n<item><foo>bar2</foo></item>\n</items>"
+            ),
+            "csv": b"",
+        }
+
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {
+                    "format": "jsonlines",
+                    "item_processor": split_foo,
+                },
+                self._random_temp_filename(): {
+                    "format": "json",
+                    "item_processor": "tests.test_feedexport.split_foo",
+                },
+                self._random_temp_filename(): {
+                    "format": "xml",
+                    "item_classes": [MyItem],
+                    "item_processor": split_foo,
+                },
+                self._random_temp_filename(): {
+                    "format": "csv",
+                    "item_processor": drop_item,
+                },
+            },
+        }
+
+        data = await self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            assert data[fmt] == expected
+
+    @coroutine_test
+    async def test_item_processor_stats(self):
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+            start_urls = [self.mockserver.url("/")]
+
+            def parse(self, response):
+                yield {"foo": "bar1,bar2"}
+
+        settings = {
+            "FEEDS": {
+                path_to_url(self._random_temp_filename()): {
+                    "format": "jsonlines",
+                    "item_processor": split_foo,
+                },
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        assert crawler.stats.get_value("item_scraped_count") == 1
+        assert crawler.stats.get_value("feedexport/item_count/FileFeedStorage") == 2
 
     @coroutine_test
     async def test_export_dicts(self):

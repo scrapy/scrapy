@@ -22,8 +22,6 @@ Backward-incompatible changes
       ``errback`` are no longer called, and a warning is issued if they are
       set.
 
-    (:gh:`TBD`)
-
 -   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now
     enforces :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE`, also
     when using :reqmeta:`ftp_local_filename`, so downloads bigger than 1 GiB

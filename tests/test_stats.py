@@ -56,6 +56,7 @@ class TestCoreStatsExtension:
             "item_dropped_count": 1,
             "item_dropped_reasons_count/ZeroDivisionError": 1,
             "finish_reason": "finished",
+            "finish_reason_error": False,
             "elapsed_time_seconds": 0.0,
         }
 
