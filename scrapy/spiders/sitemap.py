@@ -35,60 +35,64 @@ class SitemapSpider(Spider):
     <https://www.robotstxt.org/>`_.
     """
 
-    #: URLs pointing to the sitemaps whose URLs you want to crawl.
-    #:
-    #: You can also point to a `robots.txt <https://www.robotstxt.org/>`_ and it
-    #: will be parsed to extract sitemap URLs from it.
     sitemap_urls: Sequence[str] = ()
+    """URLs pointing to the sitemaps whose URLs you want to crawl.
 
-    #: ``(regex, callback)`` tuples where:
-    #:
-    #: -   ``regex`` is a regular expression to match URLs extracted from
-    #:     sitemaps. ``regex`` can be either a str or a compiled regex object.
-    #:
-    #: -   ``callback`` is the callback to use for processing the URLs that match
-    #:     the regular expression. ``callback`` can be a string (indicating the
-    #:     name of a spider method) or a callable.
-    #:
-    #: For example:
-    #:
-    #: .. code-block:: python
-    #:
-    #:     sitemap_rules = [("/product/", "parse_product")]
-    #:
-    #: Rules are applied in order, and only the first one that matches will be
-    #: used.
-    #:
-    #: The default value makes all URLs found in sitemaps be processed with the
-    #: :meth:`~scrapy.Spider.parse` callback.
+    You can also point to a `robots.txt <https://www.robotstxt.org/>`_ and it
+    will be parsed to extract sitemap URLs from it.
+    """
+
     sitemap_rules: Sequence[tuple[re.Pattern[str] | str, str | CallbackT]] = [
         ("", "parse")
     ]
+    """``(regex, callback)`` tuples where:
 
-    #: Regexes of sitemaps that should be followed. This is only for sites that
-    #: use `sitemap index files
-    #: <https://www.sitemaps.org/protocol.html#index>`_ that point to other
-    #: sitemap files.
-    #:
-    #: By default, all sitemaps are followed.
+    -   ``regex`` is a regular expression to match URLs extracted from
+        sitemaps. ``regex`` can be either a str or a compiled regex object.
+
+    -   ``callback`` is the callback to use for processing the URLs that match
+        the regular expression. ``callback`` can be a string (indicating the
+        name of a spider method) or a callable.
+
+    For example:
+
+    .. code-block:: python
+
+        sitemap_rules = [("/product/", "parse_product")]
+
+    Rules are applied in order, and only the first one that matches will be
+    used.
+
+    The default value makes all URLs found in sitemaps be processed with the
+    :meth:`~scrapy.Spider.parse` callback.
+    """
+
     sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
+    """Regexes of sitemaps that should be followed. This is only for sites that
+    use `sitemap index files <https://www.sitemaps.org/protocol.html#index>`_
+    that point to other sitemap files.
 
-    #: Specifies if alternate links for one ``url`` should be followed. These are
-    #: links for the same website in another language passed within the same
-    #: ``url`` block.
-    #:
-    #: For example:
-    #:
-    #: .. code-block:: xml
-    #:
-    #:     <url>
-    #:         <loc>http://example.com/</loc>
-    #:         <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
-    #:     </url>
-    #:
-    #: When enabled, this would retrieve both URLs. When disabled, only
-    #: ``http://example.com/`` would be retrieved.
+    By default, all sitemaps are followed.
+    """
+
     sitemap_alternate_links: bool = False
+    """Specifies if alternate links for one ``url`` should be followed. These are
+    links for the same website in another language passed within the same
+    ``url`` block.
+
+    For example:
+
+    .. code-block:: xml
+
+        <url>
+            <loc>http://example.com/</loc>
+            <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
+        </url>
+
+    When enabled, this would retrieve both URLs. When disabled, only
+    ``http://example.com/`` would be retrieved.
+    """
+
     _max_size: int
     _warn_size: int
 
