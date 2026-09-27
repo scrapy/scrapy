@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, cast
 
-from scrapy.utils.benchserver import Root, _getarg
+from scrapy.utils._benchserver import Root, _getarg
 
 if TYPE_CHECKING:
     from twisted.web.server import Request

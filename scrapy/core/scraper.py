@@ -24,7 +24,7 @@ from scrapy.http import Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
-    _process_pending_io,
+    _process_pending_io_before_callback,
     _schedule_coro,
     aiter_errback,
     deferred_from_coro,
@@ -121,7 +121,7 @@ class Scraper:
         ]:
             self._check_deprecated_itemproc_method(method)
 
-        self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
+        self.concurrent_items: int = max(1, crawler.settings.getint("CONCURRENT_ITEMS"))
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
         self.logformatter: LogFormatter = crawler.logformatter
@@ -227,10 +227,9 @@ class Scraper:
         try:
             yield dfd  # fired in _wait_for_processing()
         except Exception:
-            logger.error(
+            logger.exception(
                 "Scraper bug processing %(request)s",
                 {"request": request},
-                exc_info=True,
                 extra={"spider": self.crawler.spider},
             )
         finally:
@@ -262,6 +261,14 @@ class Scraper:
                 self.handle_spider_error(Failure(), request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
+            return
+
+        if result.check(CloseSpider):
+            exc = result.value
+            assert isinstance(exc, CloseSpider)  # typing
+            _schedule_coro(
+                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+            )
             return
 
         try:
@@ -312,7 +319,7 @@ class Scraper:
 
         .. versionadded:: 2.13
         """
-        await _process_pending_io()
+        await _process_pending_io_before_callback()
         assert self.crawler.spider
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
@@ -359,7 +366,9 @@ class Scraper:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+                self.crawler.engine.close_spider_async(
+                    reason=exc.reason or "cancelled", error=exc.error
+                )
             )
             return
         logkws = self.logformatter.spider_error(
@@ -517,7 +526,8 @@ class Scraper:
             logkws = self.logformatter.dropped(item, ex, response, self.crawler.spider)
             if logkws is not None:
                 logger.log(
-                    *logformatter_adapter(logkws), extra={"spider": self.crawler.spider}
+                    *logformatter_adapter(logkws),
+                    extra={"spider": self.crawler.spider, "item": item},
                 )
             await self.signals.send_catch_log_async(
                 signal=signals.item_dropped,
@@ -532,7 +542,7 @@ class Scraper:
             )
             logger.log(
                 *logformatter_adapter(logkws),
-                extra={"spider": self.crawler.spider},
+                extra={"spider": self.crawler.spider, "item": item},
                 exc_info=True,
             )
             await self.signals.send_catch_log_async(
@@ -546,7 +556,8 @@ class Scraper:
             logkws = self.logformatter.scraped(output, response, self.crawler.spider)
             if logkws is not None:
                 logger.log(
-                    *logformatter_adapter(logkws), extra={"spider": self.crawler.spider}
+                    *logformatter_adapter(logkws),
+                    extra={"spider": self.crawler.spider, "item": output},
                 )
             await self.signals.send_catch_log_async(
                 signal=signals.item_scraped,

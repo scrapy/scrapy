@@ -30,6 +30,7 @@ _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
 _ITER_T = TypeVar("_ITER_T", bound=dict[Any, Any] | Item | str | bytes)
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
+_CallableT = TypeVar("_CallableT", bound="Callable[..., Any]")
 _P = ParamSpec("_P")
 
 
@@ -54,6 +55,12 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     return [arg]
 
 
+@overload
+def load_object(path: str) -> Any: ...
+@overload
+def load_object(path: _CallableT) -> _CallableT: ...
+@overload
+def load_object(path: str | Callable[..., Any]) -> Any: ...
 def load_object(path: str | Callable[..., Any]) -> Any:
     """Load an object given its absolute object path, and return it.
 
@@ -100,13 +107,13 @@ def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     exception is thrown back.
 
     For example:
-    >>> list(walk_modules_iter('scrapy.utils'))
-    [<module 'scrapy.utils' from '...'>, ...]
-    >>> gen = walk_modules_iter('scrapy.utils.nonexistent') # error not raised until the generator is consumed
+    >>> list(walk_modules_iter('scrapy.commands'))
+    [<module 'scrapy.commands' from '...'>, ...]
+    >>> gen = walk_modules_iter('scrapy.commands.nonexistent') # error not raised until the generator is consumed
     >>> list(gen)
     Traceback (most recent call last):
         ...
-    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'...
+    ModuleNotFoundError: No module named 'scrapy.commands.nonexistent'...
     """
 
     mod = import_module(path)

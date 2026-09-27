@@ -47,13 +47,14 @@ class MySpider(scrapy.Spider):
         return
         yield
 """
-        log = self.get_log(spider_code, proj_path)
+        returncode, _, log = self.crawl(spider_code, proj_path)
         assert "[myspider] DEBUG: It works!" in log
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
         assert "Spider closed (finished)" in log
+        assert returncode == 0
 
     def test_output(self, proj_path: Path) -> None:
         spider_code = """
@@ -116,6 +117,69 @@ class MySpider(scrapy.Spider):
         assert (
             "error: Please use only one of -o/--output and -O/--overwrite-output" in log
         )
+
+    def test_errorcount_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {'CLOSESPIDER_ERRORCOUNT': 1}
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (closespider_errorcount)" in err
+        assert returncode != 0
+
+    def test_close_spider_error_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+from scrapy.exceptions import CloseSpider
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise CloseSpider('payment_required', error=True)
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (payment_required)" in err
+        assert returncode != 0
+
+    def test_close_spider_custom_reason_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+from scrapy.exceptions import CloseSpider
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise CloseSpider('custom_reason')
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (custom_reason)" in err
+        assert returncode == 0
+
+    def test_start_error_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (start_error)" in err
+        assert returncode == 1
 
     def test_default_reactor(self, proj_path: Path) -> None:
         spider_code = """

@@ -6,10 +6,9 @@ See documentation in docs/topics/telnetconsole.rst
 
 from __future__ import annotations
 
-import binascii
 import logging
-import os
 import pprint
+from secrets import token_hex
 from typing import TYPE_CHECKING, Any
 
 from twisted.conch import telnet
@@ -39,6 +38,30 @@ logger = logging.getLogger(__name__)
 update_telnet_vars = object()
 
 
+def _get_manhole_class() -> type[Any]:
+    # Imported here, not at module level, because twisted.conch.manhole
+    # indirectly imports twisted.internet.reactor.
+    from twisted.conch import manhole
+
+    class _ManholeInterpreter(manhole.ManholeInterpreter):
+        def runcode(self, *args: Any, **kwargs: Any) -> None:
+            try:
+                super().runcode(*args, **kwargs)  # type: ignore[no-untyped-call]
+            except SystemExit:
+                # exit()/quit() would otherwise raise into the reactor and
+                # be logged as an unhandled error.
+                self.handler.terminal.loseConnection()
+
+    class _Manhole(manhole.Manhole):
+        def connectionMade(self) -> None:
+            super().connectionMade()  # type: ignore[no-untyped-call]
+            self.interpreter = _ManholeInterpreter(  # type: ignore[no-untyped-call]
+                self, self.namespace
+            )
+
+    return _Manhole
+
+
 class TelnetConsole(protocol.ServerFactory):
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TELNETCONSOLE_ENABLED"):
@@ -61,7 +84,7 @@ class TelnetConsole(protocol.ServerFactory):
         self.password: str = crawler.settings["TELNETCONSOLE_PASSWORD"]
 
         if not self.password:
-            self.password = binascii.hexlify(os.urandom(8)).decode("utf8")
+            self.password = token_hex(8)
             logger.info("Telnet Password: %s", self.password)
 
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
@@ -97,10 +120,10 @@ class TelnetConsole(protocol.ServerFactory):
                 ):
                     return fail(ValueError("Invalid credentials"))
 
-                from twisted.conch import manhole
-
                 protocol = telnet.TelnetBootstrapProtocol(
-                    insults.ServerProtocol, manhole.Manhole, self._get_telnet_vars()
+                    insults.ServerProtocol,
+                    _get_manhole_class(),
+                    self._get_telnet_vars(),
                 )
                 return succeed((interfaces[0], protocol, lambda: None))
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from scrapy.utils.template import render_templatefile
+from scrapy.utils._template import render_templatefile
 
 if TYPE_CHECKING:
     from pathlib import Path

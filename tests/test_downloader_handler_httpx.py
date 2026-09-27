@@ -217,3 +217,47 @@ async def test_pool_limits(concurrency: int, expected: int | None) -> None:
         assert handler._limits.max_keepalive_connections == expected
     finally:
         await handler.close()
+
+
+@coroutine_test
+async def test_experimental_warning(caplog: pytest.LogCaptureFixture) -> None:
+    class StableHandler(HttpxDownloadHandler):
+        experimental = False
+
+    crawler = get_crawler()
+    for handler_cls, expected in ((HttpxDownloadHandler, True), (StableHandler, False)):
+        caplog.clear()
+        handler = build_from_crawler(handler_cls, crawler)
+        await handler.close()
+        assert ("is experimental" in caplog.text) is expected
+
+
+@coroutine_test
+async def test_proxies_not_supported() -> None:
+    class NoProxyHandler(HttpxDownloadHandler):
+        supports_proxies = False
+
+    crawler = get_crawler()
+    handler = build_from_crawler(NoProxyHandler, crawler)
+    request = Request("http://example.com", meta={"proxy": "http://proxy.example:8080"})
+    try:
+        with pytest.raises(NotImplementedError, match="doesn't support proxies"):
+            await handler.download_request(request)
+    finally:
+        await handler.close()
+
+
+@coroutine_test
+async def test_non_basic_proxy_auth() -> None:
+    crawler = get_crawler()
+    handler = build_from_crawler(HttpxDownloadHandler, crawler)
+    request = Request(
+        "http://example.com",
+        meta={"proxy": "http://proxy.example:8080"},
+        headers={"Proxy-Authorization": "Digest deadbeef"},
+    )
+    try:
+        with pytest.raises(ValueError, match="got Digest"):
+            await handler.download_request(request)
+    finally:
+        await handler.close()

@@ -178,13 +178,13 @@ def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Req
     return request_cls(**kwargs)
 
 
-def _get_method(obj: Any, name: Any) -> Any:
+def _get_method(obj: Any, name: object) -> Any:
     """Helper function for request_from_dict"""
     name = str(name)
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError(f"Method {name!r} not found in: {obj}") from None
+        raise ValueError(f"Method {name!r} not found in: {obj!r}") from None
 
 
 def _to_verbose_cookies(cookies: CookiesT) -> list[VerboseCookie]:

@@ -377,7 +377,7 @@ class TestDataURI:
         request = Request("data:,A%20brief%20note")
         response = await self.download_request(request)
         assert response.text == "A brief note"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "US-ASCII"
 
@@ -386,7 +386,7 @@ class TestDataURI:
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
@@ -408,7 +408,7 @@ class TestDataURI:
         )
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "utf-8"
 
@@ -417,6 +417,14 @@ class TestDataURI:
         request = Request("data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D")
         response = await self.download_request(request)
         assert response.text == "Hello, world."
+
+    @coroutine_test
+    async def test_binary_mediatype(self):
+        request = Request("data:image/png;base64,iVBORw0KGgo%3D")
+        response = await self.download_request(request)
+        assert response.body == b"\x89PNG\r\n\x1a\n"
+        assert type(response) is responsetypes.from_mimetype("image/png")
+        assert not isinstance(response, TextResponse)
 
     @coroutine_test
     async def test_protocol(self):

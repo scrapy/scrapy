@@ -134,6 +134,11 @@ class ScrapyPriorityQueue:
         self.queues: dict[int, QueueProtocol] = {}
         self._start_queues: dict[int, QueueProtocol] = {}
         self.curprio: int | None = None
+        self.changed: bool = False
+        """Whether the return value of :meth:`state` changed since this
+        attribute was last set to ``False``.
+
+        The scheduler resets it after persisting that state."""
         self.init_prios(startprios)
 
     def init_prios(self, startprios: Iterable[int]) -> None:
@@ -146,12 +151,14 @@ class ScrapyPriorityQueue:
                 self.queues[priority] = q
             else:
                 q.close()
+                self.changed = True
             if self._start_queue_cls:
                 q = self._sqfactory(priority)
                 if q:
                     self._start_queues[priority] = q
                 else:
                     q.close()
+                    self.changed = True
 
         # A recorded priority may have no queue to restore, e.g. if it only
         # ever held a request that failed to serialize, so curprio comes from
@@ -182,10 +189,12 @@ class ScrapyPriorityQueue:
         if is_start_request and self._start_queue_cls:
             if priority not in self._start_queues:
                 self._start_queues[priority] = self._sqfactory(priority)
+                self.changed = True
             q = self._start_queues[priority]
         else:
             if priority not in self.queues:
                 self.queues[priority] = self.qfactory(priority)
+                self.changed = True
             q = self.queues[priority]
         q.push(request)  # this may fail (eg. serialization error)
         # A queue class may drop a request instead of storing it, and a
@@ -221,6 +230,7 @@ class ScrapyPriorityQueue:
                 else:
                     del queues[p]
                     q.close()
+                    self.changed = True
         self.curprio = min(prios) if prios else None
 
     def peek(self) -> Request | None:
@@ -238,13 +248,18 @@ class ScrapyPriorityQueue:
         # Protocols can't declare optional members
         return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
+    def state(self) -> list[int]:
+        """Return what to pass as *startprios* to resume this queue later.
+
+        Same as the return value of :meth:`close`, without closing."""
+        return sorted(self.queues.keys() | self._start_queues.keys())
+
     def close(self) -> list[int]:
-        active: set[int] = set()
+        active = self.state()
         for queues in (self.queues, self._start_queues):
-            for p, q in queues.items():
-                active.add(p)
+            for q in queues.values():
                 q.close()
-        return list(active)
+        return active
 
     def __len__(self) -> int:
         return (
@@ -352,9 +367,12 @@ class DownloaderAwarePriorityQueue:
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         self._last_selected_slot: str | None = None
+        self.changed: bool = False
+        """See :attr:`ScrapyPriorityQueue.changed`."""
         if slot_startprios:
             for slot, startprios in slot_startprios.items():
                 self.pqueues[slot] = self.pqfactory(slot, startprios)
+                self._collect_change(self.pqueues[slot])
 
     def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
         last = self._last_selected_slot
@@ -394,6 +412,11 @@ class DownloaderAwarePriorityQueue:
             start_queue_cls=self._start_queue_cls,
         )
 
+    def _collect_change(self, queue: ScrapyPriorityQueue) -> None:
+        if queue.changed:
+            queue.changed = False
+            self.changed = True
+
     def pop(self) -> Request | None:
         stats = self._downloader_interface.stats(self.pqueues)
 
@@ -403,8 +426,11 @@ class DownloaderAwarePriorityQueue:
         slot = self._next_slot(stats, update_state=True)
         queue = self.pqueues[slot]
         request = queue.pop()
+        self._collect_change(queue)
         if len(queue) == 0:
             del self.pqueues[slot]
+            queue.close()
+            self.changed = True
             if self.key:
                 # Reclaim the slot directory; rmdir leaves it alone if the
                 # downstream queues did not remove all their files.
@@ -416,8 +442,10 @@ class DownloaderAwarePriorityQueue:
         slot = self._downloader_interface.get_slot_key(request)
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
+            self.changed = True
         queue = self.pqueues[slot]
         queue.push(request)
+        self._collect_change(queue)
 
     def peek(self) -> Request | None:
         """Returns the next object to be returned by :meth:`pop`,
@@ -433,8 +461,14 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         return queue.peek()
 
+    def state(self) -> dict[str, list[int]]:
+        """See :meth:`ScrapyPriorityQueue.state`."""
+        return {slot: queue.state() for slot, queue in self.pqueues.items()}
+
     def close(self) -> dict[str, list[int]]:
-        active = {slot: queue.close() for slot, queue in self.pqueues.items()}
+        active = self.state()
+        for queue in self.pqueues.values():
+            queue.close()
         self.pqueues.clear()
         return active
 

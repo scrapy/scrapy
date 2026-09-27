@@ -18,12 +18,12 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Headers
 from scrapy.utils._download_handlers import NullCookieJar
-from scrapy.utils.python import _iter_exc_causes
-from scrapy.utils.ssl import (
+from scrapy.utils._ssl import (
     _log_sslobj_debug_info,
     _make_insecure_ssl_ctx,
     _make_ssl_context,
 )
+from scrapy.utils.python import _iter_exc_causes
 
 from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 

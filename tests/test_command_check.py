@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, PropertyMock, call, patch
 
+import pytest
+
 from scrapy.commands.check import Command, TextTestResult
 from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import proc
@@ -45,7 +47,7 @@ class CheckSpider(scrapy.Spider):
     def parse(self, response, **cb_kwargs):
         \"\"\"
         @url data:,
-        {contracts}
+        {contracts.strip()}
         \"\"\"
         {parse_def}
         """,
@@ -93,6 +95,27 @@ class CheckSpider(scrapy.Spider):
         """
         self._test_contract(proj_path, contracts, parse_def, use_reactor=False)
 
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            "",
+            "TWISTED_REACTOR_ENABLED = False\n",
+            "FORCE_CRAWLER_PROCESS = True\n",
+        ],
+        ids=["async", "no_reactor", "crawler_process"],
+    )
+    def test_check_crawl_error(self, proj_path: Path, settings: str) -> None:
+        self._write_contract(proj_path, "@returns requests 0", "pass")
+        self._append_settings(
+            proj_path / self.project_name,
+            f"\nEXTENSIONS = {{'nonexistent.module.Extension': 300}}\n{settings}",
+        )
+        ret, _, err = proc("check", cwd=proj_path)
+        assert f"[{self.spider_name}] crawl" in err
+        assert "ModuleNotFoundError" in err
+        assert "FAILED (errors=1)" in err
+        assert ret == 1
+
     def test_check_returns_items_contract(self, proj_path: Path) -> None:
         contracts = """
         @returns items 1
@@ -111,6 +134,42 @@ class CheckSpider(scrapy.Spider):
             raise Exception("Callback args not set")
         """
         self._test_contract(proj_path, contracts, parse_def)
+
+    def test_check_request_contracts(self, proj_path: Path) -> None:
+        contracts = """
+        @method POST
+        @body field1=value1
+        @header X-Header header value
+        @cookie name value
+        """
+        parse_def = """
+        request = response.request
+        if (
+            request.method != 'POST'
+            or request.body != b'field1=value1'
+            or request.headers['X-Header'] != b'header value'
+            or request.cookies != {'name': 'value'}
+        ):
+            raise Exception("Request arguments not set")
+        """
+        self._test_contract(proj_path, contracts, parse_def)
+
+    def test_check_spider_argument(self, proj_path: Path) -> None:
+        parse_def = """
+        if self.key != 'val':
+            raise Exception("Spider argument not set")
+        """
+        self._write_contract(proj_path, "", parse_def)
+        ret, out, err = proc("check", "-a", "key=val", cwd=proj_path)
+        assert "F" not in out
+        assert "OK" in err
+        assert ret == 0
+
+    def test_check_invalid_spider_argument(self, proj_path: Path) -> None:
+        self._write_contract(proj_path, "", "pass")
+        ret, _, err = proc("check", "-a", "FOO", cwd=proj_path)
+        assert ret == 2
+        assert "Invalid -a value, use -a NAME=VALUE" in err
 
     def test_check_scrapes_contract(self, proj_path: Path) -> None:
         contracts = """

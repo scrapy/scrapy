@@ -4,7 +4,6 @@ import pytest
 
 from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
-from scrapy.utils._deps_compat import PARSEL_SUPPORTS_JMESPATH
 
 
 class TestSelector:
@@ -56,9 +55,6 @@ class TestSelector:
             '<div><img src="a.jpg"><p>Hello</p></div>'
         ]
 
-    @pytest.mark.skipif(
-        not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support json"
-    )
     def test_flavor_detection_json(self) -> None:
         response = JsonResponse(
             "http://example.com", body=b'{"a": "b"}', encoding="utf-8"
@@ -66,9 +62,6 @@ class TestSelector:
         assert Selector(response).type == "json"
         assert response.jmespath("a").get() == "b"
 
-    @pytest.mark.skipif(
-        not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support json"
-    )
     def test_flavor_detection_json_with_html_body(self) -> None:
         body = b"<div><p>Hello</p></div>"
         response = JsonResponse("http://example.com", body=body, encoding="utf-8")
@@ -115,6 +108,20 @@ class TestSelector:
         )
         Selector(r1).xpath("//text()").getall()
 
+    @pytest.mark.parametrize(
+        ("body", "headers"),
+        [
+            ("﻿<p>£€</p>".encode("utf-16-le"), {}),
+            (
+                "<p>£€</p>".encode("utf-16-le"),
+                {"Content-Type": "text/html; charset=utf-16-le"},
+            ),
+        ],
+    )
+    def test_utf16(self, body: bytes, headers: dict[str, str]) -> None:
+        response = HtmlResponse("https://example.com", body=body, headers=headers)
+        assert response.css("p::text").get() == "£€"
+
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
         x = Selector(text="")
@@ -128,9 +135,6 @@ class TestSelector:
             Selector(TextResponse(url="http://example.com", body=b""), text="")
 
 
-@pytest.mark.skipif(
-    not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support jmespath"
-)
 class TestJMESPath:
     def test_json_has_html(self) -> None:
         """Sometimes the information is returned in a json wrapper"""
@@ -265,15 +269,3 @@ class TestJMESPath:
         assert resp.xpath("//div/content").jmespath("user[*].age.to_string(@)").re(
             r"(\d+)"
         ) == ["18", "32", "22", "25"]
-
-
-@pytest.mark.skipif(PARSEL_SUPPORTS_JMESPATH, reason="parsel >= 1.8 supports jmespath")
-def test_jmespath_not_available() -> None:
-    body = """
-    {
-        "website": {"name": "Example"}
-    }
-    """
-    resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
-    with pytest.raises(AttributeError):
-        resp.jmespath("website.name").get()

@@ -75,6 +75,18 @@ def test_url_is_from_spider_with_allowed_domains():
     assert url_is_from_spider("http://www.example.com/some/page.html", MySpider3)
 
 
+def test_url_is_from_spider_with_allowed_domains_property():
+    class MySpider(Spider):
+        name = "myspider"
+
+        @property
+        def allowed_domains(self):
+            return ["example.org"]
+
+    with pytest.warns(UserWarning, match="allowed_domains is a property"):
+        assert not url_is_from_spider("http://www.example.org/some/page.html", MySpider)
+
+
 @pytest.mark.parametrize(
     ("url", "expected"),
     [

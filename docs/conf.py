@@ -175,5 +175,16 @@ scrapy_intersphinx_enable = [
     "w3lib",
 ]
 
+# sphinx-llm-friendly ---------------------------------------------------------
+
+llm_friendly_llms_full_txt_exclude = [
+    # Changelog, not useful for an LLM answering "how do I use Scrapy"
+    # questions, and the largest single contributor to llms-full.txt size.
+    "news.rst",
+    "news/*",
+    "contributing.rst",
+]
+
+
 # -- Other options ------------------------------------------------------------
 default_dark_mode = False

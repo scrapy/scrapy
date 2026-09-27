@@ -13,12 +13,16 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import (
+    DecompressionError,
+    IgnoreRequest,
+    NotConfigured,
+    ScrapyDeprecationWarning,
+)
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
-from scrapy.utils._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
-from scrapy.utils.gz import gunzip
+from scrapy.utils._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded, gunzip
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
@@ -810,3 +814,22 @@ class TestHttpCompression:
                 continue
             resp = self._get_truncated_response(check_key)
             assert len(resp.body) == 0
+
+    @pytest.mark.parametrize(
+        ("body", "encoding"),
+        [
+            (b"not compressed", "gzip"),
+            (b"\x1f\x8b\x08\x00", "gzip"),
+            (b"\x1f\x8b\x08" + b"\x00" * 7 + b"\xff" * 20, "gzip"),
+            (b"not compressed", "deflate"),
+            (b"not compressed", "br"),
+            (b"not compressed", "zstd"),
+        ],
+    )
+    def test_process_response_invalid(self, body, encoding):
+        request = Request("http://example.com")
+        response = Response(
+            "http://example.com", body=body, headers={"Content-Encoding": encoding}
+        )
+        with pytest.raises(DecompressionError):
+            self.mw.process_response(request, response)

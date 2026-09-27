@@ -5,9 +5,9 @@ Feed exports
 ============
 
 One of the most frequently required features when implementing scrapers is
-being able to store the scraped data properly and, quite often, that means
-generating an "export file" with the scraped data (commonly called "export
-feed") to be consumed by other systems.
+properly storing the scraped data and, quite often, that means generating an
+"export file" with the scraped data (commonly called an "export feed") to be
+consumed by other systems.
 
 Scrapy provides this functionality out of the box with the Feed Exports, which
 allows you to generate feeds with the scraped items, using multiple
@@ -31,7 +31,7 @@ For serializing the scraped data, the feed exports use the :ref:`Item exporters
 -   :ref:`topics-feed-format-csv`
 -   :ref:`topics-feed-format-xml`
 
-But you can also extend the supported format through the
+But you can also extend the supported formats through the
 :setting:`FEED_EXPORTERS` setting.
 
 .. _topics-feed-format-json:
@@ -97,9 +97,9 @@ Marshal
 Storages
 ========
 
-When using the feed exports you define where to store the feed using one or multiple URIs_
-(through the :setting:`FEEDS` setting). The feed exports supports multiple
-storage backend types which are defined by the URI scheme.
+When using the feed exports you define where to store the feed using one or
+multiple URIs_ (through the :setting:`FEEDS` setting). The feed exports support
+multiple storage backend types that are defined by the URI scheme.
 
 The storages backends supported out of the box are:
 
@@ -125,8 +125,8 @@ being created. These parameters are:
 -   ``%(time)s`` - gets replaced by a timestamp when the feed is being created
 -   ``%(name)s`` - gets replaced by the spider name
 
-Any other named parameter gets replaced by the spider attribute of the same
-name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
+Any other named parameter is replaced by the spider attribute of the same name.
+For example, ``%(site_id)s`` would be replaced by the ``spider.site_id``
 attribute the moment the feed is being created.
 
 Here are some examples to illustrate:
@@ -164,9 +164,9 @@ The feeds are stored in the local filesystem.
 -   Example URI: ``file:///tmp/export.csv``
 -   Required external libraries: none
 
-Note that for the local filesystem storage (only) you can omit the scheme if
-you specify a path (e.g. ``/tmp/export.csv``).
-Alternatively you can also use a :class:`pathlib.Path` object.
+Note that for the local filesystem storage you can omit the scheme if you
+specify a path (e.g. ``/tmp/export.csv``). Alternatively, you can use a
+:class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
 .. _feed-storage-ftp:
@@ -174,7 +174,7 @@ Alternatively you can also use a :class:`pathlib.Path` object.
 FTP
 ---
 
-The feeds are stored in a FTP server.
+The feeds are stored on an FTP server.
 
 -   URI scheme: ``ftp``
 -   Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
@@ -290,6 +290,12 @@ storage backend is: ``True``.
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
      previous version of your data.
 
+Appending (``overwrite: False``) turns the feed into a `composite object`_,
+which has a CRC32C checksum but no MD5 hash.
+
+.. versionadded:: VERSION
+   Appending support.
+
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
 
@@ -363,6 +369,35 @@ ItemFilter
 
 .. autoclass:: scrapy.extensions.feedexport.ItemFilter
    :members:
+
+
+.. _item-processor:
+
+Item processing
+===============
+
+.. versionadded:: VERSION
+
+The ``item_processor`` :ref:`feed option <feed-options>` takes a callable, or
+its import path, that receives an accepted item and returns an iterable of the
+items to export in its place:
+
+.. code-block:: python
+
+    def split_variants(item):
+        for variant in item["variants"]:
+            yield {**item, "variants": None, **variant}
+
+Returning an empty iterable drops the item from that feed, and returning more
+than one item writes one entry per returned item.
+
+Item processors run after :ref:`item filtering <item-filter>`, and only affect
+the feed that declares them. Items are exported as returned, so the
+:signal:`item_scraped` signal, :ref:`item pipelines <topics-item-pipeline>` and
+the ``item_scraped_count`` stat still see the item as scraped; use item
+processors for output formatting, and item pipelines for anything that should
+apply to the item itself. The number of exported entries per feed is reported
+as the ``feedexport/item_count/<storage class>`` stat.
 
 
 .. _post-processing:
@@ -441,8 +476,7 @@ These are the settings used for configuring the feed exports:
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`FEED_EXPORTERS`
 -   :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
-
-.. currentmodule:: scrapy.extensions.feedexport
+-   :setting:`UPLOAD_TIMEOUT`
 
 .. setting:: FEEDS
 
@@ -500,7 +534,9 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``format``: the :ref:`serialization format <topics-feed-format>`.
 
-    This setting is mandatory, there is no fallback value.
+    If not set, it is inferred from the file extension of the feed URI, e.g.
+    ``json`` for a URI ending in :file:`.json`. It is mandatory if it cannot
+    be inferred this way.
 
 -   ``batch_item_count``: falls back to
     :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
@@ -516,6 +552,13 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
     :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
+
+-   ``item_processor``: an :ref:`item processor <item-processor>` to reshape
+    items before they are exported.
+
+    .. versionadded:: VERSION
+
+    If undefined, items are exported as scraped.
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
@@ -536,7 +579,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-s3`: ``True`` (appending is not supported)
 
-    -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
+    -   :ref:`topics-feed-storage-gcs`: ``True``
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
@@ -766,7 +809,7 @@ feed URI.
 
 The function signature should be as follows:
 
-.. function:: uri_params(params, spider)
+.. function:: scrapy.extensions.feedexport.uri_params(params, spider)
 
    Return a :class:`dict` of key-value pairs to apply to the feed URI using
    :ref:`printf-style string formatting <python:old-string-formatting>`.
@@ -821,4 +864,5 @@ source spider in the feed URI:
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
+.. _composite object: https://docs.cloud.google.com/storage/docs/composite-objects
 .. _Google Cloud Storage: https://cloud.google.com/storage/

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
+from unittest.mock import patch
 
 import pytest
 from twisted.internet import defer
@@ -151,3 +152,71 @@ async def test_exception_async_callback(
     await engine.open_spider_async()
     await engine.close_spider_async()
     assert "Error running spider_closed_callback" in caplog.text
+
+
+@coroutine_test
+async def test_fast_close_stops_downloader_and_records_dropped_requests(
+    crawler: Crawler,
+) -> None:
+    engine = ExecutionEngine(crawler, lambda _: None)
+    crawler.engine = engine
+    await engine.open_spider_async()
+
+    calls = 0
+
+    async def fast_stop_downloader() -> int:
+        nonlocal calls
+        calls += 1
+        return 3
+
+    with patch.object(engine.downloader, "stop", fast_stop_downloader):
+        await engine.close_spider_async(mode="fast")
+
+    assert calls == 1
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_dropped_count") == 3
+
+
+@coroutine_test
+async def test_fast_close_tolerates_downloader_without_stop(
+    crawler: Crawler, caplog: pytest.LogCaptureFixture
+) -> None:
+    engine = ExecutionEngine(crawler, lambda _: None)
+    crawler.engine = engine
+    await engine.open_spider_async()
+
+    downloader = engine.downloader
+
+    class NoStopDownloader:
+        def __getattr__(self, name: str) -> Any:
+            if name == "stop":
+                raise AttributeError(name)
+            return getattr(downloader, name)
+
+    engine.downloader = NoStopDownloader()  # type: ignore[assignment]
+    await engine.close_spider_async(mode="fast")
+
+    assert "does not implement stop()" in caplog.text
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_dropped_count") is None
+
+
+@coroutine_test
+async def test_fast_stop_downloader_is_idempotent(crawler: Crawler) -> None:
+    engine = ExecutionEngine(crawler, lambda _: None)
+    crawler.engine = engine
+    await engine.open_spider_async()
+
+    calls = 0
+
+    async def fast_stop_downloader() -> int:
+        nonlocal calls
+        calls += 1
+        return 1
+
+    with patch.object(engine.downloader, "stop", fast_stop_downloader):
+        await engine._fast_stop_downloader()
+        await engine._fast_stop_downloader()
+
+    assert calls == 1
+    await engine.close_spider_async()

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture(scope="session", autouse=True)
 def running_reactor() -> Generator[None]:
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
 
     from twisted.internet import reactor
 
