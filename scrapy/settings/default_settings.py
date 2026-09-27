@@ -65,6 +65,7 @@ __all__ = [
     "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
     "DOWNLOADER_MIDDLEWARES",
     "DOWNLOADER_MIDDLEWARES_BASE",
+    "DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS",
     "DOWNLOADER_STATS",
     "DOWNLOAD_BIND_ADDRESS",
     "DOWNLOAD_DELAY",
@@ -138,6 +139,8 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JOBDIR_SYNC_EVERY",
+    "JSONVALIDATION_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
     "LOG_DATEFORMAT",
@@ -159,6 +162,7 @@ __all__ = [
     "MAIL_SSL",
     "MAIL_TLS",
     "MAIL_USER",
+    "MEDIA_CACHE_SIZE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -224,6 +228,7 @@ __all__ = [
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
+    "UPLOAD_TIMEOUT",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
     "WARN_ON_GENERATOR_RETURN_VALUE",
@@ -335,6 +340,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
+    "scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware": 560,
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -344,6 +350,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware": 900,
     # Downloader side
 }
+DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS = False
 
 DOWNLOADER_STATS = True
 
@@ -454,6 +461,9 @@ ITEM_PIPELINES_BASE: dict[str, int] = {}
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
+JOBDIR_SYNC_EVERY = 0
+
+JSONVALIDATION_ENABLED = False
 
 LOG_COLOR = True
 LOG_ENABLED = True
@@ -489,6 +499,8 @@ MAIL_USER = None
 MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
+
+MEDIA_CACHE_SIZE = -1
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 
@@ -532,15 +544,15 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
     "scrapy.exceptions.CannotResolveHostError",
+    "scrapy.exceptions.DecompressionError",
     "scrapy.exceptions.DownloadConnectionRefusedError",
     "scrapy.exceptions.DownloadFailedError",
     "scrapy.exceptions.DownloadTimeoutError",
     "scrapy.exceptions.ResponseDataLossError",
+    "json.JSONDecodeError",
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    # OSError is raised by the HttpCompression middleware when trying to
-    # decompress an empty response
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
@@ -613,6 +625,8 @@ TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+UPLOAD_TIMEOUT = None
 
 URLLENGTH_LIMIT = 2083
 

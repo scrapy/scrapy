@@ -44,6 +44,7 @@ def ftp_store_file(
     overwrite: bool = True,
     mode: str | None = None,
     tls: bool = False,
+    timeout: float | None = None,
 ) -> None:
     """Opens a FTP connection with passed credentials, sets current directory
     to the directory extracted from given path, then uploads the file to server.
@@ -56,12 +57,18 @@ def ftp_store_file(
 
     If *tls* is ``True``, the connection is secured with TLS (FTPS), and the
     certificate of the server is verified.
+
+    *timeout* is the number of seconds that socket operations wait before
+    giving up. If ``None``, they wait indefinitely.
     """
     if mode is None:
         mode = "overwrite" if overwrite else "append"
     ftp = FTP_TLS(context=create_default_context()) if tls else FTP()
     with ftp, closing(file):
-        ftp.connect(host, port)
+        if timeout is None:
+            ftp.connect(host, port)
+        else:
+            ftp.connect(host, port, timeout)
         ftp.login(username, password)
         if isinstance(ftp, FTP_TLS):
             ftp.prot_p()

@@ -13,7 +13,7 @@ import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
@@ -79,6 +79,8 @@ def apply_uri_params(uri_template: str, uri_params: dict[str, Any]) -> str:
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
 ]
+
+_ItemProcessor: TypeAlias = Callable[[Any], Iterable[Any]]
 
 
 FEED_MODES: frozenset[str] = frozenset({"append", "create", "overwrite"})
@@ -255,6 +257,7 @@ class S3FeedStorage(BlockingFeedStorage):
         session_token: str | None = None,
         region_name: str | None = None,
         max_pool_connections: int | None = None,
+        upload_timeout: float | None = None,
     ):
         try:
             import boto3.session  # noqa: PLC0415
@@ -273,6 +276,13 @@ class S3FeedStorage(BlockingFeedStorage):
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
         self.max_pool_connections: int | None = max_pool_connections
+        self.upload_timeout: float | None = upload_timeout
+
+        config_kwargs: dict[str, Any] = {}
+        if max_pool_connections is not None:
+            config_kwargs["max_pool_connections"] = max_pool_connections
+        if upload_timeout is not None:
+            config_kwargs["read_timeout"] = upload_timeout
 
         boto3_session = boto3.session.Session()
         self.s3_client = boto3_session.client(
@@ -282,11 +292,7 @@ class S3FeedStorage(BlockingFeedStorage):
             aws_session_token=self.session_token,
             endpoint_url=self.endpoint_url,
             region_name=self.region_name,
-            config=(
-                Config(max_pool_connections=self.max_pool_connections)
-                if self.max_pool_connections is not None
-                else None
-            ),
+            config=Config(**config_kwargs),
         )
 
         self._mode: str = _get_mode(self, feed_options, "overwrite")
@@ -308,6 +314,7 @@ class S3FeedStorage(BlockingFeedStorage):
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
             max_pool_connections=_get_max_pool_connections(crawler.settings),
+            upload_timeout=crawler.settings.getfloat("UPLOAD_TIMEOUT") or None,
             feed_options=feed_options,
         )
 
@@ -364,9 +371,11 @@ class GCSFeedStorage(BlockingFeedStorage):
         acl: str | None,
         *,
         feed_options: dict[str, Any] | None = None,
+        timeout: float | None = None,
     ):
         self.project_id: str | None = project_id
         self.acl: str | None = acl
+        self.timeout: float | None = timeout
         u = urlparse(uri)
         assert u.hostname
         self.bucket_name: str = u.hostname
@@ -387,6 +396,7 @@ class GCSFeedStorage(BlockingFeedStorage):
             crawler.settings["GCS_PROJECT_ID"],
             crawler.settings["FEED_STORAGE_GCS_ACL"] or None,
             feed_options=feed_options,
+            timeout=crawler.settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -397,12 +407,23 @@ class GCSFeedStorage(BlockingFeedStorage):
         try:
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
-            blob = bucket.get_blob(self.blob_name) if self._mode == "append" else None
+            kwargs: dict[str, Any] = (
+                {} if self.timeout is None else {"timeout": self.timeout}
+            )
+            blob = (
+                bucket.get_blob(self.blob_name, **kwargs)
+                if self._mode == "append"
+                else None
+            )
             if blob is None:
-                kwargs = {"if_generation_match": 0} if self._mode == "create" else {}
+                upload_kwargs = (
+                    {**kwargs, "if_generation_match": 0}
+                    if self._mode == "create"
+                    else kwargs
+                )
                 try:
                     bucket.blob(self.blob_name).upload_from_file(
-                        file, predefined_acl=self.acl, **kwargs
+                        file, predefined_acl=self.acl, **upload_kwargs
                     )
                 except PreconditionFailed as error:
                     raise FileExistsError(
@@ -414,13 +435,13 @@ class GCSFeedStorage(BlockingFeedStorage):
             # untouched. Composition resolves its sources by name, so it always
             # appends to the latest version of the blob.
             part = bucket.blob(f"{self.blob_name}.{uuid4().hex}.part")
-            part.upload_from_file(file, predefined_acl=self.acl)
+            part.upload_from_file(file, predefined_acl=self.acl, **kwargs)
             try:
-                blob.compose([blob, part], client=client)
+                blob.compose([blob, part], client=client, **kwargs)
             finally:
-                part.delete(client=client)
+                part.delete(client=client, **kwargs)
             if self.acl:
-                blob.acl.save_predefined(self.acl, client=client)
+                blob.acl.save_predefined(self.acl, client=client, **kwargs)
         finally:
             file.close()
 
@@ -434,6 +455,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         use_active_mode: bool = False,
         *,
         feed_options: dict[str, Any] | None = None,
+        timeout: float | None = None,
     ):
         u = urlparse(uri)
         if not u.hostname:
@@ -445,6 +467,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.path: str = u.path
         self.tls: bool = u.scheme == "ftps"
         self.use_active_mode: bool = use_active_mode
+        self.timeout: float | None = timeout
         self._mode: str = _get_mode(self, feed_options, "overwrite")
 
     @property
@@ -468,6 +491,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             uri,
             use_active_mode=crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
             feed_options=feed_options,
+            timeout=crawler.settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -481,6 +505,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             use_active_mode=self.use_active_mode,
             mode=self._mode,
             tls=self.tls,
+            timeout=self.timeout,
         )
 
 
@@ -578,6 +603,7 @@ class FeedExporter:
         self.feeds: dict[str, dict[str, Any]] = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
+        self.processors: dict[str, _ItemProcessor | None] = {}
         self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
@@ -599,6 +625,7 @@ class FeedExporter:
                 feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
+            self.processors[uri] = self._load_processor(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
@@ -613,6 +640,7 @@ class FeedExporter:
                 feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
+            self.processors[uri] = self._load_processor(feed_options)
 
         self.storages: dict[str, type[FeedStorageProtocol]] = self._load_components(
             "FEED_STORAGES"
@@ -745,6 +773,9 @@ class FeedExporter:
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         slot_type = type(slot.storage).__name__
+        self.crawler.stats.inc_value(
+            f"feedexport/item_count/{slot_type}", slot.itemcount
+        )
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except FileExistsError:
@@ -807,42 +838,43 @@ class FeedExporter:
                 )  # if slot doesn't accept item, continue with next slot
                 continue
 
-            if not slot._skipped:
-                try:
-                    slot.start_exporting()
-                except FileExistsError:
-                    self._skip(slot)
-            if not slot._skipped:
-                assert slot.exporter
-                try:
-                    slot.exporter.export_item(item)
-                except Exception as e:
-                    if sys.version_info >= (3, 11):
-                        e.add_note(f"Item: {item!r}")
-                    raise
-            # Skipped items are counted, so that the following files of this
-            # feed still cover the same items as those of any other feed.
-            slot.itemcount += 1
-            # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
-            if (
-                self.feeds[slot.uri_template]["batch_item_count"]
-                and slot.itemcount >= self.feeds[slot.uri_template]["batch_item_count"]
-            ):
-                uri_params = self._get_uri_params(
-                    spider, self.feeds[slot.uri_template]["uri_params"], slot
-                )
-                self._schedule_slot_close(slot, spider)
-                slots.append(
-                    self._start_new_batch(
+            processor = self.processors[slot.uri_template]
+            for exported_item in processor(item) if processor else (item,):
+                if not slot._skipped:
+                    try:
+                        slot.start_exporting()
+                    except FileExistsError:
+                        self._skip(slot)
+                if not slot._skipped:
+                    assert slot.exporter
+                    try:
+                        slot.exporter.export_item(exported_item)
+                    except Exception as e:
+                        if sys.version_info >= (3, 11):
+                            e.add_note(f"Item: {exported_item!r}")
+                        raise
+                # Skipped items are counted, so that the following files of
+                # this feed still cover the same items as those of any other
+                # feed.
+                slot.itemcount += 1
+                # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
+                if (
+                    self.feeds[slot.uri_template]["batch_item_count"]
+                    and slot.itemcount
+                    >= self.feeds[slot.uri_template]["batch_item_count"]
+                ):
+                    uri_params = self._get_uri_params(
+                        spider, self.feeds[slot.uri_template]["uri_params"], slot
+                    )
+                    self._schedule_slot_close(slot, spider)
+                    slot = self._start_new_batch(  # noqa: PLW2901
                         batch_id=slot.batch_id + 1,
                         uri=apply_uri_params(slot.uri_template, uri_params),
                         feed_options=self.feeds[slot.uri_template],
                         spider=spider,
                         uri_template=slot.uri_template,
                     )
-                )
-            else:
-                slots.append(slot)
+            slots.append(slot)
         self.slots = slots
 
     def _load_components(self, setting_prefix: str) -> dict[str, Any]:
@@ -952,6 +984,10 @@ class FeedExporter:
             feed_options.get("item_filter", ItemFilter)
         )
         return item_filter_class(feed_options)
+
+    def _load_processor(self, feed_options: dict[str, Any]) -> _ItemProcessor | None:
+        item_processor = feed_options.get("item_processor")
+        return load_object(item_processor) if item_processor else None
 
 
 def __getattr__(name: str) -> Any:  # pragma: no cover
