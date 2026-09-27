@@ -418,7 +418,7 @@ def test_no_warning_when_referer_middleware_present(caplog):
     mw = build_from_crawler(RedirectMiddleware, crawler)
     caplog.clear()
     with caplog.at_level(logging.WARNING):
-        mw._engine_started()
+        mw._spider_opened()
     assert not [
         record
         for record in caplog.records
@@ -433,7 +433,7 @@ def test_warning_redirect_middleware(caplog):
     )
     mw = build_from_crawler(RedirectMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
-        mw._engine_started()
+        mw._spider_opened()
     assert (
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"
@@ -458,7 +458,7 @@ def test_warning_subclass(caplog):
     )
     mw = build_from_crawler(MyRedirectMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
-        mw._engine_started()
+        mw._spider_opened()
     assert (
         "test_warning_subclass.<locals>.MyRedirectMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"

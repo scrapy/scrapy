@@ -61,11 +61,16 @@ for argument in safe_to_ignore_arguments:
 
 def _parse_headers_and_cookies(
     parsed_args: argparse.Namespace,
-) -> tuple[list[tuple[str, bytes]], dict[str, str]]:
-    headers: list[tuple[str, bytes]] = []
+) -> tuple[list[tuple[str, str | bytes]], dict[str, str]]:
+    headers: list[tuple[str, str | bytes]] = []
     cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
-        name, val = header.split(":", 1)
+        if ":" in header:
+            name, val = header.split(":", 1)
+        elif header.endswith(";") and header[:-1].strip():
+            name, val = header[:-1], ""
+        else:
+            continue
         name = name.strip()
         val = val.strip()
         if name.title() == "Cookie":
@@ -83,7 +88,7 @@ def _parse_headers_and_cookies(
             cookies[name] = morsel.value
 
     if parsed_args.auth:
-        user, password = parsed_args.auth.split(":", 1)
+        user, _, password = parsed_args.auth.partition(":")
         headers.append(("Authorization", basic_auth_header(user, password)))
 
     return headers, cookies
@@ -103,7 +108,7 @@ def curl_to_request_kwargs(
 
     curl_args = split(curl_command)
 
-    if curl_args[0] != "curl":
+    if not curl_args or curl_args[0] != "curl":
         raise ValueError('A curl command must start with "curl"')
 
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])

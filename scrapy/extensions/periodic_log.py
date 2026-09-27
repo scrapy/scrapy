@@ -40,7 +40,7 @@ class PeriodicLog:
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self._multiplier: float = 60.0 / interval
-        self.task: AsyncioLoopingCall | LoopingCall | None = None
+        self.task: AsyncioLoopingCall[[], None] | LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
         self.ext_stats_include: Sequence[str] = (
