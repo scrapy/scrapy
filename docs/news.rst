@@ -57,7 +57,7 @@ Backward-incompatible changes
       called while the spider is being opened, now closes the spider as soon
       as it is open, instead of being ignored.
 
-    (:gh:`TBD`)
+    (TBD)
 
 -   Setting the :attr:`ExecutionEngine.running
     <scrapy.core.engine.ExecutionEngine.running>` attribute no longer has any

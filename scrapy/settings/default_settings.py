@@ -138,6 +138,7 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JOBDIR_SYNC_EVERY",
     "JSONVALIDATION_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
@@ -160,6 +161,7 @@ __all__ = [
     "MAIL_SSL",
     "MAIL_TLS",
     "MAIL_USER",
+    "MEDIA_CACHE_SIZE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -225,6 +227,7 @@ __all__ = [
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
+    "UPLOAD_TIMEOUT",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
     "WARN_ON_GENERATOR_RETURN_VALUE",
@@ -456,6 +459,7 @@ ITEM_PIPELINES_BASE: dict[str, int] = {}
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
+JOBDIR_SYNC_EVERY = 0
 
 JSONVALIDATION_ENABLED = False
 
@@ -493,6 +497,8 @@ MAIL_USER = None
 MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
+
+MEDIA_CACHE_SIZE = -1
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 
@@ -617,6 +623,8 @@ TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+UPLOAD_TIMEOUT = None
 
 URLLENGTH_LIMIT = 2083
 
