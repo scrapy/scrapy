@@ -43,51 +43,53 @@ class XMLFeedSpider(Spider):
        defining :meth:`~scrapy.Spider.parse` is not enough.
     """
 
-    #: The iterator to use. It can be either:
-    #:
-    #: -   ``'iternodes'`` - a fast iterator based on ``lxml``
-    #:
-    #: -   ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
-    #:     Keep in mind this uses DOM parsing and must load all DOM in memory
-    #:     which could be a problem for big feeds. It also parses the feed
-    #:     with an HTML parser, which can silently mangle tags that HTML
-    #:     treats as void elements, such as ``<link>``, dropping their
-    #:     content and closing tag. Use ``xml`` or ``iternodes`` instead
-    #:     for feeds affected by this.
-    #:
-    #: -   ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
-    #:     Keep in mind this uses DOM parsing and must load all DOM in memory
-    #:     which could be a problem for big feeds
     iterator: str = "iternodes"
+    """The iterator to use. It can be either:
 
-    #: Name of the node (or element) to iterate in. Example:
-    #:
-    #: .. code-block:: python
-    #:
-    #:     itertag = "product"
+    -   ``'iternodes'`` - a fast iterator based on ``lxml``
+
+    -   ``'html'`` - an iterator which uses :class:`~scrapy.Selector`. Keep in
+        mind this uses DOM parsing and must load all DOM in memory which could
+        be a problem for big feeds. It also parses the feed with an HTML
+        parser, which can silently mangle tags that HTML treats as void
+        elements, such as ``<link>``, dropping their content and closing tag.
+        Use ``xml`` or ``iternodes`` instead for feeds affected by this.
+
+    -   ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`. Keep in
+        mind this uses DOM parsing and must load all DOM in memory which could
+        be a problem for big feeds
+    """
+
     itertag: str = "item"
+    """Name of the node (or element) to iterate in. Example:
 
-    #: ``(prefix, uri)`` tuples defining the namespaces available in that
-    #: document that will be processed with this spider. The ``prefix`` and
-    #: ``uri`` will be used to automatically register namespaces using the
-    #: :meth:`~scrapy.Selector.register_namespace` method.
-    #:
-    #: You can then specify nodes with namespaces in the :attr:`itertag`
-    #: attribute.
-    #:
-    #: Example:
-    #:
-    #: .. code-block:: python
-    #:
-    #:     from scrapy.spiders import XMLFeedSpider
-    #:
-    #:
-    #:     class YourSpider(XMLFeedSpider):
-    #:
-    #:         namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
-    #:         itertag = "n:url"
-    #:         # ...
+    .. code-block:: python
+
+        itertag = "product"
+    """
+
     namespaces: Sequence[tuple[str, str]] = ()
+    """``(prefix, uri)`` tuples defining the namespaces available in that
+    document that will be processed with this spider. The ``prefix`` and
+    ``uri`` will be used to automatically register namespaces using the
+    :meth:`~scrapy.Selector.register_namespace` method.
+
+    You can then specify nodes with namespaces in the :attr:`itertag`
+    attribute.
+
+    Example:
+
+    .. code-block:: python
+
+        from scrapy.spiders import XMLFeedSpider
+
+
+        class YourSpider(XMLFeedSpider):
+
+            namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
+            itertag = "n:url"
+            # ...
+    """
 
     def process_results(
         self, response: Response, results: Iterable[Any]
@@ -185,20 +187,22 @@ class CSVFeedSpider(Spider):
        defining :meth:`~scrapy.Spider.parse` is not enough.
     """
 
-    #: Separator character for each field in the CSV file.
-    #:
-    #: ``None`` means using the default delimiter of the :mod:`csv` module,
-    #: ``','`` (comma).
     delimiter: str | None = None
+    """Separator character for each field in the CSV file.
 
-    #: Enclosure character for each field in the CSV file.
-    #:
-    #: ``None`` means using the default quote character of the :mod:`csv`
-    #: module, ``'"'`` (quotation mark).
+    ``None`` means using the default delimiter of the :mod:`csv` module,
+    ``','`` (comma).
+    """
+
     quotechar: str | None = None
+    """Enclosure character for each field in the CSV file.
 
-    #: Column names in the CSV file.
+    ``None`` means using the default quote character of the :mod:`csv` module,
+    ``'"'`` (quotation mark).
+    """
+
     headers: list[str] | None = None
+    """Column names in the CSV file."""
 
     def process_results(
         self, response: Response, results: Iterable[Any]

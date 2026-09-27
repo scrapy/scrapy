@@ -44,61 +44,65 @@ class Spider(object_ref):
     :attr:`custom_settings` or :meth:`~scrapy.Spider.update_settings`.
     """
 
-    #: The name of this spider.
-    #:
-    #: Every spider needs one: :class:`Spider` raises :exc:`ValueError` on
-    #: initialization if it has no name. You usually define it as a class
-    #: attribute, but you can also pass it at initialization time instead, e.g.
-    #: ``CrawlerProcess.crawl(MySpider, name="myspider")`` when :ref:`running
-    #: Scrapy from a script <run-from-script>`.
-    #:
-    #: The name is also how Scrapy locates a spider: the default :ref:`spider
-    #: loader <topics-api-spiderloader>` indexes the spiders of your project by
-    #: name, which is what allows the :command:`crawl` command to find them,
-    #: and the :command:`runspider` command ignores spider classes that have no
-    #: name. Names should hence be unique within a project; the default spider
-    #: loader warns about duplicates and keeps only one of the matching spider
-    #: classes. Nothing prevents you from running more than one instance of the
-    #: same spider, though, and a custom spider loader (see
-    #: :setting:`SPIDER_LOADER_CLASS`) may map names to spider classes in a
-    #: completely different way.
-    #:
-    #: If the spider scrapes a single domain, a common practice is to name the
-    #: spider after that domain, replacing dots with underscores. For example, a
-    #: spider that crawls ``books.toscrape.com`` would often be called
-    #: ``books_toscrape_com``.
     name: str
+    """The name of this spider.
 
-    #: Settings that override the project-wide configuration when running this
-    #: spider. It must be defined as a class attribute, since the settings are
-    #: updated before instantiation.
-    #:
-    #: See :ref:`topics-settings-ref` for a list of built-in settings.
-    #:
-    #: .. seealso:: :meth:`~scrapy.Spider.update_settings`, a more verbose but
-    #:    more flexible alternative, which allows setting values based on other
-    #:    settings or on spider attributes, using priorities other than
-    #:    ``'spider'``, and extending the settings of a base spider class.
-    #:
-    #:    :ref:`spider-settings`
+    Every spider needs one: :class:`Spider` raises :exc:`ValueError` on
+    initialization if it has no name. You usually define it as a class
+    attribute, but you can also pass it at initialization time instead, e.g.
+    ``CrawlerProcess.crawl(MySpider, name="myspider")`` when :ref:`running
+    Scrapy from a script <run-from-script>`.
+
+    The name is also how Scrapy locates a spider: the default :ref:`spider
+    loader <topics-api-spiderloader>` indexes the spiders of your project by
+    name, which is what allows the :command:`crawl` command to find them, and
+    the :command:`runspider` command ignores spider classes that have no name.
+    Names should hence be unique within a project; the default spider loader
+    warns about duplicates and keeps only one of the matching spider classes.
+    Nothing prevents you from running more than one instance of the same
+    spider, though, and a custom spider loader (see
+    :setting:`SPIDER_LOADER_CLASS`) may map names to spider classes in a
+    completely different way.
+
+    If the spider scrapes a single domain, a common practice is to name the
+    spider after that domain, replacing dots with underscores. For example, a
+    spider that crawls ``books.toscrape.com`` would often be called
+    ``books_toscrape_com``.
+    """
+
     custom_settings: dict[str, Any] | None = None
+    """Settings that override the project-wide configuration when running this
+    spider. It must be defined as a class attribute, since the settings are
+    updated before instantiation.
+
+    See :ref:`topics-settings-ref` for a list of built-in settings.
+
+    .. seealso:: :meth:`~scrapy.Spider.update_settings`, a more verbose but
+       more flexible alternative, which allows setting values based on other
+       settings or on spider attributes, using priorities other than
+       ``'spider'``, and extending the settings of a base spider class.
+
+       :ref:`spider-settings`
+    """
 
     #: Start URLs. See :meth:`start`.
     start_urls: list[str]
 
-    #: This attribute is set by the :meth:`~scrapy.Spider.from_crawler` class
-    #: method after initializing the class, and links to the
-    #: :class:`~scrapy.crawler.Crawler` object to which this spider instance is
-    #: bound.
-    #:
-    #: Crawlers encapsulate a lot of components in the project for single-entry
-    #: access (such as extensions, middlewares, signal managers, etc).
-    #: See :ref:`topics-api-crawler` for details.
     crawler: Crawler
+    """This attribute is set by the :meth:`~scrapy.Spider.from_crawler` class
+    method after initializing the class, and links to the
+    :class:`~scrapy.crawler.Crawler` object to which this spider instance is
+    bound.
 
-    #: Configuration for running this spider.
-    #: See :ref:`topics-settings` for details.
+    Crawlers encapsulate a lot of components in the project for single-entry
+    access (such as extensions, middlewares, signal managers, etc). See
+    :ref:`topics-api-crawler` for details.
+    """
+
     settings: BaseSettings
+    """Configuration for running this spider. See :ref:`topics-settings` for
+    details.
+    """
 
     def __init__(self, name: str | None = None, **kwargs: Any):
         if name is not None:

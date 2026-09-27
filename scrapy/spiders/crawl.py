@@ -187,10 +187,12 @@ class CrawlSpider(Spider):
        callback of their own.
     """
 
-    #: The rules that define how to crawl the site. If multiple rules match the
-    #: same link, the first one will be used, according to the order they're
-    #: defined in this attribute.
     rules: Sequence[Rule] = ()
+    """The rules that define how to crawl the site. If multiple rules match the
+    same link, the first one will be used, according to the order they're
+    defined in this attribute.
+    """
+
     _rules: list[Rule]
     _follow_links: bool
 
