@@ -39,7 +39,7 @@ _signal_args: dict[object, frozenset[str]] = {
     scheduler_empty: frozenset(),
     spider_opened: frozenset({"spider"}),
     spider_idle: frozenset({"spider"}),
-    spider_closed: frozenset({"spider", "reason"}),
+    spider_closed: frozenset({"spider", "reason", "error"}),
     spider_error: frozenset({"failure", "response", "spider"}),
     memusage_warning_reached: frozenset(),
     request_scheduled: frozenset({"request", "spider"}),
