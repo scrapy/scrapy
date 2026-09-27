@@ -14,6 +14,7 @@ dependencies = [
     "cryptography>=41.0.5",
     "cssselect>=1.2.0",
     "defusedxml>=0.7.1",
+    "formerly>=0.1.0",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.1",
     "lxml>=4.6.4",
@@ -26,6 +27,7 @@ dependencies = [
     "service_identity>=24.2.0",
     "tldextract",
     "twisted>=21.7.0",
+    'typing-extensions>=4.5.0; python_version < "3.13"',
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
@@ -69,7 +71,7 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
 color = ["colorlog>=6.6.0"]
-gcs = ["google-cloud-storage>=1.29.0"]
+gcs = ["google-cloud-storage>=1.30.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
 ipython = ["ipython>=8.15.0"]
@@ -155,6 +157,7 @@ current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
+setup_hooks = ["python3 extras/pre-bump.py"]
 
 [[tool.bumpversion.files]]
 filename = "docs/news.rst"
@@ -221,10 +224,10 @@ disable = [
     "disallowed-name",
     "duplicate-code",  # https://github.com/pylint-dev/pylint/issues/214
     "fixme",
-    "inherit-non-class",  # false positives with create_deprecated_class()
+    "inherit-non-class",  # false positives with formerly.deprecated_class()
     "invalid-name",
     "invalid-overridden-method",
-    "isinstance-second-argument-not-valid-type",  # false positives with create_deprecated_class()
+    "isinstance-second-argument-not-valid-type",  # false positives with formerly.deprecated_class()
     "line-too-long",
     "logging-format-interpolation",
     "logging-fstring-interpolation",
@@ -520,6 +523,3 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
-
-[tool.sphinx-scrapy]
-python-version = "3.14"  # Keep in sync with .github/workflows/ci.yml.
