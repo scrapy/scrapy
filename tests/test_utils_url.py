@@ -80,7 +80,7 @@ def test_url_is_from_spider_with_allowed_domains_property():
         name = "myspider"
 
         @property
-        def allowed_domains(self):
+        def allowed_domains(self):  # type: ignore[override]
             return ["example.org"]
 
     with pytest.warns(UserWarning, match="allowed_domains is a property"):

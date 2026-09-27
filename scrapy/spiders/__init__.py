@@ -17,7 +17,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Collection
 
     from twisted.internet.defer import Deferred
 
@@ -85,8 +85,31 @@ class Spider(object_ref):
        :ref:`spider-settings`
     """
 
-    #: Start URLs. See :meth:`start`.
+    allowed_domains: Collection[str]
+    """The domains that this spider is allowed to crawl, if any. Requests for
+    URLs not belonging to the domain names specified in this list (or their
+    subdomains) won't be followed if
+    :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
+    enabled.
+
+    .. versionchanged:: 2.18.0
+       Changes to this attribute during a crawl are now taken into account.
+
+    Let's say your target URL is ``https://www.example.com/1.html``, then add
+    ``'example.com'`` to the list.
+
+    You may modify this attribute while the spider runs, e.g. to allow domains
+    that you only learn about from an earlier response. The change affects
+    requests scheduled after it.
+    """
+
     start_urls: list[str]
+    """Start URLs. See :meth:`start`."""
+
+    state: dict[str, Any]
+    """Spider state to persist between batches. See
+    :ref:`topics-keeping-persistent-state-between-batches` for details.
+    """
 
     crawler: Crawler
     """This attribute is set by the :meth:`~scrapy.Spider.from_crawler` class
