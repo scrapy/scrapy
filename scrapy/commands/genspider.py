@@ -12,7 +12,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.commands.edit import _edit_file
 from scrapy.exceptions import UsageError
 from scrapy.spiderloader import get_spider_loader
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils._template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
     import argparse

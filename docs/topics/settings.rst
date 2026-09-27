@@ -4,7 +4,7 @@
 Settings
 ========
 
-The Scrapy settings allows you to customize the behaviour of all Scrapy
+The Scrapy settings allow you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
 The infrastructure of the settings provides a global namespace of key-value mappings
@@ -104,8 +104,6 @@ and settings set there should use the ``"spider"`` priority explicitly:
         def update_settings(cls, settings):
             super().update_settings(settings)
             settings.set("SOME_SETTING", "some value", priority="spider")
-
-.. versionadded:: 2.11
 
 It's also possible to modify the settings in the
 :meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider
@@ -262,6 +260,13 @@ example:
 A component can be specified either as a class object or through an import
 path.
 
+A key that cannot be resolved into a component, such as the import path of a
+component that no longer exists, raises an exception, even if its priority is
+:data:`None`.
+
+.. versionchanged:: VERSION
+   Unresolvable keys used to be silently ignored in some cases.
+
 .. warning:: Component priority dictionaries are regular :class:`dict` objects.
     Be careful not to define the same component more than once, e.g. with
     different import path strings or defining both an import path and a
@@ -334,6 +339,12 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
+.. versionchanged:: VERSION
+   :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
+   :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
+   instead of being read from the project settings and ignored in
+   :ref:`per-spider settings <spider-settings>`.
+
 Because only 1 reactor can be used per process, these settings cannot use a
 different value per spider when :ref:`running multiple spiders in the same
 process <run-multiple-spiders>`.
@@ -363,11 +374,10 @@ These settings are applied when starting the reactor:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
-They are read from the settings of the
-:class:`~scrapy.crawler.CrawlerProcess` or
-:class:`~scrapy.crawler.AsyncCrawlerProcess` object, so setting them from a
-spider or an :ref:`add-on <topics-addons>` has no effect. They are ignored
-altogether when using :class:`~scrapy.crawler.CrawlerRunner` or
+They can also be :ref:`set from a spider <spider-settings>`, but only the
+values from the first spider that runs are used; if a later spider defines a
+different value, a warning is issued. They are ignored altogether when using
+:class:`~scrapy.crawler.CrawlerRunner` or
 :class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
 
 There is an additional restriction for :setting:`TWISTED_REACTOR` and
@@ -408,6 +418,7 @@ These settings are:
 -   :setting:`LOG_FILE`
 -   :setting:`LOG_FILE_APPEND`
 -   :setting:`LOG_FORMAT`
+-   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
@@ -920,6 +931,7 @@ Default:
         "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
         "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
         "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
+        "scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware": 560,
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
         "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -934,6 +946,32 @@ orders are closer to the engine, high orders are closer to the downloader. You
 should never modify this setting in your project, modify
 :setting:`DOWNLOADER_MIDDLEWARES` instead.  For more info see
 :ref:`topics-downloader-middleware-setting`.
+
+.. setting:: DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
+
+DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
+-----------------------------------------
+
+.. versionadded:: VERSION
+
+Default: ``False``
+
+Whether an exception raised by the
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method of a downloader middleware is passed to the
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
+method of the downloader middlewares that have not processed the response yet.
+
+Enabling this lets :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`
+retry those exceptions, e.g. a response that cannot be decompressed.
+
+Before enabling it, check that the ``process_exception`` methods of your
+downloader middlewares handle those exceptions as intended. They also get the
+:exc:`~scrapy.exceptions.IgnoreRequest` exceptions that middlewares raise to
+drop a response, so one that returns a request for every exception it gets
+turns such a drop into a new request.
+
+``True`` will become the only supported value in a future version of Scrapy.
 
 .. setting:: DOWNLOADER_STATS
 
@@ -985,7 +1023,7 @@ It is possible to change this setting per domain by using
 DOWNLOAD_DELAY_JITTER
 ---------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
 
 Default: ``0.5``
 
@@ -1079,8 +1117,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": None,
     }
@@ -1225,7 +1263,7 @@ response was not properly finished. If ``True``, these responses raise a
 responses are passed through and the flag ``dataloss`` is added to the
 response, i.e.: ``'dataloss' in response.flags`` is ``True``.
 
-Optionally, this can be set per-request basis by using the
+Optionally, this can be set on a per-request basis by using the
 :reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
 
 .. note::
@@ -1540,7 +1578,7 @@ The Project ID that will be used when storing data on `Google Cloud Storage`_.
 HTTP2_MAX_FRAME_SIZE
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``16384``
 
@@ -1613,10 +1651,34 @@ A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
 
+.. setting:: JOBDIR_SYNC_EVERY
+
+JOBDIR_SYNC_EVERY
+-----------------
+
+.. versionadded:: VERSION
+
+Default: ``0``
+
+Number of changes to the crawl state kept in :setting:`JOBDIR` after which
+that state is written to disk while the crawl runs, in addition to when it
+stops. ``0`` writes it only when the crawl stops. ``1`` writes every change,
+so that a crawl killed before it can stop cleanly resumes from its latest
+state. Higher values trade some of that safety for fewer writes, which matters
+in broad crawls, where the state grows with the number of active domains.
+
+Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`.
+For a killed crawl to resume, the scheduler queues must survive the kill too,
+which requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
+:setting:`SCHEDULER_START_DISK_QUEUE`.
+
+
 .. setting:: LOG_COLOR
 
 LOG_COLOR
 ---------
+
+.. versionadded:: 2.19.0
 
 Default: ``True``
 
@@ -1709,6 +1771,22 @@ LOG_FORMATTER
 Default: :class:`scrapy.logformatter.LogFormatter`
 
 The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
+
+.. setting:: LOG_INSTALL_ROOT_HANDLER
+
+LOG_INSTALL_ROOT_HANDLER
+------------------------
+
+.. versionadded:: 2.19.0
+
+Default: ``True``
+
+Whether to install a handler for the root logger, configured according to the
+other :ref:`logging settings <logging-settings>`. Set this to ``False`` to
+manage the root logger yourself, e.g. from a custom command or from a
+:file:`settings.py` module executed before Scrapy configures logging.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_LEVEL
 
@@ -1988,7 +2066,7 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
    The ``SQLite`` queue types.
 
 Type of disk queue that will be used by the scheduler. Other available types
@@ -2181,6 +2259,8 @@ Default:
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+        "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 999,
+        "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy, and
@@ -2225,6 +2305,69 @@ Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
 finishes.
 
 For more info see: :ref:`topics-stats`.
+
+.. setting:: STICKY_META_KEYS
+
+STICKY_META_KEYS
+----------------
+
+Default: ``[]`` (empty list)
+
+The :attr:`Request.meta <scrapy.http.Request.meta>` keys to copy automatically
+from a response into the follow-up requests yielded by its callback, handled by
+:class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware`.
+
+Metadata keys already set on a follow-up request are not overwritten.
+
+For example, the following spider:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(
+                    a,
+                    meta={"start_url": response.meta["start_url"]},
+                )
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
+
+can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+        custom_settings = {
+            "STICKY_META_KEYS": ["start_url"],
+        }
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(a)
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
 
 .. setting:: TELNETCONSOLE_ENABLED
 
@@ -2408,6 +2551,27 @@ For additional information, see :doc:`core/howto/choosing-reactor`.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
+.. setting:: UPLOAD_TIMEOUT
+
+UPLOAD_TIMEOUT
+--------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Number of seconds that uploads to a remote :ref:`feed storage backend
+<topics-feed-storage-backends>` or :ref:`media pipeline storage backend
+<topics-media-pipeline>` wait for a response before giving up.
+
+Raise it if large uploads fail over a slow connection.
+
+If ``None``, each backend keeps the default of the library it uses:
+`botocore <https://docs.aws.amazon.com/botocore/latest/reference/config.html>`_
+for Amazon S3, `google-cloud-storage
+<https://docs.cloud.google.com/python/docs/reference/storage/latest/retry_timeout#configuring-timeouts>`_
+for Google Cloud Storage, and :mod:`ftplib` for FTP, which waits indefinitely.
+
 .. setting:: URLLENGTH_LIMIT
 
 URLLENGTH_LIMIT
@@ -2464,7 +2628,7 @@ modifying generator function source code during runtime, skip AST parsing of
 callback functions, or improve performance in auto-reloading development
 environments.
 
-.. only:: html
+.. only:: not llm
 
     Settings documented elsewhere:
     ------------------------------

@@ -8,7 +8,7 @@ from scrapy.utils.reactor import install_reactor
 from tests.mockserver.dns import MockDNSServer
 from tests.mockserver.http import MockServer
 
-install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+install_reactor()
 
 
 from twisted.names import cache, resolve

@@ -175,26 +175,15 @@ scrapy_intersphinx_enable = [
     "w3lib",
 ]
 
-# sphinx_llms_txt -------------------------------------------------------------
+# sphinx-llm-friendly ---------------------------------------------------------
 
-llms_txt_exclude = [
+llm_friendly_llms_full_txt_exclude = [
     # Changelog, not useful for an LLM answering "how do I use Scrapy"
     # questions, and the largest single contributor to llms-full.txt size.
     "news.rst",
+    "news/*",
     "contributing.rst",
 ]
-
-
-def _exclude_llms_txt_docs_from_markdown_builds(app):
-    builder_name = getattr(getattr(app, "builder", None), "name", None)
-    if "markdown" not in builder_name:
-        return
-    for pattern in llms_txt_exclude:
-        app.config.exclude_patterns.append(pattern)
-
-
-def setup(app):
-    app.connect("builder-inited", _exclude_llms_txt_docs_from_markdown_builds)
 
 
 # -- Other options ------------------------------------------------------------

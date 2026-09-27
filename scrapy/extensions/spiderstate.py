@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.job import job_dir
+from scrapy.utils.conf import _job_dir
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -23,7 +23,7 @@ class SpiderState:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        jobdir = job_dir(crawler.settings)
+        jobdir = _job_dir(crawler.settings)
         if not jobdir:
             raise NotConfigured
 

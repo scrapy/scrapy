@@ -6,18 +6,24 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import (
+    DecompressionError,
+    IgnoreRequest,
+    NotConfigured,
+    ScrapyDeprecationWarning,
+)
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
+    _DECOMPRESSION_ERRORS,
     _DecompressionMaxSizeExceeded,
     _inflate,
     _unbrotli,
     _unzstd,
+    gunzip,
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
-from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -104,6 +110,11 @@ class HttpCompressionMiddleware:
                 )
                 logger.warning(msg)
                 raise IgnoreRequest(msg) from e
+            except _DECOMPRESSION_ERRORS as e:
+                encodings = b", ".join(content_encoding).decode()
+                raise DecompressionError(
+                    f"Could not decompress {response} ({encodings}): {e}"
+                ) from e
             if len(response.body) < warn_size <= len(decoded_body):
                 logger.warning(
                     f"{response} body size after decompression "

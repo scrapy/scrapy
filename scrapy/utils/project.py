@@ -26,7 +26,7 @@ def find_projects(
     """Yield the root directory of every Scrapy project found in *path* or,
     recursively, in any of its subdirectories.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     Once a project is found, its subdirectories are not searched.
 
@@ -116,9 +116,7 @@ def get_project_settings() -> Settings:
     Settings from sources with a higher precedence, such as :ref:`spider
     settings <spider-settings>`, are applied when a crawl starts.
     """
-    if ENVVAR not in os.environ:
-        project = os.environ.get("SCRAPY_PROJECT", "default")
-        init_env(project)
+    init_env(os.environ.get("SCRAPY_PROJECT", "default"))
 
     settings = Settings()
     settings_module_path = os.environ.get(ENVVAR)

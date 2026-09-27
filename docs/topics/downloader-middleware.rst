@@ -1,3 +1,5 @@
+.. module:: scrapy.downloadermiddlewares
+
 .. _topics-downloader-middleware:
 
 =====================
@@ -30,11 +32,11 @@ The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
 to be overridden) and then sorted by order to get the final sorted list of
 enabled middlewares: the first middleware is the one closer to the engine and
-the last is the one closer to the downloader. In other words,
-the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
-method of each middleware will be invoked in increasing
-middleware order (100, 200, 300, ...) and the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response` method
-of each middleware will be invoked in decreasing order.
+the last is the one closer to the downloader. In other words, the
+:meth:`~DownloaderMiddleware.process_request` method of each middleware will be
+invoked in increasing middleware order (100, 200, 300, ...) and the
+:meth:`~DownloaderMiddleware.process_response` method of each middleware will
+be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to
@@ -64,8 +66,6 @@ Writing your own downloader middleware
 
 Each downloader middleware is a :ref:`component <topics-components>` that
 defines one or more of these methods:
-
-.. module:: scrapy.downloadermiddlewares
 
 .. class:: DownloaderMiddleware
 
@@ -118,9 +118,15 @@ defines one or more of these methods:
       halted and the returned request is rescheduled to be downloaded in the future.
       This is the same behavior as if a request is returned from :meth:`process_request`.
 
-      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the errback
-      function of the request (``Request.errback``) is called. If no code handles the raised
-      exception, it is ignored and not logged (unlike other exceptions).
+      If it raises an exception, and the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      the :meth:`process_exception` methods of the downloader middlewares that
+      have not processed the response yet are called.
+
+      If no middleware handles the exception, the errback function of the
+      request (``Request.errback``) is called. If no code handles an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception, it is ignored and not
+      logged, unlike other exceptions.
 
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.Request` object
@@ -133,7 +139,9 @@ defines one or more of these methods:
       Scrapy calls :meth:`process_exception` when a :ref:`download handler
       <topics-download-handlers>` or a :meth:`process_request` (from a
       downloader middleware) raises an exception (including an
-      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception), and, if the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      when a :meth:`process_response` does.
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
@@ -142,9 +150,12 @@ defines one or more of these methods:
       executing any other :meth:`process_exception` methods of installed middleware,
       until no middleware is left and the default exception handling kicks in.
 
-      If it returns a :class:`~scrapy.http.Response` object, the :meth:`process_response`
-      method chain of installed middleware is started, and Scrapy won't bother calling
-      any other :meth:`process_exception` methods of middleware.
+      If it returns a :class:`~scrapy.http.Response` object, the
+      :meth:`process_response` method chain of installed middleware is started,
+      and Scrapy won't bother calling any other :meth:`process_exception`
+      methods of middleware. For an exception from a :meth:`process_response`,
+      that chain resumes at the middlewares that have not processed the
+      response yet.
 
       If it returns a :class:`~scrapy.Request` object, the returned request is
       rescheduled to be downloaded in the future. This stops the execution of
@@ -156,6 +167,8 @@ defines one or more of these methods:
 
       :param exception: the raised exception
       :type exception: an ``Exception`` object
+
+.. currentmodule:: None
 
 .. _mw-download:
 
@@ -212,6 +225,41 @@ requests as well, and the middleware above downloads a token for each of them.
 Cache the task that downloads the token, and not only its result, to download
 the token only once.
 
+.. _mw-oauth:
+
+Signing requests with OAuth
+===========================
+
+To sign requests, e.g. for two-legged OAuth, compute the signed headers in
+:meth:`process_request` with a third-party OAuth 1 client, such as the one from
+`oauthlib`_:
+
+.. skip: next
+
+.. code-block:: python
+
+    from oauthlib.oauth1 import Client
+
+
+    class OAuthMiddleware:
+        def __init__(self, client):
+            self.client = client
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            settings = crawler.settings
+            client = Client(
+                settings["OAUTH_CONSUMER_KEY"],
+                client_secret=settings["OAUTH_CONSUMER_SECRET"],
+            )
+            return cls(client)
+
+        def process_request(self, request):
+            _, headers, _ = self.client.sign(request.url, http_method=request.method)
+            request.headers["Authorization"] = headers["Authorization"]
+
+.. _oauthlib: https://oauthlib.readthedocs.io/
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -234,10 +282,7 @@ See :ref:`cookies`.
 DefaultHeadersMiddleware
 ------------------------
 
-.. module:: scrapy.downloadermiddlewares.defaultheaders
-   :synopsis: Default Headers Downloader Middleware
-
-.. class:: DefaultHeadersMiddleware
+.. class:: scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware
 
     This middleware sets all default requests headers specified in the
     :setting:`DEFAULT_REQUEST_HEADERS` setting.
@@ -245,10 +290,7 @@ DefaultHeadersMiddleware
 DownloadTimeoutMiddleware
 -------------------------
 
-.. module:: scrapy.downloadermiddlewares.downloadtimeout
-   :synopsis: Download timeout middleware
-
-.. class:: DownloadTimeoutMiddleware
+.. class:: scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
     :setting:`DOWNLOAD_TIMEOUT` setting.
@@ -262,10 +304,7 @@ DownloadTimeoutMiddleware
 HttpAuthMiddleware
 ------------------
 
-.. module:: scrapy.downloadermiddlewares.httpauth
-   :synopsis: HTTP Auth downloader middleware
-
-.. class:: HttpAuthMiddleware
+.. class:: scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware
 
     This middleware authenticates requests using `Basic access authentication`_
     (aka. HTTP auth).
@@ -353,10 +392,7 @@ or :setting:`HTTPAUTH_PASS` is set.
 HttpCacheMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.httpcache
-   :synopsis: HTTP Cache downloader middleware
-
-.. class:: HttpCacheMiddleware
+.. class:: scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware
 
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
@@ -381,8 +417,16 @@ HttpCacheMiddleware
 
     You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals ``True``.
 
+    .. reqmeta:: cache_timestamp
+
+    .. versionadded:: 2.19.0
+
+    When a response comes from the cache, its :attr:`~scrapy.http.Response.meta`
+    exposes the :reqmeta:`cache_timestamp` key: the Unix timestamp of when the
+    response was stored, useful e.g. to interpret dates relative to the time
+    the page was downloaded rather than to the current time.
+
 .. module:: scrapy.extensions.httpcache
-   :noindex:
 
 .. _httpcache-policy-dummy:
 
@@ -508,8 +552,6 @@ To store a response, use :meth:`Response.to_dict()
 :func:`~scrapy.utils.response.response_from_dict`. That way responses of any
 class, including those of third-party plugins, are cached and restored intact.
 
-.. module:: scrapy.extensions.httpcache
-
 .. class:: CacheStorage
 
     .. method:: open_spider(spider)
@@ -541,6 +583,10 @@ class, including those of third-party plugins, are cached and restored intact.
 
       :param request: the request to find cached response for
       :type request: :class:`~scrapy.Request` object
+
+      On a cache hit, set ``request.meta["cache_timestamp"]`` (see
+      :reqmeta:`cache_timestamp`) to the Unix timestamp of when the response
+      was stored.
 
     .. method:: store_response(spider, request, response)
 
@@ -606,6 +652,11 @@ HTTPCACHE_IGNORE_HTTP_CODES
 Default: ``[]``
 
 Don't cache response with these HTTP codes.
+
+If you also retry requests (see :setting:`RETRY_HTTP_CODES`), add those
+same status codes here. Otherwise, a response that gets retried may also
+get cached, and further retries of that request could be served that
+cached response instead of reaching the server again.
 
 .. setting:: HTTPCACHE_IGNORE_MISSING
 
@@ -699,15 +750,14 @@ We assume that the spider will not issue Cache-Control directives
 in requests unless it actually needs them, so directives in requests are
 not filtered.
 
+.. currentmodule:: None
+
 .. _http-compression:
 
 HttpCompressionMiddleware
 -------------------------
 
-.. module:: scrapy.downloadermiddlewares.httpcompression
-   :synopsis: Http Compression Middleware
-
-.. class:: HttpCompressionMiddleware
+.. class:: scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware
 
    This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
    traffic to be sent/received from web sites.
@@ -732,10 +782,9 @@ Whether the Compression middleware will be enabled.
 HttpProxyMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.httpproxy
-   :synopsis: Http Proxy Middleware
-
 .. reqmeta:: proxy
+
+.. module:: scrapy.downloadermiddlewares.httpproxy
 
 .. class:: HttpProxyMiddleware
 
@@ -799,13 +848,15 @@ Default: ``"latin-1"``
 
 The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
+JsonValidationMiddleware
+------------------------
+
+.. autoclass:: scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware
+
 OffsiteMiddleware
 -----------------
 
-.. module:: scrapy.downloadermiddlewares.offsite
-   :synopsis: Offsite Middleware
-
-.. autoclass:: OffsiteMiddleware
+.. autoclass:: scrapy.downloadermiddlewares.offsite.OffsiteMiddleware
 
    .. automethod:: should_follow
 
@@ -813,7 +864,6 @@ RedirectMiddleware
 ------------------
 
 .. module:: scrapy.downloadermiddlewares.redirect
-   :synopsis: Redirection Middleware
 
 .. class:: RedirectMiddleware
 
@@ -993,7 +1043,6 @@ RetryMiddleware
 ---------------
 
 .. module:: scrapy.downloadermiddlewares.retry
-   :synopsis: Retry Middleware
 
 .. class:: RetryMiddleware
 
@@ -1062,6 +1111,10 @@ In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
 
+If you also cache responses (see :setting:`HTTPCACHE_ENABLED`), see
+:setting:`HTTPCACHE_IGNORE_HTTP_CODES` to keep retried responses out of the
+cache.
+
 .. setting:: RETRY_EXCEPTIONS
 
 RETRY_EXCEPTIONS
@@ -1071,10 +1124,12 @@ Default::
 
     [
         'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DecompressionError',
         'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadFailedError',
         'scrapy.exceptions.DownloadTimeoutError',
         'scrapy.exceptions.ResponseDataLossError',
+        'json.JSONDecodeError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
@@ -1124,15 +1179,14 @@ Adjust retry request priority relative to original request:
 See also: :reqmeta:`priority_adjust`.
 
 
+.. currentmodule:: None
+
 .. _topics-dlmw-robots:
 
 RobotsTxtMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.robotstxt
-   :synopsis: robots.txt middleware
-
-.. class:: RobotsTxtMiddleware
+.. class:: scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 
     This middleware filters out requests forbidden by the robots.txt exclusion
     standard.
@@ -1252,10 +1306,7 @@ You can implement support for a new robots.txt_ parser by subclassing
 the abstract base class :class:`~scrapy.robotstxt.RobotParser` and
 implementing the methods described below.
 
-.. module:: scrapy.robotstxt
-   :synopsis: robots.txt parser interface and implementations
-
-.. autoclass:: RobotParser
+.. autoclass:: scrapy.robotstxt.RobotParser
    :members:
 
 .. _robots.txt: https://www.robotstxt.org/
@@ -1263,10 +1314,7 @@ implementing the methods described below.
 DownloaderStats
 ---------------
 
-.. module:: scrapy.downloadermiddlewares.stats
-   :synopsis: Downloader Stats Middleware
-
-.. class:: DownloaderStats
+.. class:: scrapy.downloadermiddlewares.stats.DownloaderStats
 
    Middleware that stores stats of all requests, responses and exceptions that
    pass through it.
@@ -1277,10 +1325,7 @@ DownloaderStats
 UserAgentMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.useragent
-   :synopsis: User Agent Middleware
-
-.. class:: UserAgentMiddleware
+.. class:: scrapy.downloadermiddlewares.useragent.UserAgentMiddleware
 
    Middleware that sets the ``User-Agent`` header.
 

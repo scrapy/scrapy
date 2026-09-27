@@ -13,7 +13,7 @@ from w3lib.url import is_url
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
-from scrapy.utils import display
+from scrapy.utils import _colorize
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import _schedule_coro, aiter_errback, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
@@ -170,7 +170,7 @@ class Command(BaseRunSpiderCommand):
             items = self.items.get(lvl, [])
 
         print("# Scraped Items ", "-" * 60)
-        display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
+        _colorize.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
     def print_requests(self, lvl: int | None = None, colour: bool = True) -> None:
         if lvl is not None:
@@ -181,7 +181,7 @@ class Command(BaseRunSpiderCommand):
             requests = []
 
         print("# Requests ", "-" * 65)
-        display.pprint(requests, colorize=colour)
+        _colorize.pprint(requests, colorize=colour)
 
     def print_results(self, opts: argparse.Namespace) -> None:
         colour = not opts.nocolour

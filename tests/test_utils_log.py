@@ -163,7 +163,7 @@ class TestGetFormatter:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         pytest.importorskip("colorlog")
-        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         stream = _TTYStringIO()
         handler = logging.StreamHandler(stream)
         handler.setFormatter(_get_formatter(handler, self._settings()))
@@ -186,7 +186,7 @@ class TestGetFormatter:
     def test_plain_when_log_color_disabled(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         handler = logging.StreamHandler(_TTYStringIO())
         formatter = _get_formatter(handler, self._settings(LOG_COLOR=False))
         assert type(formatter) is logging.Formatter
@@ -202,7 +202,7 @@ class TestGetFormatter:
     def test_plain_when_colorlog_not_installed(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         monkeypatch.setitem(sys.modules, "colorlog", None)
         handler = logging.StreamHandler(_TTYStringIO())
         formatter = _get_formatter(handler, self._settings())
@@ -232,20 +232,26 @@ class TestConfigureLogging:
         return warnings.showwarning.__module__ == "logging"
 
     def test_log_stdout(self) -> None:
-        configure_logging(settings={"LOG_STDOUT": True}, install_root_handler=False)
+        configure_logging(
+            settings={"LOG_STDOUT": True, "LOG_INSTALL_ROOT_HANDLER": False}
+        )
         assert isinstance(sys.stdout, StreamLogger)
 
     def test_captures_warnings(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(sys, "warnoptions", [])
         logging.captureWarnings(False)
-        configure_logging(install_root_handler=False)
+        configure_logging(settings={"LOG_INSTALL_ROOT_HANDLER": False})
         assert self._warnings_are_captured()
 
     def test_keeps_warnoptions(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(sys, "warnoptions", ["default"])
         logging.captureWarnings(False)
-        configure_logging(install_root_handler=False)
+        configure_logging(settings={"LOG_INSTALL_ROOT_HANDLER": False})
         assert not self._warnings_are_captured()
+
+    def test_install_root_handler_param_deprecated(self) -> None:
+        with pytest.warns(ScrapyDeprecationWarning, match="install_root_handler"):
+            configure_logging(install_root_handler=False)
 
     def test_reinstall_root_handler_removed_from_root(self) -> None:
         install_scrapy_root_handler(Settings())

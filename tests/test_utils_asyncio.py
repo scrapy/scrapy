@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
@@ -155,7 +155,9 @@ class TestAsyncioLoopingCall:
 
     @coroutine_test
     async def test_looping_call_bad_function(self):
-        looping_call = AsyncioLoopingCall(Deferred)
+        looping_call: AsyncioLoopingCall[[], Deferred[Any]] = AsyncioLoopingCall(
+            Deferred
+        )
         with pytest.raises(TypeError):
             looping_call.start(0.1)
         assert not looping_call.running

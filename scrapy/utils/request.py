@@ -178,7 +178,7 @@ def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Req
     return request_cls(**kwargs)
 
 
-def _get_method(obj: Any, name: Any) -> Any:
+def _get_method(obj: Any, name: object) -> Any:
     """Helper function for request_from_dict"""
     name = str(name)
     try:

@@ -9,7 +9,7 @@ import pytest
 
 from scrapy import Request, Spider
 from scrapy.http import Response
-from scrapy.utils.gz import gunzip
+from scrapy.utils._compression import gunzip
 from tests import get_testdata
 from tests.benchmarks import crawl
 

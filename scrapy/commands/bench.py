@@ -15,6 +15,7 @@ from scrapy.utils.test import get_testenv
 if TYPE_CHECKING:
     import argparse
     from collections.abc import AsyncIterator
+    from types import TracebackType
 
 
 class Command(ScrapyCommand):
@@ -36,14 +37,19 @@ class Command(ScrapyCommand):
 
 class _BenchServer:
     def __enter__(self) -> None:
-        pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
+        pargs = [sys.executable, "-u", "-m", "scrapy.utils._benchserver"]
         self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()
         )
         assert self.proc.stdout
         self.proc.stdout.readline()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore[no-untyped-def]
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.proc.kill()
         self.proc.wait()
         time.sleep(0.2)

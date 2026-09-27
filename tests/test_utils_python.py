@@ -60,7 +60,7 @@ class TestMutableAsyncChain:
         m.extend(self.g2())
         m.extend(self.g3())
 
-        assert await m.__anext__() == 0
+        assert await anext(m) == 0
         results = await collect_asyncgen(m)
         assert results == list(range(1, 10))
 

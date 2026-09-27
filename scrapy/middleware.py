@@ -38,7 +38,7 @@ class MiddlewareManager(ABC):
     component_name: str
     _compat_spider: Spider | None = None
 
-    def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
+    def __init__(self, *middlewares: object, crawler: Crawler | None = None) -> None:
         self.crawler: Crawler | None = crawler
         if crawler is None:
             warnings.warn(
@@ -48,7 +48,7 @@ class MiddlewareManager(ABC):
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-        self.middlewares: tuple[Any, ...] = middlewares
+        self.middlewares: tuple[object, ...] = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         self.methods: dict[str, deque[Callable[..., Any] | None]] = defaultdict(deque)
         self._mw_methods_requiring_spider: set[Callable[..., Any]] = set()

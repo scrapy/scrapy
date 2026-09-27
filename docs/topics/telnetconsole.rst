@@ -1,4 +1,4 @@
-.. currentmodule:: scrapy.extensions.telnet
+.. module:: scrapy.extensions.telnet
 
 .. _topics-telnetconsole:
 
@@ -7,7 +7,7 @@ Telnet Console
 ==============
 
 Scrapy comes with a built-in telnet console for inspecting and controlling a
-Scrapy running process. The telnet console is just a regular python shell
+Scrapy running process. The telnet console is just a regular Python shell
 running inside the Scrapy process, so you can do literally anything from it.
 
 The telnet console is a :ref:`built-in Scrapy extension
@@ -29,7 +29,7 @@ disable it if you want. For more information about the extension itself see
 .. note::
     This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
-.. seealso:: :ref:`security-telnet`
+.. seealso:: :ref:`security-telnet`, :ref:`using-mcp-server`
 
 .. highlight:: none
 
@@ -150,6 +150,33 @@ To stop::
     telnet localhost 6023
     >>> engine.stop()
     Connection closed by foreign host.
+
+
+.. _telnet-concurrency:
+
+Change concurrency and delays
+-----------------------------
+
+The downloader checks its concurrency and delay attributes for every request
+it sends, so you can speed a crawl up or slow it down while it runs::
+
+    telnet localhost 6023
+    >>> downloader = engine.downloader
+    >>> downloader.total_concurrency = 32
+    >>> for slot in downloader.slots.values():
+    ...     slot.concurrency = 4
+    ...     slot.delay = 0.5
+    ...
+    >>>
+
+``total_concurrency`` is :setting:`CONCURRENT_REQUESTS`, and ``slots`` maps the
+name of every :setting:`download slot <DOWNLOAD_SLOTS>` in use to an object
+whose ``concurrency`` and ``delay`` come from
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (or
+:setting:`CONCURRENT_REQUESTS_PER_IP`) and :setting:`DOWNLOAD_DELAY`. A slot
+created later, e.g. for a domain not visited yet, starts from those settings
+again, and :ref:`AutoThrottle <topics-autothrottle>` recalculates ``delay``
+after every response.
 
 .. skip: end
 
