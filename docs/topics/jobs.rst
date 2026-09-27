@@ -176,9 +176,8 @@ Where:
 
 -   :class:`~scrapy.core.scheduler.Scheduler` creates the ``requests.queue/``
     directory and the ``active.json`` file, the latter containing the state
-    data returned by :meth:`DownloaderAwarePriorityQueue.close()
-    <scrapy.pqueues.DownloaderAwarePriorityQueue.close>` the last time the job
-    was paused.
+    data of :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue`, written
+    when the job stops and, with :setting:`JOBDIR_SYNC_EVERY`, as it runs.
 
 -   :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` creates the
     ``{hostname}-{hash}`` directories.
