@@ -224,17 +224,20 @@ class TestFileDownloadCrawl:
     )
     @coroutine_test
     async def test_download_media_created_default_failure(
-        self, settings: dict[str, Any], caplog: pytest.LogCaptureFixture
+        self,
+        settings: dict[str, Any],
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
     ) -> None:
         crawler = self._create_crawler(
             CreatedMediaDownloadSpider, {**self.settings, **settings}
         )
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                self.mockserver.url("/static/files/images/"),
+                mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                mockserver=self.mockserver,
+                mockserver=mockserver,
             )
         assert len(self.items) == 1
         assert not self.items[0][self.media_key]
@@ -245,7 +248,7 @@ class TestFileDownloadCrawl:
 
     @coroutine_test
     async def test_download_media_created_allowed(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
         settings = {
             **self.settings,
@@ -255,10 +258,10 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(CreatedMediaDownloadSpider, settings)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                self.mockserver.url("/static/files/images/"),
+                mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                mockserver=self.mockserver,
+                mockserver=mockserver,
             )
         self._assert_files_downloaded(self.items, caplog.text)
         assert crawler.stats
