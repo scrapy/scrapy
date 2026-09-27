@@ -87,6 +87,21 @@ class TestTextResponse(TestResponseBase):
         assert isinstance(r1.text, str)
         assert r1.text == unicode_string
 
+    @pytest.mark.parametrize(
+        ("body", "encoding", "text", "reused"),
+        [
+            ("\xa3\U0001f600", "utf8", "\xa3\U0001f600", True),
+            ("\ufeffWORD", "utf-8", "WORD", False),
+            ("\x80", "latin-1", "\u20ac", False),
+        ],
+    )
+    def test_str_body_text(
+        self, body: str, encoding: str, text: str, reused: bool
+    ) -> None:
+        r = self.response_class("http://www.example.com", body=body, encoding=encoding)
+        assert r.text == text
+        assert (r.text is body) is reused
+
     def test_encoding(self):
         r1 = self.response_class(
             "http://www.example.com",

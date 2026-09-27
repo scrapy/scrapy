@@ -150,6 +150,8 @@ class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
     def copy(self) -> Self:
         return self.__class__(self)
 
+    __copy__ = copy
+
     def deepcopy(self) -> Self:
         """Return a :func:`~copy.deepcopy` of this item."""
         return deepcopy(self)

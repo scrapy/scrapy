@@ -12,12 +12,12 @@ from w3lib.url import add_or_replace_parameter
 from scrapy import Spider, signals
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+    from tests.mockserver.http import MockServer
 
 
 class MediaDownloadSpider(SimpleSpider):
@@ -74,8 +74,6 @@ class CreatedMediaDownloadSpider(MediaDownloadSpider):
 
 
 class TestFileDownloadCrawl:
-    mockserver: MockServer
-
     pipeline_class = "scrapy.pipelines.files.FilesPipeline"
     store_setting_key = "FILES_STORE"
     media_key = "files"
@@ -85,15 +83,6 @@ class TestFileDownloadCrawl:
         "c2281c83670e31d8aaab7cb642b824db",
         "ed3f6538dc15d4d9179dae57319edc5f",
     }
-
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
 
     def setup_method(self):
         # prepare a directory for storing files
@@ -165,11 +154,13 @@ class TestFileDownloadCrawl:
         assert not list(self.tmpmediastore.iterdir())
 
     @coroutine_test
-    async def test_download_media(self, caplog: pytest.LogCaptureFixture) -> None:
+    async def test_download_media(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         crawler = self._create_crawler(MediaDownloadSpider)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                self.mockserver.url("/static/files/images/"),
+                mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
@@ -177,12 +168,12 @@ class TestFileDownloadCrawl:
 
     @coroutine_test
     async def test_download_media_wrong_urls(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                self.mockserver.url("/static/files/images/"),
+                mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
@@ -190,21 +181,21 @@ class TestFileDownloadCrawl:
 
     @coroutine_test
     async def test_download_media_redirected_default_failure(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                self.mockserver.url("/static/files/images/"),
+                mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                mockserver=self.mockserver,
+                mockserver=mockserver,
             )
         self._assert_files_download_failure(crawler, self.items, 302, caplog.text)
 
     @coroutine_test
     async def test_download_media_redirected_allowed(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
         settings = {
             **self.settings,
@@ -213,10 +204,10 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(RedirectedMediaDownloadSpider, settings)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                self.mockserver.url("/static/files/images/"),
+                mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                mockserver=self.mockserver,
+                mockserver=mockserver,
             )
         self._assert_files_downloaded(self.items, caplog.text)
         assert crawler.stats.get_value("downloader/response_status_count/302") == 3
@@ -276,7 +267,7 @@ class TestFileDownloadCrawl:
 
     @coroutine_test
     async def test_download_media_file_path_error(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
         cls = load_object(self.pipeline_class)
 
@@ -291,10 +282,10 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(MediaDownloadSpider, settings)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                self.mockserver.url("/static/files/images/"),
+                mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
-                mockserver=self.mockserver,
+                mockserver=mockserver,
             )
         assert "ZeroDivisionError" in caplog.text
 

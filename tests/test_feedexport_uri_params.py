@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
@@ -72,7 +73,7 @@ class TestURIParams(ABC):
 
         assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}"
 
-    def test_empty_dict(self):
+    def test_empty_dict(self, caplog: pytest.LogCaptureFixture) -> None:
         def uri_params(params, spider):
             return {}
 
@@ -85,8 +86,11 @@ class TestURIParams(ABC):
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
-            with pytest.raises(KeyError):
+            with caplog.at_level(logging.ERROR):
                 feed_exporter.open_spider(spider)
+
+        assert feed_exporter.slots == []
+        assert "'name'" in caplog.text
 
     def test_params_as_is(self):
         def uri_params(params, spider):
