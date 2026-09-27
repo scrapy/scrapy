@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import pytest
@@ -65,8 +65,12 @@ async def test_stats_calculations(crawler: Crawler, stats: StatsCollector) -> No
     assert logstats.itemsprev == 3492
 
     # Simulate when spider closes after running for 30 mins
-    stats.set_value("start_time", datetime.fromtimestamp(1655100172))
-    stats.set_value("finish_time", datetime.fromtimestamp(1655101972))
+    stats.set_value(
+        "start_time", datetime.fromtimestamp(1655100172).astimezone(timezone.utc)
+    )
+    stats.set_value(
+        "finish_time", datetime.fromtimestamp(1655101972).astimezone(timezone.utc)
+    )
     logstats.spider_closed(crawler.spider, "test reason")
     assert stats.get_value("responses_per_minute") == 172.9
     assert stats.get_value("items_per_minute") == 116.4
@@ -88,8 +92,12 @@ def test_stats_calculation_no_elapsed_time(
 ) -> None:
     """The stat values should be None since the elapsed time is 0."""
     logstats = build_from_crawler(LogStats, crawler)
-    stats.set_value("start_time", datetime.fromtimestamp(1655100172))
-    stats.set_value("finish_time", datetime.fromtimestamp(1655100172))
+    stats.set_value(
+        "start_time", datetime.fromtimestamp(1655100172).astimezone(timezone.utc)
+    )
+    stats.set_value(
+        "finish_time", datetime.fromtimestamp(1655100172).astimezone(timezone.utc)
+    )
     assert crawler.spider
     logstats.spider_closed(crawler.spider, "test reason")
     assert stats.get_value("responses_per_minute") is None

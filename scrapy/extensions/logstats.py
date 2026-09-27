@@ -30,7 +30,7 @@ class LogStats:
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: AsyncioLoopingCall | LoopingCall | None = None
+        self.task: AsyncioLoopingCall[[Spider], None] | LoopingCall | None = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

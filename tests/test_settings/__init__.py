@@ -2,6 +2,8 @@
 # (too many false positives)
 
 import logging
+import re
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -422,29 +424,32 @@ class TestBaseSettings:
             "csv.gz": "bar",
         }
 
+    @pytest.mark.parametrize("priority", [1, None])
     @pytest.mark.parametrize(
         ("key", "exception"),
         [
             pytest.param(1, TypeError, id="type-error"),
             pytest.param("foo", ValueError, id="value-error"),
             pytest.param("csv.gz", NameError, id="name-error"),
+            pytest.param(
+                "nonexistent.module.Component", ImportError, id="import-error"
+            ),
         ],
     )
-    def test_get_component_priority_dict_with_base_handles_load_object_exceptions(
-        self, key, exception
-    ):
+    def test_get_component_priority_dict_with_base_unresolvable_key(
+        self, key: Any, exception: type[Exception], priority: int | None
+    ) -> None:
         with pytest.raises(exception):
             load_object(key)
 
         settings = BaseSettings(
             {
-                "FOO": BaseSettings({key: 1}),
+                "FOO_BASE": BaseSettings({"csv.excel": 1}),
+                "FOO": BaseSettings({key: priority}),
             }
         )
-        value = settings.get_component_priority_dict_with_base("FOO")
-
-        assert isinstance(value, BaseSettings)
-        assert dict(value) == {key: 1}
+        with pytest.raises(ValueError, match=re.escape(f"{key!r}, a key of the FOO")):
+            settings.get_component_priority_dict_with_base("FOO")
 
     def test_get_component_priority_dict_with_base_override_none_by_type(self):
         settings = BaseSettings()
