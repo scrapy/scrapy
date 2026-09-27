@@ -30,7 +30,7 @@ Backward-incompatible changes
     :reqmeta:`download_maxsize` request meta key for specific requests. You can
     also set the limit to ``0`` to lift it altogether.
 
-    (:gh:`TBD`)
+    (:gh:`8213`)
 
 .. _release-2.19.0:
 
