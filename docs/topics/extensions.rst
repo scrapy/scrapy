@@ -123,12 +123,12 @@ Log Stats extension
 
 Log basic stats like crawled pages and scraped items.
 
-.. _reactorlag:
+.. _event-loop-lag:
 
-Reactor lag monitor
-~~~~~~~~~~~~~~~~~~~
+Event loop lag monitor
+~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: scrapy.extensions.reactorlag.ReactorLagMonitor
+.. autoclass:: scrapy.extensions.event_loop_lag.EventLoopLagMonitor
 
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
