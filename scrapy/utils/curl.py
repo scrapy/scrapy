@@ -61,8 +61,8 @@ for argument in safe_to_ignore_arguments:
 
 def _parse_headers_and_cookies(
     parsed_args: argparse.Namespace,
-) -> tuple[list[tuple[str, bytes]], dict[str, str]]:
-    headers: list[tuple[str, bytes]] = []
+) -> tuple[list[tuple[str, str | bytes]], dict[str, str]]:
+    headers: list[tuple[str, str | bytes]] = []
     cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
         if ":" in header:

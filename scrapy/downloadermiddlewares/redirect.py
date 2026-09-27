@@ -43,7 +43,7 @@ class BaseRedirectMiddleware:
     def from_crawler(cls, crawler: Crawler) -> Self:
         o = cls(crawler.settings)
         o.crawler = crawler
-        crawler.signals.connect(o._engine_started, signal=signals.engine_started)
+        crawler.signals.connect(o._spider_opened, signal=signals.spider_opened)
         return o
 
     def handle_referer(self, request: Request, response: Response) -> None:
@@ -63,7 +63,7 @@ class BaseRedirectMiddleware:
             return
         self._referer_spider_middleware.get_processed_request(request, response)
 
-    def _engine_started(self) -> None:
+    def _spider_opened(self) -> None:
         self._referer_spider_middleware = self.crawler.get_spider_middleware(
             RefererMiddleware
         )
@@ -90,7 +90,9 @@ class BaseRedirectMiddleware:
             f"{referer_cls} (or a subclass), or {replacement}.",
         )
 
-    def _redirect(self, redirected: Request, request: Request, reason: Any) -> Request:
+    def _redirect(
+        self, redirected: Request, request: Request, reason: str | int
+    ) -> Request:
         ttl = request.meta.setdefault("redirect_ttl", self.max_redirect_times)
         redirects = request.meta.get("redirect_times", 0) + 1
 
