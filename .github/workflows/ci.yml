@@ -58,7 +58,7 @@ jobs:
         - python-version: "3.10"
           env:
             TOXENV: mypy-tests
-        # Keep in sync with pyproject.toml tool.sphinx-scrapy.python-version.
+        # Keep in sync with .readthedocs.yml.
         - python-version: "3.14"
           env:
             TOXENV: docs
@@ -103,11 +103,13 @@ jobs:
   # keep the overall CI time unchanged.
   pypy:
     if: github.event.action != 'closed'
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    name: tests (ubuntu, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+      # A hanging test would otherwise keep the job running until GitHub kills
+      # it, without telling which test hung.
+      PYTEST_ADDOPTS: --timeout=120 ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
@@ -169,11 +171,13 @@ jobs:
 
   ubuntu:
     needs: [pre-commit, checks]
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    name: tests (ubuntu, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+      # A hanging test would otherwise keep the job running until GitHub kills
+      # it, without telling which test hung.
+      PYTEST_ADDOPTS: --timeout=120 ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
@@ -249,7 +253,7 @@ jobs:
 
   windows:
     needs: [pre-commit, checks]
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    name: tests (windows, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
     timeout-minutes: 60
     env:
@@ -296,7 +300,7 @@ jobs:
 
   macos:
     needs: [pre-commit, checks]
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    name: tests (macos, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: macos-latest
     timeout-minutes: 60
     env:

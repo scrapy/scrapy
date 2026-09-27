@@ -119,20 +119,16 @@ scrapy.Spider
        attributes in the new instance so they can be accessed later inside the
        spider's code.
 
-       .. versionchanged:: 2.11
+       The settings in ``crawler.settings`` can be modified in this method,
+       which is handy if you want to modify them based on arguments. As a
+       consequence, these settings aren't the final values as they can be
+       modified later by e.g. :ref:`add-ons <topics-addons>`. For the same
+       reason, most of the :class:`~scrapy.crawler.Crawler` attributes aren't
+       initialized at this point.
 
-           The settings in ``crawler.settings`` can now be modified in this
-           method, which is handy if you want to modify them based on
-           arguments. As a consequence, these settings aren't the final values
-           as they can be modified later by e.g. :ref:`add-ons
-           <topics-addons>`. For the same reason, most of the
-           :class:`~scrapy.crawler.Crawler` attributes aren't initialized at
-           this point.
-
-           The final settings and the initialized
-           :class:`~scrapy.crawler.Crawler` attributes are available in the
-           :meth:`start` method, handlers of the
-           :signal:`engine_started` signal and later.
+       The final settings and the initialized :class:`~scrapy.crawler.Crawler`
+       attributes are available in the :meth:`start` method, handlers of the
+       :signal:`engine_started` signal and later.
 
        :param crawler: crawler to which the spider will be bound
        :type crawler: :class:`~scrapy.crawler.Crawler` instance
@@ -820,126 +816,9 @@ Let's see an example similar to the previous one, but using a
 SitemapSpider
 -------------
 
-.. class:: SitemapSpider
-
-    SitemapSpider allows you to crawl a site by discovering the URLs using
-    `Sitemaps`_.
-
-    It supports nested sitemaps and discovering sitemap urls from
-    `robots.txt`_.
-
-    .. attribute:: sitemap_urls
-
-        A list of urls pointing to the sitemaps whose urls you want to crawl.
-
-        You can also point to a `robots.txt`_ and it will be parsed to extract
-        sitemap urls from it.
-
-    .. attribute:: sitemap_rules
-
-        A list of tuples ``(regex, callback)`` where:
-
-        * ``regex`` is a regular expression to match urls extracted from sitemaps.
-          ``regex`` can be either a str or a compiled regex object.
-
-        * callback is the callback to use for processing the urls that match
-          the regular expression. ``callback`` can be a string (indicating the
-          name of a spider method) or a callable.
-
-        For example:
-
-        .. code-block:: python
-
-            sitemap_rules = [("/product/", "parse_product")]
-
-        Rules are applied in order, and only the first one that matches will be
-        used.
-
-        If you omit this attribute, all urls found in sitemaps will be
-        processed with the ``parse`` callback.
-
-    .. attribute:: sitemap_follow
-
-        A list of regexes of sitemap URLs that should be followed: those
-        linked from `Sitemap index files`_, and those declared through the
-        ``Sitemap`` directive of a :file:`robots.txt` file.
-
-        .. versionchanged:: VERSION
-            Now also applies to sitemaps declared in :file:`robots.txt`.
-
-        By default, all sitemaps are followed.
-
-    .. attribute:: sitemap_alternate_links
-
-        Specifies if alternate links for one ``url`` should be followed. These
-        are links for the same website in another language passed within
-        the same ``url`` block.
-
-        For example:
-
-        .. code-block:: xml
-
-            <url>
-                <loc>http://example.com/</loc>
-                <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
-            </url>
-
-        With ``sitemap_alternate_links`` set, this would retrieve both URLs. With
-        ``sitemap_alternate_links`` disabled, only ``http://example.com/`` would be
-        retrieved.
-
-        Default is ``sitemap_alternate_links`` disabled.
-
-    .. method:: sitemap_filter(entries)
-
-        This is a filter function that could be overridden to select sitemap entries
-        based on their attributes.
-
-        For example:
-
-        .. code-block:: xml
-
-            <url>
-                <loc>http://example.com/</loc>
-                <lastmod>2005-01-01</lastmod>
-            </url>
-
-        We can define a ``sitemap_filter`` function to filter ``entries`` by date:
-
-        .. code-block:: python
-
-            from datetime import datetime
-            from scrapy.spiders import SitemapSpider
-
-
-            class FilteredSitemapSpider(SitemapSpider):
-                name = "filtered_sitemap_spider"
-                allowed_domains = ["example.com"]
-                sitemap_urls = ["http://example.com/sitemap.xml"]
-
-                def sitemap_filter(self, entries):
-                    for entry in entries:
-                        date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
-                        if date_time.year >= 2005:
-                            yield entry
-
-        This would retrieve only ``entries`` modified on 2005 and the following
-        years.
-
-        Entries are dict objects extracted from the sitemap document.
-        Usually, the key is the tag name and the value is the text inside it.
-
-        It's important to notice that:
-
-        - as the loc attribute is required, entries without this tag are discarded
-        - alternate links are stored in a list with the key ``alternate``
-          (see ``sitemap_alternate_links``)
-        - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
-
-        If you omit this method, all entries found in sitemaps will be
-        processed, observing other attributes and their settings.
-
-    .. automethod:: sitemap_request
+.. autoclass:: SitemapSpider
+    :members:
+    :exclude-members: start
 
 
 SitemapSpider examples
@@ -1028,7 +907,6 @@ Combine SitemapSpider with other sources of urls:
 
 .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
-.. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
