@@ -72,36 +72,36 @@ class EngineState(Enum):
     The engine goes through these states in order, possibly skipping some.
     """
 
-    #: The engine has been created but no spider has been opened yet.
     CREATED = "created"
+    """The engine has been created but no spider has been opened yet."""
 
-    #: The spider is being opened. The :signal:`spider_opened` signal may be
-    #: in flight.
     SPIDER_OPENING = "spider_opening"
+    """The spider is being opened. The :signal:`spider_opened` signal may be in
+    flight."""
 
-    #: The spider is open but the engine has not been started yet. Requests can
-    #: be made via :meth:`~scrapy.core.engine.ExecutionEngine.download_async`.
     SPIDER_OPEN = "spider_open"
+    """The spider is open but the engine has not been started yet. Requests can
+    be made via :meth:`~scrapy.core.engine.ExecutionEngine.download_async`."""
 
-    #: The engine is being started. The :signal:`engine_started` signal may be
-    #: in flight.
     STARTING = "starting"
+    """The engine is being started. The :signal:`engine_started` signal may be
+    in flight."""
 
-    #: The engine is running. Start requests and requests from callbacks are
-    #: processed.
     RUNNING = "running"
+    """The engine is running. Start requests and requests from callbacks are
+    processed."""
 
-    #: The spider is being closed. The :signal:`spider_closed` signal may be in
-    #: flight. The engine is no longer considered running. Scheduled requests
-    #: are no longer sent.
     SPIDER_CLOSING = "spider_closing"
+    """The spider is being closed. The :signal:`spider_closed` signal may be in
+    flight. The engine is no longer considered running. Scheduled requests are
+    no longer sent."""
 
-    #: The spider has been closed. The :signal:`engine_started` or
-    #: :signal:`engine_stopped` signal may be in flight.
     STOPPING = "stopping"
+    """The spider has been closed. The :signal:`engine_started` or
+    :signal:`engine_stopped` signal may be in flight."""
 
-    #: The engine has been stopped and cannot be reused.
     STOPPED = "stopped"
+    """The engine has been stopped and cannot be reused."""
 
 
 _STATE_TRANSITIONS: dict[EngineState, frozenset[EngineState]] = {
@@ -293,12 +293,12 @@ class ExecutionEngine:
     async def start_async(self) -> None:
         """Start the execution engine.
 
+        .. versionadded:: 2.14
+
         Completes when the engine is stopped.
 
         Raises :exc:`RuntimeError` if the spider is not open, or if the engine
         has already been started or stopped.
-
-        .. versionadded:: 2.14
 
         .. versionchanged:: VERSION
             Now raises :exc:`RuntimeError` instead of returning if the spider
@@ -349,16 +349,9 @@ class ExecutionEngine:
         .. versionadded:: 2.14
 
         .. versionchanged:: VERSION
-            Calling it after :meth:`open_spider_async` and before
-            :meth:`start_async` now closes the spider, and calling it while the
-            engine is stopping or after it has stopped now does nothing;
-            previously :exc:`RuntimeError` was raised in these cases. Calling
-            it while the spider is closing for another reason now completes
-            immediately instead of waiting for the in-flight requests.
-
-        This is a shortcut for :meth:`close_spider_async`, see its docs for
-        the behavior in different engine states, including when it
-        completes.
+            This is now a shortcut for :meth:`close_spider_async`, see its docs
+            for the behavior in different engine states, including when it
+            completes.
         """
         mode = _normalize_stop_mode(mode, allow_force=False)
         await self.close_spider_async(reason="shutdown", mode=mode)
@@ -374,11 +367,10 @@ class ExecutionEngine:
     async def close_async(
         self, *, reason: str = "shutdown", error: bool = False
     ) -> None:
-        """Close the execution engine, whatever its state.
+        """Stop the execution engine.
 
-        If a spider has been opened, this is a shortcut for
-        :meth:`close_spider_async`. Otherwise, only the downloader is closed.
-        In all cases, the engine ends up stopped.
+        This is safe to call in any engine state. If a spider has been opened,
+        this is an alias for :meth:`close_spider_async`.
         """
         if self._state is EngineState.CREATED:
             # Only the downloader needs closing.
@@ -606,9 +598,9 @@ class ExecutionEngine:
     async def download_async(self, request: Request) -> Response:
         """Return a coroutine which fires with a Response as result.
 
-         Only downloader middlewares are applied.
-
         .. versionadded:: 2.14
+
+         Only downloader middlewares are applied.
         """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
@@ -821,11 +813,6 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
-            Calling it while the spider is closing now completes immediately
-            instead of waiting for the in-flight requests, and calling it
-            after the spider has been closed is no longer an error.
-
         If the spider was not opened before, this method raises
         :exc:`RuntimeError`.
 
@@ -834,6 +821,11 @@ class ExecutionEngine:
 
         If the spider is closing or has already been closed, this method
         completes immediately.
+
+        .. versionchanged:: VERSION
+            Calling it while the spider is closing now completes immediately
+            instead of waiting for the in-flight requests, and calling it
+            after the spider has been closed is no longer an error.
 
         Otherwise, this method completes after the spider has been closed and
         the engine has stopped. If :signal:`engine_started` handlers are still
