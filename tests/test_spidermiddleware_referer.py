@@ -39,33 +39,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
 
-class TestRefererMiddleware:
-    req_meta: dict[str, Any] = {}
-    resp_headers: dict[str, str] = {}
-    settings: dict[str, Any] = {}
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
-    ]
-
-    @pytest.fixture
-    def mw(self) -> RefererMiddleware:
-        settings = Settings(self.settings)
-        return RefererMiddleware(settings)
-
-    def get_request(self, target: str) -> Request:
-        return Request(target, meta=self.req_meta)
-
-    def get_response(self, origin: str) -> Response:
-        return Response(origin, headers=self.resp_headers)
-
-    def test(self, mw: RefererMiddleware) -> None:
-        for origin, target, referrer in self.scenarii:
-            response = self.get_response(origin)
-            request = self.get_request(target)
-            out = list(mw.process_spider_output(response, [request]))
-            assert out[0].headers.get("Referer") == referrer
-
-
 ScenarioTable: TypeAlias = list[tuple[str, str, bytes | None]]
 
 # Referrer policy scenarios, as (origin, target, expected Referer) triples.
@@ -73,6 +46,7 @@ ScenarioTable: TypeAlias = list[tuple[str, str, bytes | None]]
 # Based on https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
 # with some additional filtering of s3://
 SCENARII_DEFAULT: ScenarioTable = [
+    ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ("https://example.com/", "https://scrapy.org/", b"https://example.com/"),
     ("http://example.com/", "http://scrapy.org/", b"http://example.com/"),
     ("http://example.com/", "https://scrapy.org/", b"http://example.com/"),
@@ -611,92 +585,92 @@ SCENARII_UNSAFE_URL: ScenarioTable = [
     ),
 ]
 
-
-class MixinDefault:
-    scenarii = SCENARII_DEFAULT
-
-
-class MixinNoReferrer:
-    scenarii = SCENARII_NO_REFERRER
-
-
-class MixinNoReferrerWhenDowngrade:
-    scenarii = SCENARII_NO_REFERRER_WHEN_DOWNGRADE
-
-
-class MixinSameOrigin:
-    scenarii = SCENARII_SAME_ORIGIN
-
-
-class MixinOrigin:
-    scenarii = SCENARII_ORIGIN
-
-
-class MixinStrictOrigin:
-    scenarii = SCENARII_STRICT_ORIGIN
-
-
-class MixinOriginWhenCrossOrigin:
-    scenarii = SCENARII_ORIGIN_WHEN_CROSS_ORIGIN
-
-
-class MixinStrictOriginWhenCrossOrigin:
-    scenarii = SCENARII_STRICT_ORIGIN_WHEN_CROSS_ORIGIN
-
-
-class MixinUnsafeUrl:
-    scenarii = SCENARII_UNSAFE_URL
-
-
-class TestRefererMiddlewareDefault(MixinDefault, TestRefererMiddleware):
-    pass
-
-
-# --- Tests using settings to set policy using class path
-class TestSettingsNoReferrer(MixinNoReferrer, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerPolicy"}
-
-
-class TestSettingsNoReferrerWhenDowngrade(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
-    }
+# Each policy, as (REFERRER_POLICY setting, Request.meta value, scenarios); the
+# Request.meta value doubles as the test id. A None setting means that the
+# policy is the default one, so the setting is left alone.
+POLICY_CASES: list[tuple[str | None, str, ScenarioTable]] = [
+    (None, POLICY_SCRAPY_DEFAULT, SCENARII_DEFAULT),
+    (
+        "scrapy.spidermiddlewares.referer.NoReferrerPolicy",
+        POLICY_NO_REFERRER,
+        SCENARII_NO_REFERRER,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy",
+        POLICY_NO_REFERRER_WHEN_DOWNGRADE,
+        SCENARII_NO_REFERRER_WHEN_DOWNGRADE,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.SameOriginPolicy",
+        POLICY_SAME_ORIGIN,
+        SCENARII_SAME_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.OriginPolicy",
+        POLICY_ORIGIN,
+        SCENARII_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.StrictOriginPolicy",
+        POLICY_STRICT_ORIGIN,
+        SCENARII_STRICT_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy",
+        POLICY_ORIGIN_WHEN_CROSS_ORIGIN,
+        SCENARII_ORIGIN_WHEN_CROSS_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy",
+        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+        SCENARII_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy",
+        POLICY_UNSAFE_URL,
+        SCENARII_UNSAFE_URL,
+    ),
+]
 
 
-class TestSettingsSameOrigin(MixinSameOrigin, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
+def assert_scenarii(
+    scenarii: ScenarioTable,
+    *,
+    settings: dict[str, Any] | None = None,
+    req_meta: dict[str, Any] | None = None,
+    resp_headers: dict[str, str] | None = None,
+) -> None:
+    mw = RefererMiddleware(Settings(settings or {}))
+    for origin, target, referrer in scenarii:
+        response = Response(origin, headers=resp_headers or {})
+        request = Request(target, meta=req_meta or {})
+        out = list(mw.process_spider_output(response, [request]))
+        assert out[0].headers.get("Referer") == referrer, f"{origin} -> {target}"
 
 
-class TestSettingsOrigin(MixinOrigin, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginPolicy"}
-
-
-class TestSettingsStrictOrigin(MixinStrictOrigin, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.StrictOriginPolicy"
-    }
-
-
-class TestSettingsOriginWhenCrossOrigin(
-    MixinOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-
-
-class TestSettingsStrictOriginWhenCrossOrigin(
-    MixinStrictOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy"
-    }
-
-
-class TestSettingsUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
+@pytest.mark.parametrize(
+    ("policy_path", "policy_name", "scenarii"),
+    [
+        pytest.param(policy_path, policy_name, scenarii, id=policy_name)
+        for policy_path, policy_name, scenarii in POLICY_CASES
+    ],
+)
+@pytest.mark.parametrize("channel", ["settings", "req_meta"])
+def test_policy(
+    channel: str,
+    policy_path: str | None,
+    policy_name: str,
+    scenarii: ScenarioTable,
+) -> None:
+    """Each policy, set either as a class path in the settings or as a policy
+    name in ``Request.meta``."""
+    settings = (
+        {"REFERRER_POLICY": policy_path}
+        if channel == "settings" and policy_path is not None
+        else {}
+    )
+    req_meta = {"referrer_policy": policy_name} if channel == "req_meta" else {}
+    assert_scenarii(scenarii, settings=settings, req_meta=req_meta)
 
 
 class CustomPythonOrgPolicy(ReferrerPolicy):
@@ -714,86 +688,107 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
         return None
 
 
-class TestSettingsCustomPolicy(TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": CustomPythonOrgPolicy}
-    scenarii = [
-        ("https://example.com/", "https://scrapy.org/", b"https://python.org/"),
-        ("http://example.com/", "http://scrapy.org/", b"http://python.org/"),
-        ("http://example.com/", "https://scrapy.org/", b"https://python.org/"),
-        ("https://example.com/", "http://scrapy.org/", b"http://python.org/"),
-        (
-            "file:///home/path/to/somefile.html",
-            "https://scrapy.org/",
-            b"https://python.org/",
+SCENARII_CUSTOM_POLICY: ScenarioTable = [
+    ("https://example.com/", "https://scrapy.org/", b"https://python.org/"),
+    ("http://example.com/", "http://scrapy.org/", b"http://python.org/"),
+    ("http://example.com/", "https://scrapy.org/", b"https://python.org/"),
+    ("https://example.com/", "http://scrapy.org/", b"http://python.org/"),
+    (
+        "file:///home/path/to/somefile.html",
+        "https://scrapy.org/",
+        b"https://python.org/",
+    ),
+    (
+        "file:///home/path/to/somefile.html",
+        "http://scrapy.org/",
+        b"http://python.org/",
+    ),
+]
+
+
+def test_custom_policy() -> None:
+    assert_scenarii(
+        SCENARII_CUSTOM_POLICY, settings={"REFERRER_POLICY": CustomPythonOrgPolicy}
+    )
+
+
+@pytest.mark.parametrize(
+    ("settings", "req_meta", "resp_headers", "scenarii"),
+    [
+        # Request.meta takes precedence over the setting.
+        pytest.param(
+            {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"},
+            {"referrer_policy": POLICY_UNSAFE_URL},
+            {},
+            SCENARII_UNSAFE_URL,
+            id="meta-over-same-origin",
         ),
-        (
-            "file:///home/path/to/somefile.html",
-            "http://scrapy.org/",
-            b"http://python.org/",
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
+            },
+            {"referrer_policy": POLICY_NO_REFERRER},
+            {},
+            SCENARII_NO_REFERRER,
+            id="meta-over-no-referrer-when-downgrade",
         ),
-    ]
-
-
-# --- Tests using Request meta dict to set policy
-class TestRequestMetaDefault(MixinDefault, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_SCRAPY_DEFAULT}
-
-
-class TestRequestMetaNoReferrer(MixinNoReferrer, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_NO_REFERRER}
-
-
-class TestRequestMetaNoReferrerWhenDowngrade(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    req_meta = {"referrer_policy": POLICY_NO_REFERRER_WHEN_DOWNGRADE}
-
-
-class TestRequestMetaSameOrigin(MixinSameOrigin, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_SAME_ORIGIN}
-
-
-class TestRequestMetaOrigin(MixinOrigin, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_ORIGIN}
-
-
-class TestRequestMetaSrictOrigin(MixinStrictOrigin, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_STRICT_ORIGIN}
-
-
-class TestRequestMetaOriginWhenCrossOrigin(
-    MixinOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    req_meta = {"referrer_policy": POLICY_ORIGIN_WHEN_CROSS_ORIGIN}
-
-
-class TestRequestMetaStrictOriginWhenCrossOrigin(
-    MixinStrictOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    req_meta = {"referrer_policy": POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN}
-
-
-class TestRequestMetaUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
-
-
-class TestRequestMetaPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
-    req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
-
-
-class TestRequestMetaPrecedence002(MixinNoReferrer, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
-    }
-    req_meta = {"referrer_policy": POLICY_NO_REFERRER}
-
-
-class TestRequestMetaPrecedence003(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-    req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
+            },
+            {"referrer_policy": POLICY_UNSAFE_URL},
+            {},
+            SCENARII_UNSAFE_URL,
+            id="meta-over-origin-when-cross-origin",
+        ),
+        # The response Referrer-Policy header takes precedence over the
+        # setting, whatever its case.
+        pytest.param(
+            {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"},
+            {},
+            {"Referrer-Policy": POLICY_UNSAFE_URL.upper()},
+            SCENARII_UNSAFE_URL,
+            id="header-uppercase",
+        ),
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
+            },
+            {},
+            {"Referrer-Policy": POLICY_NO_REFERRER.swapcase()},
+            SCENARII_NO_REFERRER,
+            id="header-swapcase",
+        ),
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
+            },
+            {},
+            {"Referrer-Policy": POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()},
+            SCENARII_NO_REFERRER_WHEN_DOWNGRADE,
+            id="header-titlecase",
+        ),
+        # The empty string means "no-referrer-when-downgrade".
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
+            },
+            {},
+            {"Referrer-Policy": ""},
+            SCENARII_NO_REFERRER_WHEN_DOWNGRADE,
+            id="header-empty",
+        ),
+    ],
+)
+def test_policy_precedence(
+    settings: dict[str, Any],
+    req_meta: dict[str, Any],
+    resp_headers: dict[str, str],
+    scenarii: ScenarioTable,
+) -> None:
+    assert_scenarii(
+        scenarii, settings=settings, req_meta=req_meta, resp_headers=resp_headers
+    )
 
 
 class TestRequestMetaSettingFallback:
@@ -953,40 +948,6 @@ class TestSettingsPolicyByName:
         )
         with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
-
-
-class TestPolicyHeaderPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
-    resp_headers = {"Referrer-Policy": POLICY_UNSAFE_URL.upper()}
-
-
-class TestPolicyHeaderPrecedence002(MixinNoReferrer, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
-    }
-    resp_headers = {"Referrer-Policy": POLICY_NO_REFERRER.swapcase()}
-
-
-class TestPolicyHeaderPrecedence003(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-    resp_headers = {"Referrer-Policy": POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
-
-
-class TestPolicyHeaderPrecedence004(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    """
-    The empty string means "no-referrer-when-downgrade"
-    """
-
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-    resp_headers = {"Referrer-Policy": ""}
 
 
 class TestPolicyMethodResponseParamRename:
