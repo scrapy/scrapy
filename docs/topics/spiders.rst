@@ -817,16 +817,8 @@ SitemapSpider
 -------------
 
 .. autoclass:: SitemapSpider
-
-    .. autoattribute:: sitemap_urls
-
-    .. autoattribute:: sitemap_rules
-
-    .. autoattribute:: sitemap_follow
-
-    .. autoattribute:: sitemap_alternate_links
-
-    .. automethod:: sitemap_filter
+    :members:
+    :exclude-members: start
 
 
 SitemapSpider examples
