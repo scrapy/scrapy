@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 
 from scrapy import Request, Spider
-from scrapy.core.scraper import Scraper
-from scrapy.exceptions import IgnoreRequest
+from scrapy.core import scraper as scraper_module
+from scrapy.core.scraper import Scraper, _Slot
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
@@ -137,3 +138,13 @@ async def test_none_in_callback_output() -> None:
     )
     await crawler.crawl_async()
     assert crawler.stats.get_value("item_scraped_count") == 2
+
+
+def test_slot_deprecated() -> None:
+    with pytest.warns(ScrapyDeprecationWarning, match="Slot is deprecated"):
+        assert scraper_module.Slot is _Slot
+
+
+def test_missing_attribute() -> None:
+    with pytest.raises(AttributeError):
+        scraper_module.Foo
