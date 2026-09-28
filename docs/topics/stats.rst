@@ -82,6 +82,19 @@ Get all stats:
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
+Stats collectors are also :class:`mutable mappings
+<collections.abc.MutableMapping>` of stats:
+
+.. versionadded:: VERSION
+
+.. code-block:: python
+
+    stats["hostname"] = socket.gethostname()
+    hostname = stats.get("hostname")
+
+As with a :class:`dict`, ``stats[key]`` raises :exc:`KeyError` for a missing
+stat, and with :class:`DummyStatsCollector` every stat is missing.
+
 .. skip: end
 
 Available Stats Collectors
