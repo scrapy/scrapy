@@ -117,7 +117,14 @@ class BaseItemExporter(ABC):
         elif include_empty:
             field_iter = self.fields_to_export
         else:
-            field_iter = (x for x in self.fields_to_export if x in item)
+            # A non-Mapping iterable can contain (item_field, output_field) pairs,
+            # so the item field, and not the whole entry, is what must be looked
+            # up in the item.
+            field_iter = (
+                x
+                for x in self.fields_to_export
+                if (x if isinstance(x, str) else x[0]) in item
+            )
 
         for field_name in field_iter:
             if isinstance(field_name, str):

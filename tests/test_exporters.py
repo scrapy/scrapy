@@ -120,6 +120,23 @@ class TestBaseItemExporter(ABC):
         ie = self._get_exporter(fields_to_export={"name": "名稱"})
         assert list(ie.get_serialized_fields(self.i)) == [("名稱", "John\xa3")]
 
+    @pytest.mark.parametrize(
+        ("fields_to_export", "expected"),
+        [
+            (["name"], [("name", "John\xa3")]),
+            ([("name", "Name")], [("Name", "John\xa3")]),
+            ([["name", "Name"]], [("Name", "John\xa3")]),
+            ({"name": "Name"}, [("Name", "John\xa3")]),
+            (["name", "age"], [("name", "John\xa3"), ("age", "22")]),
+            ([("name", "Name"), ("age", "Age")], [("Name", "John\xa3"), ("Age", "22")]),
+            (["missing", "name"], [("name", "John\xa3")]),
+            ([("missing", "Missing"), ("name", "Name")], [("Name", "John\xa3")]),
+        ],
+    )
+    def test_fields_to_export_pairs(self, fields_to_export, expected):
+        ie = self._get_exporter(fields_to_export=fields_to_export)
+        assert list(ie.get_serialized_fields(self.i)) == expected
+
     def test_field_order(self):
         item = self.item_class(age="22", name="John\xa3")
         ie = self._get_exporter()
