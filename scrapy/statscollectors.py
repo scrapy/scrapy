@@ -6,11 +6,14 @@ from __future__ import annotations
 
 import logging
 import pprint
+from collections.abc import MutableMapping
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from scrapy import Spider
     from scrapy.crawler import Crawler
 
@@ -20,9 +23,14 @@ logger = logging.getLogger(__name__)
 
 StatsT: TypeAlias = dict[str, Any]
 
+_MISSING = object()
 
-class StatsCollector:
+
+class StatsCollector(MutableMapping[str, Any]):
     """The base stats collector that other stats collectors are based on."""
+
+    __eq__ = object.__eq__
+    __hash__ = object.__hash__
 
     def __init__(self, crawler: Crawler):
         self._dump: bool = crawler.settings.getbool("STATS_DUMP")
@@ -115,6 +123,28 @@ class StatsCollector:
 
     def __str__(self) -> str:
         return pprint.pformat(self._stats)
+
+    # Components use ``if stats:`` to tell a stats collector from None.
+    def __bool__(self) -> bool:
+        return True
+
+    def __getitem__(self, key: str) -> Any:
+        value = self.get_value(key, _MISSING)
+        if value is _MISSING:
+            raise KeyError(key)
+        return value
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.set_value(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        del self._stats[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.get_stats())
+
+    def __len__(self) -> int:
+        return len(self.get_stats())
 
 
 class MemoryStatsCollector(StatsCollector):
