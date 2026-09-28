@@ -33,7 +33,14 @@ def _global_config_path() -> Path:
     """Return the path to the global configuration file, which lives in the
     user configuration folder of the running platform.
     """
-    return Path(user_config_dir("scrapy", appauthor=False), "config.toml")
+    if sys.platform == "win32":
+        config_dir = Path(user_config_dir("scrapy", appauthor=False))
+    else:
+        config_dir = (
+            Path(os.environ.get("XDG_CONFIG_HOME") or "~/.config").expanduser()
+            / "scrapy"
+        )
+    return config_dir / "config.toml"
 
 
 def build_component_list(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import warnings
 from pathlib import Path
 from typing import Any
@@ -104,15 +105,12 @@ class TestConfig:
 
     @pytest.fixture(autouse=True)
     def config_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-        """Point the global configuration file at an initially empty folder.
-
-        platformdirs does not determine the user configuration folder from
-        environment variables on every platform, hence the patching.
-        """
+        """Point the global configuration file at an initially empty folder."""
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         monkeypatch.setattr(
-            "scrapy.utils.conf.user_config_dir", lambda *args, **kwargs: str(config_dir)
+            "scrapy.utils.conf._global_config_path",
+            lambda: config_dir / "config.toml",
         )
         return config_dir
 
@@ -293,6 +291,27 @@ class TestConfig:
 
         with pytest.warns(ScrapyDeprecationWarning, match="closest_scrapy_cfg"):
             assert Path(closest_scrapy_cfg()) == (tmp_path / "scrapy.cfg").resolve()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX-only location")
+@pytest.mark.parametrize("xdg", [True, False])
+def test_global_config_xdg(
+    xdg: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    if xdg:
+        config_home = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
+    else:
+        config_home = tmp_path / ".config"
+        monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    (config_home / "scrapy").mkdir(parents=True)
+    (config_home / "scrapy" / "config.toml").write_text(
+        '[settings]\nshell = "bpython"\n', encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert get_config().get("settings", "shell") == "bpython"
 
 
 class TestFeedExportConfig:

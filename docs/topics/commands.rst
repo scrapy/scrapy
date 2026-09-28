@@ -44,11 +44,10 @@ Global configuration
 
 Project-independent configuration parameters may also be set for all your
 projects in the :file:`scrapy/config.toml` file of your user configuration
-folder, as determined by platformdirs_:
+folder:
 
-* Linux: :file:`$XDG_CONFIG_HOME/scrapy/config.toml`, i.e.
+* Linux and macOS: :file:`$XDG_CONFIG_HOME/scrapy/config.toml`, i.e.
   :file:`~/.config/scrapy/config.toml` by default
-* macOS: :file:`~/Library/Application Support/scrapy/config.toml`
 * Windows: :file:`%LOCALAPPDATA%\\scrapy\\config.toml`
 
 For example:
@@ -64,8 +63,6 @@ Only the following parameters are supported there:
 
 Any project may override them, using the same section and parameter name in its
 :file:`pyproject.toml` file.
-
-.. _platformdirs: https://pypi.org/project/platformdirs/
 
 .. _topics-project-structure:
 
