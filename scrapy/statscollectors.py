@@ -24,6 +24,18 @@ logger = logging.getLogger(__name__)
 StatsT: TypeAlias = dict[str, Any]
 
 _MISSING = object()
+_SPIDER_ARG_METHODS = (
+    "get_value",
+    "get_stats",
+    "set_value",
+    "set_stats",
+    "inc_value",
+    "max_value",
+    "min_value",
+    "clear_stats",
+    "open_spider",
+    "close_spider",
+)
 
 
 class StatsCollector(MutableMapping[str, Any]):
@@ -36,33 +48,8 @@ class StatsCollector(MutableMapping[str, Any]):
         self._dump: bool = crawler.settings.getbool("STATS_DUMP")
         self._stats: StatsT = {}
         self._crawler: Crawler = crawler
-
-    def __getattribute__(self, name: str) -> Any:
-        cached_name = f"_cached_{name}"
-        try:
-            return super().__getattribute__(cached_name)
-        except AttributeError:
-            pass
-
-        original_attr = super().__getattribute__(name)
-
-        if name in {
-            "get_value",
-            "get_stats",
-            "set_value",
-            "set_stats",
-            "inc_value",
-            "max_value",
-            "min_value",
-            "clear_stats",
-            "open_spider",
-            "close_spider",
-        } and callable(original_attr):
-            wrapped = _warn_spider_arg(original_attr)
-            setattr(self, cached_name, wrapped)
-            return wrapped
-
-        return original_attr
+        for name in _SPIDER_ARG_METHODS:
+            setattr(self, name, _warn_spider_arg(getattr(self, name)))
 
     def get_value(
         self, key: str, default: Any = None, spider: Spider | None = None
