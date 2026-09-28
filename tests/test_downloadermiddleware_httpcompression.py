@@ -139,7 +139,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers["Content-Encoding"] == b"gzip"
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -151,7 +151,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers["Content-Encoding"] == b"br"
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -171,7 +171,7 @@ class TestHttpCompression:
                 assert raw_content == newresponse.body
             assert newresponse is not response
             assert newresponse.body.startswith(b"<!DOCTYPE")
-            assert "Content-Encoding" not in newresponse.headers
+            assert newresponse.headers["Content-Encoding"] == b"zstd"
 
     def test_process_response_rawdeflate(self):
         response = self._getresponse("rawdeflate")
@@ -182,7 +182,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers["Content-Encoding"] == b"deflate"
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74840)
 
@@ -195,7 +195,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers["Content-Encoding"] == b"deflate"
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74840)
 
@@ -225,7 +225,7 @@ class TestHttpCompression:
         request = response.request
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers.getlist("Content-Encoding") == [b"gzip, deflate"]
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
     def test_multi_compression_single_header_invalid_compression(
@@ -260,7 +260,10 @@ class TestHttpCompression:
         request = response.request
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers.getlist("Content-Encoding") == [
+            b"gzip",
+            b"deflate",
+        ]
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
     def test_multi_compression_multiple_header_invalid_compression(self):
@@ -279,7 +282,10 @@ class TestHttpCompression:
         request = response.request
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers.getlist("Content-Encoding") == [
+            b"gzip",
+            b"deflate, gzip",
+        ]
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
     def test_multi_compression_single_and_multiple_header_invalid_compression(self):
@@ -372,7 +378,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers["Content-Encoding"] == b"gzip"
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -385,7 +391,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers["Content-Encoding"] == b"gzip"
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -398,7 +404,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.headers["Content-Encoding"] == b"x-gzip"
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
