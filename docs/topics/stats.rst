@@ -82,8 +82,8 @@ Get all stats:
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
-Stats collectors are also :class:`mutable mappings
-<collections.abc.MutableMapping>` of stats:
+Stats collectors that subclass :class:`StatsCollector`, like the built-in ones,
+are also :class:`mutable mappings <collections.abc.MutableMapping>` of stats:
 
 .. versionadded:: VERSION
 
