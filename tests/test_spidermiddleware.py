@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import platform
 import weakref
 from collections.abc import AsyncIterator, Iterable
 from inspect import isasyncgen
@@ -106,6 +107,10 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
         with pytest.raises(ZeroDivisionError):
             await collect_asyncgen(it)
 
+    @pytest.mark.skipif(
+        platform.python_implementation() != "CPython",
+        reason="Relies on reference counting",
+    )
     @coroutine_test
     async def test_response_refcounting(self):
         class RaiseExceptionProcessSpiderOutputMiddleware:
