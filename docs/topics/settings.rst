@@ -1651,6 +1651,28 @@ A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
 
+.. setting:: JOBDIR_SYNC_EVERY
+
+JOBDIR_SYNC_EVERY
+-----------------
+
+.. versionadded:: VERSION
+
+Default: ``0``
+
+Number of changes to the crawl state kept in :setting:`JOBDIR` after which
+that state is written to disk while the crawl runs, in addition to when it
+stops. ``0`` writes it only when the crawl stops. ``1`` writes every change,
+so that a crawl killed before it can stop cleanly resumes from its latest
+state. Higher values trade some of that safety for fewer writes, which matters
+in broad crawls, where the state grows with the number of active domains.
+
+Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`.
+For a killed crawl to resume, the scheduler queues must survive the kill too,
+which requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
+:setting:`SCHEDULER_START_DISK_QUEUE`.
+
+
 .. setting:: LOG_COLOR
 
 LOG_COLOR
@@ -1723,7 +1745,9 @@ Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
 String for formatting log messages. Refer to the
 :ref:`Python logging documentation <logrecord-attributes>` for the whole
-list of available placeholders.
+list of available placeholders, plus ``%(spider)s`` for the name of the
+spider that triggered the log message, or ``"-"`` for messages not tied to
+a spider (see :ref:`topics-logging-from-spiders`).
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
@@ -2510,6 +2534,27 @@ For additional information, see :doc:`core/howto/choosing-reactor`.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
+.. setting:: UPLOAD_TIMEOUT
+
+UPLOAD_TIMEOUT
+--------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Number of seconds that uploads to a remote :ref:`feed storage backend
+<topics-feed-storage-backends>` or :ref:`media pipeline storage backend
+<topics-media-pipeline>` wait for a response before giving up.
+
+Raise it if large uploads fail over a slow connection.
+
+If ``None``, each backend keeps the default of the library it uses:
+`botocore <https://docs.aws.amazon.com/botocore/latest/reference/config.html>`_
+for Amazon S3, `google-cloud-storage
+<https://docs.cloud.google.com/python/docs/reference/storage/latest/retry_timeout#configuring-timeouts>`_
+for Google Cloud Storage, and :mod:`ftplib` for FTP, which waits indefinitely.
+
 .. setting:: URLLENGTH_LIMIT
 
 URLLENGTH_LIMIT
@@ -2566,7 +2611,7 @@ modifying generator function source code during runtime, skip AST parsing of
 callback functions, or improve performance in auto-reloading development
 environments.
 
-.. only:: html
+.. only:: not llm
 
     Settings documented elsewhere:
     ------------------------------
