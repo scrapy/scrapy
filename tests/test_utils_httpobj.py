@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import gc
+from collections import OrderedDict
 from urllib.parse import urlparse
 
 import pytest
@@ -8,6 +8,7 @@ import pytest
 from scrapy.http import Request, Response
 from scrapy.utils import httpobj
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import garbage_collect
 
 
 def test_urlparse_cached() -> None:
@@ -53,11 +54,12 @@ def test_urlparse_cached_lifetime(url_first: bool, holders: list[str]) -> None:
     while objects:
         assert urlparse_cached(Request(url)) is parsed
         objects.pop(0)
-        gc.collect()
+        garbage_collect()
     assert urlparse_cached(Request(url)) is not parsed
 
 
 def test_urlparse_cached_string_eviction(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(httpobj, "_string_results", OrderedDict())
     monkeypatch.setattr(httpobj, "_MAX_STRING_RESULTS", 2)
     url = "http://www.example.com/evicted"
     parsed = urlparse_cached(url)
