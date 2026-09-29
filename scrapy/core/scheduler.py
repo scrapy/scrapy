@@ -69,6 +69,9 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     """Must be ``True``, to declare that :meth:`enqueue_request` handles the
     :reqmeta:`skip_dupefilter_once` meta key.
 
+    It is not inherited by subclasses that override :meth:`enqueue_request`,
+    which must set it again.
+
     .. versionadded:: VERSION
     """
 

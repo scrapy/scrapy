@@ -64,6 +64,21 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _supports_skip_dupefilter_once(scheduler: BaseScheduler) -> bool:
+    # A subclass that overrides enqueue_request() does not inherit support.
+    cls = type(scheduler)
+    owner = next(
+        (
+            c
+            for c in cls.__mro__
+            if "enqueue_request" in vars(c)
+            or "supports_skip_dupefilter_once" in vars(c)
+        ),
+        cls,
+    )
+    return bool(vars(owner).get("supports_skip_dupefilter_once", False))
+
+
 class _EngineState(Enum):
     """The lifecycle state of ExecutionEngine.
 
@@ -572,9 +587,9 @@ class ExecutionEngine:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
         assert self._slot is not None
-        if request.meta.get("skip_dupefilter_once") and not getattr(
-            self._slot.scheduler, "supports_skip_dupefilter_once", False
-        ):
+        if request.meta.get(
+            "skip_dupefilter_once"
+        ) and not _supports_skip_dupefilter_once(self._slot.scheduler):
             del request.meta["skip_dupefilter_once"]
             request.dont_filter = True
             if not self._warned_skip_dupefilter_once:

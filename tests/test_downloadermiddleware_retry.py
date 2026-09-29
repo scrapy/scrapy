@@ -799,6 +799,15 @@ class _LegacyScheduler(Scheduler):
     supports_skip_dupefilter_once = False
 
 
+class _OverridingScheduler(Scheduler):
+    def enqueue_request(self, request: Request) -> bool:
+        if not request.dont_filter and self.df.request_seen(request):
+            self.df.log(request, self.spider)
+            return False
+        self._mqpush(request)
+        return True
+
+
 @coroutine_test
 async def test_retry_redirect_dupefilter(mockserver: MockServer) -> None:
     crawler = get_crawler(_RetryThenRedirectSpider)
@@ -809,14 +818,12 @@ async def test_retry_redirect_dupefilter(mockserver: MockServer) -> None:
     assert crawler.stats.get_value("dupefilter/filtered") == 2
 
 
+@pytest.mark.parametrize("scheduler", [_LegacyScheduler, _OverridingScheduler])
 @coroutine_test
 async def test_retry_redirect_dupefilter_legacy_scheduler(
-    mockserver: MockServer,
+    mockserver: MockServer, scheduler: type[Scheduler]
 ) -> None:
-    crawler = get_crawler(
-        _RetryThenRedirectSpider,
-        {"SCHEDULER": f"{__name__}._LegacyScheduler"},
-    )
+    crawler = get_crawler(_RetryThenRedirectSpider, {"SCHEDULER": scheduler})
     with pytest.warns(
         ScrapyDeprecationWarning, match="supports_skip_dupefilter_once"
     ) as record:
