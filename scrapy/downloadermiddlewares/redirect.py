@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, Any, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
@@ -230,7 +230,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
         redirected_url = urljoin(request.url, location)
 
-        if not urlparse(redirected_url).fragment:
+        if not urlparse_cached(redirected_url).fragment:
             fragment = urlparse_cached(request).fragment
             if fragment:
                 redirected_url = urljoin(redirected_url, f"#{fragment}")

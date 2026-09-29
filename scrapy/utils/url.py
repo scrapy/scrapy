@@ -8,21 +8,32 @@ from __future__ import annotations
 import re
 import warnings
 from typing import TYPE_CHECKING, TypeAlias
-from urllib.parse import ParseResult, urlparse, urlunparse
+from urllib.parse import ParseResult, urlunparse
 
 from w3lib.url import any_to_uri, parse_url
+
+from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from scrapy import Spider
+    from scrapy.http import Request, Response
 
 UrlT: TypeAlias = str | bytes | ParseResult
 
 
-def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
+def _parse_url(url: UrlT | Request | Response) -> ParseResult:
+    if isinstance(url, (bytes, ParseResult)):
+        return parse_url(url)
+    return urlparse_cached(url)
+
+
+def url_is_from_any_domain(
+    url: UrlT | Request | Response, domains: Iterable[str]
+) -> bool:
     """Return True if the url belongs to any of the given domains"""
-    host = parse_url(url).netloc.lower()
+    host = _parse_url(url).netloc.lower()
     if not host:
         return False
     return any((host == d) or (host.endswith(f".{d}")) for d in map(str.lower, domains))
@@ -46,14 +57,16 @@ def _spider_domains(spider: type[Spider]) -> Iterable[str]:
         yield from allowed_domains
 
 
-def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
+def url_is_from_spider(url: UrlT | Request | Response, spider: type[Spider]) -> bool:
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(url, _spider_domains(spider))
 
 
-def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
+def url_has_any_extension(
+    url: UrlT | Request | Response, extensions: Iterable[str]
+) -> bool:
     """Return True if the url ends with one of the extensions provided"""
-    lowercase_path = parse_url(url).path.lower()
+    lowercase_path = _parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
 
@@ -61,7 +74,7 @@ def add_http_if_no_scheme(url: str) -> str:
     """Add http as the default scheme if it is missing from the url."""
     match = re.match(r"^\w+://", url, flags=re.IGNORECASE)
     if not match:
-        parts = urlparse(url)
+        parts = urlparse_cached(url)
         scheme = "http:" if parts.netloc else "http://"
         url = scheme + url
 
@@ -135,7 +148,7 @@ def strip_url(
     - ``strip_fragment`` drops any #fragment component
     """
 
-    parsed_url = urlparse(url)
+    parsed_url = urlparse_cached(url)
     netloc = parsed_url.netloc
     if (strip_credentials or origin_only) and (
         parsed_url.username or parsed_url.password

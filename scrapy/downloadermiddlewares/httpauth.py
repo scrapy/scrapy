@@ -77,12 +77,12 @@ class HttpAuthMiddleware:
         pwd = request.meta.get("http_pass", "")
         if usr or pwd:
             domain = request.meta.get("http_auth_domain")
-            if not domain or url_is_from_any_domain(request.url, [domain]):
+            if not domain or url_is_from_any_domain(request, [domain]):
                 request.headers[b"Authorization"] = basic_auth_header(usr, pwd)
             return None
         # Middleware-level auth
         if self._auth and (
-            not self._domain or url_is_from_any_domain(request.url, [self._domain])
+            not self._domain or url_is_from_any_domain(request, [self._domain])
         ):
             request.headers[b"Authorization"] = self._auth
         return None
