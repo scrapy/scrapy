@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from scrapy.core.downloader import Downloader
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
@@ -51,6 +52,41 @@ class TestRedirectBase(ABC):
         rsp = self.get_response(req, "http://a.example/redirected")
         req2 = self.mw.process_response(req, rsp)
         assert req2.priority > req.priority
+
+    @pytest.mark.parametrize(
+        ("location", "keep_slot"),
+        [
+            ("http://www.example.com/b", True),
+            ("/b", True),
+            ("http://www.example.org/b", False),
+            ("http://other.example.com/b", False),
+        ],
+    )
+    def test_download_slot_on_redirect(self, location: str, keep_slot: bool) -> None:
+        req = Request(
+            "http://www.example.com/a",
+            meta={"download_slot": "www.example.com"},
+        )
+        rsp = self.get_response(req, location)
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        if keep_slot:
+            assert req2.meta["download_slot"] == "www.example.com"
+        else:
+            assert "download_slot" not in req2.meta
+
+    def test_cross_host_redirect_uses_target_host_slot(self) -> None:
+        crawler = get_crawler()
+        downloader = Downloader(crawler)
+        try:
+            req = Request("http://www.example.com/a")
+            req.meta[Downloader.DOWNLOAD_SLOT] = downloader.get_slot_key(req)
+            rsp = self.get_response(req, "http://www.example.org/b")
+            req2 = self.mw.process_response(req, rsp)
+            assert isinstance(req2, Request)
+            assert downloader.get_slot_key(req2) == "www.example.org"
+        finally:
+            downloader.close()
 
     def test_dont_redirect(self):
         url = "http://www.example.com/301"

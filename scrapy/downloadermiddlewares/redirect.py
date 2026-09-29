@@ -131,6 +131,11 @@ class BaseRedirectMiddleware:
             cls=None,
             cookies=None,
         )
+        if (
+            urlparse_cached(source_request).hostname
+            != urlparse_cached(redirect_request).hostname
+        ):
+            redirect_request.meta.pop("download_slot", None)
         if "_scheme_proxy" in redirect_request.meta:
             source_request_scheme = urlparse_cached(source_request).scheme
             redirect_request_scheme = urlparse_cached(redirect_request).scheme
