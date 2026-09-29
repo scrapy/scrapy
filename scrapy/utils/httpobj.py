@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
+from collections import OrderedDict
 from typing import TYPE_CHECKING
 from urllib.parse import ParseResult, urlparse
 from weakref import WeakKeyDictionary, WeakValueDictionary
@@ -18,22 +18,15 @@ class _Entry:
         self.result = result
 
 
-# An entry lives as long as something holds it: a request or response with its
-# URL, or the LRU cache of URL strings.
+# Requests and responses hold the entry of their URL, which is dropped once
+# none of them does. Results for URL strings that no request or response holds
+# are kept in _string_results, for the most recently parsed ones.
 _entries_by_url: WeakValueDictionary[str, _Entry] = WeakValueDictionary()
 _entries_by_object: WeakKeyDictionary[Request | Response, _Entry] = WeakKeyDictionary()
-
-
-def _entry(url: str) -> _Entry:
-    entry = _entries_by_url.get(url)
-    if entry is None:
-        entry = _entries_by_url[url] = _Entry(urlparse(url))
-    return entry
-
-
+_string_results: OrderedDict[str, ParseResult] = OrderedDict()
 # URL strings are often parsed shortly before a request is built from them,
-# e.g. link URLs, so their entries must outlive a whole page worth of them.
-_string_entry = lru_cache(maxsize=1024)(_entry)
+# e.g. link URLs, so their results must outlive a whole page worth of them.
+_MAX_STRING_RESULTS = 1024
 
 
 def urlparse_cached(request_or_response: Request | Response | str) -> ParseResult:
@@ -52,10 +45,22 @@ def urlparse_cached(request_or_response: Request | Response | str) -> ParseResul
     once.
     """
     if isinstance(request_or_response, str):
-        return _string_entry(request_or_response).result
+        url = request_or_response
+        result = _string_results.get(url)
+        if result is None:
+            entry = _entries_by_url.get(url)
+            if entry is not None:
+                return entry.result
+            result = _string_results[url] = urlparse(url)
+            if len(_string_results) > _MAX_STRING_RESULTS:
+                _string_results.popitem(last=False)
+        return result
     entry = _entries_by_object.get(request_or_response)
     if entry is None:
-        entry = _entries_by_object[request_or_response] = _entry(
-            request_or_response.url
-        )
+        url = request_or_response.url
+        entry = _entries_by_url.get(url)
+        if entry is None:
+            result = _string_results.pop(url, None) or urlparse(url)
+            entry = _entries_by_url[url] = _Entry(result)
+        _entries_by_object[request_or_response] = entry
     return entry.result
