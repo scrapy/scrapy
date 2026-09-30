@@ -130,6 +130,8 @@ class RemoteControl:
         self._auth_token: str | None = None
         self._runner: web.AppRunner | None = None
         self._job_file_path: Path | None = None
+        # Makes stop() wait until start() finishes.
+        self._lock = asyncio.Lock()
 
         crawler.signals.connect(self.start, signal=signals.engine_started)
         crawler.signals.connect(self.stop, signal=signals.engine_stopped)
@@ -147,6 +149,10 @@ class RemoteControl:
 
     async def start(self) -> None:
         """Start the HTTP server."""
+        async with self._lock:
+            await self._start()
+
+    async def _start(self) -> None:
         try:
             self._auth_token = secrets.token_urlsafe(32)
             app = web.Application()
@@ -185,10 +191,14 @@ class RemoteControl:
                 "Remote control HTTP server failed to start",
                 extra={"crawler": self._crawler},
             )
-            await self.stop()
+            await self._stop()
 
     async def stop(self) -> None:
         """Stop the HTTP server and remove the job file."""
+        async with self._lock:
+            await self._stop()
+
+    async def _stop(self) -> None:
         if self._job_file_path is not None:
             # we remove the job file before stopping the HTTP server
             with contextlib.suppress(OSError):

@@ -140,7 +140,8 @@ engine_stopped
 .. function:: engine_stopped()
 
     Sent when the Scrapy engine is stopped (for example, when a crawling
-    process has finished).
+    process has finished). It is sent only after all :signal:`engine_started`
+    handlers have completed.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
