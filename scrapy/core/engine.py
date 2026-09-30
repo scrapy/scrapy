@@ -458,8 +458,9 @@ class ExecutionEngine:
             await self.stop_async()
 
     def _start_scheduled_requests(self) -> None:
-        if self._slot is None or self._slot.closing is not None or self.paused:
+        if self._state is not EngineState.RUNNING or self.paused:
             return
+        assert self._slot is not None
 
         while not self.needs_backout():
             if not self._start_scheduled_request():
