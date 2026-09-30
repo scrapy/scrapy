@@ -13,6 +13,7 @@ import pytest
 from pexpect.popen_spawn import PopenSpawn
 
 from scrapy import Spider
+from scrapy.core.engine import EngineState
 from scrapy.http import Request, Response
 from scrapy.shell import Shell, inspect_response
 from scrapy.utils.reactor import _asyncio_reactor_path
@@ -187,9 +188,22 @@ class TestShellCommandWithSpider(TestProjectBase):
         (proj_path / self.project_name / "spiders" / "myspider.py").write_text(
             """
 import scrapy
+from scrapy.exceptions import CloseSpider
 
 class MySpider(scrapy.Spider):
     name = "myspider"
+
+class ClosingSpider(scrapy.Spider):
+    name = "closing"
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.spider_opened, scrapy.signals.spider_opened)
+        return spider
+
+    def spider_opened(self):
+        raise CloseSpider("unavailable")
 """,
             encoding="utf-8",
         )
@@ -206,6 +220,22 @@ class MySpider(scrapy.Spider):
         )
         assert ret == 0, err
         assert out.strip() == "myspider"
+
+    def test_spider_closed_on_open(
+        self, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        ret, _, err = proc(
+            "shell",
+            "--spider",
+            "closing",
+            mockserver.url("/text"),
+            "-c",
+            "response",
+            cwd=proj_path,
+        )
+        assert ret == 1
+        assert "Closing spider (unavailable)" in err
+        assert "RuntimeError: Spider 'closing' was closed while opening" in err
 
 
 class TestInteractiveShell:
@@ -402,6 +432,7 @@ class TestShell:
         crawler = get_crawler()
         crawler.engine = MagicMock()
         crawler.engine.open_spider_async = AsyncMock()
+        crawler.engine.state = EngineState.SPIDER_OPEN
         shell = Shell(crawler)
         spider = Spider.from_crawler(crawler, "test")
         await shell._open_spider(spider)

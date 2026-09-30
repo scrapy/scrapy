@@ -10,7 +10,7 @@ from twisted.internet.defer import Deferred
 from scrapy import Request, signals
 from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -82,6 +82,11 @@ class BlockingScheduler(BaseScheduler):
     def close(self, reason: str) -> Deferred[None]:
         self.entered_close.callback(None)
         return self.unblock_close
+
+
+class ClosingPipeline:
+    def open_spider(self) -> None:
+        raise CloseSpider("early", error=True)
 
 
 def make_engine(crawler: Crawler) -> ExecutionEngine:
@@ -405,6 +410,60 @@ class TestCloseDuringOpen:
         await engine.open_spider_async()
         assert_state(engine, EngineState.STOPPED)
         assert errors == [True]
+
+    @coroutine_test
+    async def test_close_spider_exception_from_component(self) -> None:
+        """CloseSpider raised by a component while the spider is opening
+        closes the spider once it is open, instead of being raised."""
+        crawler = get_crawler(
+            DefaultSpider, settings_dict={"ITEM_PIPELINES": {ClosingPipeline: 1}}
+        )
+        recorder = SignalRecorder(crawler)
+        engine = make_engine(crawler)
+        await engine.open_spider_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.names == NEVER_STARTED_SIGNAL_ORDER
+        assert recorder.close_reasons == ["early"]
+        assert recorder.close_errors == [True]
+
+    @coroutine_test
+    async def test_close_spider_exception_from_spider_opened(self) -> None:
+        """CloseSpider raised by a spider_opened handler closes the spider
+        once it is open, instead of being raised."""
+        crawler = get_crawler(DefaultSpider)
+        recorder = SignalRecorder(crawler)
+        engine = make_engine(crawler)
+
+        def close(**kwargs: Any) -> None:
+            raise CloseSpider("early", error=True)
+
+        crawler.signals.connect(close, signals.spider_opened)
+        await engine.open_spider_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.names == NEVER_STARTED_SIGNAL_ORDER
+        assert recorder.close_reasons == ["early"]
+        assert recorder.close_errors == [True]
+
+    @coroutine_test
+    async def test_close_spider_call_wins_over_exception(self) -> None:
+        """The first close requested while the spider is opening wins, and a
+        CloseSpider raised by a spider_opened handler only counts as requested
+        once all spider_opened handlers have finished."""
+        crawler = get_crawler(DefaultSpider)
+        recorder = SignalRecorder(crawler)
+        engine = make_engine(crawler)
+
+        def raise_close_spider(**kwargs: Any) -> None:
+            raise CloseSpider("exception")
+
+        async def call_close_spider(**kwargs: Any) -> None:
+            await engine.close_spider_async(reason="call")
+
+        crawler.signals.connect(raise_close_spider, signals.spider_opened)
+        crawler.signals.connect(call_close_spider, signals.spider_opened)
+        await engine.open_spider_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.close_reasons == ["call"]
 
     @coroutine_test
     async def test_close_spider_during_failed_open(self) -> None:
