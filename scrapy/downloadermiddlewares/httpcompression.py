@@ -58,10 +58,14 @@ class HttpCompressionMiddleware:
             self.stats = stats
             self._max_size = 1073741824
             self._warn_size = 33554432
+            self._preserve_content_encoding = False
             return
         self.stats = crawler.stats
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+        self._preserve_content_encoding = crawler.settings.getbool(
+            "COMPRESSION_PRESERVE_CONTENT_ENCODING"
+        )
         crawler.signals.connect(self.open_spider, signals.spider_opened)
 
     @classmethod
@@ -95,6 +99,7 @@ class HttpCompressionMiddleware:
             return response
         content_encoding = response.headers.getlist("Content-Encoding")
         if content_encoding:
+            original_content_encoding = list(content_encoding)
             max_size = request.meta.get("download_maxsize", self._max_size)
             warn_size = request.meta.get("download_warnsize", self._warn_size)
             try:
@@ -141,6 +146,12 @@ class HttpCompressionMiddleware:
             response = response.replace(cls=respcls, **kwargs)
             if not content_encoding:
                 del response.headers["Content-Encoding"]
+                if self._preserve_content_encoding:
+                    # restore the header only after responsetypes has
+                    # classified the response, as it treats a
+                    # "Content-Encoding" header as a sign of a compressed body
+                    response.headers["Content-Encoding"] = original_content_encoding
+                    response.flags.append("decompressed")
         return response
 
     def _handle_encoding(

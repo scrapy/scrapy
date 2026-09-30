@@ -147,6 +147,14 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
+-   Added a :setting:`COMPRESSION_PRESERVE_CONTENT_ENCODING` setting, which
+    makes
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    keep the original ``Content-Encoding`` header in fully decompressed
+    responses, which also get a ``"decompressed"`` entry in their
+    :attr:`~scrapy.http.Response.flags`.
+    (:gh:`1988`)
+
 -   Added a :class:`~scrapy.extensions.remote_control.RemoteControl`
     extension, enabled by default, which allows connecting to crawl processes
     via HTTP and running code inside them.

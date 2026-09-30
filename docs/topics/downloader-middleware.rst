@@ -778,6 +778,26 @@ Default: ``True``
 
 Whether the Compression middleware will be enabled.
 
+.. setting:: COMPRESSION_PRESERVE_CONTENT_ENCODING
+
+COMPRESSION_PRESERVE_CONTENT_ENCODING
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``False``
+
+Whether the Compression middleware will keep the original ``Content-Encoding``
+header in responses whose body it has fully decompressed.
+
+When this setting is enabled, fully decompressed responses also get a
+``"decompressed"`` entry in their :attr:`~scrapy.http.Response.flags`, so
+response consumers can tell that the body is no longer compressed.
+
+When this setting is ``False`` (the default), the ``Content-Encoding`` header
+is removed from fully decompressed responses. This lets
+:class:`~scrapy.responsetypes.responsetypes` guess the response class from the
+actual body contents, but the original response headers are no longer visible
+to spiders.
+
 
 HttpProxyMiddleware
 -------------------

@@ -148,6 +148,26 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
+    def test_process_response_gzip_preserve_content_encoding(self):
+        crawler = get_crawler(
+            settings_dict={"COMPRESSION_PRESERVE_CONTENT_ENCODING": True}
+        )
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
+        crawler.stats.open_spider()
+        response = self._getresponse("gzip")
+        request = response.request
+        assert response.headers["Content-Encoding"] == b"gzip"
+
+        newresponse = mw.process_response(request, response)
+
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert newresponse.headers.getlist("Content-Encoding") == [b"gzip"]
+        assert newresponse.flags == ["decompressed"]
+        # the response class is still guessed from the decompressed body
+        assert isinstance(newresponse, HtmlResponse)
+        assert "httpcompression/response_count" in crawler.stats.get_stats()
+
     def test_process_response_br(self):
         response = self._getresponse("br")
         assert response.request
