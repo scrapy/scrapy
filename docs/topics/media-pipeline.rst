@@ -244,6 +244,9 @@ on the item in your spider, and read it back from the item in
 Supported Storage
 =================
 
+Use :setting:`UPLOAD_TIMEOUT` to limit how long uploads to a remote storage
+backend may take.
+
 File system storage
 -------------------
 
@@ -462,7 +465,8 @@ specifies the delay in number of days:
     # 30 days of delay for images expiration
     IMAGES_EXPIRES = 30
 
-The default value for both settings is 90 days.
+The default value for both settings is 90 days. A negative value disables
+expiration, i.e. files are never re-downloaded once fetched.
 
 If you have a pipeline that subclasses FilesPipeline and you'd like to have a
 different setting for it, you can set setting keys preceded by the uppercase
@@ -520,6 +524,26 @@ Example of image files stored using ``small`` and ``big`` thumbnail names::
 
 The first one is the full image, as downloaded from the site.
 
+.. _preserving-image-format:
+
+Preserving the original image format
+------------------------------------
+
+.. setting:: IMAGES_PRESERVE_FORMAT
+
+By default, the Images Pipeline converts every image to JPEG, flattening
+transparency onto a white background. Set :setting:`IMAGES_PRESERVE_FORMAT`
+to ``True`` to keep each image, and its thumbnails, in the format it was
+downloaded in instead:
+
+.. code-block:: python
+
+    IMAGES_PRESERVE_FORMAT = True
+
+Stored files then get no extension, since the actual format is only known
+once the image has been downloaded; see :ref:`file-naming-response` to
+derive one from the response instead.
+
 Filtering out small images
 --------------------------
 
@@ -561,6 +585,25 @@ To handle media redirections, set this setting to ``True``:
 .. code-block:: python
 
     MEDIA_ALLOW_REDIRECTS = True
+
+Limiting the result cache
+-------------------------
+
+.. setting:: MEDIA_CACHE_SIZE
+
+Media pipelines remember the outcome of every media request they handle, so
+that a file referenced by several items is downloaded once. By default every
+outcome is kept for the whole crawl, which takes about 600 bytes per distinct
+media URL.
+
+.. versionadded:: VERSION
+
+To cap that memory, set :setting:`MEDIA_CACHE_SIZE` to the number of most
+recently used outcomes to keep, or to ``0`` to keep none:
+
+.. code-block:: python
+
+    MEDIA_CACHE_SIZE = 10000
 
 .. _topics-media-pipeline-override:
 

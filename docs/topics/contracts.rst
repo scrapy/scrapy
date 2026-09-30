@@ -30,6 +30,24 @@ following example:
         @scrapes Title Author Year Price
         """
 
+A callback docstring can also be split into several batches of contracts, one
+per paragraph separated by a blank line, and a batch may repeat ``@url`` to
+check the callback against more than one sample request:
+
+.. versionadded:: VERSION
+
+.. code-block:: python
+
+    def parse(self, response):
+        """
+        @url http://www.example.com/s?field-keywords=selfish+gene
+        @url http://www.example.com/s?field-keywords=hitchhikers+guide
+        @returns items 16 16
+
+        @url http://www.example.com/s?field-keywords=out+of+stock+item
+        @returns items 0 0
+        """
+
 You can use the following contracts:
 
 .. module:: scrapy.contracts.default

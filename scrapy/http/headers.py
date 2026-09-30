@@ -63,9 +63,9 @@ class Headers(dict):  # type: ignore[type-arg]
         | Mapping[bytes, Any]
         | Iterable[tuple[str | bytes, Any]],
     ) -> None:
-        seq = seq.items() if isinstance(seq, Mapping) else seq
+        items = seq.items() if isinstance(seq, Mapping) else seq
         iseq: dict[bytes, list[bytes]] = {}
-        for k, v in seq:
+        for k, v in items:
             iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
         dict.update(self, iseq)
 
@@ -111,7 +111,9 @@ class Headers(dict):  # type: ignore[type-arg]
         except IndexError:
             return None
 
-    def getlist(self, key: str | bytes, def_val: Any = None) -> list[bytes]:
+    def getlist(
+        self, key: str | bytes, def_val: _RawValue | Iterable[_RawValue] | None = None
+    ) -> list[bytes]:
         try:
             return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))
         except KeyError:
@@ -146,12 +148,13 @@ class Headers(dict):  # type: ignore[type-arg]
 
     def to_unicode_dict(self) -> CaseInsensitiveDict:
         """Return headers as a CaseInsensitiveDict with str keys
-        and str values. Multiple values are joined with ','.
+        and str values. Multiple values are joined with ','. Bytes that
+        cannot be decoded are replaced with U+FFFD.
         """
         return CaseInsensitiveDict(
             (
-                to_unicode(key, encoding=self.encoding),
-                to_unicode(b",".join(value), encoding=self.encoding),
+                to_unicode(key, encoding=self.encoding, errors="replace"),
+                to_unicode(b",".join(value), encoding=self.encoding, errors="replace"),
             )
             for key, value in self.items()
         )
@@ -160,9 +163,13 @@ class Headers(dict):  # type: ignore[type-arg]
         """Return headers as a list of ``(key, value)`` tuples.
 
         Multiple values are represented as multiple tuples with the same key.
+        Bytes that cannot be decoded are replaced with U+FFFD.
         """
         return [
-            (key.decode(self.encoding), value.decode(self.encoding))
+            (
+                key.decode(self.encoding, errors="replace"),
+                value.decode(self.encoding, errors="replace"),
+            )
             for key, values in self.items()
             for value in values
         ]
