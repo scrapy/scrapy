@@ -145,7 +145,7 @@ sphinx-copybutton==0.5.2
     # via sphinx-scrapy
 sphinx-last-updated-by-git==0.3.8
     # via sphinx-sitemap
-sphinx-llm-friendly==0.5.0
+sphinx-llm-friendly==0.6.0
     # via sphinx-scrapy
 sphinx-notfound-page==1.1.0
     # via -r requirements.in
