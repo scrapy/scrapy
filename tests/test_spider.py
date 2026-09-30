@@ -198,6 +198,27 @@ class TestCSVFeedSpider(TestSpiderBase):
         assert items[0] == {"id": "1", "name": "alpha", "value": "foobar"}
         assert len(items) == 4
 
+    @pytest.mark.parametrize("newline", ["\n", "\r\n", "\r"])
+    @coroutine_test
+    async def test_parse_line_endings(self, newline: str, mockserver: MockServer):
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            content_type = "text/csv"
+
+            def raw_body(self):
+                return (
+                    f'id,value{newline}1,"first{newline}second"{newline}2,done{newline}'
+                )
+
+            def parse_row(self, response, row):
+                return row
+
+        items, crawler = await crawl_items(_Spider, mockserver)
+        assert items == [
+            {"id": "1", "value": f"first{newline}second"},
+            {"id": "2", "value": "done"},
+        ]
+        assert crawler.stats.get_value("spider_exceptions/Error", 0) == 0
+
     @coroutine_test
     async def test_parse_row_not_defined(self, mockserver: MockServer):
         class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]

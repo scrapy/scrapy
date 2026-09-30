@@ -125,7 +125,7 @@ def csviter(
             stacklevel=2,
         )
 
-    lines = StringIO(_body_or_str(obj, unicode=True))
+    lines = StringIO(_body_or_str(obj, unicode=True), newline="")
 
     kwargs: dict[str, Any] = {}
     if delimiter:

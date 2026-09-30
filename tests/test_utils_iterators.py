@@ -336,6 +336,26 @@ class TestXmliter:
 
 
 class TestUtilsCsv:
+    @pytest.mark.parametrize("newline", ["\n", "\r\n", "\r"])
+    @pytest.mark.parametrize("headers", [None, ["id", "value"]])
+    @pytest.mark.parametrize("obj_type", [str, bytes, Response, TextResponse])
+    def test_csviter_line_endings(self, newline, headers, obj_type):
+        body = f'1,"first{newline}second"{newline}2,done{newline}'
+        if headers is None:
+            body = f"id,value{newline}{body}"
+        obj: Response | str | bytes
+        if obj_type is str:
+            obj = body
+        elif obj_type is bytes:
+            obj = body.encode("utf-8")
+        else:
+            obj = obj_type("https://example.com/feed.csv", body=body.encode("utf-8"))
+
+        assert list(csviter(obj, headers=headers)) == [
+            {"id": "1", "value": f"first{newline}second"},
+            {"id": "2", "value": "done"},
+        ]
+
     def test_csviter_defaults(self):
         body = get_testdata("feeds", "feed-sample3.csv")
         response = TextResponse(url="http://example.com/", body=body)
