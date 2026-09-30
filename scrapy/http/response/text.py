@@ -8,6 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import json
+import weakref
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
@@ -170,7 +171,11 @@ class TextResponse(Response):
             # circular import
             from scrapy.selector import Selector  # noqa: PLC0415
 
-            self._cached_selector = Selector(self)
+            selector = Selector(self)
+            # The weak reference lets the response be freed as soon as nothing
+            # else refers to it.
+            selector._response = weakref.ref(self)
+            self._cached_selector = selector
         return self._cached_selector
 
     def jmespath(self, query: str, **kwargs: Any) -> SelectorList:
