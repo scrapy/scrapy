@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import codecs
+import gc
+import platform
+import weakref
 from typing import cast
 from unittest import mock
 
@@ -276,6 +279,22 @@ class TestTextResponse(TestResponseBase):
         assert response.selector.xpath("//title/text()").getall() == ["Some page"]
         assert response.selector.css("title::text").getall() == ["Some page"]
         assert response.selector.re("Some (.*)</title>") == ["page"]
+
+    @pytest.mark.skipif(
+        platform.python_implementation() != "CPython",
+        reason="Relies on reference counting",
+    )
+    def test_selector_response_refcounting(self):
+        response = self.response_class("http://www.example.com", body=b"<a>b</a>")
+        selector = response.selector
+        ref = weakref.ref(response)
+        gc.disable()
+        try:
+            del response
+            assert ref() is None
+        finally:
+            gc.enable()
+        assert selector.response is None
 
     def test_selector_shortcuts(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
