@@ -17,7 +17,7 @@ from scrapy.core.engine import EngineState
 from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
-from scrapy.settings import Settings, default_settings
+from scrapy.settings import SETTINGS_PRIORITIES, Settings, default_settings
 from scrapy.utils.defer import _DEFER_DELAY, maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
@@ -841,27 +841,47 @@ class TestCrawlerProcessBaseSignalHandlers:
         reactor.callLater.assert_any_call(_DEFER_DELAY, process._stop_reactor)
 
 
+class _AddVersionAddon:
+    def update_settings(self, settings: Settings) -> None:
+        settings.set("BOT_NAME", "addonbot", priority="addon")
+        if settings.getpriority("LOG_VERSIONS") == SETTINGS_PRIORITIES["default"]:
+            settings.add_to_list("LOG_VERSIONS", "itemadapter")
+
+
 @pytest.mark.parametrize(
-    ("settings", "items"),
+    ("settings", "bot", "items"),
     [
-        ({}, default_settings.LOG_VERSIONS),
-        ({"LOG_VERSIONS": ["itemadapter"]}, ["itemadapter"]),
-        ({"LOG_VERSIONS": []}, None),
+        ({}, "scrapybot", default_settings.LOG_VERSIONS),
+        ({"LOG_VERSIONS": ["itemadapter"]}, "scrapybot", ["itemadapter"]),
+        ({"LOG_VERSIONS": []}, "scrapybot", None),
+        (
+            {"ADDONS": {_AddVersionAddon: 0}},
+            "addonbot",
+            [*default_settings.LOG_VERSIONS, "itemadapter"],
+        ),
+        (
+            {"ADDONS": {_AddVersionAddon: 0}, "LOG_VERSIONS": ["w3lib"]},
+            "addonbot",
+            ["w3lib"],
+        ),
     ],
 )
 def test_log_scrapy_info(
-    settings: dict[str, Any], items: list[str] | None, caplog: pytest.LogCaptureFixture
+    settings: dict[str, Any],
+    bot: str,
+    items: list[str] | None,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level("INFO"):
-        CrawlerProcess({**settings, "LOG_INSTALL_ROOT_HANDLER": False})
+    with caplog.at_level("INFO", logger="scrapy.utils.log"):
+        get_crawler(settings_dict=settings)
+    records = [r for r in caplog.records if r.name == "scrapy.utils.log"]
     assert (
-        caplog.records[0].getMessage()
-        == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
-    ), repr(caplog.records[0].msg)
+        records[0].getMessage() == f"Scrapy {scrapy.__version__} started (bot: {bot})"
+    )
     if not items:
-        assert len(caplog.records) == 1
+        assert len(records) == 1
         return
-    version_string = caplog.records[1].getMessage()
+    version_string = records[1].getMessage()
     expected_items_pattern = "',\n '".join(
         f"{item}': '[^']+('\n +'[^']+)*" for item in items
     )
