@@ -813,19 +813,29 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
+        *reason* is the spider finish reason (see the :stat:`finish_reason`
+        stat). *error* is a flag that specifies whether the crawl should be
+        considered failed (see the :stat:`finish_reason_error` stat). If
+        *mode* is ``"graceful"``, this method will wait until the requests
+        that are already in the downloader are downloaded and processed; if
+        it's ``"fast"`` they will be dropped.
+
         If the spider was not opened before, this method raises
         :exc:`RuntimeError`.
 
         If the spider is still opening, this method completes immediately, and
-        the spider will start closing after it finishes opening.
+        the spider will start closing after it finishes opening, with the
+        *reason* and *error* of the first such call.
 
         If the spider is closing or has already been closed, this method
-        completes immediately.
+        completes immediately, ignoring *reason* and *error*. If
+        ``mode="fast"`` was passed, it will also drop the requests left in the
+        downloader.
 
         .. versionchanged:: VERSION
-            Calling it while the spider is closing now completes immediately
-            instead of waiting for the in-flight requests, and calling it
-            after the spider has been closed is no longer an error.
+            Previously, calling it while the spider was closing waited for the
+            in-flight requests to finish, and calling it after the spider had
+            been closed raised :exc:`RuntimeError`.
 
         Otherwise, this method completes after the spider has been closed and
         the engine has stopped. If :signal:`engine_started` handlers are still
