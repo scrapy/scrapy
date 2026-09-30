@@ -721,7 +721,7 @@ class ExecutionEngine:
             # Partially open counts as open because we still want to close the
             # components that were opened (close_spider_async() will do that).
             self._transition_to(EngineState.SPIDER_OPEN)
-        await self._close_spider_if_pending()
+            await self._close_spider_if_pending()
 
     async def _close_spider_if_pending(self) -> None:
         """Perform a close requested while the spider was opening."""

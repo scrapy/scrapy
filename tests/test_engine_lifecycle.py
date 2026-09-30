@@ -37,6 +37,7 @@ class SignalRecorder:
         self.crawler = crawler
         self.calls: list[tuple[str, EngineState]] = []
         self.close_reasons: list[str] = []
+        self.close_errors: list[bool] = []
         # Keep strong references to the handlers: signal connections are weak.
         self._handlers = [self._make_handler(name) for name in self.SIGNALS]
         for name, handler in zip(self.SIGNALS, self._handlers, strict=True):
@@ -48,6 +49,7 @@ class SignalRecorder:
             self.calls.append((name, self.crawler.engine.state))
             if name == "spider_closed":
                 self.close_reasons.append(kwargs["reason"])
+                self.close_errors.append(kwargs["error"])
 
         return handler
 
@@ -403,6 +405,35 @@ class TestCloseDuringOpen:
         await engine.open_spider_async()
         assert_state(engine, EngineState.STOPPED)
         assert errors == [True]
+
+    @coroutine_test
+    async def test_close_spider_during_failed_open(self) -> None:
+        """A close requested while the spider is opening is performed even if
+        opening the spider then fails."""
+        opening: Deferred[None] = Deferred()
+        fail_open: Deferred[None] = Deferred()
+
+        class FailingPipeline:
+            async def open_spider(self) -> None:
+                opening.callback(None)
+                await maybe_deferred_to_future(fail_open)
+                raise ValueError("open failed")
+
+        crawler = get_crawler(
+            DefaultSpider, settings_dict={"ITEM_PIPELINES": {FailingPipeline: 1}}
+        )
+        recorder = SignalRecorder(crawler)
+        crawl_dfd = deferred_from_coro(crawler.crawl_async())
+        await maybe_deferred_to_future(opening)
+        engine = crawler.engine
+        assert engine is not None
+        await engine.close_spider_async(reason="early", error=True)
+        fail_open.callback(None)
+        with pytest.raises(ValueError, match="open failed"):
+            await maybe_deferred_to_future(crawl_dfd)
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.close_reasons == ["early"]
+        assert recorder.close_errors == [True]
 
     @coroutine_test
     async def test_stop_during_open(self) -> None:
