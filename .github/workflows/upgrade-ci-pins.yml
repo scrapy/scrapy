@@ -1,0 +1,57 @@
+name: Upgrade CI pins
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    secrets:
+      CI_PINS_APP_PRIVATE_KEY:
+        required: true
+  workflow_dispatch:
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The App token can push workflow changes, and the pull request it opens
+      # triggers CI.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ vars.CI_PINS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CI_PINS_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: false
+      - run: uv tool install pre-commit
+      - run: python extras/upgrade-ci-pins.py
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Apply autofixes
+        run: pre-commit run --all-files || true
+      - name: Open a pull request
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          branch="upgrade-ci-pins-$(date +%Y-%m-%d)"
+          user_id="$(gh api "/users/$APP_SLUG[bot]" --jq .id)"
+          git config user.name "$APP_SLUG[bot]"
+          git config user.email "$user_id+$APP_SLUG[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "Upgrade CI pins"
+          git push "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$branch"
+          gh pr create --base master --head "$branch" --title "Upgrade CI pins" \
+            --body "Please, fix whatever CI reports that could not be fixed automatically."

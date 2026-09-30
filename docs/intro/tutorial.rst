@@ -838,6 +838,9 @@ command-line tool, spiders, selectors and other things the tutorial hasn't cover
 modeling the scraped data. If you'd prefer to play with an example project, check
 the :ref:`intro-examples` section.
 
+To turn whole pages into clean text or markdown, or to turn the strings you
+select into dates, prices or other values, see :ref:`extraction`.
+
 If you are using a coding agent, see :ref:`agents`.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
