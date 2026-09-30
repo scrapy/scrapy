@@ -121,7 +121,7 @@ class Scraper:
         ]:
             self._check_deprecated_itemproc_method(method)
 
-        self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
+        self.concurrent_items: int = max(1, crawler.settings.getint("CONCURRENT_ITEMS"))
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
         self.logformatter: LogFormatter = crawler.logformatter
@@ -265,6 +265,14 @@ class Scraper:
                 await result._release()
             return
 
+        if result.check(CloseSpider):
+            exc = result.value
+            assert isinstance(exc, CloseSpider)  # typing
+            _schedule_coro(
+                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+            )
+            return
+
         try:
             # call the request errback with the downloader error
             output = await self.call_spider_async(result, request)
@@ -360,7 +368,9 @@ class Scraper:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+                self.crawler.engine.close_spider_async(
+                    reason=exc.reason or "cancelled", error=exc.error
+                )
             )
             return
         logkws = self.logformatter.spider_error(

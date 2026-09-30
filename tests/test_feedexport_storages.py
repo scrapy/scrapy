@@ -173,6 +173,18 @@ class TestFTPFeedStorage:
             self._assert_stored(ftp_server.path / filename, b"bar")
 
     @coroutine_test
+    async def test_upload_timeout(self):
+        crawler = get_crawler(settings_dict={"UPLOAD_TIMEOUT": 300})
+        with MockFTPServer() as ftp_server:
+            url = ftp_server.url("file")
+            storage = build_from_crawler(FTPFeedStorage, crawler, url)
+            assert storage.timeout == 300
+            file = storage.open(get_test_spider())
+            file.write(b"foo")
+            await maybe_deferred_to_future(storage.store(file))
+            self._assert_stored(ftp_server.path / "file", b"foo")
+
+    @coroutine_test
     async def test_missing_parent_directories(self):
         with MockFTPServer() as ftp_server:
             path = "missing/parent/dirs/file"
@@ -464,6 +476,20 @@ class TestS3FeedStorage:
         config: Any = storage.s3_client.meta.config
         assert config.max_pool_connections == expected
 
+    def test_upload_timeout(self) -> None:
+        crawler = get_crawler(settings_dict={"UPLOAD_TIMEOUT": 300})
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
+        assert storage.upload_timeout == 300
+        config: Any = storage.s3_client.meta.config
+        assert config.read_timeout == 300
+
+    def test_default_upload_timeout(self) -> None:
+        crawler = get_crawler()
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
+        assert storage.upload_timeout is None
+        config: Any = storage.s3_client.meta.config
+        assert config.read_timeout == 60
+
     @coroutine_test
     async def test_store_without_acl(self):
         storage = S3FeedStorage(
@@ -526,8 +552,18 @@ class TestGCSFeedStorage:
         )
         assert storage.project_id == "123"
         assert storage.acl == "publicRead"
+        assert storage.timeout is None
         assert storage.bucket_name == "mybucket"
         assert storage.blob_name == "export.csv"
+
+    def test_parse_timeout(self):
+        pytest.importorskip("google.cloud.storage")
+
+        crawler = get_crawler(settings_dict={"UPLOAD_TIMEOUT": 300})
+        storage = build_from_crawler(
+            GCSFeedStorage, crawler, "gs://mybucket/export.csv"
+        )
+        assert storage.timeout == 300
 
     def test_parse_empty_acl(self):
         pytest.importorskip("google.cloud.storage")
@@ -567,6 +603,22 @@ class TestGCSFeedStorage:
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_store_timeout(self):
+        pytest.importorskip("google.cloud.storage")
+
+        (client_mock, _, blob_mock) = mock_google_cloud_storage()
+        with mock.patch("google.cloud.storage.Client", return_value=client_mock):
+            f = mock.Mock()
+            storage = GCSFeedStorage(
+                "gs://mybucket/export.csv", "myproject-123", None, timeout=300
+            )
+            await maybe_deferred_to_future(storage.store(f))
+
+        blob_mock.upload_from_file.assert_called_once_with(
+            f, predefined_acl=None, timeout=300
+        )
 
     @coroutine_test
     async def test_store_closes_file_on_upload_error(self):
@@ -652,6 +704,36 @@ class TestGCSFeedStorage:
             )
             blob_mock.upload_from_file.assert_not_called()
             f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_store_append_timeout(self) -> None:
+        pytest.importorskip("google.cloud.storage")
+
+        (client_mock, bucket_mock, part_mock) = mock_google_cloud_storage()
+        blob_mock = mock_google_cloud_blob()
+        bucket_mock.get_blob.return_value = blob_mock
+        with mock.patch("google.cloud.storage.Client", return_value=client_mock):
+            f = mock.Mock()
+            storage = GCSFeedStorage(
+                "gs://mybucket/export.csv",
+                "myproject-123",
+                "publicRead",
+                feed_options={"overwrite": False},
+                timeout=300,
+            )
+            await maybe_deferred_to_future(storage.store(f))
+
+            bucket_mock.get_blob.assert_called_once_with("export.csv", timeout=300)
+            part_mock.upload_from_file.assert_called_once_with(
+                f, predefined_acl="publicRead", timeout=300
+            )
+            blob_mock.compose.assert_called_once_with(
+                [blob_mock, part_mock], client=client_mock, timeout=300
+            )
+            part_mock.delete.assert_called_once_with(client=client_mock, timeout=300)
+            blob_mock.acl.save_predefined.assert_called_once_with(
+                "publicRead", client=client_mock, timeout=300
+            )
 
     @coroutine_test
     async def test_store_append_without_acl(self) -> None:

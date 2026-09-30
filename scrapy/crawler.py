@@ -178,6 +178,7 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        log_scrapy_info(self.settings)
         self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
         self._apply_deprecated_spider_attr(
             "max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"
@@ -302,7 +303,9 @@ class Crawler:
             try:
                 yield deferred_from_coro(self.engine.open_spider_async())
             except CloseSpider as exc:
-                yield deferred_from_coro(self.engine.close_async(reason=exc.reason))
+                yield deferred_from_coro(
+                    self.engine.close_async(reason=exc.reason, error=exc.error)
+                )
             else:
                 yield deferred_from_coro(self.engine.start_async())
         except Exception:
@@ -336,7 +339,7 @@ class Crawler:
             try:
                 await self.engine.open_spider_async()
             except CloseSpider as exc:
-                await self.engine.close_async(reason=exc.reason)
+                await self.engine.close_async(reason=exc.reason, error=exc.error)
             else:
                 await self.engine.start_async()
         except Exception:
@@ -774,7 +777,6 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         super().__init__(settings)
         self._reactor_crawler: Crawler | None = None
         configure_logging(self.settings, install_root_handler)
-        log_scrapy_info(self.settings)
 
     def _create_crawler(self, spidercls: str | type[Spider]) -> Crawler:
         crawler = super()._create_crawler(spidercls)

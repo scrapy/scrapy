@@ -39,7 +39,7 @@ class CoreStats:
         self._start_time_mono = monotonic()
         self.stats.set_value("start_time", self.start_time)
 
-    def spider_closed(self, spider: Spider, reason: str) -> None:
+    def spider_closed(self, spider: Spider, reason: str, error: bool = False) -> None:
         assert self.start_time is not None
         assert self._start_time_mono is not None
         finish_time, finish_time_mono = datetime.now(tz=timezone.utc), monotonic()
@@ -47,6 +47,7 @@ class CoreStats:
         self.stats.set_value("elapsed_time_seconds", elapsed_time_seconds)
         self.stats.set_value("finish_time", finish_time)
         self.stats.set_value("finish_reason", reason)
+        self.stats.set_value("finish_reason_error", error)
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         self.stats.inc_value("item_scraped_count")

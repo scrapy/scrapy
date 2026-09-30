@@ -6,10 +6,12 @@ import socket
 import warnings
 from asyncio import Future
 from typing import TYPE_CHECKING, Any
+from unittest import mock
 
 import pytest
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.internet.interfaces import IReadDescriptor
+from twisted.internet.task import Cooperator
 from zope.interface import implementer
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
@@ -24,6 +26,7 @@ from scrapy.utils.defer import (
     maybe_deferred_to_future,
     maybeDeferred_coro,
     mustbe_deferred,
+    parallel,
     parallel_async,
 )
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
@@ -135,6 +138,20 @@ class TestAsyncDefTestsuite:
     @coroutine_test
     async def test_coroutine_test_xfail(self):
         raise RuntimeError("This is expected to be raised")
+
+
+@pytest.mark.requires_reactor  # parallel() requires a reactor
+class TestParallel:
+    @inline_callbacks_test
+    def test_count_higher_than_work(self) -> Generator[Deferred[Any], Any, None]:
+        results: list[int] = []
+        with mock.patch.object(
+            Cooperator, "coiterate", autospec=True, side_effect=Cooperator.coiterate
+        ) as coiterate:
+            yield parallel(range(3), 1_000_000, results.append)
+        assert results == [0, 1, 2]
+        # One task per item, plus the one that finds no more work.
+        assert coiterate.call_count <= 4
 
 
 @implementer(IReadDescriptor)
@@ -321,6 +338,17 @@ class TestParallelAsync:
             assert list(range(length)) == sorted(results)
             assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
+
+    @inline_callbacks_test
+    def test_count_higher_than_work(self) -> Generator[Deferred[Any], Any, None]:
+        results: list[int] = []
+        with mock.patch.object(
+            Cooperator, "coiterate", autospec=True, side_effect=Cooperator.coiterate
+        ) as coiterate:
+            yield parallel_async(self.get_async_iterable(3), 1_000_000, results.append)
+        assert sorted(results) == [0, 1, 2]
+        # One task per item, plus the one that finds no more work.
+        assert coiterate.call_count <= 4
 
 
 class TestDeferredFromCoro:

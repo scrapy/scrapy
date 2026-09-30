@@ -56,6 +56,7 @@ class TestCoreStatsExtension:
             "item_dropped_count": 1,
             "item_dropped_reasons_count/ZeroDivisionError": 1,
             "finish_reason": "finished",
+            "finish_reason_error": False,
             "elapsed_time_seconds": 0.0,
         }
 
@@ -119,6 +120,42 @@ class TestStatsCollector:
         stats.set_value("test", "value")
         assert stats.get_stats() == {}
         stats.close_spider()
+
+    def test_mapping(self, crawler: Crawler) -> None:
+        stats = StatsCollector(crawler)
+        assert stats
+        assert len(stats) == 0
+        with pytest.raises(KeyError):
+            stats["a"]
+        stats["a"] = 1
+        stats.update(b=2)
+        assert stats["a"] == 1
+        assert "a" in stats
+        assert list(stats) == ["a", "b"]
+        assert len(stats) == 2
+        del stats["a"]
+        assert stats.get_stats() == {"b": 2}
+        with pytest.raises(KeyError):
+            del stats["a"]
+
+    def test_mapping_identity(self, crawler: Crawler) -> None:
+        stats1 = StatsCollector(crawler)
+        stats2 = StatsCollector(crawler)
+        assert stats1 != stats2
+        assert stats1 != {}
+        assert len({stats1, stats2}) == 2
+
+    def test_dummy_mapping(self) -> None:
+        crawler = get_crawler(Spider, {"STATS_DUMP": False})
+        stats = DummyStatsCollector(crawler)
+        stats["a"] = 1
+        assert stats
+        assert len(stats) == 0
+        assert "a" not in stats
+        with pytest.raises(KeyError):
+            stats["a"]
+        with pytest.raises(KeyError):
+            del stats["a"]
 
     def test_deprecated_spider_arg(self, crawler: Crawler, spider: Spider) -> None:
         stats = StatsCollector(crawler)

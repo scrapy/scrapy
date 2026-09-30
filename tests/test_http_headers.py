@@ -182,3 +182,19 @@ def test_invalid_value() -> None:
         Headers().setdefault("foo", object())
     with pytest.raises(TypeError, match="Unsupported value type"):
         Headers().setlist("foo", [object()])  # type: ignore[list-item]
+
+
+def test_to_unicode_dict_undecodable() -> None:
+    h = Headers({b"Public-Key-Pins": b'pin-sha256=\x94"a"', b"X-\xff": b"ok"})
+    assert h.to_unicode_dict() == {
+        "Public-Key-Pins": 'pin-sha256=�"a"',
+        "X-�": "ok",
+    }
+
+
+def test_to_tuple_list_undecodable() -> None:
+    h = Headers({b"Public-Key-Pins": b'pin-sha256=\x94"a"', b"X-\xff": b"ok"})
+    assert h.to_tuple_list() == [
+        ("Public-Key-Pins", 'pin-sha256=�"a"'),
+        ("X-�", "ok"),
+    ]
