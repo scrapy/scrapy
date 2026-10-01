@@ -214,7 +214,7 @@ class Stream:
             == f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}"
         )
 
-    def _get_request_headers(self) -> list[tuple[str, str]]:
+    def _get_request_headers(self) -> list[tuple[str | bytes, str | bytes]]:
         url = urlparse_cached(self._request)
 
         path = url.path
@@ -231,7 +231,7 @@ class Stream:
             path = "*" if self._request.method == "OPTIONS" else "/"
 
         # Make sure pseudo-headers comes before all the other headers
-        headers = [
+        headers: list[tuple[str | bytes, str | bytes]] = [
             (":method", self._request.method),
             (":authority", url.netloc),
         ]
@@ -248,8 +248,7 @@ class Stream:
             headers.append(("Content-Length", str(len(self._request.body))))
 
         for name, values in self._request.headers.items():
-            for value_bytes in values:
-                headers.append((str(name, "utf-8"), str(value_bytes, "utf-8")))
+            headers.extend((name, value) for value in values)
 
         return headers
 
@@ -357,9 +356,9 @@ class Stream:
             self._response["flow_controlled_size"], self.stream_id
         )
 
-    def receive_headers(self, headers: list[tuple[str, str]]) -> None:
+    def receive_headers(self, headers: list[tuple[bytes, bytes]]) -> None:
         for name, value in headers:
-            if name == ":status":
+            if name == b":status":
                 # it's a pseudo-header
                 self._response["status"] = int(value)
             else:

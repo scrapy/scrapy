@@ -61,6 +61,7 @@ if TYPE_CHECKING:
 
 
 BadHeaderHandling = Literal["skip-bad", "skip-rest", "fail"]
+NonUtf8RequestHeaderHandling = Literal["send", "replace"]
 
 
 class TestHttpBase(ABC):
@@ -81,6 +82,11 @@ class TestHttpBase(ABC):
     # whether the handler can request hostnames that the idna package rejects
     # (see IDNA_REJECTED_HOSTNAMES)
     handler_supports_idna_rejected_hostnames: bool = True
+    # What the handler does with a request header value that is not valid
+    # UTF-8:
+    # "send": the value is sent as it is;
+    # "replace": the invalid bytes are replaced with U+FFFD, with a warning.
+    handler_non_utf8_request_header_handling: NonUtf8RequestHeaderHandling = "send"
     # What the handler does with a bad response header line, e.g. one with no
     # colon in it:
     # "skip-bad": the bad line is skipped and the header lines that follow it
@@ -245,6 +251,39 @@ class TestHttpBase(ABC):
         assert body["headers"]["X-Custom-Header"] == ["foo", "bar"]
 
     @coroutine_test
+    async def test_request_header_utf8(self, mockserver: MockServer) -> None:
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers={"X-Custom-Header": "café"},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert body["headers"]["X-Custom-Header"] == ["café"]
+
+    @coroutine_test
+    async def test_request_header_non_utf8(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers={"X-Custom-Header": b"caf\xe9"},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        # the mockserver decodes invalid UTF-8 with surrogateescape
+        received = [
+            value.encode("utf-8", "surrogateescape")
+            for value in body["headers"]["X-Custom-Header"]
+        ]
+        replaced = self.handler_non_utf8_request_header_handling == "replace"
+        assert received == [b"caf\xef\xbf\xbd" if replaced else b"caf\xe9"]
+        assert ("is not valid UTF-8" in caplog.text) == replaced
+
+    @coroutine_test
     async def test_server_receives_no_extra_headers(
         self, mockserver: MockServer
     ) -> None:
@@ -280,6 +319,23 @@ class TestHttpBase(ABC):
         assert response.status == HTTPStatus.OK
         body = json.loads(response.body.decode("utf-8"))
         assert json.loads(body["body"]) == request_body
+
+    @coroutine_test
+    async def test_download_response_header_non_utf8(
+        self, mockserver: MockServer
+    ) -> None:
+        value = b"caf\xe9"
+        request = Request(
+            mockserver.url("/response-headers", is_secure=self.is_secure),
+            headers={"content-type": "application/json"},
+            body=json.dumps(
+                {"X-Custom-Header": value.decode("utf-8", "surrogateescape")}
+            ),
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.headers.getlist("X-Custom-Header") == [value]
 
     @coroutine_test
     async def test_download_has_correct_response_headers(
