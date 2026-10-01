@@ -162,6 +162,9 @@ def test_url_has_any_extension(url: str, expected: bool) -> None:
         ),
         ("https://www.example.com", "https://www.example.com"),
         ("ftp://www.example.com", "ftp://www.example.com"),
+        ("svn+ssh://example.com/repo", "svn+ssh://example.com/repo"),
+        ("git+https://example.com/repo", "git+https://example.com/repo"),
+        ("chrome-extension://abcd/page.html", "chrome-extension://abcd/page.html"),
     ],
 )
 def test_add_http_if_no_scheme(url: str, expected: str) -> None:
@@ -202,6 +205,8 @@ def test_add_http_if_no_scheme_not_deprecated(monkeypatch: pytest.MonkeyPatch) -
         ("www.example.com/index.html", "http://"),
         ("http://example.com", "http://"),
         ("http://example.com/index.html", "http://"),
+        ("svn+ssh://example.com/repo", "svn+ssh://"),
+        ("chrome-extension://abcd/page.html", "chrome-extension://"),
         ("localhost", "http://"),
         ("localhost/index.html", "http://"),
         # some corner cases (default to http://)

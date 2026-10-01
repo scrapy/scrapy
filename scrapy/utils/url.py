@@ -61,7 +61,8 @@ def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
 
 
 def _add_http_if_no_scheme(url: str) -> str:
-    if not re.match(r"^\w+://", url, flags=re.IGNORECASE):
+    # Schemes may include "+", "-", and "." after the first character.
+    if not re.match(r"^\w[\w+.-]*://", url, flags=re.IGNORECASE):
         scheme = "http:" if urlparse(url).netloc else "http://"
         url = scheme + url
     return url
