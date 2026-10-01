@@ -215,6 +215,7 @@ class Downloader:
         # (None, None) if not backing out.
         self._last_backout: tuple[str | None, float | None] = (None, None)
         self._max_active_size_warned = False
+        self._gc: bool = self.settings.getbool("RESPONSE_MAX_ACTIVE_SIZE_GC")
         self._last_gc: float = 0
         self._active_size_at_last_gc: int | None = None
 
@@ -267,7 +268,8 @@ class Downloader:
             return True
         if self._exceeds_max_active_size():
             self._record_backout("response_max_active_size")
-            self._maybe_garbage_collect()
+            if self._gc:
+                self._maybe_garbage_collect()
             if self._exceeds_max_active_size():
                 if not self._max_active_size_warned:
                     self._max_active_size_warned = True
@@ -292,15 +294,12 @@ class Downloader:
         )
 
     def _maybe_garbage_collect(self) -> None:
-        # A response with a cached selector (e.g. after response.css() or
-        # response.xpath()) holds a reference cycle with it, so freeing it
-        # requires an actual garbage collection. A full collection is
-        # expensive, so it only runs when there are tracked responses that
-        # neither the downloader nor the scraper holds, i.e. ones that may be
-        # unreachable, and at most once per interval while something is in
-        # flight. When nothing is in flight, it is the only way to make
-        # progress, so it also runs whenever the tracked size changed since the
-        # last collection.
+        # A full collection is expensive, so it only runs when there are
+        # tracked responses that neither the downloader nor the scraper holds,
+        # i.e. ones that may be unreachable, and at most once per interval
+        # while something is in flight. When nothing is in flight, it is the
+        # only way to make progress, so it also runs whenever the tracked size
+        # changed since the last collection.
         engine = self.crawler.engine
         assert engine is not None
         slot = engine.scraper.slot

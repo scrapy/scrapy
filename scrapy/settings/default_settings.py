@@ -138,6 +138,7 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JOBDIR_SYNC_EVERY",
     "JSONVALIDATION_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
@@ -160,6 +161,7 @@ __all__ = [
     "MAIL_SSL",
     "MAIL_TLS",
     "MAIL_USER",
+    "MEDIA_CACHE_SIZE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -189,6 +191,7 @@ __all__ = [
     "REMOTE_CONTROL_TRACEBACK_MAX_BYTES",
     "REQUEST_FINGERPRINTER_CLASS",
     "RESPONSE_MAX_ACTIVE_SIZE",
+    "RESPONSE_MAX_ACTIVE_SIZE_GC",
     "RESPONSE_ROUGH_SIZE",
     "RETRY_ENABLED",
     "RETRY_EXCEPTIONS",
@@ -227,6 +230,7 @@ __all__ = [
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
+    "UPLOAD_TIMEOUT",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
     "WARN_ON_GENERATOR_RETURN_VALUE",
@@ -458,6 +462,7 @@ ITEM_PIPELINES_BASE: dict[str, int] = {}
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
+JOBDIR_SYNC_EVERY = 0
 
 JSONVALIDATION_ENABLED = False
 
@@ -495,6 +500,8 @@ MAIL_USER = None
 MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
+
+MEDIA_CACHE_SIZE = -1
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 
@@ -569,6 +576,8 @@ SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5_000_000
 RESPONSE_MAX_ACTIVE_SIZE = 5_000_000
+# CPython frees most responses through reference counting.
+RESPONSE_MAX_ACTIVE_SIZE_GC = sys.implementation.name != "cpython"
 # None means a share of RESPONSE_MAX_ACTIVE_SIZE based on CONCURRENT_REQUESTS.
 RESPONSE_ROUGH_SIZE = None
 
@@ -622,6 +631,8 @@ TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+UPLOAD_TIMEOUT = None
 
 URLLENGTH_LIMIT = 2083
 

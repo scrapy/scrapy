@@ -13,10 +13,11 @@ import pytest
 
 import scrapy
 from scrapy import Spider
+from scrapy.core.engine import EngineState
 from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
-from scrapy.settings import Settings, default_settings
+from scrapy.settings import SETTINGS_PRIORITIES, Settings, default_settings
 from scrapy.utils.defer import _DEFER_DELAY, maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
@@ -840,27 +841,47 @@ class TestCrawlerProcessBaseSignalHandlers:
         reactor.callLater.assert_any_call(_DEFER_DELAY, process._stop_reactor)
 
 
+class _AddVersionAddon:
+    def update_settings(self, settings: Settings) -> None:
+        settings.set("BOT_NAME", "addonbot", priority="addon")
+        if settings.getpriority("LOG_VERSIONS") == SETTINGS_PRIORITIES["default"]:
+            settings.add_to_list("LOG_VERSIONS", "itemadapter")
+
+
 @pytest.mark.parametrize(
-    ("settings", "items"),
+    ("settings", "bot", "items"),
     [
-        ({}, default_settings.LOG_VERSIONS),
-        ({"LOG_VERSIONS": ["itemadapter"]}, ["itemadapter"]),
-        ({"LOG_VERSIONS": []}, None),
+        ({}, "scrapybot", default_settings.LOG_VERSIONS),
+        ({"LOG_VERSIONS": ["itemadapter"]}, "scrapybot", ["itemadapter"]),
+        ({"LOG_VERSIONS": []}, "scrapybot", None),
+        (
+            {"ADDONS": {_AddVersionAddon: 0}},
+            "addonbot",
+            [*default_settings.LOG_VERSIONS, "itemadapter"],
+        ),
+        (
+            {"ADDONS": {_AddVersionAddon: 0}, "LOG_VERSIONS": ["w3lib"]},
+            "addonbot",
+            ["w3lib"],
+        ),
     ],
 )
 def test_log_scrapy_info(
-    settings: dict[str, Any], items: list[str] | None, caplog: pytest.LogCaptureFixture
+    settings: dict[str, Any],
+    bot: str,
+    items: list[str] | None,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level("INFO"):
-        CrawlerProcess({**settings, "LOG_INSTALL_ROOT_HANDLER": False})
+    with caplog.at_level("INFO", logger="scrapy.utils.log"):
+        get_crawler(settings_dict=settings)
+    records = [r for r in caplog.records if r.name == "scrapy.utils.log"]
     assert (
-        caplog.records[0].getMessage()
-        == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
-    ), repr(caplog.records[0].msg)
+        records[0].getMessage() == f"Scrapy {scrapy.__version__} started (bot: {bot})"
+    )
     if not items:
-        assert len(caplog.records) == 1
+        assert len(records) == 1
         return
-    version_string = caplog.records[1].getMessage()
+    version_string = records[1].getMessage()
     expected_items_pattern = "',\n '".join(
         f"{item}': '[^']+('\n +'[^']+)*" for item in items
     )
@@ -886,12 +907,12 @@ async def test_crawler_stop_async_invalid_mode() -> None:
 
 
 @coroutine_test
-async def test_crawler_graceful_stop_non_running_engine_is_noop() -> None:
+async def test_crawler_graceful_stop_created_engine_is_noop() -> None:
     crawler = get_crawler(DefaultSpider)
     crawler.crawling = True
 
     class DummyEngine:
-        running = False
+        state = EngineState.CREATED
         called = False
 
         async def stop_async(self, *, mode: str = "graceful") -> None:
@@ -912,6 +933,7 @@ async def test_crawler_force_stop_falls_back_to_fast(
     crawler = get_crawler(DefaultSpider)
 
     class DummyEngine:
+        state = EngineState.RUNNING
         called_mode: str | None = None
 
         async def stop_async(self, *, mode: str = "graceful") -> None:
@@ -949,44 +971,6 @@ async def test_crawler_stop_async_without_engine_is_noop() -> None:
     await crawler.stop_async(mode="graceful")
 
     assert crawler.crawling is False
-
-
-@coroutine_test
-async def test_crawler_stop_async_ignores_engine_not_running_runtime_error() -> None:
-    crawler = get_crawler(DefaultSpider)
-    crawler.crawling = True
-
-    class DummyEngine:
-        running = True
-        called = False
-
-        async def stop_async(self, *, mode: str = "graceful") -> None:
-            self.called = True
-            raise RuntimeError("Engine not running")
-
-    dummy_engine = DummyEngine()
-    crawler.engine = dummy_engine  # type: ignore[assignment]
-
-    await crawler.stop_async(mode="graceful")
-
-    assert dummy_engine.called is True
-
-
-@coroutine_test
-async def test_crawler_stop_async_reraises_other_runtime_errors() -> None:
-    crawler = get_crawler(DefaultSpider)
-    crawler.crawling = True
-
-    class DummyEngine:
-        running = True
-
-        async def stop_async(self, *, mode: str = "graceful") -> None:
-            raise RuntimeError("different runtime error")
-
-    crawler.engine = DummyEngine()  # type: ignore[assignment]
-
-    with pytest.raises(RuntimeError, match="different runtime error"):
-        await crawler.stop_async(mode="graceful")
 
 
 @pytest.mark.requires_reactor

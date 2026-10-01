@@ -423,16 +423,12 @@ class TestRequestBackout:
         }
         assert _backout_stats(crawler) == expected_stats
 
-    @coroutine_test
-    async def test_response_size_reference_cycle(self, monkeypatch):
-        """Responses that only the cyclic garbage collector can free, such as
-        those with a cached selector, are collected as soon as nothing else can
-        make progress, without waiting for the engine heartbeat."""
-        collections = 0
+    @staticmethod
+    def _count_garbage_collections(monkeypatch) -> list[None]:
+        collections: list[None] = []
 
         def counting_garbage_collect():
-            nonlocal collections
-            collections += 1
+            collections.append(None)
             garbage_collect()
 
         monkeypatch.setattr(
@@ -440,20 +436,13 @@ class TestRequestBackout:
         )
         # Keep the heartbeat from masking a stall.
         monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 60)
+        return collections
 
-        class TestSpider(Spider):
-            name = "test"
-            start_urls = [f"data:text/html,<a>{n}</a>" for n in range(3)]
-            custom_settings = {"RESPONSE_MAX_ACTIVE_SIZE": 1}
-
-            def parse(self, response):
-                response.css("a")
-
-        crawler = get_crawler(TestSpider)
-        # Leave the forced collection as the only one that can free responses.
-        # On PyPy, gc.disable() would also disable the finalizers that discount
-        # freed responses, and nothing but a collection frees cycles there
-        # anyway.
+    @staticmethod
+    async def _crawl_without_automatic_gc(crawler) -> None:
+        # Leave the forced collection as the only one that can free responses
+        # in a cycle. On PyPy, gc.disable() would also disable the finalizers
+        # that discount freed responses.
         disable_gc = platform.python_implementation() == "CPython"
         if disable_gc:
             gc.disable()
@@ -469,9 +458,54 @@ class TestRequestBackout:
             if disable_gc:
                 gc.enable()
 
+    @coroutine_test
+    async def test_response_max_active_size_gc(self, monkeypatch):
+        """Responses that only the garbage collector can free stop counting
+        toward the limit as soon as nothing else can make progress, without
+        waiting for the engine heartbeat."""
+        collections = self._count_garbage_collections(monkeypatch)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = [f"data:,{n}" for n in range(3)]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+                "RESPONSE_MAX_ACTIVE_SIZE_GC": True,
+            }
+
+            def parse(self, response):
+                cycle = [response]
+                cycle.append(cycle)
+
+        crawler = get_crawler(TestSpider)
+        await self._crawl_without_automatic_gc(crawler)
+
         assert crawler.stats
         assert crawler.stats.get_value("response_received_count") == 3
-        assert 0 < collections <= 3
+        assert 0 < len(collections) <= 3
+
+    @pytest.mark.skipif(
+        platform.python_implementation() != "CPython",
+        reason="Relies on reference counting",
+    )
+    @coroutine_test
+    async def test_response_max_active_size_gc_default_cpython(self, monkeypatch):
+        collections = self._count_garbage_collections(monkeypatch)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = [f"data:text/html,<a>{n}</a>" for n in range(3)]
+            custom_settings = {"RESPONSE_MAX_ACTIVE_SIZE": 1}
+
+            def parse(self, response):
+                response.css("a")
+
+        crawler = get_crawler(TestSpider)
+        await self._crawl_without_automatic_gc(crawler)
+
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 3
+        assert not collections
 
     @coroutine_test
     async def test_response_size_process_request(self):
