@@ -42,7 +42,13 @@ class Headers(dict):  # type: ignore[type-arg]
     def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
         return dict.__contains__(self, self._normkey(key))
 
-    has_key = __contains__
+    def has_key(self, key: str | bytes) -> bool:
+        warnings.warn(
+            'Headers.has_key() is deprecated, use the "in" operator instead.',
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return key in self
 
     def setdefault(self, key: str | bytes, def_val: Any = None) -> Any:
         return dict.setdefault(self, self._normkey(key), self._normvalue(def_val))
@@ -51,6 +57,12 @@ class Headers(dict):  # type: ignore[type-arg]
     def fromkeys(  # type: ignore[override]
         cls, keys: Iterable[str | bytes], value: Any = None
     ) -> Self:
+        warnings.warn(
+            "Headers.fromkeys() is deprecated, pass (key, value) pairs to"
+            " Headers() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return cls((k, value) for k in keys)
 
     def pop(self, key: str | bytes, *args: Any) -> Any:
@@ -152,11 +164,22 @@ class Headers(dict):  # type: ignore[type-arg]
             return []
 
     def setlist(self, key: str | bytes, list_: Iterable[_RawValue]) -> None:
+        warnings.warn(
+            "Headers.setlist() is deprecated, assign the list instead:"
+            " headers[key] = values.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self[key] = list_
 
     def setlistdefault(
         self, key: str | bytes, default_list: Iterable[_RawValue] = ()
     ) -> Any:
+        warnings.warn(
+            "Headers.setlistdefault() is deprecated, use setdefault() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return self.setdefault(key, default_list)
 
     def appendlist(self, key: str | bytes, value: Iterable[_RawValue]) -> None:
@@ -177,10 +200,11 @@ class Headers(dict):  # type: ignore[type-arg]
         return headers_dict_to_raw(self)
 
     def to_unicode_dict(self) -> CaseInsensitiveDict:
-        """Return headers as a CaseInsensitiveDict with str keys
-        and str values. Multiple values are joined with ','. Bytes that
-        cannot be decoded are replaced with U+FFFD.
-        """
+        warnings.warn(
+            "Headers.to_unicode_dict() is deprecated, use to_tuple_list() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return CaseInsensitiveDict(
             (
                 to_unicode(key, encoding=self.encoding, errors="replace"),
