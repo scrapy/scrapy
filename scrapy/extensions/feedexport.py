@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-import os
 import pickle
 import re
 import sys
@@ -573,33 +572,33 @@ class FeedExporter:
 
         for uri, feed_options in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed_options["uri_params"])
-            
+
             # get jobdir
             jobdir = spider.crawler.settings.get("JOBDIR")
 
             # list for batch ids
             batch_ids = {}
-            
+
             if jobdir:
 
                 # create path to state file
-                state_file = os.path.join(jobdir, "spider.state")
-                
+                state_file = Path(jobdir) / "spider.state"
+
                 # open state file if exists
-                if os.path.exists(state_file):
-                    with open(state_file, "rb") as f:
+                if state_file.exists():
+                    with state_file.open("rb") as f:
 
                         # check if state file has batch ids
                         try:
-                            state_dict = pickle.load(f)
+                            state_dict = pickle.load(f) # noqa: S301
                             batch_ids = state_dict.get("_feedexport_batch_ids", {})
-                        except Exception:
+                        except Exception: # noqa: S110
                             pass
 
             # create current batch id by incrementing previous batch id if no previous batch id exists increment 0
             current_batch_id = batch_ids.get(uri, 0) + 1
-            
-            
+
+
             # save current batch id to state
             if not hasattr(self, "_batch_ids"):
                 self._batch_ids = {}
@@ -620,7 +619,7 @@ class FeedExporter:
                     f"function."
                 )
                 continue
-    
+
             self.slots.append(
                 self._start_new_batch(
                     batch_id=current_batch_id,
@@ -633,18 +632,10 @@ class FeedExporter:
 
     async def close_spider(self, spider: Spider) -> None:
 
-
-        print(f"\n{'='*50}")
-        print(f"🛑 DEBUG CLOSE_SPIDER GESTARTET")
-        print(f"Hat der Spider ein 'state' Attribut? {hasattr(spider, 'state')}")
-
         # store batch ids in state
         if hasattr(spider, "state") and hasattr(self, "_batch_ids"):
             spider.state["_feedexport_batch_ids"] = self._batch_ids
-            print(f"Gespeicherter State jetzt: {spider.state.get('_feedexport_batch_ids')}")
-        else:
-            print(f"ACHTUNG: State konnte nicht gespeichert werden!")
-        print(f"{'='*50}\n")
+
 
         for slot in self.slots:
             self._schedule_slot_close(slot, spider)
