@@ -7,7 +7,7 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    "Twisted>=21.7.0",
+    "Twisted>=23.8.0",
     "aiohttp>=3.13.3",
     "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
@@ -79,7 +79,7 @@ ipython = ["ipython>=8.15.0"]
 ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
 s3 = ["boto3>=1.20.0"]
-twisted-http2 = ["Twisted[http2]>=21.7.0"]
+twisted-http2 = ["Twisted[http2]>=23.8.0"]
 uvloop = [
     "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
 ]
