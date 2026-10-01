@@ -130,6 +130,10 @@ class TestSelector:
             f"{x.__class__.__name__} does not use __slots__"
         )
 
+    def test_response(self):
+        response = TextResponse(url="http://example.com", body=b"")
+        assert Selector(response).response is response
+
     def test_selector_bad_args(self):
         with pytest.raises(ValueError, match="received both response and text"):
             Selector(TextResponse(url="http://example.com", body=b""), text="")
