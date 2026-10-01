@@ -388,6 +388,22 @@ class TestStripUrl:
         )
 
     @pytest.mark.parametrize(
+        ("scheme", "port"), [("http", "080"), ("https", "00443"), ("ftp", "021")]
+    )
+    @pytest.mark.parametrize("host", ["example.com", "[::1]"])
+    @pytest.mark.parametrize("strip_credentials", [False, True])
+    def test_zero_padded_default_ports(
+        self, scheme: str, port: str, host: str, strip_credentials: bool
+    ) -> None:
+        credentials = f"user:{port}@"
+        url = f"{scheme}://{credentials}{host}:{port}/path"
+        expected_credentials = "" if strip_credentials else credentials
+        assert strip_url(url, strip_credentials=strip_credentials) == (
+            f"{scheme}://{expected_credentials}{host}/path"
+        )
+        assert strip_url(url, strip_credentials=False, strip_default_port=False) == url
+
+    @pytest.mark.parametrize(
         ("url", "expected"),
         [
             (
