@@ -635,6 +635,10 @@ The directory to use for storing the (low-level) HTTP cache. If empty, the HTTP
 cache will be disabled. If a relative path is given, is taken relative to the
 project data dir. For more info see: :ref:`topics-project-structure`.
 
+.. warning:: Treat the cache directory with the same security care as your
+    Scrapy project source code. Do not point :setting:`HTTPCACHE_DIR` to a
+    path that untrusted parties can write to.
+
 .. setting:: HTTPCACHE_IGNORE_HTTP_CODES
 
 HTTPCACHE_IGNORE_HTTP_CODES

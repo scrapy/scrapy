@@ -68,9 +68,9 @@ def purge_scrapy_settings(app: Sphinx, env: Any, docname: str) -> None:
 def merge_scrapy_settings(
     app: Sphinx, env: Any, docnames: set[str], other: Any
 ) -> None:
-    env.scrapy_all_settings = getattr(env, "scrapy_all_settings", []) + getattr(
-        other, "scrapy_all_settings", []
-    )
+    env.scrapy_all_settings = getattr(env, "scrapy_all_settings", []) + [
+        d for d in getattr(other, "scrapy_all_settings", []) if d["docname"] in docnames
+    ]
 
 
 def make_setting_element(

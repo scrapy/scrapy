@@ -10,6 +10,7 @@ import pytest
 from twisted.internet.defer import Deferred, succeed
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import (
     CloseSpider,
     DecompressionError,
@@ -67,7 +68,7 @@ class TestManagerBase:
         crawler = get_crawler(Spider, self.settings_dict)
         crawler.spider = crawler._create_spider("foo")
         mwman = build_from_crawler(DownloaderMiddlewareManager, crawler)
-        crawler.engine = crawler._create_engine()
+        crawler.engine = ExecutionEngine(crawler)
         await crawler.engine.open_spider_async()
         try:
             yield mwman
