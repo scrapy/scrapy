@@ -621,101 +621,9 @@ a dictionary will be filled with it.
 XMLFeedSpider
 -------------
 
-.. class:: XMLFeedSpider
-
-    XMLFeedSpider is designed for parsing XML feeds by iterating through them by a
-    certain node name.  The iterator can be chosen from: ``iternodes``, ``xml``,
-    and ``html``.  It's recommended to use the ``iternodes`` iterator for
-    performance reasons, since the ``xml`` and ``html`` iterators generate the
-    whole DOM at once in order to parse it.  However, using ``html`` as the
-    iterator may be useful when parsing XML with bad markup.
-
-    To set the iterator and the tag name, you must define the following class
-    attributes:
-
-    .. attribute:: iterator
-
-        A string which defines the iterator to use. It can be either:
-
-           - ``'iternodes'`` - a fast iterator based on ``lxml``
-
-           - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds. It also parses the feed
-             with an HTML parser, which can silently mangle tags that HTML
-             treats as void elements, such as ``<link>``, dropping their
-             content and closing tag. Use ``xml`` or ``iternodes`` instead
-             for feeds affected by this.
-
-           - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds
-
-        It defaults to: ``'iternodes'``.
-
-    .. attribute:: itertag
-
-        A string with the name of the node (or element) to iterate in. Example:
-
-        .. code-block:: python
-
-            itertag = "product"
-
-    .. attribute:: namespaces
-
-        A list of ``(prefix, uri)`` tuples which define the namespaces
-        available in that document that will be processed with this spider. The
-        ``prefix`` and ``uri`` will be used to automatically register
-        namespaces using the
-        :meth:`~scrapy.Selector.register_namespace` method.
-
-        You can then specify nodes with namespaces in the :attr:`itertag`
-        attribute.
-
-        Example:
-
-        .. code-block:: python
-
-            from scrapy.spiders import XMLFeedSpider
-
-
-            class YourSpider(XMLFeedSpider):
-
-                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
-                itertag = "n:url"
-                # ...
-
-    Apart from these new attributes, this spider has the following overridable
-    methods too:
-
-    .. method:: adapt_response(response)
-
-        A method that receives the response as soon as it arrives from the spider
-        middleware, before the spider starts parsing it. It can be used to modify
-        the response body before parsing it. This method receives a response and
-        also returns a response (it could be the same or another one).
-
-    .. method:: parse_node(response, selector)
-
-        This method is called for the nodes matching the provided tag name
-        (``itertag``).  Receives the response and an
-        :class:`~scrapy.Selector` for each node.  Overriding this
-        method is mandatory. Otherwise, your spider won't work.  This method
-        must return an :ref:`item object <topics-items>`, a
-        :class:`~scrapy.Request` object, or an iterable containing any of
-        them.
-
-    .. method:: process_results(response, results)
-
-        This method is called for each result (item or request) returned by the
-        spider, and it's intended to perform any last time processing required
-        before returning the results to the framework core, for example setting the
-        item IDs. It receives a list of results and the response which originated
-        those results. It must return a list of results (items or requests).
-
-    .. warning:: Because of its internal implementation, you must explicitly set
-       callbacks for new requests when writing :class:`XMLFeedSpider`-based spiders;
-       unexpected behaviour can occur otherwise.
+.. autoclass:: XMLFeedSpider
+    :members:
+    :exclude-members: parse_nodes
 
 
 XMLFeedSpider example
@@ -755,32 +663,8 @@ prints them out, and stores some random data in an :class:`~scrapy.Item`.
 CSVFeedSpider
 -------------
 
-.. class:: CSVFeedSpider
-
-   This spider is very similar to the XMLFeedSpider, except that it iterates
-   over rows, instead of nodes. The method that gets called in each iteration
-   is :meth:`parse_row`.
-
-   .. attribute:: delimiter
-
-       A string with the separator character for each field in the CSV file
-       Defaults to ``','`` (comma).
-
-   .. attribute:: quotechar
-
-       A string with the enclosure character for each field in the CSV file
-       Defaults to ``'"'`` (quotation mark).
-
-   .. attribute:: headers
-
-       A list of the column names in the CSV file.
-
-   .. method:: parse_row(response, row)
-
-       Receives a response and a dict (representing each row) with a key for each
-       provided (or detected) header of the CSV file.  This spider also gives the
-       opportunity to override ``adapt_response`` and ``process_results`` methods
-       for pre- and post-processing purposes.
+.. autoclass:: CSVFeedSpider
+    :members:
 
 CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
