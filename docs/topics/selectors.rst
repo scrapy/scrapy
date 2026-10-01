@@ -35,6 +35,9 @@ defines selectors to associate those styles with specific HTML elements.
     API on top of the lxml API. This means Scrapy selectors have similar speed
     and parsing accuracy to lxml.
 
+To turn whole pages into clean text or markdown, or to turn the strings you
+select into dates, prices or other values, see :ref:`extraction`.
+
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
 .. _XPath: https://www.w3.org/TR/xpath/all/

@@ -76,7 +76,7 @@ class MiddlewareManager(ABC):
         elif self._compat_spider is not spider:
             raise RuntimeError(
                 f"Different instances of Spider were passed to {type(self).__name__}:"
-                f" {self._compat_spider} and {spider}"
+                f" {self._compat_spider!r} and {spider!r}"
             )
 
     @classmethod
