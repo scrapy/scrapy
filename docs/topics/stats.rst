@@ -82,6 +82,19 @@ Get all stats:
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
+Stats collectors that subclass :class:`StatsCollector`, like the built-in ones,
+are also :class:`mutable mappings <collections.abc.MutableMapping>` of stats:
+
+.. versionadded:: VERSION
+
+.. code-block:: python
+
+    stats["hostname"] = socket.gethostname()
+    hostname = stats.get("hostname")
+
+As with a :class:`dict`, ``stats[key]`` raises :exc:`KeyError` for a missing
+stat, and with :class:`DummyStatsCollector` every stat is missing.
+
 .. skip: end
 
 Available Stats Collectors
@@ -318,6 +331,18 @@ one per actual value of the placeholder.
 
     Third-party components and your own code may use any other reason, e.g. by
     raising :exc:`~scrapy.exceptions.CloseSpider` with it.
+
+    Set by :class:`~scrapy.extensions.corestats.CoreStats`.
+
+.. stat:: finish_reason_error
+
+``finish_reason_error``
+    Boolean indicating whether :stat:`finish_reason` denotes a failed crawl.
+    It matches the *error* argument of the :signal:`spider_closed` signal, and
+    :ref:`commands <topics-commands>` such as :command:`crawl` use it to
+    decide their process exit code.
+
+    .. versionadded:: VERSION
 
     Set by :class:`~scrapy.extensions.corestats.CoreStats`.
 

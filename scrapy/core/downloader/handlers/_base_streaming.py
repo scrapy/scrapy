@@ -23,7 +23,7 @@ from scrapy.utils._download_handlers import (
     normalize_bind_address,
 )
 from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.url import add_http_if_no_scheme
+from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -286,7 +286,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         proxy: str | None = request.meta.get("proxy")
         if not proxy:
             return None, None
-        proxy = add_http_if_no_scheme(proxy)
+        proxy = _add_http_if_no_scheme(proxy)
         auth_header: bytes | None = request.headers.get(b"Proxy-Authorization")
         return proxy, auth_header.decode("ascii") if auth_header else None
 

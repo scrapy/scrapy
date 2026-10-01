@@ -243,9 +243,8 @@ class BaseRunSpiderCommand(ScrapyCommand):
         crawler = self._create_crawler(spidercls)
         self.crawler_process.crawl(crawler, **opts.spargs)
         self.crawler_process.start()
-        if (
-            self.crawler_process.bootstrap_failed
-            or crawler.stats.get_value("finish_reason") == "closespider_errorcount"
+        if self.crawler_process.bootstrap_failed or crawler.stats.get_value(
+            "finish_reason_error", False
         ):
             self.exitcode = 1
 
