@@ -2,6 +2,7 @@ import copy
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers
 
 
@@ -109,8 +110,15 @@ def test_setdefault() -> None:
     assert h.getlist("X-Forwarded-For") is olist
 
 
+def test_has_key() -> None:
+    h = Headers({"Content-Type": "text/html"})
+    with pytest.warns(ScrapyDeprecationWarning, match="has_key"):
+        assert h.has_key("content-type")
+
+
 def test_fromkeys() -> None:
-    h = Headers.fromkeys(("Content-Type", "Content-Length"), "value")
+    with pytest.warns(ScrapyDeprecationWarning, match="fromkeys"):
+        h = Headers.fromkeys(("Content-Type", "Content-Length"), "value")
     assert h.getlist("Content-Type") == [b"value"]
     assert h.getlist("Content-Length") == [b"value"]
 
@@ -161,14 +169,17 @@ def test_appendlist() -> None:
 def test_setlist() -> None:
     h1 = Headers({"header1": "value1"})
     assert h1.getlist("header1") == [b"value1"]
-    h1.setlist("header1", [b"value2", b"value3"])
+    with pytest.warns(ScrapyDeprecationWarning, match="setlist"):
+        h1.setlist("header1", [b"value2", b"value3"])
     assert h1.getlist("header1") == [b"value2", b"value3"]
 
 
 def test_setlistdefault() -> None:
     h1 = Headers({"header1": "value1"})
-    h1.setlistdefault("header1", ["value2", "value3"])
-    h1.setlistdefault("header2", ["value2", "value3"])
+    with pytest.warns(ScrapyDeprecationWarning, match="setlistdefault"):
+        h1.setlistdefault("header1", ["value2", "value3"])
+    with pytest.warns(ScrapyDeprecationWarning, match="setlistdefault"):
+        h1.setlistdefault("header2", ["value2", "value3"])
     assert h1.getlist("header1") == [b"value1"]
     assert h1.getlist("header2") == [b"value2", b"value3"]
 
@@ -187,7 +198,7 @@ def test_int_value() -> None:
     h1 = Headers({"hey": 5})
     h1["foo"] = 1
     h1.setdefault("bar", 2)
-    h1.setlist("buz", [1, "dos", 3])
+    h1["buz"] = [1, "dos", 3]
     assert h1.getlist("foo") == [b"1"]
     assert h1.getlist("bar") == [b"2"]
     assert h1.getlist("buz") == [b"1", b"dos", b"3"]
@@ -202,12 +213,14 @@ def test_invalid_value() -> None:
     with pytest.raises(TypeError, match="Unsupported value type"):
         Headers().setdefault("foo", object())
     with pytest.raises(TypeError, match="Unsupported value type"):
-        Headers().setlist("foo", [object()])  # type: ignore[list-item]
+        Headers()["foo"] = [object()]
 
 
 def test_to_unicode_dict_undecodable() -> None:
     h = Headers({b"Public-Key-Pins": b'pin-sha256=\x94"a"', b"X-\xff": b"ok"})
-    assert h.to_unicode_dict() == {
+    with pytest.warns(ScrapyDeprecationWarning, match="to_unicode_dict"):
+        unicode_dict = h.to_unicode_dict()
+    assert unicode_dict == {
         "Public-Key-Pins": 'pin-sha256=�"a"',
         "X-�": "ok",
     }
