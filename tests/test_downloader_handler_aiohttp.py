@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -103,18 +102,10 @@ class TestHttpProxy(AiohttpDownloadHandlerMixin, TestHttpProxyBase):
 class TestHttpsProxy(AiohttpDownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
 
-    @property
-    def handler_supports_tls_in_tls(self) -> bool:
-        return sys.version_info >= (3, 11)
-
 
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(AiohttpDownloadHandlerMixin, TestMitmProxyBase):
     handler_supports_socks: bool = False
-
-    @property
-    def handler_supports_tls_in_tls(self) -> bool:
-        return sys.version_info >= (3, 11)
 
 
 @pytest.mark.requires_internet

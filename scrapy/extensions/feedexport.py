@@ -721,8 +721,7 @@ class FeedExporter:
                 try:
                     slot.exporter.export_item(exported_item)
                 except Exception as e:
-                    if sys.version_info >= (3, 11):
-                        e.add_note(f"Item: {exported_item!r}")
+                    e.add_note(f"Item: {exported_item!r}")
                     raise
                 slot.itemcount += 1
                 # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one

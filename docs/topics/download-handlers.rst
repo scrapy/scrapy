@@ -236,10 +236,6 @@ Per-request ``bindaddress`` No (not supported by the library)
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
-Other limitations:
-
--   HTTPS proxies for HTTPS destinations are not supported on Python < 3.11.
-
 .. _twisted-http2-handler:
 
 H2DownloadHandler
