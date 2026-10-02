@@ -279,9 +279,9 @@ class RemoteControl:
             eval_result = eval(code_obj, ns)  # noqa: S307 - arbitrary code by design
             if inspect.iscoroutine(eval_result):
                 try:
-                    await asyncio.wait_for(eval_result, timeout)
+                    async with asyncio.timeout(timeout):
+                        await eval_result
                 except TimeoutError:
-                    # wait_for cancelled the coroutine at an await point.
                     status = "timeout"
         except Exception:
             # intentionally doesn't catch asyncio.CancelledError, which is a BaseException

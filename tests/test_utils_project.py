@@ -101,7 +101,7 @@ def test_project_data_dir_default(proj_path: Path) -> None:
 
 def test_project_data_dir_from_scrapy_cfg(proj_path: Path) -> None:
     datadir = proj_path / "custom-datadir"
-    Path("scrapy.cfg").write_text(f"[datadir]\ndefault = {datadir}\n")
+    Path("scrapy.cfg").write_text(f"[datadir]\ndefault = {datadir}\n", encoding="utf-8")
     assert Path(project_data_dir()) == datadir
     assert datadir.is_dir()
 

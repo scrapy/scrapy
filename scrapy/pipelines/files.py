@@ -20,7 +20,6 @@ from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from typing import (
-    IO,
     TYPE_CHECKING,
     Any,
     ClassVar,
@@ -72,23 +71,6 @@ def _to_string(path: str | PathLike[str]) -> str:
     return str(path)  # convert a Path object to string
 
 
-def _md5sum(file: IO[bytes]) -> str:
-    """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory.
-
-    >>> from io import BytesIO
-    >>> _md5sum(BytesIO(b'file content to hash'))
-    '784406af91dd5a54fbb9c84c2236595a'
-    """
-    m = hashlib.md5()  # noqa: S324
-    while True:
-        d = file.read(8096)
-        if not d:
-            break
-        m.update(d)
-    return m.hexdigest()
-
-
 class StatInfo(TypedDict, total=False):
     checksum: str
     last_modified: float
@@ -117,10 +99,10 @@ class FSFilesStore:
         if "://" in basedir:
             basedir = basedir.split("://", 1)[1]
         self.basedir: str = basedir
-        self._mkdir(Path(self.basedir))
         self.created_directories: defaultdict[MediaPipeline.SpiderInfo, set[str]] = (
             defaultdict(set)
         )
+        self._mkdir(Path(self.basedir))
 
     def persist_file(
         self,
@@ -144,7 +126,7 @@ class FSFilesStore:
             return {}
 
         with absolute_path.open("rb") as f:
-            checksum = _md5sum(f)
+            checksum = hashlib.file_digest(f, "md5").hexdigest()
 
         return {"last_modified": last_modified, "checksum": checksum}
 
@@ -594,7 +576,7 @@ class FilesPipeline(MediaPipeline):
 
         age_seconds = time.time() - last_modified
         age_days = age_seconds / 60 / 60 / 24
-        if self.expires >= 0 and age_days > self.expires:
+        if 0 <= self.expires < age_days:
             return None  # returning None force download
 
         referer = referer_str(request)
@@ -734,7 +716,7 @@ class FilesPipeline(MediaPipeline):
     ) -> str:
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
-        checksum = _md5sum(buf)
+        checksum = hashlib.file_digest(buf, "md5").hexdigest()
         buf.seek(0)
         await ensure_awaitable(self.store.persist_file(path, buf, info))
         return checksum
