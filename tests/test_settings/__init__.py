@@ -331,6 +331,82 @@ class TestBaseSettings:
         ):
             settings.getbool("TEST_DISABLED_WRONG")
 
+    def test_getsecret_plain_string(self):
+        settings = BaseSettings({"SECRET": "my-api-key"}, priority="project")
+        assert settings.getsecret("SECRET") == "my-api-key"
+
+    def test_getsecret_not_defined_returns_none(self):
+        settings = BaseSettings()
+        assert settings.getsecret("MISSING_SECRET") is None
+
+    def test_getsecret_not_defined_returns_default(self):
+        settings = BaseSettings()
+        assert settings.getsecret("MISSING_SECRET", default="fallback") == "fallback"
+
+    def test_getsecret_env_var(self):
+        settings = BaseSettings(
+            {"SECRET": '{"env": "TEST_SECRET_VAR"}'}, priority="project"
+        )
+        with mock.patch.dict("os.environ", {"TEST_SECRET_VAR": "env-value"}):
+            assert settings.getsecret("SECRET") == "env-value"
+
+    def test_getsecret_env_var_missing_returns_none(self, caplog):
+        settings = BaseSettings(
+            {"SECRET": '{"env": "ABSENT_SECRET_VAR"}'}, priority="project"
+        )
+        with (
+            mock.patch.dict("os.environ", {}, clear=True),
+            caplog.at_level(logging.WARNING),
+        ):
+            result = settings.getsecret("SECRET")
+        assert result is None
+        assert "ABSENT_SECRET_VAR" in caplog.text
+
+    def test_getsecret_env_var_missing_uses_default(self, caplog):
+        settings = BaseSettings(
+            {"SECRET": '{"env": "ABSENT_SECRET_VAR"}'}, priority="project"
+        )
+        with (
+            mock.patch.dict("os.environ", {}, clear=True),
+            caplog.at_level(logging.WARNING),
+        ):
+            result = settings.getsecret("SECRET", default="fallback")
+        assert result == "fallback"
+
+    def test_getsecret_raw(self):
+        settings = BaseSettings(
+            {"SECRET": '{"raw": "literal-value"}'}, priority="project"
+        )
+        assert settings.getsecret("SECRET") == "literal-value"
+
+    def test_getsecret_json_object_literal(self):
+        # A JSON object with no recognised key is a literal secret.
+        blob = '{"type": "service_account", "project_id": "proj"}'
+        settings = BaseSettings({"SECRET": blob}, priority="project")
+        assert settings.getsecret("SECRET") == blob
+
+    def test_getsecret_keyring(self):
+        settings = BaseSettings(
+            {"SECRET": '{"keyring": "my-account"}'}, priority="project"
+        )
+        mock_keyring = mock.MagicMock()
+        mock_keyring.get_password.return_value = "ring-value"
+        with mock.patch.dict("sys.modules", {"keyring": mock_keyring}):
+            assert settings.getsecret("SECRET") == "ring-value"
+        mock_keyring.get_password.assert_called_once_with("scrapy", "my-account")
+
+    def test_getsecret_keyring_missing_raises(self):
+        settings = BaseSettings(
+            {"SECRET": '{"keyring": "nonexistent"}'}, priority="project"
+        )
+        mock_keyring = mock.MagicMock()
+        mock_keyring.get_password.return_value = None
+        with (
+            mock.patch.dict("sys.modules", {"keyring": mock_keyring}),
+            pytest.raises(KeyError),
+        ):
+            settings.getsecret("SECRET")
+
     def test_getpriority(self):
         settings = BaseSettings({"key": "value"}, priority=99)
         assert settings.getpriority("key") == 99
