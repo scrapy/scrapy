@@ -9,7 +9,7 @@ from contextlib import suppress
 from functools import partial
 from io import BytesIO
 from time import monotonic
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
@@ -70,9 +70,6 @@ if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
     from twisted.web._newclient import Request as TxRequest
-
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
 

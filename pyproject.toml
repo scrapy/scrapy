@@ -339,10 +339,6 @@ filterwarnings = [
     "ignore:Coverage disabled via --no-cov switch!",
 ]
 
-[tool.ruff]
-# TODO
-target-version = "py310"
-
 [tool.ruff.lint]
 extend-select = [
     # flake8-builtins

@@ -14,10 +14,10 @@ import sys
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
+from typing import IO, TYPE_CHECKING, Any, Protocol, Self, TypeAlias, cast
 from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
@@ -38,9 +38,6 @@ from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from _typeshed import OpenBinaryMode
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.exporters import BaseItemExporter
@@ -814,7 +811,7 @@ class FeedExporter:
         slot: FeedSlot | None = None,
     ) -> dict[str, Any]:
         params = {k: getattr(spider, k) for k in dir(spider)}
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")
         params["batch_id"] = slot.batch_id + 1 if slot is not None else 1

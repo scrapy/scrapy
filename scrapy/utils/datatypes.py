@@ -9,13 +9,10 @@ import collections
 import contextlib
 import weakref
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Container
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 _KT = TypeVar("_KT")

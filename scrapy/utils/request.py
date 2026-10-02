@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, Self
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
@@ -21,9 +21,6 @@ from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CookiesT, VerboseCookie
