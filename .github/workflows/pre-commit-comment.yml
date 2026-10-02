@@ -1,0 +1,64 @@
+name: Pre-commit failure comment
+on:
+  workflow_run:
+    workflows: ["Checks"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post comment if pre-commit failed
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+
+            if (run.conclusion !== 'failure') return;
+
+            const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: run.id,
+            });
+            const preCommitJob = jobs.find(j => j.name === 'pre-commit');
+            if (!preCommitJob || preCommitJob.conclusion !== 'failure') return;
+
+            // For fork PRs, pull_requests is empty; find by head owner:branch.
+            let prNumber;
+            if (run.pull_requests.length > 0) {
+              prNumber = run.pull_requests[0].number;
+            } else {
+              const head = `${run.head_repository.owner.login}:${run.head_branch}`;
+              const { data: prs } = await github.rest.pulls.list({
+                owner, repo, state: 'open', head,
+              });
+              if (prs.length === 0) return;
+              prNumber = prs[0].number;
+            }
+
+            // Skip if pre-commit is already mentioned anywhere on the PR.
+            const mentions = text => /pre-commit/i.test(text ?? '');
+
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            if (mentions(pr.body)) return;
+
+            const { data: issueComments } = await github.rest.issues.listComments({ owner, repo, issue_number: prNumber });
+            if (issueComments.some(c => mentions(c.body))) return;
+
+            const { data: reviewComments } = await github.rest.pulls.listReviewComments({ owner, repo, pull_number: prNumber });
+            if (reviewComments.some(c => mentions(c.body))) return;
+
+            const { data: reviews } = await github.rest.pulls.listReviews({ owner, repo, pull_number: prNumber });
+            if (reviews.some(r => mentions(r.body))) return;
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body: 'The pre-commit checks failed on this PR. Please [set up pre-commit](https://doc.scrapy.org/en/latest/contributing.html#scrapy-pre-commit) and run it locally before pushing.',
+            });
