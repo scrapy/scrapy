@@ -15,7 +15,6 @@ from typing import (
     Self,
     TypeVar,
     TypeVarTuple,
-    Unpack,
 )
 
 from twisted.internet.defer import Deferred
@@ -242,7 +241,7 @@ def create_looping_call(
 
 
 def call_later(
-    delay: float, func: Callable[[Unpack[_Ts]], object], *args: *_Ts
+    delay: float, func: Callable[[*_Ts], object], *args: *_Ts
 ) -> CallLaterResult:
     """Schedule a function to be called after a delay.
 

@@ -9,7 +9,7 @@ RETRY_HTTP_CODES - which HTTP response codes to retry
 
 from __future__ import annotations
 
-from logging import Logger, getLevelName, getLogger
+from logging import Logger, getLevelNamesMapping, getLogger
 from typing import TYPE_CHECKING, Self
 
 from scrapy.exceptions import NotConfigured
@@ -121,8 +121,8 @@ def get_retry_request(
     if give_up_log_level is None:
         give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
     if isinstance(give_up_log_level, str):
-        level = getLevelName(give_up_log_level)
-        if not isinstance(level, int):
+        level = getLevelNamesMapping().get(give_up_log_level)
+        if level is None:
             raise ValueError(f"Invalid give-up log level: {give_up_log_level!r}")
         give_up_log_level = level
     stats.inc_value(f"{stats_base_key}/max_reached")

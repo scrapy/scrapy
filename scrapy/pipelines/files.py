@@ -20,7 +20,6 @@ from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from typing import (
-    IO,
     TYPE_CHECKING,
     Any,
     ClassVar,
@@ -70,23 +69,6 @@ logger = logging.getLogger(__name__)
 
 def _to_string(path: str | PathLike[str]) -> str:
     return str(path)  # convert a Path object to string
-
-
-def _md5sum(file: IO[bytes]) -> str:
-    """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory.
-
-    >>> from io import BytesIO
-    >>> _md5sum(BytesIO(b'file content to hash'))
-    '784406af91dd5a54fbb9c84c2236595a'
-    """
-    m = hashlib.md5()  # noqa: S324
-    while True:
-        d = file.read(8096)
-        if not d:
-            break
-        m.update(d)
-    return m.hexdigest()
 
 
 class StatInfo(TypedDict, total=False):
@@ -144,7 +126,7 @@ class FSFilesStore:
             return {}
 
         with absolute_path.open("rb") as f:
-            checksum = _md5sum(f)
+            checksum = hashlib.file_digest(f, "md5").hexdigest()
 
         return {"last_modified": last_modified, "checksum": checksum}
 
@@ -734,7 +716,7 @@ class FilesPipeline(MediaPipeline):
     ) -> str:
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
-        checksum = _md5sum(buf)
+        checksum = hashlib.file_digest(buf, "md5").hexdigest()
         buf.seek(0)
         await ensure_awaitable(self.store.persist_file(path, buf, info))
         return checksum
