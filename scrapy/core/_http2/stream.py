@@ -230,7 +230,7 @@ class Stream:
         if not path:
             path = "*" if self._request.method == "OPTIONS" else "/"
 
-        # Make sure pseudo-headers comes before all the other headers. All
+        # Make sure pseudo-headers come before all the other headers. All
         # names and values are bytes because h2 < 4.2.0 compares :authority
         # and Host without converting them to the same type first.
         headers: list[tuple[bytes, bytes]] = [
