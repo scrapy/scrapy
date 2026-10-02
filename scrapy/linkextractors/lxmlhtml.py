@@ -10,7 +10,7 @@ import re
 from collections.abc import Callable, Iterable
 from functools import partial
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from lxml import etree
 from parsel.csstranslator import HTMLTranslator
@@ -19,10 +19,11 @@ from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
 from scrapy.linkextractors import IGNORED_EXTENSIONS, SUPPORTED_SCHEMES, _matches
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
-from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
+from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
     from lxml.html import HtmlElement
@@ -55,6 +56,18 @@ def _identity(x: Any) -> Any:
 
 def _canonicalize_link_url(link: Link) -> str:
     return canonicalize_url(link.url, keep_fragments=True)
+
+
+def _has_extension(path: str, extensions: set[str]) -> bool:
+    """Return whether *path* ends with any of *extensions*, which all start
+    with a dot and are lowercase, ignoring case.
+    """
+    dot = path.rfind(".")
+    while dot != -1:
+        if path[dot:].lower() in extensions:
+            return True
+        dot = path.rfind(".", 0, dot)
+    return False
 
 
 def _name_matches(allowed: set[str], denied: set[str], name: str) -> bool:
@@ -371,7 +384,7 @@ class LxmlLinkExtractor:
         ]
 
     def _link_allowed(self, link: Link) -> bool:
-        parsed_url = urlparse(link.url)
+        parsed_url = urlparse_cached(link.url)
         if self.schemes and parsed_url.scheme not in self.schemes:
             return False
         if self.allow_res and not _matches(link.url, self.allow_res):
@@ -384,8 +397,8 @@ class LxmlLinkExtractor:
             return False
         if self.deny_domains and url_is_from_any_domain(parsed_url, self.deny_domains):
             return False
-        if self.deny_extensions and url_has_any_extension(
-            parsed_url, self.deny_extensions
+        if self.deny_extensions and _has_extension(
+            parsed_url.path, self.deny_extensions
         ):
             return False
         return not self.restrict_text or _matches(link.text, self.restrict_text)

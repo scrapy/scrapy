@@ -4,6 +4,7 @@ import pickle
 import re
 from typing import Any
 
+import pytest
 from w3lib.url import canonicalize_url
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
@@ -347,6 +348,22 @@ class TestLxmlLinkExtractor:
         assert lx.extract_links(response) == [
             Link(url="http://example.org/photo.jpg"),
         ]
+
+    @pytest.mark.parametrize(
+        ("path", "denied"),
+        [
+            ("/file.tar.gz", True),
+            ("/FILE.TAR.GZ", True),
+            ("/file.gz", False),
+            ("/file.tar.gz/page", False),
+            ("/file", False),
+        ],
+    )
+    def test_ignored_multi_part_extension(self, path: str, denied: bool) -> None:
+        html = f'<a href="{path}">x</a>'.encode()
+        response = HtmlResponse("http://example.org/", body=html)
+        lx = LxmlLinkExtractor(deny_extensions=["tar.gz"])
+        assert (not lx.extract_links(response)) is denied
 
     def test_process_value(self):
         """Test restrict_xpaths with encodings"""
