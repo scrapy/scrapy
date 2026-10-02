@@ -206,6 +206,10 @@ class _ParallelTasks:
         # Only a running task can start another one, so once none is left no
         # more work can come.
         if not self._running:
+            # The work usually references self.start, so keeping it would
+            # leave a reference cycle that keeps the work arguments, e.g. a
+            # response, alive until the next garbage collection.
+            del self._work
             self.finished.callback(None)
 
 

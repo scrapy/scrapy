@@ -7,9 +7,10 @@ See documentation in docs/topics/downloader-middleware.rst
 from __future__ import annotations
 
 import warnings
-from functools import wraps
+from functools import partial, wraps
 from itertools import islice
 from typing import TYPE_CHECKING, Any
+from weakref import WeakSet, finalize
 
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
@@ -33,15 +34,62 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
+def _get_max_active_size(settings: BaseSettings) -> int:
+    deprecated_priority = settings.getpriority("SCRAPER_SLOT_MAX_ACTIVE_SIZE")
+    priority = settings.getpriority("RESPONSE_MAX_ACTIVE_SIZE")
+    assert deprecated_priority is not None
+    assert priority is not None
+    if deprecated_priority <= 0:
+        return settings.getint("RESPONSE_MAX_ACTIVE_SIZE")
+    if priority >= deprecated_priority:
+        warnings.warn(
+            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated and is "
+            "being ignored because RESPONSE_MAX_ACTIVE_SIZE is set with an "
+            "equal or higher priority. Remove SCRAPER_SLOT_MAX_ACTIVE_SIZE "
+            "from your settings.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return settings.getint("RESPONSE_MAX_ACTIVE_SIZE")
+    warnings.warn(
+        "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
+        "RESPONSE_MAX_ACTIVE_SIZE instead.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE")
+
+
+def _get_response_rough_size(settings: BaseSettings, max_active_size: int) -> int:
+    if settings.get("RESPONSE_ROUGH_SIZE") is not None:
+        return settings.getint("RESPONSE_ROUGH_SIZE")
+    concurrency = settings.getint("CONCURRENT_REQUESTS")
+    if not concurrency:
+        # Unlimited concurrency: there is no bound on the number of in-flight
+        # requests to spread a share of the limit over.
+        return 0
+    # Requests being downloaded, whose response size is unknown, may take up to
+    # a quarter of the limit; the rest is for responses already in memory.
+    return max_active_size // (4 * concurrency)
+
+
 class DownloaderMiddlewareManager(MiddlewareManager):
     component_name = "downloader middleware"
 
     def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
         super().__init__(*middlewares, crawler=crawler)
-        self._response_exceptions = (
-            crawler.settings.getbool("DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS")
-            if crawler is not None
-            else False
+        assert crawler is not None
+        settings = crawler.settings
+        self._max_active_size: int = _get_max_active_size(settings)
+        self._response_rough_size: int = _get_response_rough_size(
+            settings, self._max_active_size
+        )
+        self._response_active_size = 0
+        self._tracked_responses: WeakSet[Response] = WeakSet()
+        self._rough_active_size = 0
+        self._rough_sizes: dict[Request, int] = {}
+        self._response_exceptions = settings.getbool(
+            "DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS"
         )
 
     @classmethod
@@ -62,6 +110,36 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         self.methods["process_exception"].appendleft(process_exception)
         if process_exception is not None:
             self._check_mw_method_spider_arg(process_exception)
+
+    @property
+    def _total_active_size(self) -> int:
+        return self._response_active_size + self._rough_active_size
+
+    def _count_rough_size(self, request: Request) -> None:
+        # Counting the same request twice, which concurrent downloads of the
+        # same request object would do, would leak its rough size, since only
+        # one discount call can find it.
+        if request in self._rough_sizes:
+            return
+        self._rough_sizes[request] = self._response_rough_size
+        self._rough_active_size += self._response_rough_size
+
+    def _discount_rough_size(self, request: Request) -> None:
+        self._rough_active_size -= self._rough_sizes.pop(request, 0)
+
+    def _count_response_size(self, response: Response, request: Request) -> None:
+        # The actual response size replaces the rough size estimate of its
+        # request.
+        self._discount_rough_size(request)
+        if response in self._tracked_responses:
+            return
+        self._tracked_responses.add(response)
+        size = len(response.body)
+        self._response_active_size += size
+        finalize(response, partial(self._discount_response_size, size))
+
+    def _discount_response_size(self, size: int) -> None:
+        self._response_active_size -= size
 
     def download(
         self,
@@ -122,8 +200,13 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     f"Request, got {response.__class__.__name__}"
                 )
             if response:
+                if isinstance(response, Response):
+                    self._count_response_size(response, request)
                 return response
-        return await download_func(request)
+        response = await download_func(request)
+        if response is not None:
+            self._count_response_size(response, request)
+        return response
 
     async def _process_response(
         self, response: Response | Request, request: Request, index: int = 0
@@ -160,6 +243,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     f"got {type(result)}"
                 )
             response = result
+            if isinstance(response, Response):
+                self._count_response_size(response, request)
         return response
 
     def _warn_response_exception(
@@ -226,5 +311,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     f"Request, got {type(response)}"
                 )
             if response:
+                if isinstance(response, Response):
+                    self._count_response_size(response, request)
                 return response, index
         raise exception
