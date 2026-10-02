@@ -141,6 +141,7 @@ individual handler docs for more differences:
      - Bad headers
      - TLS
      - IPv6
+     - Header case
    * - :class:`Aiohttp <scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler>`
      - asyncio
      - 1.1
@@ -148,6 +149,7 @@ individual handler docs for more differences:
      - Fail
      - Stdlib ``ssl``
      - Yes
+     - As written
    * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
      - Reactor, :ref:`twisted-http2 <extras>` extra
      - 2
@@ -155,6 +157,7 @@ individual handler docs for more differences:
      - Not applicable
      - ``cryptography``
      - Needs a setting
+     - Lowercase
    * - :class:`HTTP11 <scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler>`
      - Reactor
      - 1.1
@@ -162,6 +165,7 @@ individual handler docs for more differences:
      - Skip bad
      - ``cryptography``
      - Needs a setting
+     - Capitalized
    * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
      - asyncio, :ref:`httpx <extras>` extra
      - 1.1, 2
@@ -169,6 +173,7 @@ individual handler docs for more differences:
      - Fail
      - Stdlib ``ssl``
      - Yes, except through a proxy
+     - As written
 
 About the IPv6 column: the Twisted-based handlers reach every host, including
 hosts given as an IPv6 address literal such as ``https://[::1]/``, through the
@@ -187,6 +192,9 @@ Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
 bad header lines, like web browsers do, still parse the header lines that follow
 them; other handlers also lose those, or cannot download such responses at all.
+
+Because HTTP/2 requires lowercase header names, handlers only keep the case of
+your header names over HTTP/1.1.
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy

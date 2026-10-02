@@ -8,14 +8,21 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
     classes and set their proper return values.
     """
-    from google.cloud.storage import Blob, Bucket, Client  # noqa: PLC0415
+    from google.cloud.storage import Bucket, Client  # noqa: PLC0415
 
     client_mock = mock.create_autospec(Client)
 
     bucket_mock = mock.create_autospec(Bucket)
     client_mock.bucket.return_value = bucket_mock
 
-    blob_mock = mock.create_autospec(Blob)
+    blob_mock = mock_google_cloud_blob()
     bucket_mock.blob.return_value = blob_mock
 
     return (client_mock, bucket_mock, blob_mock)
+
+
+def mock_google_cloud_blob() -> Any:
+    """Creates an autospec mock for the google-cloud-storage Blob class."""
+    from google.cloud.storage import Blob  # noqa: PLC0415
+
+    return mock.create_autospec(Blob)

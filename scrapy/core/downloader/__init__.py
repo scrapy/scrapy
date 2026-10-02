@@ -4,7 +4,6 @@ import random
 import warnings
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime
 from time import monotonic
 from typing import TYPE_CHECKING, Any
 
@@ -128,7 +127,7 @@ class Slot:
             f"delay={self.delay:.2f} jitter={self.jitter!r} "
             f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
             f"len(transferring)={len(self.transferring)} "
-            f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
+            f"lastseen={self.lastseen:.2f}>"
         )
 
 
@@ -200,7 +199,7 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = build_from_crawler(
             DownloaderMiddlewareManager, crawler
         )
-        self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
+        self._slot_gc_loop: AsyncioLoopingCall[..., None] | LoopingCall | None = None
         self._accepting_requests: bool = True
         self._download_tasks: dict[Request, Deferred[None]] = {}
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
@@ -305,6 +304,9 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, queue_dfd = slot.queue.popleft()
+            # Do this immediately so that following free_transfer_slots() calls
+            # account for this request.
+            slot.transferring.add(request)
             download_dfd = deferred_from_coro(
                 self._wait_for_download(slot, request, queue_dfd)
             )
@@ -326,7 +328,6 @@ class Downloader:
 
     async def _download(self, slot: Slot, request: Request) -> Response:
         # The order is very important for the following logic. Do not change!
-        slot.transferring.add(request)
         try:
             # 1. Download the response
             response: Response = await self.handlers.download_request_async(request)

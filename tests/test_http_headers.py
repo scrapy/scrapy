@@ -67,6 +67,27 @@ def test_encode_multiple() -> None:
     assert val[0] == b"\xc2\xa3"
 
 
+def test_key_case_kept() -> None:
+    h = Headers({"accept": "text/html", "access_token": "foo"})
+    assert sorted(h.keys()) == [b"accept", b"access_token"]
+
+
+def test_key_case_of_first_spelling_wins() -> None:
+    h = Headers({"accept": "a", "Accept": "b"})
+    assert h.getlist("ACCEPT") == [b"a", b"b"]
+    assert list(h.keys()) == [b"accept"]
+
+    h["ACCEPT"] = "c"
+    h.appendlist("aCCept", "d")
+    h.update({"ACCEPT": "e"})
+    assert list(h.keys()) == [b"accept"]
+    assert h.getlist("accept") == [b"e"]
+
+    del h["ACCEPT"]
+    h["ACCEPT"] = "f"
+    assert list(h.keys()) == [b"ACCEPT"]
+
+
 def test_delete_and_contains() -> None:
     h = Headers()
     h["Content-Type"] = "text/html"
@@ -182,3 +203,19 @@ def test_invalid_value() -> None:
         Headers().setdefault("foo", object())
     with pytest.raises(TypeError, match="Unsupported value type"):
         Headers().setlist("foo", [object()])  # type: ignore[list-item]
+
+
+def test_to_unicode_dict_undecodable() -> None:
+    h = Headers({b"Public-Key-Pins": b'pin-sha256=\x94"a"', b"X-\xff": b"ok"})
+    assert h.to_unicode_dict() == {
+        "Public-Key-Pins": 'pin-sha256=�"a"',
+        "X-�": "ok",
+    }
+
+
+def test_to_tuple_list_undecodable() -> None:
+    h = Headers({b"Public-Key-Pins": b'pin-sha256=\x94"a"', b"X-\xff": b"ok"})
+    assert h.to_tuple_list() == [
+        ("Public-Key-Pins", 'pin-sha256=�"a"'),
+        ("X-�", "ok"),
+    ]
