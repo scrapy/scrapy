@@ -214,7 +214,7 @@ class Stream:
             == f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}"
         )
 
-    def _get_request_headers(self) -> list[tuple[str, str]]:
+    def _get_request_headers(self) -> list[tuple[bytes, bytes]]:
         url = urlparse_cached(self._request)
 
         path = url.path
@@ -230,26 +230,27 @@ class Stream:
         if not path:
             path = "*" if self._request.method == "OPTIONS" else "/"
 
-        # Make sure pseudo-headers comes before all the other headers
-        headers = [
-            (":method", self._request.method),
-            (":authority", url.netloc),
+        # Make sure pseudo-headers come before all the other headers. All
+        # names and values are bytes because h2 < 4.2.0 compares :authority
+        # and Host without converting them to the same type first.
+        headers: list[tuple[bytes, bytes]] = [
+            (b":method", self._request.method.encode()),
+            (b":authority", url.netloc.encode()),
         ]
 
         # The ":scheme" and ":path" pseudo-header fields MUST
         # be omitted for CONNECT method (refer RFC 7540 - Section 8.3)
         if self._request.method != "CONNECT":
             headers += [
-                (":scheme", self._protocol.metadata["uri"].scheme),
-                (":path", path),
+                (b":scheme", self._protocol.metadata["uri"].scheme),
+                (b":path", path.encode()),
             ]
 
         if b"Content-Length" not in self._request.headers:
-            headers.append(("Content-Length", str(len(self._request.body))))
+            headers.append((b"Content-Length", str(len(self._request.body)).encode()))
 
         for name, values in self._request.headers.items():
-            for value_bytes in values:
-                headers.append((str(name, "utf-8"), str(value_bytes, "utf-8")))
+            headers.extend((name, value) for value in values)
 
         return headers
 
@@ -357,9 +358,9 @@ class Stream:
             self._response["flow_controlled_size"], self.stream_id
         )
 
-    def receive_headers(self, headers: list[tuple[str, str]]) -> None:
+    def receive_headers(self, headers: list[tuple[bytes, bytes]]) -> None:
         for name, value in headers:
-            if name == ":status":
+            if name == b":status":
                 # it's a pseudo-header
                 self._response["status"] = int(value)
             else:

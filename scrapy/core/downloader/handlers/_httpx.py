@@ -158,7 +158,12 @@ class HttpxDownloadHandler(_Base):
                 f"SOCKS proxy support in {type(self).__name__} requires the 'httpx2[socks]' extra to be installed."
             )
         client = self._get_client(proxy)
-        headers = self._request_headers(request).to_tuple_list()
+        # httpx sends bytes as they are but encodes str values as ASCII.
+        headers = [
+            (name, value)
+            for name, values in self._request_headers(request).items()
+            for value in values
+        ]
 
         try:
             async with client.stream(
