@@ -22,8 +22,8 @@ def test_pinned_twisted_version() -> None:
     tox_config_file_path = Path(__file__).parent / ".." / "tox.ini"
     config_parser = ConfigParser()
     config_parser.read(tox_config_file_path)
-    pattern = r"Twisted==([\d.]+)"
-    match = re.search(pattern, config_parser["min"]["deps"])
+    pattern = r"twisted==([\d.]+)"
+    match = re.search(pattern, config_parser["min"]["deps"], re.IGNORECASE)
     assert match
     pinned_twisted_version_string = match[1]
 

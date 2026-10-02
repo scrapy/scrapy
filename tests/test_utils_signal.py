@@ -4,10 +4,10 @@ import asyncio
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from pydispatch import dispatcher
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
+from scrapy.utils import _signal_registry as dispatcher
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.signal import (
