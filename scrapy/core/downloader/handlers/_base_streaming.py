@@ -5,7 +5,16 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, NoReturn, TypedDict, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    BinaryIO,
+    ClassVar,
+    Generic,
+    NoReturn,
+    TypedDict,
+    TypeVar,
+)
 from urllib.parse import quote, urlsplit
 
 from scrapy import Request, signals
@@ -18,6 +27,7 @@ from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
+    get_warnsize,
     get_warnsize_msg,
     make_response,
     normalize_bind_address,
@@ -134,6 +144,17 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
     def _log_tls_info(self, response: _ResponseT, request: Request) -> None:
         """Log TLS connection details, if possible."""
 
+    def _open_body_buffer(self, response: _ResponseT, request: Request) -> BinaryIO:
+        """Return a file object to write the response body into."""
+        return BytesIO()
+
+    def _get_body(
+        self, buffer: BinaryIO, response: _ResponseT, request: Request
+    ) -> bytes:
+        """Return the response body given the *buffer* it was written into."""
+        assert isinstance(buffer, BytesIO)
+        return buffer.getvalue()
+
     async def download_request(self, request: Request) -> Response:
         if not self.supports_proxies and request.meta.get("proxy"):
             raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
@@ -154,7 +175,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
 
     async def _read_response(self, response: _ResponseT, request: Request) -> Response:
         maxsize: int = request.meta.get("download_maxsize", self._default_maxsize)
-        warnsize: int = request.meta.get("download_warnsize", self._default_warnsize)
+        warnsize = get_warnsize(request.meta, self._default_warnsize)
 
         headers = self._extract_headers(response)
         content_length = headers.get("Content-Length")
@@ -188,56 +209,56 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
                 stop_download=stop_download,
             )
 
-        response_body = BytesIO()
-        bytes_received = 0
-        try:
-            async for chunk in self._iter_body_chunks(response):
-                response_body.write(chunk)
-                bytes_received += len(chunk)
+        with self._open_body_buffer(response, request) as response_body:
+            bytes_received = 0
+            try:
+                async for chunk in self._iter_body_chunks(response):
+                    response_body.write(chunk)
+                    bytes_received += len(chunk)
 
-                if stop_download := check_stop_download(
-                    signals.bytes_received, self.crawler, request, data=chunk
-                ):
+                    if stop_download := check_stop_download(
+                        signals.bytes_received, self.crawler, request, data=chunk
+                    ):
+                        return make_response(
+                            **make_response_base_args,
+                            body=self._get_body(response_body, response, request),
+                            stop_download=stop_download,
+                        )
+
+                    if maxsize and bytes_received > maxsize:
+                        response_body.truncate(0)
+                        self._cancel_maxsize(
+                            bytes_received, maxsize, request, expected=False
+                        )
+
+                    if warnsize and bytes_received > warnsize and not reached_warnsize:
+                        reached_warnsize = True
+                        logger.warning(
+                            get_warnsize_msg(
+                                bytes_received, warnsize, request, expected=False
+                            )
+                        )
+            except Exception as e:
+                if not self._is_dataloss_exception(e):
+                    raise
+                fail_on_dataloss: bool = request.meta.get(
+                    "download_fail_on_dataloss", self._fail_on_dataloss
+                )
+                if not fail_on_dataloss:
                     return make_response(
                         **make_response_base_args,
-                        body=response_body.getvalue(),
-                        stop_download=stop_download,
+                        body=self._get_body(response_body, response, request),
+                        flags=["dataloss"],
                     )
+                if not self._fail_on_dataloss_warned:
+                    logger.warning(get_dataloss_msg(request.url))
+                    self._fail_on_dataloss_warned = True
+                raise ResponseDataLossError(str(e)) from e
 
-                if maxsize and bytes_received > maxsize:
-                    response_body.truncate(0)
-                    self._cancel_maxsize(
-                        bytes_received, maxsize, request, expected=False
-                    )
-
-                if warnsize and bytes_received > warnsize and not reached_warnsize:
-                    reached_warnsize = True
-                    logger.warning(
-                        get_warnsize_msg(
-                            bytes_received, warnsize, request, expected=False
-                        )
-                    )
-        except Exception as e:
-            if not self._is_dataloss_exception(e):
-                raise
-            fail_on_dataloss: bool = request.meta.get(
-                "download_fail_on_dataloss", self._fail_on_dataloss
+            return make_response(
+                **make_response_base_args,
+                body=self._get_body(response_body, response, request),
             )
-            if not fail_on_dataloss:
-                return make_response(
-                    **make_response_base_args,
-                    body=response_body.getvalue(),
-                    flags=["dataloss"],
-                )
-            if not self._fail_on_dataloss_warned:
-                logger.warning(get_dataloss_msg(request.url))
-                self._fail_on_dataloss_warned = True
-            raise ResponseDataLossError(str(e)) from e
-
-        return make_response(
-            **make_response_base_args,
-            body=response_body.getvalue(),
-        )
 
     @staticmethod
     def _request_headers(request: Request) -> Headers:

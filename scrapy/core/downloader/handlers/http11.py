@@ -52,6 +52,7 @@ from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
+    get_warnsize,
     get_warnsize_msg,
     make_response,
     normalize_bind_address,
@@ -574,7 +575,7 @@ class _ScrapyAgent:
             }
 
         maxsize = request.meta.get("download_maxsize", self._maxsize)
-        warnsize = request.meta.get("download_warnsize", self._warnsize)
+        warnsize = get_warnsize(request.meta, self._warnsize)
         expected_size = (
             cast("int", txresponse.length)
             if txresponse.length != UNKNOWN_LENGTH

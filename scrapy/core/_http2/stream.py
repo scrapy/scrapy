@@ -19,6 +19,7 @@ from scrapy.http.headers import Headers
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_maxsize_msg,
+    get_warnsize,
     get_warnsize_msg,
     make_response,
 )
@@ -126,9 +127,7 @@ class Stream:
         self._download_maxsize = self._request.meta.get(
             "download_maxsize", download_maxsize
         )
-        self._download_warnsize = self._request.meta.get(
-            "download_warnsize", download_warnsize
-        )
+        self._download_warnsize = get_warnsize(self._request.meta, download_warnsize)
 
         # Metadata of an HTTP/2 connection stream
         # initialized when stream is instantiated
@@ -190,7 +189,7 @@ class Stream:
             self._response["headers"].get(b"Content-Length", -1)
         )
         return (
-            self._download_warnsize
+            bool(self._download_warnsize)
             and (
                 self._response["flow_controlled_size"] > self._download_warnsize
                 or content_length_header > self._download_warnsize

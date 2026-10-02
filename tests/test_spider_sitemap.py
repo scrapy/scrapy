@@ -474,6 +474,23 @@ Sitemap: /sitemap-relative-url.xml
             ),
         ]
 
+    def test_download_warnsize_setting_ignored_with_request_maxsize(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
+        crawler = get_crawler(settings_dict=settings)
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+        body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
+        body = body_path.read_bytes()
+        request = Request(
+            url="https://example.com", meta={"download_maxsize": 20_000_000}
+        )
+        response = Response(url="https://example.com", body=body, request=request)
+        caplog.clear()
+        with caplog.at_level(WARNING, logger="scrapy.spiders.sitemap"):
+            spider._get_sitemap_body(response)
+        assert not caplog.records
+
     def test_download_warnsize_request_meta(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:

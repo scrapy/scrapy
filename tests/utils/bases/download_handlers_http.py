@@ -695,6 +695,27 @@ class TestHttpBase(ABC):
         )
         assert caplog.text.count("download warn size (4)") == 1
 
+    @pytest.mark.parametrize(
+        ("meta", "warns"),
+        [
+            ({"download_maxsize": 100}, False),
+            ({"download_maxsize": 100, "download_warnsize": 4}, True),
+        ],
+    )
+    @coroutine_test
+    async def test_download_warnsize_with_request_maxsize(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        meta: dict[str, int],
+        warns: bool,
+    ) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure), meta=meta)
+        async with self.get_dh({"DOWNLOAD_WARNSIZE": 4}) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        assert ("download warn size (4)" in caplog.text) is warns
+
     @coroutine_test
     async def test_download_with_warnsize_no_content_length(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer

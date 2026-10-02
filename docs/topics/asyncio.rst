@@ -189,7 +189,8 @@ in future Scrapy versions. The following features are not available:
   is likely the biggest difference; Scrapy provides an HTTP(S) download handler
   that doesn't require a reactor and will be used instead of it:
   :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`)
-* :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`
+* :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` (replaced
+  by :class:`~scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler`)
 * :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
 * :ref:`topics-telnetconsole`
 * :class:`~scrapy.crawler.CrawlerRunner` and
@@ -215,7 +216,8 @@ the defaults of some other settings:
 * :setting:`TELNETCONSOLE_ENABLED` is set to ``False``.
 * The ``"http"`` and ``"https"`` keys in :setting:`DOWNLOAD_HANDLERS_BASE` are
   set to ``"scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler"``.
-* The ``"ftp"`` key in :setting:`DOWNLOAD_HANDLERS_BASE` is set to ``None``.
+* The ``"ftp"`` and ``"ftps"`` keys in :setting:`DOWNLOAD_HANDLERS_BASE` are
+  set to ``"scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler"``.
 
 Thus, :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
 is used by default for making HTTP(S) requests. Please refer to its
