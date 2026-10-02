@@ -339,3 +339,12 @@ request is written within its own transaction:
 
 * **Con:** scheduling requests becomes slower, which can be noticeable in
   crawls with a high request throughput.
+
+.. _security-local-data:
+
+Local data directories
+======================
+
+Scrapy loads the contents of the :setting:`JOBDIR` and :setting:`HTTPCACHE_DIR`
+directories with :mod:`pickle`, which can run arbitrary code, so protect them
+from write access by untrusted parties as you would your project source code.

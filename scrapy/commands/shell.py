@@ -11,6 +11,7 @@ from threading import Thread
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
+from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import AsyncCrawlerProcess, Crawler
 from scrapy.http import Request
 from scrapy.shell import Shell
@@ -96,7 +97,7 @@ class Command(ScrapyCommand):
 
     def _init_with_reactor(self, crawler: Crawler) -> None:
         # Create the engine in the main thread
-        crawler.engine = crawler._create_engine()
+        crawler.engine = ExecutionEngine(crawler)
         self._start_crawler_thread()
 
     def _init_without_reactor(self, crawler: Crawler) -> None:
@@ -105,7 +106,7 @@ class Command(ScrapyCommand):
         self._start_crawler_thread()
 
         async def _init_engine() -> None:
-            crawler.engine = crawler._create_engine()
+            crawler.engine = ExecutionEngine(crawler)
 
         future = asyncio.run_coroutine_threadsafe(_init_engine(), loop)
         future.result()
