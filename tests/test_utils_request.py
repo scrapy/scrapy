@@ -73,13 +73,15 @@ class TestFingerprint:
     function: _FingerprintFunction = staticmethod(fingerprint)
     cache: (
         WeakKeyDictionary[
-            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
+            Request,
+            dict[tuple[tuple[bytes, ...] | None, bool, bool, str | None], bytes],
         ]
         | WeakKeyDictionary[
-            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], str]
+            Request,
+            dict[tuple[tuple[bytes, ...] | None, bool, bool, str | None], str],
         ]
     ) = _fingerprint_cache
-    default_cache_key = (None, False, False)
+    default_cache_key = (None, False, False, None)
     known_hashes: tuple[tuple[Request, bytes | str, dict[str, Any]], ...] = (
         (
             Request("http://example.org"),
@@ -234,6 +236,39 @@ class TestFingerprint:
         # keep_fragments parameter is ignored for verbatim_url requests
         assert self.function(r5) == self.function(r5, keep_fragments=True)
         assert self.function(r5) == self.function(r5, keep_fragments=False)
+
+    def test_download_handler(self):
+        r1 = Request("https://example.com")
+        r2 = Request("https://example.com", meta={"download_handler": "playwright"})
+        r3 = Request("https://example.com", meta={"download_handler": "http"})
+        assert self.function(r1) != self.function(r2)
+        assert self.function(r2) != self.function(r3)
+
+        # An ID matching the URL scheme is the handler that would be used
+        # anyway, so it does not change the fingerprint.
+        r4 = Request("https://example.com", meta={"download_handler": "https"})
+        assert self.function(r1) == self.function(r4)
+
+        # IDs are case-sensitive, and URL schemes are lowercased.
+        r5 = Request("HTTPS://example.com", meta={"download_handler": "HTTPS"})
+        assert self.function(r1) != self.function(r5)
+
+    def test_download_handler_caching(self):
+        # The cached fingerprint must account for the handler ID, which can
+        # change after the first call.
+        r1 = Request("https://example.com")
+        fp1 = self.function(r1)
+        r1.meta["download_handler"] = "playwright"
+        assert self.function(r1) != fp1
+
+    def test_download_handler_and_verbatim_url(self):
+        r1 = Request(
+            "https://example.com/a b",
+            meta={"verbatim_url": True, "download_handler": "playwright"},
+        )
+        r2 = Request("https://example.com/a b", meta={"verbatim_url": True})
+        r3 = Request("https://example.com/a b", meta={"download_handler": "playwright"})
+        assert len({self.function(r1), self.function(r2), self.function(r3)}) == 3
 
     def test_method_and_body(self):
         r1 = Request("http://www.example.com")
