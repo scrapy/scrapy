@@ -456,6 +456,14 @@ Use ``""`` to override the policy for responses with `no referrer policy
 .. currentmodule:: None
 
 
+SessionsSpiderMiddleware
+------------------------
+
+.. module:: scrapy.spidermiddlewares.sessions
+
+.. autoclass:: SessionsSpiderMiddleware
+
+
 StartSpiderMiddleware
 ---------------------
 
