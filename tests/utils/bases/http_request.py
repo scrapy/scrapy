@@ -380,7 +380,7 @@ class TestRequestBase(ABC):
 
         assert request._flags is None
         assert request.flags == []
-        assert request.flags is request.flags
+        assert request.flags is request.flags  # pylint: disable=comparison-with-itself
         assert request._flags == []
         original_flags = request.flags
         request.flags = None
@@ -390,7 +390,7 @@ class TestRequestBase(ABC):
 
         assert request._cookies is None
         assert request.cookies == {}
-        assert request.cookies is request.cookies
+        assert request.cookies is request.cookies  # pylint: disable=comparison-with-itself
         assert request._cookies == {}
         original_cookies = request.cookies
         request.cookies = None
@@ -405,7 +405,7 @@ class TestRequestBase(ABC):
         else:
             assert request._headers is None
             assert request.headers == {}
-        assert request.headers is request.headers
+        assert request.headers is request.headers  # pylint: disable=comparison-with-itself
         assert isinstance(request.headers, Headers)
         assert isinstance(request._headers, Headers)
         original_headers = request.headers

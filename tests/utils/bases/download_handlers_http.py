@@ -1003,7 +1003,7 @@ class TestHttpBase(ABC):
         assert response.body == path.encode()
 
 
-class TestHttpsBase(TestHttpBase):
+class TestHttpsBase(TestHttpBase, ABC):
     is_secure = True
 
     tls_log_message = (
@@ -1151,7 +1151,7 @@ class TestSimpleHttpsBase(ABC):
         assert response.body == b"0123456789"
 
 
-class TestHttpsWrongHostnameBase(TestSimpleHttpsBase):
+class TestHttpsWrongHostnameBase(TestSimpleHttpsBase, ABC):
     # above tests use a server certificate for "localhost",
     # client connection to "localhost" too.
     # here we test that even if the server certificate is for another domain,
@@ -1161,24 +1161,24 @@ class TestHttpsWrongHostnameBase(TestSimpleHttpsBase):
     certfile = "keys/example-com.cert.pem"
 
 
-class TestHttpsInvalidDNSIdBase(TestSimpleHttpsBase):
+class TestHttpsInvalidDNSIdBase(TestSimpleHttpsBase, ABC):
     """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
 
     host = "127.0.0.1"
 
 
-class TestHttpsInvalidDNSPatternBase(TestSimpleHttpsBase):
+class TestHttpsInvalidDNSPatternBase(TestSimpleHttpsBase, ABC):
     """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
 
     keyfile = "keys/localhost.ip.key"
     certfile = "keys/localhost.ip.crt"
 
 
-class TestHttpsCustomCiphersBase(TestSimpleHttpsBase):
+class TestHttpsCustomCiphersBase(TestSimpleHttpsBase, ABC):
     cipher_string = "CAMELLIA256-SHA"
 
 
-class TestHttpsDefaultCiphersBase(TestSimpleHttpsBase):
+class TestHttpsDefaultCiphersBase(TestSimpleHttpsBase, ABC):
     """A ``None`` cipher list leaves the TLS library defaults in place."""
 
     client_settings: dict[str, Any] | None = {"DOWNLOADER_CLIENT_TLS_CIPHERS": None}

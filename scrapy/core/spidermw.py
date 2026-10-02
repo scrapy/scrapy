@@ -46,7 +46,7 @@ ScrapeFunc: TypeAlias = Callable[
 ]
 
 
-class SpiderMiddlewareManager(MiddlewareManager):
+class SpiderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstract-method
     component_name = "spider middleware"
 
     @classmethod

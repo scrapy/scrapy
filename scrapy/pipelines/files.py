@@ -99,10 +99,10 @@ class FSFilesStore:
         if "://" in basedir:
             basedir = basedir.split("://", 1)[1]
         self.basedir: str = basedir
-        self._mkdir(Path(self.basedir))
         self.created_directories: defaultdict[MediaPipeline.SpiderInfo, set[str]] = (
             defaultdict(set)
         )
+        self._mkdir(Path(self.basedir))
 
     def persist_file(
         self,
@@ -576,7 +576,7 @@ class FilesPipeline(MediaPipeline):
 
         age_seconds = time.time() - last_modified
         age_days = age_seconds / 60 / 60 / 24
-        if self.expires >= 0 and age_days > self.expires:
+        if 0 <= self.expires < age_days:
             return None  # returning None force download
 
         referer = referer_str(request)

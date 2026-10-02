@@ -514,4 +514,4 @@ Sitemap: /sitemap-relative-url.xml
         request = requests[0]
         assert request.url == "https://toscrape.com/sitemap.xml"
         assert request.dont_filter is False
-        assert request.callback == spider._parse_sitemap
+        assert request.callback == spider._parse_sitemap  # pylint: disable=comparison-with-callable
