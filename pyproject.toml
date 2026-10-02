@@ -15,14 +15,14 @@ dependencies = [
     "defusedxml>=0.7.1",
     "formerly>=0.1.0",
     "itemadapter>=0.1.0",
-    "itemloaders>=1.0.1",
-    "lxml>=4.6.4",
+    "itemloaders>=1.0.5",
+    "lxml>=4.9.4",
     "packaging",
     "parsel>=1.8.1",
     "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=24.3.0",
-    "queuelib>=1.6.1",
+    "queuelib>=1.8.0",
     "service_identity>=24.2.0",
     "tldextract",
     'typing-extensions>=4.5.0; python_version < "3.13"',
@@ -43,7 +43,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -58,7 +57,7 @@ classifiers = [
 license = "BSD-3-Clause"
 license-files = ["LICENSE", "AUTHORS"]
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
 maintainers = [{ name = "Pablo Hoffman", email = "pablo@pablohoffman.com" }]
 
@@ -74,14 +73,14 @@ bpython = ["bpython>=0.7.1"]
 color = ["colorlog>=6.6.0"]
 gcs = ["google-cloud-storage>=1.30.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
-images = ["Pillow>=8.3.2"]
+images = ["Pillow>=9.2.0"]
 ipython = ["ipython>=8.15.0"]
 ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
 s3 = ["boto3>=1.20.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
-    "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+    "uvloop>=0.17.0; platform_system != 'Windows' and implementation_name != 'pypy'",
 ]
 
 [project.scripts]
@@ -339,6 +338,10 @@ filterwarnings = [
     # warns when a filter names a module it cannot import.
     "ignore:Coverage disabled via --no-cov switch!",
 ]
+
+[tool.ruff]
+# TODO
+target-version = "py310"
 
 [tool.ruff.lint]
 extend-select = [

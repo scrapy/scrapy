@@ -3,7 +3,6 @@ from typing import Any
 from unittest.mock import Mock
 
 import pytest
-import queuelib
 
 from scrapy.core.downloader import Downloader
 from scrapy.http.request import Request
@@ -48,24 +47,7 @@ class TestPriorityQueue:
         assert dequeued.priority == req1.priority
         assert not queue.close()
 
-    def test_no_peek_raises(self):
-        if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
-        temp_dir = tempfile.mkdtemp()
-        queue = build_from_crawler(
-            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
-        )
-        queue.push(Request("https://example.org"))
-        with pytest.raises(
-            NotImplementedError,
-            match="The underlying queue class does not implement 'peek'",
-        ):
-            queue.peek()
-        queue.close()
-
     def test_peek(self):
-        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
         queue = build_from_crawler(
             ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
@@ -168,19 +150,7 @@ class TestDownloaderAwarePriorityQueue:
         assert len(self.queue) == 0
         assert self.queue.pop() is None
 
-    def test_no_peek_raises(self):
-        if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
-        self.queue.push(Request("https://example.org"))
-        with pytest.raises(
-            NotImplementedError,
-            match="The underlying queue class does not implement 'peek'",
-        ):
-            self.queue.peek()
-
     def test_peek(self):
-        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         assert len(self.queue) == 0
         req1 = Request("https://example.org/1")
         req2 = Request("https://example.org/2")

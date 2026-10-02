@@ -78,7 +78,7 @@ class ImagesPipeline(FilesPipeline):
             self._ImageOps = ImageOps
         except ImportError:
             raise NotConfigured(
-                "ImagesPipeline requires installing Pillow 8.3.2 or later"
+                "ImagesPipeline requires the Scrapy[images] extra to be installed"
             ) from None
 
         super().__init__(store_uri, crawler=crawler)
@@ -235,13 +235,7 @@ class ImagesPipeline(FilesPipeline):
 
         if size:
             image = image.copy()
-            try:
-                # Image.Resampling.LANCZOS was added in Pillow 9.1.0
-                # remove this try except block,
-                # when updating the minimum requirements for Pillow.
-                resampling_filter = self._Image.Resampling.LANCZOS
-            except AttributeError:
-                resampling_filter = self._Image.ANTIALIAS  # type: ignore[attr-defined]
+            resampling_filter = self._Image.Resampling.LANCZOS
             image.thumbnail(size, resampling_filter)
         elif target_format == image_format:
             image.format = target_format

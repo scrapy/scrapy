@@ -14,7 +14,6 @@ from scrapy.utils.conf import _job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
-    # requires queuelib >= 1.6.2
     from queuelib.queue import BaseQueue
 
     # typing.Self requires Python 3.11

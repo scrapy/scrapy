@@ -5,7 +5,6 @@ import json
 import logging
 import marshal
 import pickle
-import sys
 import tempfile
 from logging import getLogger
 from pathlib import Path
@@ -537,9 +536,6 @@ class TestFeedExport(TestFeedExportBase):
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
-    @pytest.mark.skipif(
-        sys.version_info < (3, 11), reason="BaseException.add_note() is 3.11+"
-    )
     @coroutine_test
     async def test_export_item_exception_mentions_item(
         self, caplog: pytest.LogCaptureFixture
