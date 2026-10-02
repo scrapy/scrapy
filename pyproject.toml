@@ -16,7 +16,7 @@ dependencies = [
     "formerly>=0.1.0",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.5",
-    "lxml>=4.9.1",
+    "lxml>=4.9.4",
     "packaging",
     "parsel>=1.8.1",
     "platformdirs>=2.0.0",
