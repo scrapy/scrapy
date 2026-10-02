@@ -112,6 +112,8 @@ these exceptions.
 
 .. autoexception:: scrapy.exceptions.ResponseDataLossError
 
+.. autoexception:: scrapy.exceptions.ResponseHeadersTooLargeError
+
 .. autoexception:: scrapy.exceptions.UnsupportedURLSchemeError
 
 .. _download-handlers-ref:
@@ -138,6 +140,7 @@ individual handler docs for more differences:
      - Requirements
      - HTTP
      - Proxies
+     - Headers limit
      - Bad headers
      - TLS
      - Header case
@@ -145,6 +148,7 @@ individual handler docs for more differences:
      - asyncio
      - 1.1
      - HTTP
+     - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Fail
      - Stdlib ``ssl``
      - As written
@@ -152,6 +156,7 @@ individual handler docs for more differences:
      - Reactor, :ref:`twisted-http2 <extras>` extra
      - 2
      - None
+     - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Not applicable
      - ``cryptography``
      - Lowercase
@@ -159,6 +164,7 @@ individual handler docs for more differences:
      - Reactor
      - 1.1
      - HTTP
+     - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Skip bad
      - ``cryptography``
      - Capitalized
@@ -166,6 +172,8 @@ individual handler docs for more differences:
      - asyncio, :ref:`httpx <extras>` extra
      - 1.1, 2
      - HTTP, SOCKS
+     - | HTTP/1.1: 100 KiB
+       | HTTP/2: 64 KiB
      - Fail
      - Stdlib ``ssl``
      - As written
@@ -239,6 +247,9 @@ TLS implementation          Standard library ``ssl``
 Other limitations:
 
 -   HTTPS proxies for HTTPS destinations are not supported on Python < 3.11.
+
+-   Responses with more than 128 header lines are rejected, regardless of
+    :setting:`DOWNLOAD_HEADERS_MAXSIZE`.
 
 .. _twisted-http2-handler:
 
@@ -394,6 +405,12 @@ Other limitations:
 -   The handler creates a separate connection pool for each proxy URL (due to
     limitations of ``httpx``) which may lead to higher resource usage when
     using proxy rotation.
+
+-   ``httpx`` does not allow configuring the response header size limit of its
+    HTTP client, so :setting:`DOWNLOAD_HEADERS_MAXSIZE` and
+    :setting:`DOWNLOAD_HEADERS_WARNSIZE` have no effect. Over HTTP/1.1 the
+    limit is also approximate, as it only applies while the response head is
+    still incomplete, so a complete head slightly above it is accepted.
 
 .. setting:: HTTPX_HTTP2_ENABLED
 

@@ -21,6 +21,7 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     DownloadFailedError,
     DownloadTimeoutError,
+    ResponseHeadersTooLargeError,
     StopDownload,
     UnsupportedURLSchemeError,
 )
@@ -62,6 +63,13 @@ def wrap_twisted_exceptions() -> Iterator[None]:
     except DNSLookupError as e:
         raise CannotResolveHostError(str(e)) from e
     except ResponseFailed as e:
+        # Twisted reports parsing errors as the underlying reason of a generic
+        # failure; report the ones we raise ourselves as themselves. Reasons may
+        # be either Failure objects or plain exceptions.
+        for reason in e.reasons:
+            value = reason.value if isinstance(reason, Failure) else reason
+            if isinstance(value, ResponseHeadersTooLargeError):
+                raise value from e
         raise DownloadFailedError(str(e)) from e
     except TxTimeoutError as e:
         raise DownloadTimeoutError(str(e)) from e
@@ -134,6 +142,27 @@ def get_warnsize_msg(size: int, limit: int, request: Request, *, expected: bool)
     return (
         f"{prefix} {size} bytes which is larger than download "
         f"warn size ({limit}) in request {request}."
+    )
+
+
+def get_headers_maxsize_msg(size: int | None, limit: int, url: str) -> str:
+    # size is None when the underlying HTTP client only reports that the limit
+    # was exceeded, and not by how much.
+    prefix = (
+        "Received response headers"
+        if size is None
+        else f"Received {size} bytes of response headers"
+    )
+    return (
+        f"{prefix}, which is larger than the download headers max size "
+        f"({limit}), while requesting {url}."
+    )
+
+
+def get_headers_warnsize_msg(size: int, limit: int, url: str) -> str:
+    return (
+        f"Received {size} bytes of response headers, which is larger than the "
+        f"download headers warn size ({limit}), while requesting {url}."
     )
 
 
