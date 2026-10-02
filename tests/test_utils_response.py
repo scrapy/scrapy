@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import pytest
 
 from scrapy.http import HtmlResponse, Response, TextResponse
+from scrapy.utils._deps_compat import W3LIB_HTML_MAX_SCAN
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
     get_base_url,
@@ -108,6 +109,57 @@ def test_get_base_url():
     <html><body>blahablsdfsal&amp;</body></html>""",
     )
     assert get_base_url(resp2) == "http://www.example.com"
+
+
+_PADDING = b"<!--" + b"x" * 5000 + b"-->"
+
+
+@pytest.mark.parametrize(
+    "max_scan",
+    [
+        False,
+        pytest.param(
+            True,
+            marks=pytest.mark.skipif(
+                not W3LIB_HTML_MAX_SCAN, reason="Requires w3lib 2.5.0+"
+            ),
+        ),
+    ],
+)
+def test_get_base_url_past_the_first_characters(monkeypatch, max_scan):
+    monkeypatch.setattr("scrapy.utils.response.W3LIB_HTML_MAX_SCAN", max_scan)
+    resp = HtmlResponse(
+        "http://www.example.com",
+        body=b"<html><head>"
+        + _PADDING
+        + b'<base href="http://www.example.com/img/"></head></html>',
+    )
+    expected = "http://www.example.com/img/" if max_scan else "http://www.example.com"
+    assert get_base_url(resp) == expected
+
+
+@pytest.mark.parametrize(
+    "max_scan",
+    [
+        False,
+        pytest.param(
+            True,
+            marks=pytest.mark.skipif(
+                not W3LIB_HTML_MAX_SCAN, reason="Requires w3lib 2.5.0+"
+            ),
+        ),
+    ],
+)
+def test_get_meta_refresh_past_the_first_characters(monkeypatch, max_scan):
+    monkeypatch.setattr("scrapy.utils.response.W3LIB_HTML_MAX_SCAN", max_scan)
+    resp = HtmlResponse(
+        "http://www.example.com",
+        body=b"<html><head>"
+        + _PADDING
+        + b'<meta http-equiv="refresh" content="5;url=/new"></head></html>',
+    )
+    expected = (5.0, "http://www.example.com/new") if max_scan else (None, None)
+    assert get_meta_refresh(resp) == expected
 
 
 def test_response_status_message():
