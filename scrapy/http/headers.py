@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from w3lib.http import headers_dict_to_raw
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.python import to_unicode
 
@@ -35,18 +37,18 @@ class Headers(dict):  # type: ignore[type-arg]
             self.update(seq)
 
     def __setitem__(self, key: str | bytes, value: Any) -> None:
-        dict.__setitem__(self, self.normkey(key), self.normvalue(value))
+        dict.__setitem__(self, self._normkey(key), self._normvalue(value))
 
     def __delitem__(self, key: str | bytes) -> None:
-        dict.__delitem__(self, self.normkey(key))
+        dict.__delitem__(self, self._normkey(key))
 
     def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
-        return dict.__contains__(self, self.normkey(key))
+        return dict.__contains__(self, self._normkey(key))
 
     has_key = __contains__
 
     def setdefault(self, key: str | bytes, def_val: Any = None) -> Any:
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
+        return dict.setdefault(self, self._normkey(key), self._normvalue(def_val))
 
     @classmethod
     def fromkeys(  # type: ignore[override]
@@ -55,7 +57,7 @@ class Headers(dict):  # type: ignore[type-arg]
         return cls((k, value) for k in keys)
 
     def pop(self, key: str | bytes, *args: Any) -> Any:
-        return dict.pop(self, self.normkey(key), *args)
+        return dict.pop(self, self._normkey(key), *args)
 
     def update(  # type: ignore[override]
         self,
@@ -69,13 +71,13 @@ class Headers(dict):  # type: ignore[type-arg]
         # only in case are mapped to a single spelling here.
         spellings: dict[bytes, bytes] = {}
         for k, v in items:
-            key = self.normkey(k)
+            key = self._normkey(k)
             key = spellings.setdefault(key.lower(), key)
-            iseq.setdefault(key, []).extend(self.normvalue(v))
+            iseq.setdefault(key, []).extend(self._normvalue(v))
         dict.update(self, iseq)
 
-    def normkey(self, key: str | bytes) -> bytes:
-        """Normalize key to bytes, matching the case of an existing key if any"""
+    def _normkey(self, key: str | bytes) -> bytes:
+        """Normalize key to bytes, matching the case of an existing key if any."""
         key = self._tobytes(key)
         if dict.__contains__(self, key):
             return key
@@ -86,8 +88,16 @@ class Headers(dict):  # type: ignore[type-arg]
                 return existing_key
         return key
 
-    def normvalue(self, value: _RawValue | Iterable[_RawValue]) -> list[bytes]:
-        """Normalize values to bytes"""
+    def normkey(self, key: str | bytes) -> bytes:  # pragma: no cover
+        warnings.warn(
+            "Headers.normkey() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._normkey(key)
+
+    def _normvalue(self, value: _RawValue | Iterable[_RawValue]) -> list[bytes]:
+        """Normalize values to bytes."""
         _value: Iterable[_RawValue]
         if value is None:
             _value = []
@@ -100,6 +110,16 @@ class Headers(dict):  # type: ignore[type-arg]
 
         return [self._tobytes(x) for x in _value]
 
+    def normvalue(
+        self, value: _RawValue | Iterable[_RawValue]
+    ) -> list[bytes]:  # pragma: no cover
+        warnings.warn(
+            "Headers.normvalue() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._normvalue(value)
+
     def _tobytes(self, x: _RawValue) -> bytes:
         if isinstance(x, bytes):
             return x
@@ -111,7 +131,7 @@ class Headers(dict):  # type: ignore[type-arg]
 
     def __getitem__(self, key: str | bytes) -> bytes | None:
         try:
-            return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))[-1]
+            return cast("list[bytes]", dict.__getitem__(self, self._normkey(key)))[-1]
         except IndexError:
             return None
 
@@ -119,7 +139,7 @@ class Headers(dict):  # type: ignore[type-arg]
         try:
             return cast(
                 "list[bytes]",
-                dict.get(self, self.normkey(key), self.normvalue(def_val)),
+                dict.get(self, self._normkey(key), self._normvalue(def_val)),
             )[-1]
         except IndexError:
             return None
@@ -128,10 +148,10 @@ class Headers(dict):  # type: ignore[type-arg]
         self, key: str | bytes, def_val: _RawValue | Iterable[_RawValue] | None = None
     ) -> list[bytes]:
         try:
-            return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))
+            return cast("list[bytes]", dict.__getitem__(self, self._normkey(key)))
         except KeyError:
             if def_val is not None:
-                return self.normvalue(def_val)
+                return self._normvalue(def_val)
             return []
 
     def setlist(self, key: str | bytes, list_: Iterable[_RawValue]) -> None:
@@ -144,7 +164,7 @@ class Headers(dict):  # type: ignore[type-arg]
 
     def appendlist(self, key: str | bytes, value: Iterable[_RawValue]) -> None:
         lst = self.getlist(key)
-        lst.extend(self.normvalue(value))
+        lst.extend(self._normvalue(value))
         self[key] = lst
 
     def items(self) -> Iterable[tuple[bytes, list[bytes]]]:  # type: ignore[override]
