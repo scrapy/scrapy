@@ -6,7 +6,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias, TypedDict, cast
 
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
@@ -29,9 +29,6 @@ from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler

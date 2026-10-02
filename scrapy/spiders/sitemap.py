@@ -5,7 +5,7 @@ import re
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 from urllib.parse import urljoin
 
 from scrapy.http import Request, Response, XmlResponse
@@ -18,9 +18,6 @@ from scrapy.utils._compression import (
 from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
 

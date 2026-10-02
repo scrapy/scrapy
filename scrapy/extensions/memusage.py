@@ -12,7 +12,7 @@ import sys
 import warnings
 from importlib import import_module
 from pprint import pformat
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
@@ -23,9 +23,6 @@ from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from twisted.internet.task import LoopingCall
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector

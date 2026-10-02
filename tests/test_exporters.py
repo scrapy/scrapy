@@ -5,7 +5,7 @@ import pickle
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import BytesIO
 from typing import Any
 
@@ -80,7 +80,7 @@ class TestBaseItemExporter(ABC):
         return {
             "boolean": False,
             "number": 22,
-            "time": datetime(2015, 1, 1, 1, 1, 1, tzinfo=timezone.utc),
+            "time": datetime(2015, 1, 1, 1, 1, 1, tzinfo=UTC),
             "float": 3.14,
         }
 

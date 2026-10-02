@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Self, cast
 
 import pytest
 
@@ -16,9 +16,6 @@ from scrapy.utils.misc import build_from_crawler
 from tests.utils.robotstxt import rerp_available
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
 
 # The parser backends only use the crawler to get the spider to log with.

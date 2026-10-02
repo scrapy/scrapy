@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
 from w3lib.http import headers_dict_to_raw
 
@@ -12,9 +12,6 @@ from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 _RawValue: TypeAlias = bytes | str | int

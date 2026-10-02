@@ -13,6 +13,8 @@ from typing import (
     Any,
     Concatenate,
     NoReturn,
+    NotRequired,
+    Self,
     TypeAlias,
     TypedDict,
     TypeVar,
@@ -32,9 +34,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
     from twisted.python.failure import Failure
-
-    # typing.NotRequired and typing.Self require Python 3.11
-    from typing_extensions import NotRequired, Self
 
     # circular import
     from scrapy.http import Response

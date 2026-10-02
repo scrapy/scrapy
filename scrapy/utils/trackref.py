@@ -17,14 +17,11 @@ from __future__ import annotations
 from operator import itemgetter
 from time import monotonic_ns
 from types import NoneType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from weakref import WeakKeyDictionary
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 live_refs: WeakKeyDictionary[type, WeakKeyDictionary[object, float]] = (

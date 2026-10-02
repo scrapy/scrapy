@@ -12,7 +12,7 @@ import secrets
 import time
 import traceback
 from types import CodeType
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, Self, cast
 
 from aiohttp import web
 
@@ -31,9 +31,6 @@ from scrapy.utils.asyncio import is_asyncio_available
 if TYPE_CHECKING:
     from datetime import datetime
     from pathlib import Path
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 
@@ -269,7 +266,7 @@ class RemoteControl:
             and hmac.compare_digest(token, self._auth_token)
         )
 
-    async def _run_code(self, code_obj: CodeType, timeout: float) -> ExecuteResult:
+    async def _run_code(self, code_obj: CodeType, timeout: float) -> ExecuteResult:  # noqa: ASYNC109
         """Run a compiled code object with a timeout and capture its output."""
         buf = io.StringIO()
         ns = self._make_namespace(buf)
@@ -283,7 +280,7 @@ class RemoteControl:
             if inspect.iscoroutine(eval_result):
                 try:
                     await asyncio.wait_for(eval_result, timeout)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # wait_for cancelled the coroutine at an await point.
                     status = "timeout"
         except Exception:

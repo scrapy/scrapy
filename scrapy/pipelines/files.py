@@ -15,11 +15,21 @@ import time
 import warnings
 from collections import defaultdict
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, ClassVar, NoReturn, Protocol, TypedDict, cast
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    NoReturn,
+    Protocol,
+    Self,
+    TypedDict,
+    cast,
+)
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -50,9 +60,6 @@ if TYPE_CHECKING:
     from os import PathLike
 
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
@@ -432,7 +439,7 @@ class FTPFilesStore:
                 time_format = "%Y%m%d%H%M%S.%f" if "." in modified else "%Y%m%d%H%M%S"
                 last_modified = (
                     datetime.strptime(modified, time_format)
-                    .replace(tzinfo=timezone.utc)
+                    .replace(tzinfo=UTC)
                     .timestamp()
                 )
                 m = hashlib.md5()  # noqa: S324

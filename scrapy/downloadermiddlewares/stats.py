@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from twisted.web import http
 
@@ -10,9 +10,6 @@ from scrapy.utils.python import global_object_name, to_bytes
 from scrapy.utils.request import request_httprepr
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
     from scrapy.http import Response
