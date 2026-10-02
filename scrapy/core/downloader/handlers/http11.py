@@ -110,7 +110,6 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
             crawler
         )
-        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         self._disconnect_timeout: int = 1
 
     async def download_request(self, request: Request) -> Response:
