@@ -22,7 +22,7 @@ dependencies = [
     "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=24.3.0",
-    "queuelib>=1.6.1",
+    "queuelib>=1.8.0",
     "service_identity>=24.2.0",
     "tldextract",
     'typing-extensions>=4.5.0; python_version < "3.13"',
