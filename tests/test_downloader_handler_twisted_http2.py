@@ -7,6 +7,7 @@ import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from twisted.internet.defer import DeferredList
 from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
@@ -17,6 +18,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Request
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
@@ -85,22 +87,6 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
             response = await download_handler.download_request(request)
         assert response.protocol == "h2"
 
-    def test_download_conn_failed(self) -> None:  # type: ignore[override]
-        # Unlike HTTP11DownloadHandler which raises it from download_request()
-        # (without any special handling), here ConnectionRefusedError (raised in
-        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
-        # an unhandled exception in a Deferred and the handler waits until
-        # DOWNLOAD_TIMEOUT.
-        pytest.skip("The handler doesn't properly reraise ConnectionRefusedError")
-
-    def test_download_dns_error(self) -> None:  # type: ignore[override]
-        # Unlike HTTP11DownloadHandler which raises it from download_request()
-        # (without any special handling), here DNSLookupError (raised in
-        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
-        # an unhandled exception in a Deferred and the handler waits until
-        # DOWNLOAD_TIMEOUT.
-        pytest.skip("The handler doesn't properly reraise DNSLookupError")
-
     @coroutine_test
     async def test_concurrent_requests_same_domain(
         self, mockserver: MockServer
@@ -114,6 +100,23 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
             assert response1.body == b"Works"
             response2 = await download_handler.download_request(request2)
             assert response2.headers["Content-Length"] == b"79"
+
+    @coroutine_test
+    async def test_parallel_requests_same_domain(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        async with self.get_dh() as download_handler:
+            results = await maybe_deferred_to_future(
+                DeferredList(
+                    [
+                        deferred_from_coro(download_handler.download_request(request))
+                        for request in (Request(url), Request(url))
+                    ],
+                    fireOnOneErrback=True,
+                )
+            )
+        # the second request waited for the connection that the first one was
+        # opening instead of opening a second one
+        assert len({response.text for _, response in results}) == 1
 
     @pytest.mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
     @coroutine_test
