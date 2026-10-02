@@ -156,5 +156,9 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     def _is_dataloss_exception(exc: Exception) -> bool:
         return isinstance(exc, aiohttp.ClientPayloadError)
 
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, (TimeoutError, asyncio.TimeoutError))
+
     async def close(self) -> None:
         await self._session.close()
