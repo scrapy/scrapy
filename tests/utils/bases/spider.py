@@ -11,6 +11,7 @@ from scrapy import signals
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
+from scrapy.utils.python import global_object_name
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.utils.decorators import inline_callbacks_test
 
@@ -35,12 +36,20 @@ class TestSpiderBase(ABC):
         assert spider.foo == "bar"  # type: ignore[attr-defined]
 
     def test_spider_without_name(self):
-        """``__init__`` raises when the name is not provided."""
-        msg = "must have a name"
-        with pytest.raises(ValueError, match=msg):
-            self.spider_class()
-        with pytest.raises(ValueError, match=msg):
-            self.spider_class(somearg="foo")
+        """Spiders with no name get their import path as name."""
+        assert not hasattr(self.spider_class, "name")
+        spider = self.spider_class()
+        assert spider.name == global_object_name(self.spider_class)
+
+    def test_ignored(self):
+        """Base spiders shipped by Scrapy are ignored, their subclasses are
+        not."""
+
+        class Subclass(self.spider_class):  # type: ignore[name-defined,misc]
+            pass
+
+        assert self.spider_class._is_ignored()
+        assert not Subclass._is_ignored()
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()

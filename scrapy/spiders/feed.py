@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from scrapy.exceptions import NotSupported, ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
-from scrapy.spiders import Spider
+from scrapy.spiders import Spider, ignore_spider
 from scrapy.utils.iterators import csviter, xmliter_lxml
 from scrapy.utils.spider import iterate_spider_output
 
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
 
+@ignore_spider
 class XMLFeedSpider(Spider):
     """Spider for parsing XML feeds by iterating through them by a certain node
     name.
@@ -171,6 +172,7 @@ class XMLFeedSpider(Spider):
             selector.register_namespace(prefix, uri)
 
 
+@ignore_spider
 class CSVFeedSpider(Spider):
     """Spider for parsing CSV feeds.
 
