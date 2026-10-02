@@ -48,7 +48,7 @@ class TestImagesPipeline:
 
     def test_missing_pillow(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setitem(sys.modules, "PIL", None)
-        with pytest.raises(NotConfigured, match="requires installing Pillow"):
+        with pytest.raises(NotConfigured, match=r"requires the Scrapy\[images\] extra"):
             ImagesPipeline(self.tempdir, crawler=get_crawler())
 
     def test_file_path(self):

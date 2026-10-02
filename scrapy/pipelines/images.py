@@ -78,7 +78,7 @@ class ImagesPipeline(FilesPipeline):
             self._ImageOps = ImageOps
         except ImportError:
             raise NotConfigured(
-                "ImagesPipeline requires installing Pillow 9.2.0 or later"
+                "ImagesPipeline requires the Scrapy[images] extra to be installed"
             ) from None
 
         super().__init__(store_uri, crawler=crawler)
