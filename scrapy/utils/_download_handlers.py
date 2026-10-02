@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from contextlib import contextmanager
 from http.cookiejar import CookieJar
-from typing import TYPE_CHECKING, Any
+from io import BufferedIOBase, BytesIO
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import CancelledError
 from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
@@ -33,6 +36,8 @@ if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
     from urllib.request import Request as ULRequest
 
+    from _typeshed import SizedBuffer
+
     from scrapy import Request
     from scrapy.crawler import Crawler
     from scrapy.http import Headers, Response
@@ -46,6 +51,44 @@ class NullCookieJar(CookieJar):  # pragma: no cover
 
     def set_cookie(self, cookie: Cookie) -> None:
         pass
+
+
+class _BodySink:
+    """Destination of the bytes of a response body while it is downloaded.
+
+    The bytes are kept in memory, unless the ``body_file`` request meta key is
+    set, in which case they are written to that file and the response ends up
+    with an empty body.
+    """
+
+    def __init__(self, request: Request):
+        body_file = request.meta.get("body_file")
+        self.to_file: bool = body_file is not None
+        self._buffer: BufferedIOBase
+        if isinstance(body_file, (str, os.PathLike)):
+            # A file opened here is also closed here, while a file object that
+            # comes from the meta key already open belongs to the caller.
+            self._buffer = Path(body_file).open("wb")
+            self._own_file = True
+        else:
+            self._buffer = body_file or BytesIO()
+            self._own_file = False
+
+    def write(self, data: SizedBuffer) -> None:
+        self._buffer.write(data)
+
+    def truncate(self) -> None:
+        """Discard the bytes received so far, to avoid keeping them in memory
+        for a long time."""
+        if not self.to_file:
+            self._buffer.truncate(0)
+
+    def getvalue(self) -> bytes:
+        return b"" if self.to_file else cast("BytesIO", self._buffer).getvalue()
+
+    def close(self) -> None:
+        if self._own_file:
+            self._buffer.close()
 
 
 @contextmanager
