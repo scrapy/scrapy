@@ -6,7 +6,7 @@ import pytest
 from twisted.python.failure import Failure
 
 from scrapy.http import Headers, Request, Response
-from scrapy.http.request import NO_CALLBACK
+from scrapy.http.request import NO_CALLBACK, _in_download_handler
 from scrapy.utils.request import request_to_curl
 
 
@@ -351,6 +351,42 @@ class TestRequestBase(ABC):
                 callback="a_function",  # type: ignore[arg-type]
                 errback="a_function",  # type: ignore[arg-type]
             )
+
+    def test_await_needs_active_crawler(self):
+        request = self.request_class("http://example.com")
+        with pytest.raises(RuntimeError, match="can only be awaited"):
+            request.__await__()
+        assert request.callback is None
+
+    def test_await_rejects_download_handler_scope(self):
+        request = self.request_class("http://example.com")
+        token = _in_download_handler.set(True)
+        try:
+            with pytest.raises(RuntimeError, match="download handler"):
+                request.__await__()
+        finally:
+            _in_download_handler.reset(token)
+
+    def test_await_rejects_callback(self):
+        def a_callback(response: Response) -> None:
+            pass
+
+        request = self.request_class("http://example.com", callback=a_callback)
+        with pytest.raises(ValueError, match="callback or an errback"):
+            request.__await__()
+
+    def test_await_rejects_errback(self):
+        def an_errback(failure: Failure) -> None:
+            pass
+
+        request = self.request_class("http://example.com", errback=an_errback)
+        with pytest.raises(ValueError, match="callback or an errback"):
+            request.__await__()
+
+    def test_await_allows_no_callback(self):
+        request = self.request_class("http://example.com", callback=NO_CALLBACK)
+        with pytest.raises(RuntimeError, match="can only be awaited"):
+            request.__await__()
 
     def test_setters(self):
         request = self.request_class("http://example.com")
