@@ -57,14 +57,13 @@ Backward-incompatible changes
       called while the spider is being opened, now closes the spider as soon
       as it is open, instead of being ignored.
 
-    (:gh:`8217`)
+    - A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the spider
+      is opening now closes the spider as soon as it is open, instead of being
+      re-raised by
+      :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async`.
 
--   A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the spider
-    is opening now closes the spider as soon as it is open, instead of being
-    re-raised by :meth:`ExecutionEngine.open_spider_async()
-    <scrapy.core.engine.ExecutionEngine.open_spider_async>`. A close requested
-    while the spider is opening is now also performed if opening the spider
-    fails.
+    (:gh:`6916`, :gh:`8217`, :gh:`8272`)
+
     (TBD)
 
 -   Setting the :attr:`ExecutionEngine.running
