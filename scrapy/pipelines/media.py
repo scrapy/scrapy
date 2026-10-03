@@ -13,9 +13,9 @@ from twisted.python.failure import Failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK, Request
+from scrapy.utils._datatypes import SequenceExclude
 from scrapy.utils._deps_compat import TWISTED_FAILURE_HAS_STACK
 from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _process_pending_io,

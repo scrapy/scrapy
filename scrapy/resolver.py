@@ -14,7 +14,7 @@ from twisted.internet.interfaces import (
 )
 from zope.interface.declarations import implementer, provider
 
-from scrapy.utils.datatypes import LocalCache
+from scrapy.utils._datatypes import LocalCache
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

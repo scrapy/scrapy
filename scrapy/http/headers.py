@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 from w3lib.http import headers_dict_to_raw
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.datatypes import CaseInsensitiveDict
+from scrapy.utils._datatypes import CaseInsensitiveDict
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
