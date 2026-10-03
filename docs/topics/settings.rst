@@ -1423,6 +1423,22 @@ The editor to use for editing spiders with the :command:`edit` command.
 Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
 command will prefer it over the default setting.
 
+.. setting:: EVENT_LOOP_LAG_THRESHOLD
+
+EVENT_LOOP_LAG_THRESHOLD
+------------------------
+
+Default: ``10.0``
+
+The number of seconds that the event loop may be blocked before a warning is
+logged. CPU-bound code running in a callback, such as a spider callback,
+blocks the event loop and delays every other pending callback and I/O
+operation, including downloads, for as long as it runs.
+
+Set to ``0`` to disable the warning.
+
+See :ref:`event-loop-lag`.
+
 .. setting:: EXTENSIONS
 
 EXTENSIONS

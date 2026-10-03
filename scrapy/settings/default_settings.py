@@ -83,6 +83,7 @@ __all__ = [
     "DUPEFILTER_CLASS",
     "DUPEFILTER_DEBUG",
     "EDITOR",
+    "EVENT_LOOP_LAG_THRESHOLD",
     "EXTENSIONS",
     "EXTENSIONS_BASE",
     "FEEDS",
@@ -360,6 +361,8 @@ EDITOR = "vi"
 if sys.platform == "win32":
     EDITOR = "%s -m idlelib.idle"
 
+EVENT_LOOP_LAG_THRESHOLD = 10.0
+
 EXTENSIONS: dict[str, int] = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
@@ -373,6 +376,7 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": 0,
     "scrapy.extensions.remote_control.RemoteControl": 0,
+    "scrapy.extensions.event_loop_lag.EventLoopLagMonitor": 0,
 }
 
 FEEDS: dict[str | Path, dict[str, Any]] = {}
