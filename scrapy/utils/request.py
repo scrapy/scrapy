@@ -145,8 +145,8 @@ def request_httprepr(request: Request) -> bytes:
     path = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
     s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
     s += b"Host: " + to_bytes(parsed.hostname or b"") + b"\r\n"
-    if request.headers:
-        s += request.headers.to_string() + b"\r\n"
+    if headers := request.headers.to_string():
+        s += headers + b"\r\n"
     s += b"\r\n"
     s += request.body
     return s
