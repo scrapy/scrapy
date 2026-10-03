@@ -236,9 +236,18 @@ def request_to_curl(request: Request) -> str:
 
     data = f"--data-raw '{request.body.decode('utf-8')}'" if request.body else ""
 
-    headers = " ".join(
-        f"-H '{k.decode()}: {v[0].decode()}'" for k, v in request.headers.items()
-    )
+    header_args: list[str] = []
+    for name, values in request.headers.items():
+        str_name = to_unicode(name, errors="replace")
+        if not values:
+            # "Remove an internal header by giving a replacement without
+            # content on the right side of the colon, as in: -H "Host:"."
+            # (which is how Scrapy handles empty headers)
+            header_args.append(f"-H '{str_name}:'")
+        for value in values:
+            str_value = to_unicode(value, errors="replace")
+            header_args.append(f"-H '{str_name}: {str_value}'")
+    headers = " ".join(header_args)
 
     url = request.url
 

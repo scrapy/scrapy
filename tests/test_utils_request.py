@@ -407,6 +407,30 @@ class TestRequestToCurl:
         )
         self._test_request(request_object, expected_curl_command)
 
+    @pytest.mark.parametrize(
+        ("headers", "expected_args"),
+        [
+            ({"X-Multi": ["a", "b"]}, "-H 'X-Multi: a' -H 'X-Multi: b'"),
+            (
+                {"User-Agent": None, "Accept": "*/*"},
+                "-H 'User-Agent:' -H 'Accept: */*'",
+            ),
+            ({"X-Latin": b"caf\xe9"}, "-H 'X-Latin: caf\ufffd'"),
+        ],
+    )
+    def test_header_values(self, headers: dict[str, Any], expected_args: str) -> None:
+        request_object = Request("https://www.example.com", headers=headers)
+        expected_curl_command = f"curl -X GET https://www.example.com {expected_args}"
+        self._test_request(request_object, expected_curl_command)
+
+    def test_headers_from_curl(self) -> None:
+        request_object = Request(
+            "https://www.example.com",
+            headers={"User-Agent": None, "X-Multi": ["a", "b"]},
+        )
+        request_object2 = Request.from_curl(request_object.to_curl())
+        assert request_object2.headers == request_object.headers
+
     def test_cookies_dict(self) -> None:
         request_object = Request(
             "https://www.httpbin.org/post",
