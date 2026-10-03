@@ -63,6 +63,16 @@ class TestRequestQueueBase(ABC):
         assert q.peek() is None
         assert q.pop() is None
 
+    def test_headers(self, q: queuelib.queue.BaseQueue) -> None:
+        req = Request(
+            "http://www.example.com",
+            headers=[("X-Multi", "a"), ("x-multi", "b"), ("Accept", None)],
+        )
+        q.push(req)
+        result = q.pop()
+        assert result is not None
+        assert result.headers == req.headers
+
     def test_order(self, q: queuelib.queue.BaseQueue) -> None:
         assert len(q) == 0
         assert q.peek() is None

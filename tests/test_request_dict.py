@@ -71,6 +71,19 @@ def test_all_attributes(spider: MethodsSpider) -> None:
     _assert_serializes_ok(r, spider=spider)
 
 
+def test_headers() -> None:
+    r = Request(
+        "http://www.example.com",
+        headers=[("X-Multi", "a"), ("x-multi", "b"), ("dnt", "1"), ("Accept", None)],
+    )
+    headers = r.to_dict()["headers"]
+    assert type(headers) is dict
+    assert headers == {b"X-Multi": [b"a", b"b"], b"dnt": [b"1"], b"Accept": []}
+    headers[b"dnt"].append(b"2")
+    assert r.headers.getlist("dnt") == [b"1"]
+    _assert_serializes_ok(r)
+
+
 def test_latin1_body() -> None:
     r = Request("http://www.example.com", body=b"\xa3")
     _assert_serializes_ok(r)
