@@ -27,6 +27,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
 
     import queuelib
@@ -45,7 +46,7 @@ class TestRequestQueueBase(ABC):
     def is_fifo(self) -> bool:
         raise NotImplementedError
 
-    def test_one_element(self, q: queuelib.queue.BaseQueue):
+    def test_one_element(self, q: queuelib.queue.BaseQueue) -> None:
         assert len(q) == 0
         assert q.peek() is None
         assert q.pop() is None
@@ -62,7 +63,7 @@ class TestRequestQueueBase(ABC):
         assert q.peek() is None
         assert q.pop() is None
 
-    def test_order(self, q: queuelib.queue.BaseQueue):
+    def test_order(self, q: queuelib.queue.BaseQueue) -> None:
         assert len(q) == 0
         assert q.peek() is None
         assert q.pop() is None
@@ -90,7 +91,9 @@ class TestPickleFifoDiskQueueRequest(TestRequestQueueBase):
     is_fifo = True
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             PickleFifoDiskQueue, crawler, key=str(tmp_path / "pickle" / "fifo")
         )
@@ -104,7 +107,9 @@ class TestPickleLifoDiskQueueRequest(TestRequestQueueBase):
     is_fifo = False
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             PickleLifoDiskQueue, crawler, key=str(tmp_path / "pickle" / "lifo")
         )
@@ -118,7 +123,9 @@ class TestMarshalFifoDiskQueueRequest(TestRequestQueueBase):
     is_fifo = True
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             MarshalFifoDiskQueue, crawler, key=str(tmp_path / "marshal" / "fifo")
         )
@@ -132,7 +139,9 @@ class TestMarshalLifoDiskQueueRequest(TestRequestQueueBase):
     is_fifo = False
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             MarshalLifoDiskQueue, crawler, key=str(tmp_path / "marshal" / "lifo")
         )
@@ -146,7 +155,9 @@ class TestPickleFifoSQLiteQueueRequest(TestRequestQueueBase):
     is_fifo = True
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             PickleFifoSQLiteQueue, crawler, key=str(tmp_path / "pickle" / "fifo")
         )
@@ -160,7 +171,9 @@ class TestPickleLifoSQLiteQueueRequest(TestRequestQueueBase):
     is_fifo = False
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             PickleLifoSQLiteQueue, crawler, key=str(tmp_path / "pickle" / "lifo")
         )
@@ -174,7 +187,9 @@ class TestMarshalFifoSQLiteQueueRequest(TestRequestQueueBase):
     is_fifo = True
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             MarshalFifoSQLiteQueue, crawler, key=str(tmp_path / "marshal" / "fifo")
         )
@@ -188,7 +203,9 @@ class TestMarshalLifoSQLiteQueueRequest(TestRequestQueueBase):
     is_fifo = False
 
     @pytest.fixture
-    def q(self, crawler, tmp_path):
+    def q(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> Generator[queuelib.queue.BaseQueue]:
         queue = build_from_crawler(
             MarshalLifoSQLiteQueue, crawler, key=str(tmp_path / "marshal" / "lifo")
         )
@@ -232,7 +249,7 @@ class TestFifoMemoryQueueRequest(TestRequestQueueBase):
     is_fifo = True
 
     @pytest.fixture
-    def q(self, crawler):
+    def q(self, crawler: Crawler) -> queuelib.queue.BaseQueue:
         return build_from_crawler(FifoMemoryQueue, crawler)
 
 
@@ -240,5 +257,5 @@ class TestLifoMemoryQueueRequest(TestRequestQueueBase):
     is_fifo = False
 
     @pytest.fixture
-    def q(self, crawler):
+    def q(self, crawler: Crawler) -> queuelib.queue.BaseQueue:
         return build_from_crawler(LifoMemoryQueue, crawler)
