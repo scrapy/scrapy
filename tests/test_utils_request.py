@@ -41,6 +41,10 @@ if TYPE_CHECKING:
             ),
             b"POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-type: text/html\r\n\r\nSome body",
         ),
+        (
+            Request("http://www.example.com", headers={"Accept": None}),
+            b"GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n",
+        ),
     ],
 )
 def test_request_httprepr(r: Request, expected: bytes) -> None:
