@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.referer import (
     POLICY_NO_REFERRER,
@@ -296,28 +296,110 @@ class TestRedirectMiddleware(TestRedirectBase):
         assert req2.url == url3
         assert req2.method == "HEAD"
 
-    def test_spider_handling(self):
-        self.mw.crawler.spider.handle_httpstatus_list = [404, 301, 302]
-        url = "http://www.example.com/301"
+    def _assert_passthrough(
+        self, req: Request, mw: RedirectMiddleware | None = None
+    ) -> None:
         url2 = "http://www.example.com/redirected"
-        req = Request(url)
-        rsp = Response(url, headers={"Location": url2}, status=301)
-        r = self.mw.process_response(req, rsp)
-        assert r is rsp
+        rsp = Response(req.url, headers={"Location": url2}, status=301, request=req)
+        assert (mw or self.mw).process_response(req, rsp) is rsp
+
+    def _assert_redirected(
+        self, req: Request, mw: RedirectMiddleware | None = None
+    ) -> None:
+        url2 = "http://www.example.com/redirected"
+        rsp = Response(req.url, headers={"Location": url2}, status=301, request=req)
+        assert isinstance((mw or self.mw).process_response(req, rsp), Request)
+
+    def test_setting_handling(self):
+        url = "http://www.example.com/301"
+        crawler = get_crawler(DefaultSpider, {"HANDLE_HTTP_CODES": [404, 301, 302]})
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        self._assert_passthrough(Request(url), mw)
+
+    def test_setting_handling_all(self):
+        url = "http://www.example.com/301"
+        crawler = get_crawler(DefaultSpider, {"HANDLE_HTTP_CODES": True})
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        self._assert_passthrough(Request(url), mw)
+
+    def test_setting_handling_unrelated_code(self):
+        url = "http://www.example.com/301"
+        crawler = get_crawler(DefaultSpider, {"HANDLE_HTTP_CODES": [404]})
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        self._assert_redirected(Request(url), mw)
+
+    def test_httperror_settings_ignored(self):
+        """The deprecated HTTPERROR_* settings never applied to redirects."""
+        url = "http://www.example.com/301"
+        crawler = get_crawler(DefaultSpider, {"HTTPERROR_ALLOW_ALL": True})
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        self._assert_redirected(Request(url), mw)
+
+    def test_spider_handling(self):
+        mw = self._spider_attribute_mw([404, 301, 302])
+        self._assert_passthrough(Request("http://www.example.com/301"), mw)
 
     def test_request_meta_handling(self):
         url = "http://www.example.com/301"
-        url2 = "http://www.example.com/redirected"
+        self._assert_passthrough(Request(url, meta={"handle_http_codes": [301]}))
+        self._assert_passthrough(Request(url, meta={"handle_http_codes": True}))
+        self._assert_redirected(Request(url, meta={"handle_http_codes": [404]}))
+        self._assert_redirected(Request(url, meta={"handle_http_codes": False}))
 
-        def _test_passthrough(req: Request) -> None:
-            rsp = Response(url, headers={"Location": url2}, status=301, request=req)
-            r = self.mw.process_response(req, rsp)
-            assert r is rsp
+    def test_request_meta_handling_deprecated(self):
+        url = "http://www.example.com/301"
+        with pytest.warns(ScrapyDeprecationWarning):
+            self._assert_passthrough(
+                Request(url, meta={"handle_httpstatus_list": [404, 301, 302]})
+            )
+        with pytest.warns(ScrapyDeprecationWarning):
+            self._assert_passthrough(Request(url, meta={"handle_httpstatus_all": True}))
+        # Already warned about above, hence no warning expected here.
+        self._assert_redirected(Request(url, meta={"handle_httpstatus_list": [404]}))
 
-        _test_passthrough(
-            Request(url, meta={"handle_httpstatus_list": [404, 301, 302]})
+    def _spider_attribute_mw(self, codes: list[int]) -> RedirectMiddleware:
+        class HandlingSpider(DefaultSpider):
+            handle_httpstatus_list = codes
+
+        crawler = get_crawler(HandlingSpider)
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        with pytest.warns(ScrapyDeprecationWarning):
+            mw.spider_opened(crawler.spider)
+        return mw
+
+    @pytest.mark.parametrize(
+        "meta",
+        [
+            {"handle_httpstatus_list": [404]},
+            {"handle_httpstatus_all": False},
+        ],
+    )
+    def test_deprecated_meta_combines_with_spider_attribute(self, meta):
+        """This middleware used to combine the deprecated meta key with the
+        deprecated spider attribute, instead of overriding it."""
+        mw = self._spider_attribute_mw([301])
+        with pytest.warns(ScrapyDeprecationWarning):
+            self._assert_passthrough(
+                Request("http://www.example.com/301", meta=meta), mw
+            )
+
+    def test_meta_overrides_spider_attribute(self):
+        mw = self._spider_attribute_mw([301])
+        self._assert_redirected(
+            Request("http://www.example.com/301", meta={"handle_http_codes": [404]}), mw
         )
-        _test_passthrough(Request(url, meta={"handle_httpstatus_all": True}))
+
+    def test_request_meta_overrides_setting(self):
+        url = "http://www.example.com/301"
+        crawler = get_crawler(DefaultSpider, {"HANDLE_HTTP_CODES": True})
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        self._assert_redirected(Request(url, meta={"handle_http_codes": False}), mw)
 
     def test_latin1_location(self):
         req = Request("http://scrapytest.org/first")
