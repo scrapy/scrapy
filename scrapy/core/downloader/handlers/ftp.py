@@ -109,9 +109,13 @@ class FTPDownloadHandler(BaseDownloadHandler):
             creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
         )
         filepath = unquote(parsed_url.path)
+        is_listing = filepath == "" or filepath.endswith("/")
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         try:
-            await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
+            if is_listing:
+                await maybe_deferred_to_future(client.nlst(filepath, protocol))
+            else:
+                await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
         except CommandFailed as e:
             message = str(e)
             # Twisted only raises CommandFailed for a reply whose numeric code
