@@ -64,8 +64,6 @@ Backward-incompatible changes
 
     (:gh:`6916`, :gh:`8217`, :gh:`8272`)
 
-    (TBD)
-
 -   Setting the :attr:`ExecutionEngine.running
     <scrapy.core.engine.ExecutionEngine.running>` attribute no longer has any
     effect.
