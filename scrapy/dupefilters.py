@@ -140,7 +140,7 @@ class RFPDupeFilter(BaseDupeFilter):
     def request_seen(self, request: Request) -> bool:
         fp = self._fingerprint(request)
         if fp in self._fingerprints:
-            return True
+            return fp not in request.meta.get("redirect_fingerprints", set())
         self._fingerprints.add(fp)
         if self.file:
             self.file.write(len(fp).to_bytes(_SIZE_BYTES, "big") + fp)
