@@ -422,7 +422,7 @@ class Request(object_ref):
                 if callable(self.errback)
                 else self.errback
             ),
-            "headers": dict(self.headers),
+            "headers": {k: list(v) for k, v in self.headers.items()},
         }
         for attr in self.attributes:
             d.setdefault(attr, getattr(self, attr))
