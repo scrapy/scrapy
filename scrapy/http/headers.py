@@ -145,13 +145,12 @@ class Headers(dict):  # type: ignore[type-arg]
             return None
 
     def get(self, key: str | bytes, def_val: Any = None) -> bytes | None:
-        try:
-            return cast(
-                "list[bytes]",
-                dict.get(self, self._normkey(key), self._normvalue(def_val)),
-            )[-1]
-        except IndexError:
-            return None
+        values = cast("list[bytes] | None", dict.get(self, self._normkey(key)))
+        if not values:
+            # The header is missing, or it was set to None so that it is not
+            # sent; neither has a value to return.
+            values = self._normvalue(def_val)
+        return values[-1] if values else None
 
     def getlist(
         self, key: str | bytes, def_val: _RawValue | Iterable[_RawValue] | None = None
