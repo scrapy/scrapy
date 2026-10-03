@@ -44,10 +44,10 @@ from scrapy.pipelines.media import (
     MediaPipeline,
     _MediaRequestFiltered,
 )
+from scrapy.utils._datatypes import CaseInsensitiveDict
 from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.boto import _get_max_pool_connections, is_botocore_available
-from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
