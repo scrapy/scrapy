@@ -29,6 +29,7 @@ https://quotes.toscrape.com, following the pagination:
 
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
+        allowed_domains = ["quotes.toscrape.com"]
         start_urls = [
             "https://quotes.toscrape.com/tag/humor/",
         ]
