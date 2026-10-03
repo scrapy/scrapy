@@ -81,6 +81,17 @@ async def export_by_path(
     return {path: Path(path).read_bytes() for path in feeds if Path(path).exists()}
 
 
+async def export_by_format(
+    mockserver: MockServer, items: Iterable[Any], settings: dict[str, Any]
+) -> dict[str, bytes | None]:
+    """Like :func:`export_by_path`, but key the result by feed format, with
+    ``None`` for feeds that were not written."""
+    data = await export_by_path(mockserver, items, settings)
+    return {
+        options["format"]: data.get(path) for path, options in settings["FEEDS"].items()
+    }
+
+
 def csv_header(data: bytes) -> list[str]:
     """Return the column names of the CSV feed *data*."""
     return next(csv.reader(data.decode().splitlines()))
