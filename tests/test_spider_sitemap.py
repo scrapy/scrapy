@@ -67,6 +67,30 @@ class TestSitemapSpider(TestSpiderBase):
         r = XmlResponse(url="http://www.example.com/", body=b"")
         self.assertSitemapBody(r, b"")
 
+    def test_get_sitemap_body_xml_content_type(self):
+        r = TextResponse(
+            url="http://www.example.com/sitemap",
+            body=self.BODY,
+            headers={"Content-Type": "application/xml"},
+        )
+        self.assertSitemapBody(r, self.BODY)
+
+        r = TextResponse(
+            url="http://www.example.com/sitemap",
+            body=self.BODY,
+            headers={"Content-Type": "text/html"},
+        )
+        self.assertSitemapBody(r, None)
+
+    def test_get_sitemap_body_xml_body(self):
+        body = b'<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>'
+        r = TextResponse(url="http://www.example.com/sitemap", body=body)
+        self.assertSitemapBody(r, body)
+
+    def test_get_sitemap_body_xml_file_url(self):
+        r = Response(url="file:///tmp/sitemap.rss", body=self.BODY)
+        self.assertSitemapBody(r, self.BODY)
+
     def test_get_sitemap_body_gzip_headers(self):
         r = Response(
             url="http://www.example.com/sitemap",
