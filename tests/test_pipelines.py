@@ -103,6 +103,11 @@ class ProcessItemExceptionAsyncPipeline:
         raise ValueError("process_item error")
 
 
+class ReturnsNonePipeline:
+    def process_item(self, item):
+        pass
+
+
 class OpenSpiderExceptionPipeline:
     def open_spider(self):
         raise ValueError("open_spider error")
@@ -227,6 +232,17 @@ class TestPipeline:
         await crawler.crawl_async(mockserver=mockserver)
         assert "Error processing {'field': 42}" in caplog.text
         assert "process_item error" in caplog.text
+
+    @coroutine_test
+    async def test_process_item_returns_non_item(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = self._create_crawler(ReturnsNonePipeline)
+        await crawler.crawl_async(mockserver=mockserver)
+        assert (
+            "tests.test_pipelines.ReturnsNonePipeline.process_item must return"
+            " an item, got None instead"
+        ) in caplog.text
 
     @pytest.mark.parametrize(
         "pipeline_class",
