@@ -191,6 +191,7 @@ def test_none_value() -> None:
     h1.setdefault("foo", "bar")
     assert h1["foo"] is None
     assert h1.get("foo") is None
+    assert h1.get("foo", "baz") == b"baz"
     assert h1.getlist("foo") == []
 
 
