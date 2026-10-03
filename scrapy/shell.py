@@ -19,6 +19,7 @@ from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 import scrapy
+from scrapy.core.engine import EngineState
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
@@ -190,6 +191,8 @@ class Shell:
 
         self.crawler.spider = spider
         await self.crawler.engine.open_spider_async(close_if_idle=False)
+        if self.crawler.engine.state is not EngineState.SPIDER_OPEN:
+            raise RuntimeError(f"Spider {spider.name!r} was closed while opening")
         self.spider = spider
 
     def fetch(
