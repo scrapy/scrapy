@@ -865,6 +865,7 @@ class TestHelpMessage(TestProjectBase):
             "runspider",
             "version",
             "genspider",
+            "genrequest",
             "check",
             "bench",
         ],
