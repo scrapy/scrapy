@@ -332,6 +332,31 @@ soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
 
+.. _topics-feed-storage-custom:
+
+Custom storage backends
+-----------------------
+
+To write your own storage backend, define a class that follows
+:class:`~scrapy.extensions.feedexport.FeedStorageProtocol` and assign it to a
+URI scheme through the :setting:`FEED_STORAGES` setting.
+
+.. autoclass:: scrapy.extensions.feedexport.FeedStorageProtocol(uri, *, feed_options=None)
+   :members:
+
+If your storage backend blocks, subclass
+:class:`~scrapy.extensions.feedexport.BlockingFeedStorage` instead: it writes
+items into a temporary local file (see :ref:`delayed file delivery
+<delayed-file-delivery>`) and calls your ``_store_in_thread()`` method in a
+separate thread once the crawl is done, keeping the reactor free.
+
+.. autoclass:: scrapy.extensions.feedexport.BlockingFeedStorage
+   :members: _store_in_thread
+
+A storage backend receives a file. To send items to a service as they are
+scraped, write an :ref:`item pipeline <topics-item-pipeline>` instead.
+
+
 .. _item-filter:
 
 Item filtering
@@ -369,6 +394,35 @@ ItemFilter
 
 .. autoclass:: scrapy.extensions.feedexport.ItemFilter
    :members:
+
+
+.. _item-processor:
+
+Item processing
+===============
+
+.. versionadded:: VERSION
+
+The ``item_processor`` :ref:`feed option <feed-options>` takes a callable, or
+its import path, that receives an accepted item and returns an iterable of the
+items to export in its place:
+
+.. code-block:: python
+
+    def split_variants(item):
+        for variant in item["variants"]:
+            yield {**item, "variants": None, **variant}
+
+Returning an empty iterable drops the item from that feed, and returning more
+than one item writes one entry per returned item.
+
+Item processors run after :ref:`item filtering <item-filter>`, and only affect
+the feed that declares them. Items are exported as returned, so the
+:signal:`item_scraped` signal, :ref:`item pipelines <topics-item-pipeline>` and
+the ``item_scraped_count`` stat still see the item as scraped; use item
+processors for output formatting, and item pipelines for anything that should
+apply to the item itself. The number of exported entries per feed is reported
+as the ``feedexport/item_count/<storage class>`` stat.
 
 
 .. _post-processing:
@@ -447,6 +501,7 @@ These are the settings used for configuring the feed exports:
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`FEED_EXPORTERS`
 -   :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
+-   :setting:`UPLOAD_TIMEOUT`
 
 .. setting:: FEEDS
 
@@ -522,6 +577,13 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
     :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
+
+-   ``item_processor``: an :ref:`item processor <item-processor>` to reshape
+    items before they are exported.
+
+    .. versionadded:: VERSION
+
+    If undefined, items are exported as scraped.
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
@@ -660,10 +722,11 @@ Default:
         "ftps": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
-A dict containing the built-in feed storage backends supported by Scrapy. You
-can disable any of these backends by assigning ``None`` to their URI scheme in
-:setting:`FEED_STORAGES`. E.g., to disable the built-in FTP storage backend
-(without replacement), place this in your ``settings.py``:
+A dict containing the built-in feed storage backends supported by Scrapy, see
+:ref:`feed-storage-classes`. You can disable any of these backends by assigning
+``None`` to their URI scheme in :setting:`FEED_STORAGES`. E.g., to disable the
+built-in FTP storage backend (without replacement), place this in your
+``settings.py``:
 
 .. code-block:: python
 
@@ -822,6 +885,29 @@ source spider in the feed URI:
 #.  Use ``%(spider_name)s`` in your feed URI::
 
         scrapy crawl <spider_name> -o "%(spider_name)s.jsonl"
+
+
+.. _feed-storage-classes:
+
+Storage backend classes
+=======================
+
+These are the classes that :setting:`FEED_STORAGES_BASE` assigns to the
+built-in URI schemes.
+
+.. currentmodule:: scrapy.extensions.feedexport
+
+.. autoclass:: FileFeedStorage
+
+.. autoclass:: FTPFeedStorage
+
+.. autoclass:: GCSFeedStorage
+
+.. autoclass:: S3FeedStorage
+
+.. autoclass:: StdoutFeedStorage
+
+.. currentmodule:: None
 
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier

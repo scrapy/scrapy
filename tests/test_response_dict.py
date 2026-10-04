@@ -55,6 +55,20 @@ def test_all_attributes() -> None:
         assert getattr(response2, attribute) == getattr(response, attribute)
 
 
+def test_headers() -> None:
+    response = Response(
+        "https://example.com",
+        headers=[("Set-Cookie", "a=1"), ("set-cookie", "b=2"), ("etag", "x")],
+    )
+    headers = response.to_dict()["headers"]
+    assert type(headers) is dict
+    assert headers == {b"Set-Cookie": [b"a=1", b"b=2"], b"etag": [b"x"]}
+    headers[b"etag"].append(b"y")
+    assert response.headers.getlist("etag") == [b"x"]
+    response2 = response_from_dict(response.to_dict())
+    assert response2.headers == response.headers
+
+
 def test_custom_attributes() -> None:
     response = CustomResponse("https://example.com", custom="value")
     response2 = response_from_dict(response.to_dict())

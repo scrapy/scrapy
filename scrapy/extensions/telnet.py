@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import pprint
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from twisted.conch import telnet
 from twisted.conch.insults import insults
@@ -24,9 +24,6 @@ from scrapy.utils.trackref import print_live_refs
 
 if TYPE_CHECKING:
     from twisted.internet.tcp import Port
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 

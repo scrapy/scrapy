@@ -244,6 +244,9 @@ on the item in your spider, and read it back from the item in
 Supported Storage
 =================
 
+Use :setting:`UPLOAD_TIMEOUT` to limit how long uploads to a remote storage
+backend may take.
+
 File system storage
 -------------------
 
@@ -314,6 +317,28 @@ policy:
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
+To send custom headers with the uploaded files, subclass ``S3FilesStore``
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme of
+your pipeline to it:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline, S3FilesStore
+
+
+    class CustomS3FilesStore(S3FilesStore):
+        HEADERS = {
+            "Cache-Control": "max-age=172800",
+            "X-Amz-Storage-Class": "STANDARD_IA",
+        }
+
+
+    class CustomFilesPipeline(FilesPipeline):
+        STORE_SCHEMES = FilesPipeline.STORE_SCHEMES | {"s3": CustomS3FilesStore}
+
+Supported headers are those that the installed botocore version models for
+the `PutObject`_ operation; any other header raises :exc:`TypeError`.
+
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
 `Zenko CloudServer`_. All you need to do is set the endpoint option in your
 Scrapy settings:
@@ -334,6 +359,7 @@ To reuse connections for as many files as you check or upload in parallel, set
 
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
+.. _PutObject: https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 
@@ -582,6 +608,25 @@ To handle media redirections, set this setting to ``True``:
 .. code-block:: python
 
     MEDIA_ALLOW_REDIRECTS = True
+
+Limiting the result cache
+-------------------------
+
+.. setting:: MEDIA_CACHE_SIZE
+
+Media pipelines remember the outcome of every media request they handle, so
+that a file referenced by several items is downloaded once. By default every
+outcome is kept for the whole crawl, which takes about 600 bytes per distinct
+media URL.
+
+.. versionadded:: VERSION
+
+To cap that memory, set :setting:`MEDIA_CACHE_SIZE` to the number of most
+recently used outcomes to keep, or to ``0`` to keep none:
+
+.. code-block:: python
+
+    MEDIA_CACHE_SIZE = 10000
 
 .. _topics-media-pipeline-override:
 

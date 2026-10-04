@@ -3,7 +3,7 @@ from __future__ import annotations
 import gzip
 import logging
 import pickle
-from datetime import timezone
+from datetime import UTC
 from email.utils import parsedate_to_datetime
 from importlib import import_module
 from pathlib import Path
@@ -429,7 +429,7 @@ def rfc1123_to_epoch(date_str: str | bytes | None) -> int | None:
         date_str = to_unicode(date_str, encoding="ascii")
         date = parsedate_to_datetime(date_str)
         if date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
+            date = date.replace(tzinfo=UTC)
         return int(date.timestamp())
     except Exception:
         return None

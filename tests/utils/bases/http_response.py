@@ -187,7 +187,7 @@ class TestResponseBase(ABC):
 
         assert response._flags is None
         assert response.flags == []
-        assert response.flags is response.flags
+        assert response.flags is response.flags  # pylint: disable=comparison-with-itself
         assert response._flags == []
         original_flags = response.flags
         response.flags = None
@@ -197,7 +197,7 @@ class TestResponseBase(ABC):
 
         assert response._headers is None
         assert response.headers == {}
-        assert response.headers is response.headers
+        assert response.headers is response.headers  # pylint: disable=comparison-with-itself
         assert isinstance(response.headers, Headers)
         assert isinstance(response._headers, Headers)
         original_headers = response.headers
