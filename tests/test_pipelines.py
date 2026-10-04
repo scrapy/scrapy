@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from twisted.internet.defer import Deferred, fail, succeed
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
@@ -14,8 +15,11 @@ from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
+    from tests.mockserver.http import MockServer
 
 
 class SimplePipeline:
@@ -131,7 +135,7 @@ class ItemSpider(Spider):
 
 
 class TestPipeline:
-    def _on_item_scraped(self, item):
+    def _on_item_scraped(self, item: dict[str, Any]) -> None:
         assert isinstance(item, dict)
         assert item.get("pipeline_passed")
         self.items.append(item)
@@ -274,7 +278,7 @@ class TestCustomPipelineManager:
 
         items = []
 
-        def _on_item_scraped(item):
+        def _on_item_scraped(item: dict[str, Any]) -> None:
             assert isinstance(item, dict)
             assert item.get("pipeline_passed")
             items.append(item)
@@ -318,7 +322,7 @@ class TestCustomPipelineManager:
 
         items = []
 
-        def _on_item_scraped(item):
+        def _on_item_scraped(item: dict[str, Any]) -> None:
             assert isinstance(item, dict)
             assert item.get("pipeline_passed")
             items.append(item)
@@ -380,7 +384,7 @@ class TestCustomPipelineManager:
 
         items = []
 
-        def _on_item_scraped(item):
+        def _on_item_scraped(item: dict[str, Any]) -> None:
             assert isinstance(item, dict)
             assert item.get("pipeline_passed")
             items.append(item)

@@ -107,6 +107,13 @@ Request objects
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the request headers.
 
+        .. versionchanged:: VERSION
+            Header names keep the case you write them in, instead of being
+            converted to ``Title-Case``.
+
+        Lookups are case-insensitive. Whether your case reaches the server
+        depends on the :ref:`download handler <download-handlers-ref>`.
+
     .. attribute:: Request.body
 
         The request body as bytes.
@@ -377,6 +384,35 @@ account:
     class RequestFingerprinter:
         def fingerprint(self, request):
             return fingerprint(request, include_headers=["X-ID"])
+
+To deduplicate repeated query string parameters, such as those some sites
+add on every redirect and can otherwise cause redirect loops, build the
+deduplicated URL yourself and delegate the rest to
+:func:`scrapy.utils.request.fingerprint`:
+
+.. code-block:: python
+
+    # my_project/settings.py
+    REQUEST_FINGERPRINTER_CLASS = "my_project.utils.RequestFingerprinter"
+
+    # my_project/utils.py
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+    from weakref import WeakKeyDictionary
+
+    from scrapy.utils.request import fingerprint
+
+
+    class RequestFingerprinter:
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                parts = urlsplit(request.url)
+                query = urlencode(list(set(parse_qsl(parts.query))))
+                deduped_url = urlunsplit(parts._replace(query=query))
+                deduped_request = request.replace(url=deduped_url)
+                self.cache[request] = fingerprint(deduped_request)
+            return self.cache[request]
 
 You can also write your own fingerprinting logic from scratch.
 
@@ -867,6 +903,7 @@ Those are:
 * :reqmeta:`referrer_policy`
 * :reqmeta:`retry_times`
 * :reqmeta:`rule`
+* :reqmeta:`skip_dupefilter_once`
 * :reqmeta:`verbatim_url`
 
 Scrapy components also use meta keys whose name starts with an underscore, such
@@ -1018,6 +1055,20 @@ max_retry_times
 The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: skip_dupefilter_once
+
+skip_dupefilter_once
+--------------------
+
+.. versionadded:: VERSION
+
+Set this key to ``True`` to skip :setting:`duplicate filtering
+<DUPEFILTER_CLASS>` for this request. The :ref:`scheduler <topics-scheduler>`
+removes this key, so requests derived from this request, e.g. redirects, are
+filtered as usual.
+
+:func:`~scrapy.downloadermiddlewares.retry.get_retry_request` sets this key.
 
 .. reqmeta:: verbatim_url
 

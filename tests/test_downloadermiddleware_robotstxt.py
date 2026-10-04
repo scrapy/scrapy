@@ -245,6 +245,19 @@ Disallow: /some/randome/page.html
         rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
 
     @coroutine_test
+    async def test_robotstxt_user_agent_none(self):
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        headers = {"User-Agent": None}
+        await self.assertNotIgnored(
+            Request("http://site.local/allowed", headers=headers), middleware
+        )
+        await self.assertIgnored(
+            Request("http://site.local/admin/main", headers=headers), middleware
+        )
+
+    @coroutine_test
     async def test_robotstxt_local_file(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_emptybody_crawler()

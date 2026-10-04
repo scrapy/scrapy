@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 
@@ -17,35 +16,23 @@ from scrapy.utils.project import (
     project_data_dir,
 )
 
-if TYPE_CHECKING:
-    from collections.abc import Generator
-
 
 @pytest.fixture
-def proj_path(tmp_path: Path) -> Generator[Path]:
-    prev_dir = Path.cwd()
+def proj_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     project_dir = tmp_path
-
-    try:
-        os.chdir(project_dir)
-        Path("scrapy.cfg").touch()
-
-        yield project_dir
-    finally:
-        os.chdir(prev_dir)
+    monkeypatch.chdir(project_dir)
+    Path("scrapy.cfg").touch()
+    return project_dir
 
 
 @pytest.fixture
-def no_proj_path(tmp_path: Path) -> Generator[Path]:
+def no_proj_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A working directory without a scrapy.cfg file, also isolated from the
     user-wide and system-wide Scrapy configuration files."""
-    prev_dir = Path.cwd()
-    try:
-        os.chdir(tmp_path)
-        with set_environ(HOME=str(tmp_path), XDG_CONFIG_HOME=str(tmp_path)):
-            yield tmp_path
-    finally:
-        os.chdir(prev_dir)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    return tmp_path
 
 
 def test_data_path_outside_project() -> None:
@@ -101,7 +88,7 @@ def test_project_data_dir_default(proj_path: Path) -> None:
 
 def test_project_data_dir_from_scrapy_cfg(proj_path: Path) -> None:
     datadir = proj_path / "custom-datadir"
-    Path("scrapy.cfg").write_text(f"[datadir]\ndefault = {datadir}\n")
+    Path("scrapy.cfg").write_text(f"[datadir]\ndefault = {datadir}\n", encoding="utf-8")
     assert Path(project_data_dir()) == datadir
     assert datadir.is_dir()
 

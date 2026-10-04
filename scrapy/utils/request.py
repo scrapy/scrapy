@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, Self
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
@@ -21,9 +21,6 @@ from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CookiesT, VerboseCookie
@@ -164,8 +161,8 @@ def request_httprepr(request: Request) -> bytes:
     path = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
     s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
     s += b"Host: " + to_bytes(parsed.hostname or b"") + b"\r\n"
-    if request.headers:
-        s += request.headers.to_string() + b"\r\n"
+    if headers := request.headers.to_string():
+        s += headers + b"\r\n"
     s += b"\r\n"
     s += request.body
     return s
@@ -200,7 +197,7 @@ def _get_method(obj: Any, name: object) -> Any:
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError(f"Method {name!r} not found in: {obj}") from None
+        raise ValueError(f"Method {name!r} not found in: {obj!r}") from None
 
 
 def _to_verbose_cookies(cookies: CookiesT) -> list[VerboseCookie]:
@@ -255,9 +252,18 @@ def request_to_curl(request: Request) -> str:
 
     data = f"--data-raw '{request.body.decode('utf-8')}'" if request.body else ""
 
-    headers = " ".join(
-        f"-H '{k.decode()}: {v[0].decode()}'" for k, v in request.headers.items()
-    )
+    header_args: list[str] = []
+    for name, values in request.headers.items():
+        str_name = to_unicode(name, errors="replace")
+        if not values:
+            # "Remove an internal header by giving a replacement without
+            # content on the right side of the colon, as in: -H "Host:"."
+            # (which is how Scrapy handles empty headers)
+            header_args.append(f"-H '{str_name}:'")
+        for value in values:
+            str_value = to_unicode(value, errors="replace")
+            header_args.append(f"-H '{str_name}: {str_value}'")
+    headers = " ".join(header_args)
 
     url = request.url
 

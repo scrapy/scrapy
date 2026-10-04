@@ -7,7 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Self, TypeVar, overload
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -21,9 +21,6 @@ if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.http.request import CallbackT, CookiesT
     from scrapy.selector import SelectorList
@@ -207,7 +204,7 @@ class Response(object_ref):
         so subclasses only need to override this method, and :meth:`from_dict`,
         if some of their attributes cannot be stored as is.
         """
-        d: dict[str, Any] = {"headers": dict(self.headers)}
+        d: dict[str, Any] = {"headers": {k: list(v) for k, v in self.headers.items()}}
         for attr in self.attributes:
             if attr in {"request", "certificate"}:
                 continue

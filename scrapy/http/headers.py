@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
 from w3lib.http import headers_dict_to_raw
 
-from scrapy.utils.datatypes import CaseInsensitiveDict
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils._datatypes import CaseInsensitiveDict
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 _RawValue: TypeAlias = bytes | str | int
@@ -35,27 +34,39 @@ class Headers(dict):  # type: ignore[type-arg]
             self.update(seq)
 
     def __setitem__(self, key: str | bytes, value: Any) -> None:
-        dict.__setitem__(self, self.normkey(key), self.normvalue(value))
+        dict.__setitem__(self, self._normkey(key), self._normvalue(value))
 
     def __delitem__(self, key: str | bytes) -> None:
-        dict.__delitem__(self, self.normkey(key))
+        dict.__delitem__(self, self._normkey(key))
 
     def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
-        return dict.__contains__(self, self.normkey(key))
+        return dict.__contains__(self, self._normkey(key))
 
-    has_key = __contains__
+    def has_key(self, key: str | bytes) -> bool:
+        warnings.warn(
+            'Headers.has_key() is deprecated, use the "in" operator instead.',
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return key in self
 
     def setdefault(self, key: str | bytes, def_val: Any = None) -> Any:
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
+        return dict.setdefault(self, self._normkey(key), self._normvalue(def_val))
 
     @classmethod
     def fromkeys(  # type: ignore[override]
         cls, keys: Iterable[str | bytes], value: Any = None
     ) -> Self:
+        warnings.warn(
+            "Headers.fromkeys() is deprecated, pass (key, value) pairs to"
+            " Headers() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return cls((k, value) for k in keys)
 
     def pop(self, key: str | bytes, *args: Any) -> Any:
-        return dict.pop(self, self.normkey(key), *args)
+        return dict.pop(self, self._normkey(key), *args)
 
     def update(  # type: ignore[override]
         self,
@@ -65,16 +76,37 @@ class Headers(dict):  # type: ignore[type-arg]
     ) -> None:
         items = seq.items() if isinstance(seq, Mapping) else seq
         iseq: dict[bytes, list[bytes]] = {}
+        # normkey() only sees keys already stored, so keys from seq that differ
+        # only in case are mapped to a single spelling here.
+        spellings: dict[bytes, bytes] = {}
         for k, v in items:
-            iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
+            key = self._normkey(k)
+            key = spellings.setdefault(key.lower(), key)
+            iseq.setdefault(key, []).extend(self._normvalue(v))
         dict.update(self, iseq)
 
-    def normkey(self, key: str | bytes) -> bytes:
-        """Normalize key to bytes"""
-        return self._tobytes(key.title())
+    def _normkey(self, key: str | bytes) -> bytes:
+        """Normalize key to bytes, matching the case of an existing key if any."""
+        key = self._tobytes(key)
+        if dict.__contains__(self, key):
+            return key
+        lower_key = key.lower()
+        existing_key: bytes
+        for existing_key in dict.keys(self):
+            if existing_key.lower() == lower_key:
+                return existing_key
+        return key
 
-    def normvalue(self, value: _RawValue | Iterable[_RawValue]) -> list[bytes]:
-        """Normalize values to bytes"""
+    def normkey(self, key: str | bytes) -> bytes:  # pragma: no cover
+        warnings.warn(
+            "Headers.normkey() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._normkey(key)
+
+    def _normvalue(self, value: _RawValue | Iterable[_RawValue]) -> list[bytes]:
+        """Normalize values to bytes."""
         _value: Iterable[_RawValue]
         if value is None:
             _value = []
@@ -87,6 +119,16 @@ class Headers(dict):  # type: ignore[type-arg]
 
         return [self._tobytes(x) for x in _value]
 
+    def normvalue(
+        self, value: _RawValue | Iterable[_RawValue]
+    ) -> list[bytes]:  # pragma: no cover
+        warnings.warn(
+            "Headers.normvalue() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._normvalue(value)
+
     def _tobytes(self, x: _RawValue) -> bytes:
         if isinstance(x, bytes):
             return x
@@ -98,40 +140,50 @@ class Headers(dict):  # type: ignore[type-arg]
 
     def __getitem__(self, key: str | bytes) -> bytes | None:
         try:
-            return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))[-1]
+            return cast("list[bytes]", dict.__getitem__(self, self._normkey(key)))[-1]
         except IndexError:
             return None
 
     def get(self, key: str | bytes, def_val: Any = None) -> bytes | None:
-        try:
-            return cast(
-                "list[bytes]",
-                dict.get(self, self.normkey(key), self.normvalue(def_val)),
-            )[-1]
-        except IndexError:
-            return None
+        values = cast("list[bytes] | None", dict.get(self, self._normkey(key)))
+        if not values:
+            # The header is missing, or it was set to None so that it is not
+            # sent; neither has a value to return.
+            values = self._normvalue(def_val)
+        return values[-1] if values else None
 
     def getlist(
         self, key: str | bytes, def_val: _RawValue | Iterable[_RawValue] | None = None
     ) -> list[bytes]:
         try:
-            return cast("list[bytes]", dict.__getitem__(self, self.normkey(key)))
+            return cast("list[bytes]", dict.__getitem__(self, self._normkey(key)))
         except KeyError:
             if def_val is not None:
-                return self.normvalue(def_val)
+                return self._normvalue(def_val)
             return []
 
     def setlist(self, key: str | bytes, list_: Iterable[_RawValue]) -> None:
+        warnings.warn(
+            "Headers.setlist() is deprecated, assign the list instead:"
+            " headers[key] = values.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self[key] = list_
 
     def setlistdefault(
         self, key: str | bytes, default_list: Iterable[_RawValue] = ()
     ) -> Any:
+        warnings.warn(
+            "Headers.setlistdefault() is deprecated, use setdefault() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return self.setdefault(key, default_list)
 
     def appendlist(self, key: str | bytes, value: Iterable[_RawValue]) -> None:
         lst = self.getlist(key)
-        lst.extend(self.normvalue(value))
+        lst.extend(self._normvalue(value))
         self[key] = lst
 
     def items(self) -> Iterable[tuple[bytes, list[bytes]]]:  # type: ignore[override]
@@ -147,13 +199,15 @@ class Headers(dict):  # type: ignore[type-arg]
         return headers_dict_to_raw(self)
 
     def to_unicode_dict(self) -> CaseInsensitiveDict:
-        """Return headers as a CaseInsensitiveDict with str keys
-        and str values. Multiple values are joined with ','.
-        """
+        warnings.warn(
+            "Headers.to_unicode_dict() is deprecated, use to_tuple_list() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return CaseInsensitiveDict(
             (
-                to_unicode(key, encoding=self.encoding),
-                to_unicode(b",".join(value), encoding=self.encoding),
+                to_unicode(key, encoding=self.encoding, errors="replace"),
+                to_unicode(b",".join(value), encoding=self.encoding, errors="replace"),
             )
             for key, value in self.items()
         )
@@ -162,9 +216,13 @@ class Headers(dict):  # type: ignore[type-arg]
         """Return headers as a list of ``(key, value)`` tuples.
 
         Multiple values are represented as multiple tuples with the same key.
+        Bytes that cannot be decoded are replaced with U+FFFD.
         """
         return [
-            (key.decode(self.encoding), value.decode(self.encoding))
+            (
+                key.decode(self.encoding, errors="replace"),
+                value.decode(self.encoding, errors="replace"),
+            )
             for key, values in self.items()
             for value in values
         ]

@@ -24,10 +24,12 @@ from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
-from tests.utils.feedexport import MyItem
+from tests.utils.feedexport import MyItem, crawl_items
 
 if TYPE_CHECKING:
     from os import PathLike
+
+    from tests.mockserver.http import MockServer
 
 
 def build_url(path: str | PathLike[str]) -> str:
@@ -38,7 +40,7 @@ def build_url(path: str | PathLike[str]) -> str:
 
 
 class TestBatchDeliveries(TestFeedExportBase):
-    _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
+    _file_mark = "_%(batch_time)s_%(batch_id)02d_"
 
     async def run_and_export(
         self, spider_cls: type[Spider], settings: dict[str, Any]
@@ -385,6 +387,36 @@ class TestBatchDeliveries(TestFeedExportBase):
                 assert got_batch == expected_batch
 
     @coroutine_test
+    async def test_batch_item_count_with_item_processor(self):
+        def split_foo(item):
+            for value in item["foo"].split(","):
+                yield {"foo": value}
+
+        items = [{"foo": "FOO,FOO1"}, {"foo": "FOO2"}]
+        formats = {
+            "json": [
+                b'[{"foo": "FOO"}]',
+                b'[{"foo": "FOO1"}]',
+                b'[{"foo": "FOO2"}]',
+            ],
+        }
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename() / "json" / self._file_mark: {
+                    "format": "json",
+                    "indent": None,
+                    "encoding": "utf-8",
+                    "batch_item_count": 1,
+                    "item_processor": split_foo,
+                },
+            },
+        }
+        data = await self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
+                assert got_batch == expected_batch
+
+    @coroutine_test
     async def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
@@ -424,8 +456,8 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
     @pytest.mark.requires_boto3
-    @inline_callbacks_test
-    def test_s3_export(self):
+    @coroutine_test
+    async def test_s3_export(self, mockserver: MockServer) -> None:
         bucket = "mybucket"
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -477,15 +509,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             },
         }
 
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        TestSpider.start_urls = [self.mockserver.url("/")]
-        crawler = get_crawler(TestSpider, settings)
-        yield crawler.crawl()
+        crawler = await crawl_items(mockserver, items, settings)
 
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs:

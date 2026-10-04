@@ -119,20 +119,16 @@ scrapy.Spider
        attributes in the new instance so they can be accessed later inside the
        spider's code.
 
-       .. versionchanged:: 2.11
+       The settings in ``crawler.settings`` can be modified in this method,
+       which is handy if you want to modify them based on arguments. As a
+       consequence, these settings aren't the final values as they can be
+       modified later by e.g. :ref:`add-ons <topics-addons>`. For the same
+       reason, most of the :class:`~scrapy.crawler.Crawler` attributes aren't
+       initialized at this point.
 
-           The settings in ``crawler.settings`` can now be modified in this
-           method, which is handy if you want to modify them based on
-           arguments. As a consequence, these settings aren't the final values
-           as they can be modified later by e.g. :ref:`add-ons
-           <topics-addons>`. For the same reason, most of the
-           :class:`~scrapy.crawler.Crawler` attributes aren't initialized at
-           this point.
-
-           The final settings and the initialized
-           :class:`~scrapy.crawler.Crawler` attributes are available in the
-           :meth:`start` method, handlers of the
-           :signal:`engine_started` signal and later.
+       The final settings and the initialized :class:`~scrapy.crawler.Crawler`
+       attributes are available in the :meth:`start` method, handlers of the
+       :signal:`engine_started` signal and later.
 
        :param crawler: crawler to which the spider will be bound
        :type crawler: :class:`~scrapy.crawler.Crawler` instance
@@ -625,101 +621,9 @@ a dictionary will be filled with it.
 XMLFeedSpider
 -------------
 
-.. class:: XMLFeedSpider
-
-    XMLFeedSpider is designed for parsing XML feeds by iterating through them by a
-    certain node name.  The iterator can be chosen from: ``iternodes``, ``xml``,
-    and ``html``.  It's recommended to use the ``iternodes`` iterator for
-    performance reasons, since the ``xml`` and ``html`` iterators generate the
-    whole DOM at once in order to parse it.  However, using ``html`` as the
-    iterator may be useful when parsing XML with bad markup.
-
-    To set the iterator and the tag name, you must define the following class
-    attributes:
-
-    .. attribute:: iterator
-
-        A string which defines the iterator to use. It can be either:
-
-           - ``'iternodes'`` - a fast iterator based on ``lxml``
-
-           - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds. It also parses the feed
-             with an HTML parser, which can silently mangle tags that HTML
-             treats as void elements, such as ``<link>``, dropping their
-             content and closing tag. Use ``xml`` or ``iternodes`` instead
-             for feeds affected by this.
-
-           - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds
-
-        It defaults to: ``'iternodes'``.
-
-    .. attribute:: itertag
-
-        A string with the name of the node (or element) to iterate in. Example:
-
-        .. code-block:: python
-
-            itertag = "product"
-
-    .. attribute:: namespaces
-
-        A list of ``(prefix, uri)`` tuples which define the namespaces
-        available in that document that will be processed with this spider. The
-        ``prefix`` and ``uri`` will be used to automatically register
-        namespaces using the
-        :meth:`~scrapy.Selector.register_namespace` method.
-
-        You can then specify nodes with namespaces in the :attr:`itertag`
-        attribute.
-
-        Example:
-
-        .. code-block:: python
-
-            from scrapy.spiders import XMLFeedSpider
-
-
-            class YourSpider(XMLFeedSpider):
-
-                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
-                itertag = "n:url"
-                # ...
-
-    Apart from these new attributes, this spider has the following overridable
-    methods too:
-
-    .. method:: adapt_response(response)
-
-        A method that receives the response as soon as it arrives from the spider
-        middleware, before the spider starts parsing it. It can be used to modify
-        the response body before parsing it. This method receives a response and
-        also returns a response (it could be the same or another one).
-
-    .. method:: parse_node(response, selector)
-
-        This method is called for the nodes matching the provided tag name
-        (``itertag``).  Receives the response and an
-        :class:`~scrapy.Selector` for each node.  Overriding this
-        method is mandatory. Otherwise, your spider won't work.  This method
-        must return an :ref:`item object <topics-items>`, a
-        :class:`~scrapy.Request` object, or an iterable containing any of
-        them.
-
-    .. method:: process_results(response, results)
-
-        This method is called for each result (item or request) returned by the
-        spider, and it's intended to perform any last time processing required
-        before returning the results to the framework core, for example setting the
-        item IDs. It receives a list of results and the response which originated
-        those results. It must return a list of results (items or requests).
-
-    .. warning:: Because of its internal implementation, you must explicitly set
-       callbacks for new requests when writing :class:`XMLFeedSpider`-based spiders;
-       unexpected behaviour can occur otherwise.
+.. autoclass:: XMLFeedSpider
+    :members:
+    :exclude-members: parse_nodes
 
 
 XMLFeedSpider example
@@ -759,32 +663,8 @@ prints them out, and stores some random data in an :class:`~scrapy.Item`.
 CSVFeedSpider
 -------------
 
-.. class:: CSVFeedSpider
-
-   This spider is very similar to the XMLFeedSpider, except that it iterates
-   over rows, instead of nodes. The method that gets called in each iteration
-   is :meth:`parse_row`.
-
-   .. attribute:: delimiter
-
-       A string with the separator character for each field in the CSV file
-       Defaults to ``','`` (comma).
-
-   .. attribute:: quotechar
-
-       A string with the enclosure character for each field in the CSV file
-       Defaults to ``'"'`` (quotation mark).
-
-   .. attribute:: headers
-
-       A list of the column names in the CSV file.
-
-   .. method:: parse_row(response, row)
-
-       Receives a response and a dict (representing each row) with a key for each
-       provided (or detected) header of the CSV file.  This spider also gives the
-       opportunity to override ``adapt_response`` and ``process_results`` methods
-       for pre- and post-processing purposes.
+.. autoclass:: CSVFeedSpider
+    :members:
 
 CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
@@ -820,121 +700,9 @@ Let's see an example similar to the previous one, but using a
 SitemapSpider
 -------------
 
-.. class:: SitemapSpider
-
-    SitemapSpider allows you to crawl a site by discovering the URLs using
-    `Sitemaps`_.
-
-    It supports nested sitemaps and discovering sitemap urls from
-    `robots.txt`_.
-
-    .. attribute:: sitemap_urls
-
-        A list of urls pointing to the sitemaps whose urls you want to crawl.
-
-        You can also point to a `robots.txt`_ and it will be parsed to extract
-        sitemap urls from it.
-
-    .. attribute:: sitemap_rules
-
-        A list of tuples ``(regex, callback)`` where:
-
-        * ``regex`` is a regular expression to match urls extracted from sitemaps.
-          ``regex`` can be either a str or a compiled regex object.
-
-        * callback is the callback to use for processing the urls that match
-          the regular expression. ``callback`` can be a string (indicating the
-          name of a spider method) or a callable.
-
-        For example:
-
-        .. code-block:: python
-
-            sitemap_rules = [("/product/", "parse_product")]
-
-        Rules are applied in order, and only the first one that matches will be
-        used.
-
-        If you omit this attribute, all urls found in sitemaps will be
-        processed with the ``parse`` callback.
-
-    .. attribute:: sitemap_follow
-
-        A list of regexes of sitemap that should be followed. This is only
-        for sites that use `Sitemap index files`_ that point to other sitemap
-        files.
-
-        By default, all sitemaps are followed.
-
-    .. attribute:: sitemap_alternate_links
-
-        Specifies if alternate links for one ``url`` should be followed. These
-        are links for the same website in another language passed within
-        the same ``url`` block.
-
-        For example:
-
-        .. code-block:: xml
-
-            <url>
-                <loc>http://example.com/</loc>
-                <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
-            </url>
-
-        With ``sitemap_alternate_links`` set, this would retrieve both URLs. With
-        ``sitemap_alternate_links`` disabled, only ``http://example.com/`` would be
-        retrieved.
-
-        Default is ``sitemap_alternate_links`` disabled.
-
-    .. method:: sitemap_filter(entries)
-
-        This is a filter function that could be overridden to select sitemap entries
-        based on their attributes.
-
-        For example:
-
-        .. code-block:: xml
-
-            <url>
-                <loc>http://example.com/</loc>
-                <lastmod>2005-01-01</lastmod>
-            </url>
-
-        We can define a ``sitemap_filter`` function to filter ``entries`` by date:
-
-        .. code-block:: python
-
-            from datetime import datetime
-            from scrapy.spiders import SitemapSpider
-
-
-            class FilteredSitemapSpider(SitemapSpider):
-                name = "filtered_sitemap_spider"
-                allowed_domains = ["example.com"]
-                sitemap_urls = ["http://example.com/sitemap.xml"]
-
-                def sitemap_filter(self, entries):
-                    for entry in entries:
-                        date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
-                        if date_time.year >= 2005:
-                            yield entry
-
-        This would retrieve only ``entries`` modified on 2005 and the following
-        years.
-
-        Entries are dict objects extracted from the sitemap document.
-        Usually, the key is the tag name and the value is the text inside it.
-
-        It's important to notice that:
-
-        - as the loc attribute is required, entries without this tag are discarded
-        - alternate links are stored in a list with the key ``alternate``
-          (see ``sitemap_alternate_links``)
-        - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
-
-        If you omit this method, all entries found in sitemaps will be
-        processed, observing other attributes and their settings.
+.. autoclass:: SitemapSpider
+    :members:
+    :exclude-members: start
 
 
 SitemapSpider examples
@@ -1023,7 +791,6 @@ Combine SitemapSpider with other sources of urls:
 
 .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
-.. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/

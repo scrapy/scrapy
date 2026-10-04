@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from scrapy.signals import request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy import Request
@@ -32,33 +32,33 @@ class SignalCatcherSpider(Spider):
         self.caught_times += 1
 
 
-@inline_callbacks_test
-def test_success(mockserver: MockServer):
+@coroutine_test
+async def test_success(mockserver: MockServer) -> None:
     crawler = get_crawler(SignalCatcherSpider)
-    yield crawler.crawl(mockserver.url("/status?n=200"))
+    await crawler.crawl_async(mockserver.url("/status?n=200"))
     assert isinstance(crawler.spider, SignalCatcherSpider)
     assert crawler.spider.caught_times == 1
 
 
-@inline_callbacks_test
-def test_timeout(mockserver: MockServer):
+@coroutine_test
+async def test_timeout(mockserver: MockServer) -> None:
     crawler = get_crawler(SignalCatcherSpider, {"DOWNLOAD_TIMEOUT": 0.1})
-    yield crawler.crawl(mockserver.url("/delay?n=0.2"))
+    await crawler.crawl_async(mockserver.url("/delay?n=0.2"))
     assert isinstance(crawler.spider, SignalCatcherSpider)
     assert crawler.spider.caught_times == 1
 
 
-@inline_callbacks_test
-def test_disconnect(mockserver: MockServer):
+@coroutine_test
+async def test_disconnect(mockserver: MockServer) -> None:
     crawler = get_crawler(SignalCatcherSpider)
-    yield crawler.crawl(mockserver.url("/drop"))
+    await crawler.crawl_async(mockserver.url("/drop"))
     assert isinstance(crawler.spider, SignalCatcherSpider)
     assert crawler.spider.caught_times == 1
 
 
-@inline_callbacks_test
-def test_noconnect():
+@coroutine_test
+async def test_noconnect() -> None:
     crawler = get_crawler(SignalCatcherSpider)
-    yield crawler.crawl("http://thereisdefinetelynosuchdomain.com")
+    await crawler.crawl_async("http://thereisdefinetelynosuchdomain.com")
     assert isinstance(crawler.spider, SignalCatcherSpider)
     assert crawler.spider.caught_times == 1

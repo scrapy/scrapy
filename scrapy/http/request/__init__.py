@@ -13,6 +13,8 @@ from typing import (
     Any,
     Concatenate,
     NoReturn,
+    NotRequired,
+    Self,
     TypeAlias,
     TypedDict,
     TypeVar,
@@ -32,9 +34,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
     from twisted.python.failure import Failure
-
-    # typing.NotRequired and typing.Self require Python 3.11
-    from typing_extensions import NotRequired, Self
 
     # circular import
     from scrapy.http import Response
@@ -423,7 +422,7 @@ class Request(object_ref):
                 if callable(self.errback)
                 else self.errback
             ),
-            "headers": dict(self.headers),
+            "headers": {k: list(v) for k, v in self.headers.items()},
         }
         for attr in self.attributes:
             d.setdefault(attr, getattr(self, attr))
@@ -445,4 +444,4 @@ def _find_method(obj: Any, func: Callable[..., Any]) -> str:
             # https://docs.python.org/3/reference/datamodel.html
             if obj_func.__func__ is func.__func__:
                 return name
-    raise ValueError(f"Function {func} is not an instance method in: {obj}")
+    raise ValueError(f"Function {func} is not an instance method in: {obj!r}")

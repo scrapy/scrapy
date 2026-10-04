@@ -22,7 +22,7 @@ class TestJsonEncoder:
         dt_naive = datetime.datetime(2010, 1, 2, 10, 11, 12)  # noqa: DTZ001
         dt_naives = "2010-01-02T10:11:12"
         dt_aware = datetime.datetime(
-            2010, 1, 2, 10, 11, 12, 133700, tzinfo=datetime.timezone.utc
+            2010, 1, 2, 10, 11, 12, 133700, tzinfo=datetime.UTC
         )
         dt_awares = "2010-01-02T10:11:12.133700+00:00"
         d = datetime.date(2010, 1, 2)

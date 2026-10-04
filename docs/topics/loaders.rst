@@ -183,7 +183,8 @@ processors are collected internally (in lists) and then passed to output
 processors to populate the fields.
 
 Last, but not least, itemloaders_ comes with some :ref:`commonly used
-processors <itemloaders:built-in-processors>` built-in for convenience.
+processors <itemloaders:built-in-processors>` built-in for convenience, and
+the libraries in :ref:`parsing-values` make good input processors.
 
 
 Declaring Item Loaders
