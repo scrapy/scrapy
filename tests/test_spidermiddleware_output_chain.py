@@ -540,13 +540,13 @@ class TestSpiderMiddleware:
 
     @coroutine_test
     async def test_download_error_errback_output(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
         """
         (6.1) The output of an errback called because a download failed goes
         through the process_spider_output chain, with None as the response.
         """
-        log6 = await self.crawl_log(DownloadErrorSpider, caplog)
+        log6 = await self.crawl_log(DownloadErrorSpider, caplog, mockserver)
         assert "Middleware: output {'from': 'errback'} with response None" in log6
         assert "'item_scraped_count': 1" in log6
         assert "Crawled (200)" in log6
@@ -554,13 +554,13 @@ class TestSpiderMiddleware:
 
     @coroutine_test
     async def test_download_error_errback_exception(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
         """
         (6.2) An exception from such an errback goes through the
         process_spider_exception chain.
         """
-        log6 = await self.crawl_log(DownloadErrorFailSpider, caplog)
+        log6 = await self.crawl_log(DownloadErrorFailSpider, caplog, mockserver)
         assert "Middleware: output {'from': 'errback'} with response None" in log6
         assert "Middleware: LookupError exception caught with response None" in log6
         assert "'item_scraped_count': 1" in log6
