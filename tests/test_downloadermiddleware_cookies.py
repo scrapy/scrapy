@@ -110,7 +110,7 @@ _EMPTY_DOMAIN_DROPPED = _Limitation(
     dropped=True,
 )
 _DOTLESS_DOMAIN_DROPPED = _Limitation(
-    "Cookies with a Domain attribute without dots are dropped (#6410)",
+    "Cookies with a Domain attribute without dots are dropped",
     dropped=True,
 )
 
@@ -255,7 +255,7 @@ def _cookie_domain_params() -> Iterable[ParameterSet]:
                         )
 
 
-_LOCAL_HOST_DROPPED = "Cookies for localhost and IP-address hosts are dropped (#6410)"
+_IPV6_HOST_DROPPED = "Cookies for IPv6 hosts are dropped"
 
 
 def _local_host_params() -> Iterable[ParameterSet]:
@@ -264,9 +264,14 @@ def _local_host_params() -> Iterable[ParameterSet]:
         ("ipv4", "127.0.0.1", "127.0.0.1"),
         ("ipv6", "[::1]", "::1"),
     ):
+        known: str | None
         for cookie_domain in (None, host_domain):
-            # Only IPv6 hosts also lose cookies without a Domain attribute.
-            known = cookie_domain is not None or host_id == "ipv6"
+            if host_id == "ipv6":
+                known = _IPV6_HOST_DROPPED
+            elif host_id == "localhost" and cookie_domain is not None:
+                known = _DOTLESS_DOMAIN_DROPPED.reason
+            else:
+                known = None
             for source in ("request", "response"):
                 yield pytest.param(
                     source,
@@ -274,9 +279,7 @@ def _local_host_params() -> Iterable[ParameterSet]:
                     cookie_domain,
                     id=f"{source}-{host_id}-{'self' if cookie_domain else 'unset'}",
                     marks=(
-                        [pytest.mark.xfail(strict=True, reason=_LOCAL_HOST_DROPPED)]
-                        if known
-                        else []
+                        [pytest.mark.xfail(strict=True, reason=known)] if known else []
                     ),
                 )
 
