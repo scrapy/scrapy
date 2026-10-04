@@ -1,43 +1,36 @@
 from __future__ import annotations
 
 import random
-import shutil
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from string import ascii_letters, digits
 from typing import IO, TYPE_CHECKING, Any
 
+import pytest
+
 import scrapy
 from scrapy import Spider
-from tests.mockserver.http import MockServer
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
+    from tests.mockserver.http import MockServer
+
 
 class TestFeedExportBase(ABC):
     mockserver: MockServer
+    temp_dir: Path
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, mockserver: MockServer, tmp_path: Path) -> None:
+        self.mockserver = mockserver
+        self.temp_dir = tmp_path
 
     def _random_temp_filename(self, inter_dir="") -> Path:
         chars = [random.choice(ascii_letters + digits) for _ in range(15)]
         filename = "".join(chars)
         return Path(self.temp_dir, inter_dir, filename)
-
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()  # pylint: disable=unnecessary-dunder-call
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    def setup_method(self):
-        self.temp_dir = tempfile.mkdtemp()
-
-    def teardown_method(self):
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     async def exported_data(
         self, items: Iterable[Any], settings: dict[str, Any]

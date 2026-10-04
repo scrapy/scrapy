@@ -13,17 +13,19 @@ dependencies = [
     "cryptography>=41.0.5",
     "cssselect>=1.2.0",
     "defusedxml>=0.7.1",
+    "formerly>=0.1.0",
     "itemadapter>=0.1.0",
-    "itemloaders>=1.0.1",
-    "lxml>=4.6.4",
+    "itemloaders>=1.0.5",
+    "lxml>=4.9.4",
     "packaging",
     "parsel>=1.8.1",
     "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=24.3.0",
-    "queuelib>=1.6.1",
+    "queuelib>=1.8.0",
     "service_identity>=24.2.0",
     "tldextract",
+    'typing-extensions>=4.5.0; python_version < "3.13"',
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
@@ -41,7 +43,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -56,7 +57,7 @@ classifiers = [
 license = "BSD-3-Clause"
 license-files = ["LICENSE", "AUTHORS"]
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
 maintainers = [{ name = "Pablo Hoffman", email = "pablo@pablohoffman.com" }]
 
@@ -69,17 +70,19 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
+clipboard = ["pyperclip>=1.8.0"]
 color = ["colorlog>=6.6.0"]
 gcs = ["google-cloud-storage>=1.30.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
-images = ["Pillow>=8.3.2"]
+images = ["Pillow>=9.2.0"]
 ipython = ["ipython>=8.15.0"]
+memusage = ["psutil>=5.9.0"]
 ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
 s3 = ["boto3>=1.20.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
-    "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+    "uvloop>=0.17.0; platform_system != 'Windows' and implementation_name != 'pypy'",
 ]
 
 [project.scripts]
@@ -144,8 +147,10 @@ module = [
     "brotlicffi",
     "google.*",
     "ipdb",
+    "psutil",
     "pydispatch.*",
     "pyftpdlib.*",
+    "pyperclip",
     "pytest_twisted",
     "robotexclusionrulesparser",
     "zope.interface.*",
@@ -224,10 +229,10 @@ disable = [
     "disallowed-name",
     "duplicate-code",  # https://github.com/pylint-dev/pylint/issues/214
     "fixme",
-    "inherit-non-class",  # false positives with create_deprecated_class()
+    "inherit-non-class",  # false positives with formerly.deprecated_class()
     "invalid-name",
     "invalid-overridden-method",
-    "isinstance-second-argument-not-valid-type",  # false positives with create_deprecated_class()
+    "isinstance-second-argument-not-valid-type",  # false positives with formerly.deprecated_class()
     "line-too-long",
     "logging-format-interpolation",
     "logging-fstring-interpolation",
@@ -274,7 +279,7 @@ disable = [
 # requires `pylint_per_file_ignores` plugin
 per-file-ignores = [
     # Extended list of ones that we may want to address, only for tests
-    "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unidiomatic-typecheck,unnecessary-dunder-call,used-before-assignment",
+    "tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unidiomatic-typecheck,unnecessary-dunder-call,used-before-assignment",
 ]
 
 [tool.pytest.ini_options]
@@ -290,6 +295,7 @@ markers = [
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
+    "requires_psutil: marks tests that need psutil",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
     "requires_internet: marks tests that need real Internet access",
     "walltime: marks benchmarks that need CodSpeed's walltime mode to be meaningful",

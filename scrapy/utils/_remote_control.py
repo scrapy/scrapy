@@ -7,14 +7,11 @@ import os
 import time
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, TypedDict
+from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
 
 from platformdirs import user_state_dir
 
 if TYPE_CHECKING:
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
-
     from scrapy.settings import BaseSettings
 
 logger = logging.getLogger(__name__)

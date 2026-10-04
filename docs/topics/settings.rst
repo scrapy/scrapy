@@ -401,12 +401,13 @@ is ``True``.
 Logging settings
 ----------------
 
-**Logging settings** are settings that configure the global root logging
-handler installed by :func:`~scrapy.utils.log.configure_logging`.
+**Logging settings** are settings that configure logging process-wide, mostly
+through the global root logging handler installed by
+:func:`~scrapy.utils.log.configure_logging`.
 
-These settings can be defined from a spider. However, because only 1 root
-logging handler is active per process, these settings cannot use a different
-value per spider when :ref:`running multiple spiders in the same process
+These settings can be defined from a spider. However, because logging
+configuration is global, these settings cannot use a different value per
+spider when :ref:`running multiple spiders in the same process
 <run-multiple-spiders>`.
 
 These settings are:
@@ -420,6 +421,7 @@ These settings are:
 -   :setting:`LOG_FORMAT`
 -   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
+-   :setting:`LOG_LEVELS`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -1143,6 +1145,19 @@ handler (without replacement), place this in your ``settings.py``:
     :ref:`security-local-resources`
 
 
+.. setting:: DOWNLOAD_HANDLERS_BY_NAME
+
+DOWNLOAD_HANDLERS_BY_NAME
+-------------------------
+
+.. versionadded:: VERSION
+
+Default: ``{}``
+
+A dict mapping names to :ref:`download handlers <topics-download-handlers>`
+that requests can ask for by name. See :ref:`download-handler-ids`.
+
+
 .. reqmeta:: download_slot
 .. setting:: DOWNLOAD_SLOTS
 
@@ -1323,6 +1338,10 @@ The class used to detect and filter duplicate requests.
 The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters based on the
 :setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
+On crawls large enough for the memory that
+:class:`~scrapy.dupefilters.RFPDupeFilter` uses to become a problem, set this
+setting to :class:`~scrapy.dupefilters.DiskDupeFilter` instead.
+
 To change how duplicates are checked, you can point :setting:`DUPEFILTER_CLASS`
 to a custom subclass of :class:`~scrapy.dupefilters.RFPDupeFilter` that
 overrides its ``__init__`` method to use a :ref:`different request
@@ -1394,6 +1413,8 @@ interface:
 .. autoclass:: scrapy.dupefilters.BaseDupeFilter
 
 .. autoclass:: scrapy.dupefilters.RFPDupeFilter
+
+.. autoclass:: scrapy.dupefilters.DiskDupeFilter
 
 
 .. setting:: DUPEFILTER_DEBUG
@@ -1745,7 +1766,9 @@ Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
 String for formatting log messages. Refer to the
 :ref:`Python logging documentation <logrecord-attributes>` for the whole
-list of available placeholders.
+list of available placeholders, plus ``%(spider)s`` for the name of the
+spider that triggered the log message, or ``"-"`` for messages not tied to
+a spider (see :ref:`topics-logging-from-spiders`).
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
@@ -1797,6 +1820,30 @@ Default: ``'DEBUG'``
 
 Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
 INFO, DEBUG. For more info see :ref:`topics-logging`.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
+.. setting:: LOG_LEVELS
+
+LOG_LEVELS
+----------
+
+Default: ``{}``
+
+.. versionadded:: VERSION
+
+Minimum level to log for specific loggers.
+
+It takes precedence over the levels that Scrapy sets by default::
+
+    {
+        "filelock": "ERROR",
+        "hpack": "ERROR",
+        "httpcore": "ERROR",
+        "httpx": "WARNING",
+        "scrapy": "DEBUG",
+        "twisted": "ERROR",
+    }
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 

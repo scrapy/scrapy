@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -23,9 +23,6 @@ from scrapy.utils.defer import _schedule_coro
 if TYPE_CHECKING:
     from twisted.internet.task import LoopingCall
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response

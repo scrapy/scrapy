@@ -215,4 +215,7 @@ Engine API
 ==========
 
 .. autoclass:: scrapy.core.engine.ExecutionEngine()
-   :members: needs_backout, running, scheduler
+   :members: needs_backout, running, scheduler, state
+
+.. autoclass:: scrapy.core.engine.EngineState
+   :members:

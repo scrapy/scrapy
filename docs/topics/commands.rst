@@ -217,6 +217,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`genrequest`
 * :command:`bench`
 
 Project-only commands:
@@ -631,6 +632,17 @@ Example usage::
     $ scrapy settings --get DOWNLOAD_DELAY
     0
 
+The settings of enabled :ref:`add-ons <topics-addons>` are taken into account.
+:ref:`Spider settings <spider-settings>` are only taken into account if you name
+a spider with ``--spider``::
+
+    $ scrapy settings --get DOWNLOAD_DELAY --spider myspider
+    2.0
+
+.. versionchanged:: VERSION
+   Add-on settings are now taken into account, and the ``--spider`` option was
+   added.
+
 .. command:: runspider
 
 runspider
@@ -658,6 +670,27 @@ version
 
 Prints the Scrapy version. If used with ``-v`` it also prints Python, Twisted
 and Platform info, which is useful for bug reports.
+
+.. command:: genrequest
+
+genrequest
+----------
+
+* Syntax: ``scrapy genrequest [curl command]``
+* Requires project: *no*
+
+.. versionadded:: VERSION
+
+Print the Python code of a :class:`~scrapy.Request` object equivalent to a
+`cURL <https://curl.se/>`_ command. If the curl command is not given as an
+argument, it is read from the system clipboard, which requires the
+``clipboard`` :ref:`extra <extras>`. If `ruff`_ is installed, it is used to
+format the output.
+
+Usage example::
+
+    $ scrapy genrequest 'curl -d title=hello https://httpbin.org/post'
+    Request(method="POST", url="https://httpbin.org/post", body="title=hello")
 
 .. command:: bench
 
@@ -794,6 +827,8 @@ and overriding specific methods. Here's what you need to know:
 For real examples, see the built-in Scrapy commands in the `scrapy/commands`_ directory.
 
 .. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
+
+.. _ruff: https://docs.astral.sh/ruff/
 
 .. autoclass:: scrapy.commands.ScrapyCommand
    :members:

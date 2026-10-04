@@ -304,6 +304,9 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, queue_dfd = slot.queue.popleft()
+            # Do this immediately so that following free_transfer_slots() calls
+            # account for this request.
+            slot.transferring.add(request)
             download_dfd = deferred_from_coro(
                 self._wait_for_download(slot, request, queue_dfd)
             )
@@ -325,7 +328,6 @@ class Downloader:
 
     async def _download(self, slot: Slot, request: Request) -> Response:
         # The order is very important for the following logic. Do not change!
-        slot.transferring.add(request)
         try:
             # 1. Download the response
             response: Response = await self.handlers.download_request_async(request)

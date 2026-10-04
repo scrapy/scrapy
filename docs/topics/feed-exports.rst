@@ -339,6 +339,50 @@ soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
 
+.. _topics-feed-storage-custom:
+
+Custom storage backends
+-----------------------
+
+To write your own storage backend, define a class that follows
+:class:`~scrapy.extensions.feedexport.FeedStorageProtocol` and assign it to a
+URI scheme through the :setting:`FEED_STORAGES` setting.
+
+.. autoclass:: scrapy.extensions.feedexport.FeedStorageProtocol(uri, *, feed_options=None)
+   :members:
+
+   .. attribute:: supported_modes
+      :type: frozenset[str]
+
+      Optional set of supported values of the ``mode`` :ref:`feed option
+      <feed-options>`, e.g. ``frozenset({"create", "overwrite"})``.
+
+      .. versionadded:: VERSION
+
+      Setting ``mode`` to an unsupported value raises an exception, which
+      prevents the crawl from running. A storage class that does not define
+      this attribute is assumed to predate the ``mode`` feed option, and
+      setting that option on a feed that uses it logs a warning about the
+      option being possibly ignored.
+
+      A storage class that declares support for ``"create"`` must enforce it
+      when writing the feed, ideally atomically, raising
+      :exc:`FileExistsError` if the target exists. Scrapy then handles that
+      file as described in :setting:`FEED_MODE`.
+
+If your storage backend blocks, subclass
+:class:`~scrapy.extensions.feedexport.BlockingFeedStorage` instead: it writes
+items into a temporary local file (see :ref:`delayed file delivery
+<delayed-file-delivery>`) and calls your ``_store_in_thread()`` method in a
+separate thread once the crawl is done, keeping the reactor free.
+
+.. autoclass:: scrapy.extensions.feedexport.BlockingFeedStorage
+   :members: _store_in_thread
+
+A storage backend receives a file. To send items to a service as they are
+scraped, write an :ref:`item pipeline <topics-item-pipeline>` instead.
+
+
 .. _item-filter:
 
 Item filtering
@@ -683,30 +727,7 @@ FEED_STORAGES
 Default: ``{}``
 
 A dict containing additional feed storage backends supported by your project.
-The keys are URI schemes and the values are paths to storage classes, which must
-follow this protocol:
-
-.. autoclass:: scrapy.extensions.feedexport.FeedStorageProtocol
-    :members:
-
-    .. attribute:: supported_modes
-        :type: frozenset[str]
-
-        Optional set of supported values of the ``mode`` :ref:`feed option
-        <feed-options>`, e.g. ``frozenset({"create", "overwrite"})``.
-
-        Setting ``mode`` to an unsupported value raises an exception, which
-        prevents the crawl from running. A storage class that does not define
-        this attribute is assumed to predate the ``mode`` feed option, and
-        setting that option on a feed that uses it logs a warning about the
-        option being possibly ignored.
-
-        A storage class that declares support for ``"create"`` must enforce it
-        when writing the feed, ideally atomically, raising
-        :exc:`FileExistsError` if the target exists. Scrapy then handles that
-        file as described in :setting:`FEED_MODE`.
-
-        .. versionadded:: VERSION
+The keys are URI schemes and the values are paths to storage classes.
 
 .. setting:: FEED_STORAGE_FTP_ACTIVE
 
@@ -751,10 +772,11 @@ Default:
         "ftps": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
-A dict containing the built-in feed storage backends supported by Scrapy. You
-can disable any of these backends by assigning ``None`` to their URI scheme in
-:setting:`FEED_STORAGES`. E.g., to disable the built-in FTP storage backend
-(without replacement), place this in your ``settings.py``:
+A dict containing the built-in feed storage backends supported by Scrapy, see
+:ref:`feed-storage-classes`. You can disable any of these backends by assigning
+``None`` to their URI scheme in :setting:`FEED_STORAGES`. E.g., to disable the
+built-in FTP storage backend (without replacement), place this in your
+``settings.py``:
 
 .. code-block:: python
 
@@ -913,6 +935,29 @@ source spider in the feed URI:
 #.  Use ``%(spider_name)s`` in your feed URI::
 
         scrapy crawl <spider_name> -o "%(spider_name)s.jsonl"
+
+
+.. _feed-storage-classes:
+
+Storage backend classes
+=======================
+
+These are the classes that :setting:`FEED_STORAGES_BASE` assigns to the
+built-in URI schemes.
+
+.. currentmodule:: scrapy.extensions.feedexport
+
+.. autoclass:: FileFeedStorage
+
+.. autoclass:: FTPFeedStorage
+
+.. autoclass:: GCSFeedStorage
+
+.. autoclass:: S3FeedStorage
+
+.. autoclass:: StdoutFeedStorage
+
+.. currentmodule:: None
 
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
