@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any
@@ -14,15 +13,14 @@ from scrapy.exporters import JsonLinesItemExporter
 from scrapy.extensions.feedexport import FileFeedStorage
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.test import get_crawler
-from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test
-from tests.utils.feedexport import path_to_url, printf_escape
+from tests.utils.feedexport import PARSERS, export_by_path, unique_path
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
 
     from scrapy import Spider
+    from tests.mockserver.http import MockServer
 
 
 async def suspend() -> None:
@@ -107,54 +105,36 @@ class AsyncJsonLinesItemExporter(CallTracker, JsonLinesItemExporter):
             super().finish_exporting()
 
 
-class TestAsyncFeedExport(TestFeedExportBase):
+class TestAsyncFeedExport:
     items: list[dict[str, Any]] = [{"foo": f"bar{index}"} for index in range(10)]
 
-    async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
-    ) -> dict[str, bytes | None]:
-        """Run spider with specified settings; return exported data by path."""
-        feeds = settings["FEEDS"]
-        settings["FEEDS"] = {
-            printf_escape(path_to_url(file_path)): feed_options
-            for file_path, feed_options in feeds.items()
-        }
-        try:
-            spider_cls.start_urls = [self.mockserver.url("/")]
-            crawler = get_crawler(spider_cls, settings)
-            await crawler.crawl_async()
-            return {
-                str(file_path): (
-                    Path(file_path).read_bytes() if Path(file_path).exists() else None
-                )
-                for file_path in feeds
-            }
-        finally:
-            for file_path in feeds:
-                Path(file_path).unlink(missing_ok=True)
-
     async def _export(
-        self, items: list[dict[str, Any]], settings: dict[str, Any]
-    ) -> bytes | None:
-        path = self._random_temp_filename()
-        settings["FEEDS"] = {path: {"format": "jl"}}
-        data: dict[str, bytes | None] = await self.exported_data(items, settings)
-        return data[str(path)]
+        self,
+        mockserver: MockServer,
+        tmp_path: Path,
+        items: list[dict[str, Any]],
+        settings: dict[str, Any],
+    ) -> bytes:
+        path = unique_path(tmp_path)
+        settings = {**settings, "FEEDS": {path: {"format": "jl"}}}
+        return (await export_by_path(mockserver, items, settings))[path]
 
     @staticmethod
     def _sorted(items: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
         return sorted(items, key=lambda item: item["foo"])
 
-    def _parse_jsonlines(self, data: bytes | None) -> list[dict[str, Any]]:
-        assert data is not None
+    def _parse_jsonlines(self, data: bytes) -> list[dict[str, Any]]:
         # Items are exported in scraping completion order, which is arbitrary.
-        return self._sorted(json.loads(line) for line in data.splitlines())
+        return self._sorted(PARSERS["jsonlines"](data))
 
     @coroutine_test
-    async def test_storage(self) -> None:
+    async def test_storage(self, mockserver: MockServer, tmp_path: Path) -> None:
         CallTracker.reset()
         data = await self._export(
-            self.items, {"FEED_STORAGES": {"file": AsyncFeedStorage}}
+            mockserver,
+            tmp_path,
+            self.items,
+            {"FEED_STORAGES": {"file": AsyncFeedStorage}},
         )
         assert CallTracker.calls == {
             "AsyncFeedStorage.open": 1,
@@ -163,9 +143,13 @@ class TestAsyncFeedExport(TestFeedExportBase):
         assert self._parse_jsonlines(data) == self._sorted(self.items)
 
     @coroutine_test
-    async def test_storage_no_items(self) -> None:
+    async def test_storage_no_items(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         CallTracker.reset()
         data = await self._export(
+            mockserver,
+            tmp_path,
             [],
             {
                 "FEED_STORAGES": {"file": AsyncFeedStorage},
@@ -179,17 +163,25 @@ class TestAsyncFeedExport(TestFeedExportBase):
         assert data == b""
 
     @coroutine_test
-    async def test_storage_deferred_store(self) -> None:
+    async def test_storage_deferred_store(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         data = await self._export(
-            self.items, {"FEED_STORAGES": {"file": DeferredFeedStorage}}
+            mockserver,
+            tmp_path,
+            self.items,
+            {"FEED_STORAGES": {"file": DeferredFeedStorage}},
         )
         assert self._parse_jsonlines(data) == self._sorted(self.items)
 
     @coroutine_test
-    async def test_exporter(self) -> None:
+    async def test_exporter(self, mockserver: MockServer, tmp_path: Path) -> None:
         CallTracker.reset()
         data = await self._export(
-            self.items, {"FEED_EXPORTERS": {"jl": AsyncJsonLinesItemExporter}}
+            mockserver,
+            tmp_path,
+            self.items,
+            {"FEED_EXPORTERS": {"jl": AsyncJsonLinesItemExporter}},
         )
         assert CallTracker.calls == {
             "AsyncJsonLinesItemExporter.start_exporting": 1,
@@ -199,9 +191,13 @@ class TestAsyncFeedExport(TestFeedExportBase):
         assert self._parse_jsonlines(data) == self._sorted(self.items)
 
     @coroutine_test
-    async def test_exporter_no_items(self) -> None:
+    async def test_exporter_no_items(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         CallTracker.reset()
         data = await self._export(
+            mockserver,
+            tmp_path,
             [],
             {
                 "FEED_EXPORTERS": {"jl": AsyncJsonLinesItemExporter},
@@ -215,12 +211,16 @@ class TestAsyncFeedExport(TestFeedExportBase):
         assert data == b""
 
     @coroutine_test
-    async def test_calls_are_serialized(self) -> None:
+    async def test_calls_are_serialized(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         """Item export calls never overlap, even though items are scraped
         concurrently, so that components that keep state do not need to support
         concurrent calls."""
         CallTracker.reset()
         await self._export(
+            mockserver,
+            tmp_path,
             self.items,
             {
                 "FEED_STORAGES": {"file": AsyncFeedStorage},
