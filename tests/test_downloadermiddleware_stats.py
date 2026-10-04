@@ -40,6 +40,27 @@ class TestDownloaderStats:
         self.mw.process_response(self.req, self.res)
         self.assertStatsEqual("downloader/response_count", 1)
 
+    @pytest.mark.parametrize(
+        ("headers", "raw_response"),
+        [
+            ({}, b"HTTP/1.1 200 OK\r\n\r\nbody"),
+            ({"A": "1"}, b"HTTP/1.1 200 OK\r\nA: 1\r\n\r\nbody"),
+            (
+                [("Set-Cookie", "a=1"), ("Set-Cookie", "b=2")],
+                b"HTTP/1.1 200 OK\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nbody",
+            ),
+            ({"A": "1", "B": None}, b"HTTP/1.1 200 OK\r\nA: 1\r\n\r\nbody"),
+        ],
+    )
+    def test_response_bytes(
+        self,
+        headers: dict[str, str | None] | list[tuple[str, str]],
+        raw_response: bytes,
+    ) -> None:
+        res = Response("http://scrapytest.org", headers=headers, body=b"body")
+        self.mw.process_response(self.req, res)
+        self.assertStatsEqual("downloader/response_bytes", len(raw_response))
+
     def test_process_exception(self) -> None:
         self.mw.process_exception(self.req, MyException())
         self.assertStatsEqual("downloader/exception_count", 1)

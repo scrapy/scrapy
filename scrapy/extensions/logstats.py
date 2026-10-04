@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -9,9 +9,6 @@ from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 
 if TYPE_CHECKING:
     from twisted.internet.task import LoopingCall
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
@@ -30,7 +27,7 @@ class LogStats:
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: AsyncioLoopingCall | LoopingCall | None = None
+        self.task: AsyncioLoopingCall[[Spider], None] | LoopingCall | None = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

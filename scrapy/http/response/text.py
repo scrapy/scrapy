@@ -8,6 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import json
+import weakref
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
@@ -69,6 +70,13 @@ class TextResponse(Response):
                     f"{type(self).__name__} has no encoding"
                 )
             self._body = body.encode(self._encoding)
+            # Keep body as text only if decoding _body gives it back
+            # unchanged. html_to_unicode() may resolve the encoding to
+            # another codec (e.g. latin-1 to cp1252) and strips a BOM.
+            if resolve_encoding(self._encoding) == "utf-8" and not body.startswith(
+                "\ufeff"
+            ):
+                self._cached_ubody = body
         else:
             super()._set_body(body)
 
@@ -163,14 +171,14 @@ class TextResponse(Response):
             # circular import
             from scrapy.selector import Selector  # noqa: PLC0415
 
-            self._cached_selector = Selector(self)
+            selector = Selector(self)
+            # The weak reference lets the response be freed as soon as nothing
+            # else refers to it.
+            selector._response = weakref.ref(self)
+            self._cached_selector = selector
         return self._cached_selector
 
     def jmespath(self, query: str, **kwargs: Any) -> SelectorList:
-        if not hasattr(self.selector, "jmespath"):
-            raise AttributeError(
-                "Please install parsel >= 1.8.1 to get jmespath support"
-            )
         return cast("SelectorList", self.selector.jmespath(query, **kwargs))
 
     def xpath(self, query: str, **kwargs: Any) -> SelectorList:

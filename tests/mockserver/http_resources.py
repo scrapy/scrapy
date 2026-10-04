@@ -34,6 +34,7 @@ def getarg(
     default: Any = None,
     type_: Callable[[bytes], Any] | None = None,
 ) -> Any:
+    assert request.args is not None
     if name in request.args:
         value = request.args[name][0]
         if type_ is not None:
@@ -163,6 +164,7 @@ class Follow(LeafResource):
 
     def renderRequest(self, request: Request, nlist: Sequence[int]) -> None:
         s = """<html> <head></head> <body>"""
+        assert request.args is not None
         args = request.args.copy()
         for nl in nlist:
             args[b"n"] = [to_bytes(str(nl))]
@@ -271,7 +273,9 @@ class Echo(LeafResource):
         assert request.content
         output = {
             "headers": {
-                to_unicode(k): [to_unicode(v) for v in vs]
+                to_unicode(k, errors="surrogateescape"): [
+                    to_unicode(v, errors="surrogateescape") for v in vs
+                ]
                 for k, vs in request.requestHeaders.getAllRawHeaders()
             },
             "body": to_unicode(request.content.read()),
@@ -442,7 +446,10 @@ class ResponseHeadersResource(BaseResource):
         assert request.content
         body = json.loads(request.content.read().decode())
         for header_name, header_value in body.items():
-            request.responseHeaders.setRawHeaders(header_name, [header_value])
+            # surrogateescape lets tests send bytes that are not valid UTF-8
+            request.responseHeaders.setRawHeaders(
+                header_name, [header_value.encode("utf-8", "surrogateescape")]
+            )
         return json.dumps(body).encode("utf-8")
 
 
@@ -450,6 +457,7 @@ class Compress(BaseResource):
     """Compress the data sent in the request url params and set Content-Encoding header"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         data = request.args[b"data"][0]
 
         accept_encoding_header = request.getHeader(b"accept-encoding")
@@ -468,6 +476,7 @@ class SetCookie(BaseResource):
     """Return a response with a Set-Cookie header for each request url parameter"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         for cookie_name, cookie_values in request.args.items():
             for cookie_value in cookie_values:
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()

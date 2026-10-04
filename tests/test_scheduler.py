@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
 
 
 class MockCrawler(Crawler):
-    def __init__(self, priority_queue_cls: str, jobdir: Path | None):
+    def __init__(self, priority_queue_cls: str, jobdir: Path | None, **settings: Any):
         settings = {
             "SCHEDULER_DEBUG": False,
             "SCHEDULER_DISK_QUEUE": "scrapy.squeues.PickleLifoDiskQueue",
@@ -36,6 +37,7 @@ class MockCrawler(Crawler):
             "SCHEDULER_PRIORITY_QUEUE": priority_queue_cls,
             "JOBDIR": str(jobdir) if jobdir is not None else None,
             "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+            **settings,
         }
         super().__init__(Spider, settings)
         self.engine = Mock(downloader=MockDownloader())
@@ -44,9 +46,9 @@ class MockCrawler(Crawler):
 
 @asynccontextmanager
 async def create_scheduler(
-    priority_queue_cls: str, jobdir: Path | None
+    priority_queue_cls: str, jobdir: Path | None, **settings: Any
 ) -> AsyncGenerator[Scheduler]:
-    mock_crawler = MockCrawler(priority_queue_cls, jobdir)
+    mock_crawler = MockCrawler(priority_queue_cls, jobdir, **settings)
     scheduler = build_from_crawler(Scheduler, mock_crawler)
     spider = Spider.from_crawler(mock_crawler, name="spider")
     await ensure_awaitable(scheduler.open(spider))
@@ -70,6 +72,11 @@ _PRIORITIES = [
 _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
 
 
+def _active_json(jobdir: Path) -> Any:
+    path = jobdir / "requests.queue" / "active.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 class TestSchedulerBase(ABC):
     reopen = False
 
@@ -83,9 +90,9 @@ class TestSchedulerBase(ABC):
         return None
 
     def create_scheduler(
-        self, jobdir: Path | None
+        self, jobdir: Path | None, **settings: Any
     ) -> AbstractAsyncContextManager[Scheduler]:
-        return create_scheduler(self.priority_queue_cls, jobdir)
+        return create_scheduler(self.priority_queue_cls, jobdir, **settings)
 
     @asynccontextmanager
     async def create_scheduler_for_assertions(
@@ -165,6 +172,42 @@ class TestSchedulerInMemory(TestSchedulerInMemoryBase):
 
 class TestSchedulerOnDisk(TestSchedulerOnDiskBase):
     priority_queue_cls = "scrapy.pqueues.ScrapyPriorityQueue"
+
+    @coroutine_test
+    async def test_active_json(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        path = jobdir / "requests.queue" / "active.json"
+        async with self.create_scheduler(jobdir) as scheduler:
+            for url, priority in _PRIORITIES:
+                scheduler.enqueue_request(Request(url, priority=priority))
+            assert not path.exists()
+        assert _active_json(jobdir) == [-2, -1, 0, 1, 2]
+
+    @coroutine_test
+    async def test_active_json_sync_every(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        async with self.create_scheduler(jobdir, JOBDIR_SYNC_EVERY=1) as scheduler:
+            for url, priority in _PRIORITIES:
+                scheduler.enqueue_request(Request(url, priority=priority))
+            assert _active_json(jobdir) == [-2, -1, 0, 1, 2]
+            scheduler.next_request()
+            assert _active_json(jobdir) == [-1, 0, 1, 2]
+
+    @coroutine_test
+    async def test_active_json_sync_window(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        path = jobdir / "requests.queue" / "active.json"
+        async with self.create_scheduler(jobdir, JOBDIR_SYNC_EVERY=2) as scheduler:
+            scheduler.enqueue_request(Request("http://foo.com/a", priority=-2))
+            assert not path.exists()
+            scheduler.enqueue_request(Request("http://foo.com/b", priority=1))
+            assert _active_json(jobdir) == [-1, 2]
+            scheduler.enqueue_request(Request("http://foo.com/c", priority=0))
+            assert _active_json(jobdir) == [-1, 2]
+            scheduler.enqueue_request(Request("http://foo.com/d", priority=1))
+            assert _active_json(jobdir) == [-1, 2]
+            scheduler.enqueue_request(Request("http://foo.com/e", priority=2))
+            assert _active_json(jobdir) == [-2, -1, 0, 2]
 
 
 _URLS_WITH_SLOTS = [
@@ -275,6 +318,25 @@ class TestSchedulerWithDownloaderAwareOnDisk(
     DownloaderAwareSchedulerTestMixin, TestSchedulerOnDiskBase
 ):
     reopen = True
+
+    @coroutine_test
+    async def test_active_json_sync_every(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        async with self.create_scheduler(jobdir, JOBDIR_SYNC_EVERY=1) as scheduler:
+
+            def enqueue(slot: str, priority: int) -> None:
+                request = Request(f"http://foo.com/{slot}{priority}", priority=priority)
+                request.meta[Downloader.DOWNLOAD_SLOT] = slot
+                scheduler.enqueue_request(request)
+
+            enqueue("a", 1)
+            assert _active_json(jobdir) == {"a": [-1]}
+            enqueue("a", 2)
+            assert _active_json(jobdir) == {"a": [-2, -1]}
+            enqueue("b", 1)
+            assert _active_json(jobdir) == {"a": [-2, -1], "b": [-1]}
+            scheduler.next_request()
+            assert _active_json(jobdir) == {"a": [-1], "b": [-1]}
 
 
 class StartUrlsSpider(Spider):

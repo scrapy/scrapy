@@ -14,7 +14,7 @@ and what data they extract from the web pages you're trying to scrape. It
 allows you to interactively test your expressions while you're writing your
 spider, without having to run the spider to test every change.
 
-Once you get familiarized with the Scrapy shell, you'll see that it's an
+Once you become familiar with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
 .. _shell-config:
@@ -33,11 +33,10 @@ output, and more.
 Scrapy also has support for `bpython`_ via the :ref:`bpython <extras>` extra,
 and will try to use it where neither ptpython nor IPython is available.
 
-Through Scrapy's settings you can configure it to use any one of
-``ptpython``, ``ipython``, ``bpython`` or the standard ``python`` shell,
-regardless of which are installed. This is done by setting the
-``SCRAPY_PYTHON_SHELL`` environment variable; or by defining it in your
-:ref:`scrapy.cfg <topics-config-settings>`:
+Through Scrapy's settings you can configure it to use any one of ``ptpython``,
+``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
+are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
+variable or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`:
 
 .. code-block:: ini
 
