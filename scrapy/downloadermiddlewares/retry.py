@@ -9,8 +9,8 @@ RETRY_HTTP_CODES - which HTTP response codes to retry
 
 from __future__ import annotations
 
-from logging import Logger, getLevelName, getLogger
-from typing import TYPE_CHECKING
+from logging import Logger, getLevelNamesMapping, getLogger
+from typing import TYPE_CHECKING, Self
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg
@@ -19,9 +19,6 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     import scrapy
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -108,7 +105,7 @@ def get_retry_request(
         )
         new_request: Request = request.copy()
         new_request.meta["retry_times"] = retry_times
-        new_request.dont_filter = True
+        new_request.meta["skip_dupefilter_once"] = True
         if priority_adjust is None:
             priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
         new_request.priority = request.priority + priority_adjust
@@ -124,11 +121,12 @@ def get_retry_request(
     if give_up_log_level is None:
         give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
     if isinstance(give_up_log_level, str):
-        level = getLevelName(give_up_log_level)
-        if not isinstance(level, int):
+        level = getLevelNamesMapping().get(give_up_log_level)
+        if level is None:
             raise ValueError(f"Invalid give-up log level: {give_up_log_level!r}")
         give_up_log_level = level
     stats.inc_value(f"{stats_base_key}/max_reached")
+    assert give_up_log_level is not None
     logger.log(
         give_up_log_level,
         "Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",

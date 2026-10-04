@@ -9,7 +9,7 @@ from contextlib import suppress
 from functools import partial
 from io import BytesIO
 from time import monotonic
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
@@ -62,7 +62,7 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.url import add_http_if_no_scheme
+from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -70,9 +70,6 @@ if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
     from twisted.web._newclient import Request as TxRequest
-
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
 
@@ -236,9 +233,9 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         respm = _TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
-            sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
+            sslOptions = self._contextFactory.creatorForNetloc(
                 self._tunneledHost,  # type: ignore[arg-type]
-                self._tunneledPort,
+                self._tunneledPort,  # type: ignore[call-arg,misc]
             )
             self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
@@ -456,7 +453,7 @@ class _ScrapyAgent:
         bindaddress = normalize_bind_address(bindaddress)
         proxy = request.meta.get("proxy")
         if proxy:
-            proxy = add_http_if_no_scheme(proxy)
+            proxy = _add_http_if_no_scheme(proxy)
             proxy_parsed = urlparse(proxy)
             proxy_host = proxy_parsed.hostname
             proxy_port = proxy_parsed.port

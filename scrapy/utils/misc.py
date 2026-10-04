@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overl
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
-from scrapy.utils.datatypes import LocalWeakReferencedCache
+from scrapy.utils._datatypes import LocalWeakReferencedCache
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -30,6 +30,7 @@ _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
 _ITER_T = TypeVar("_ITER_T", bound=dict[Any, Any] | Item | str | bytes)
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
+_CallableT = TypeVar("_CallableT", bound="Callable[..., Any]")
 _P = ParamSpec("_P")
 
 
@@ -54,6 +55,12 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     return [arg]
 
 
+@overload
+def load_object(path: str) -> Any: ...
+@overload
+def load_object(path: _CallableT) -> _CallableT: ...
+@overload
+def load_object(path: str | Callable[..., Any]) -> Any: ...
 def load_object(path: str | Callable[..., Any]) -> Any:
     """Load an object given its absolute object path, and return it.
 

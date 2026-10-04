@@ -40,7 +40,7 @@ def test_load_object_exceptions() -> None:
     with pytest.raises(NameError):
         load_object("scrapy.utils.misc.load_object999")
     with pytest.raises(TypeError):
-        load_object({})  # type: ignore[arg-type]
+        load_object({})  # type: ignore[call-overload]
 
 
 def test_walk_modules() -> None:
@@ -148,13 +148,13 @@ def test_build_from_crawler() -> None:
         build_from_crawler(m, crawler, *args, **kwargs)
 
 
-def test_set_environ() -> None:
+def test_set_environ(monkeypatch: pytest.MonkeyPatch) -> None:
     assert os.environ.get("some_test_environ") is None
     with set_environ(some_test_environ="test_value"):
         assert os.environ.get("some_test_environ") == "test_value"
     assert os.environ.get("some_test_environ") is None
 
-    os.environ["some_test_environ"] = "test"
+    monkeypatch.setenv("some_test_environ", "test")
     assert os.environ.get("some_test_environ") == "test"
     with set_environ(some_test_environ="test_value"):
         assert os.environ.get("some_test_environ") == "test_value"

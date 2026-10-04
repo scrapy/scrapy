@@ -46,7 +46,7 @@ ScrapeFunc: TypeAlias = Callable[
 ]
 
 
-class SpiderMiddlewareManager(MiddlewareManager):
+class SpiderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstract-method
     component_name = "spider middleware"
 
     @classmethod
@@ -155,7 +155,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
         # offering it to those middlewares again.
         with suppress(AttributeError):
             exception._spidermw_unhandled = True  # type: ignore[attr-defined]
-        raise exception
+        # The traceback of the exception includes this frame, so this local
+        # variable would keep them in a reference cycle, and with them the
+        # response.
+        try:
+            raise exception
+        finally:
+            del exception
 
     def _process_spider_output(
         self,

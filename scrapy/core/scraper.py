@@ -59,6 +59,22 @@ _T = TypeVar("_T")
 QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
 
 
+def _set_parent_id(output: Iterable[_T], parent_id: int) -> Iterable[_T]:
+    for o in output:
+        if isinstance(o, Request) and o.parent_id is None:
+            o.parent_id = parent_id
+        yield o
+
+
+async def _aset_parent_id(
+    output: AsyncIterator[_T], parent_id: int
+) -> AsyncIterator[_T]:
+    async for o in output:
+        if isinstance(o, Request) and o.parent_id is None:
+            o.parent_id = parent_id
+        yield o
+
+
 class Slot:
     """Scraper slot (one per running spider)"""
 
@@ -121,7 +137,7 @@ class Scraper:
         ]:
             self._check_deprecated_itemproc_method(method)
 
-        self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
+        self.concurrent_items: int = max(1, crawler.settings.getint("CONCURRENT_ITEMS"))
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
         self.logformatter: LogFormatter = crawler.logformatter
@@ -227,10 +243,9 @@ class Scraper:
         try:
             yield dfd  # fired in _wait_for_processing()
         except Exception:
-            logger.error(
+            logger.exception(
                 "Scraper bug processing %(request)s",
                 {"request": request},
-                exc_info=True,
                 extra={"spider": self.crawler.spider},
             )
         finally:
@@ -262,6 +277,14 @@ class Scraper:
                 self.handle_spider_error(Failure(), request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
+            return
+
+        if result.check(CloseSpider):
+            exc = result.value
+            assert isinstance(exc, CloseSpider)  # typing
+            _schedule_coro(
+                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+            )
             return
 
         try:
@@ -321,6 +344,7 @@ class Scraper:
             if getattr(result, "request", None) is None:
                 result.request = request
             assert result.request
+            parent_id = result.request.id
             callback = result.request.callback or self.crawler.spider._parse
             warn_on_generator_with_return_value(self.crawler.spider, callback)
             output = callback(result, **result.request.cb_kwargs)
@@ -334,6 +358,7 @@ class Scraper:
         else:  # result is a Failure
             # TODO: properly type adding this attribute to a Failure
             result.request = request  # type: ignore[attr-defined]
+            parent_id = request.id
             if not request.errback:
                 result.raiseException()
             warn_on_generator_with_return_value(self.crawler.spider, request.errback)
@@ -349,7 +374,10 @@ class Scraper:
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
-        return await ensure_awaitable(iterate_spider_output(output))
+        output = await ensure_awaitable(iterate_spider_output(output))
+        if isinstance(output, AsyncIterator):
+            return _aset_parent_id(output, parent_id)
+        return _set_parent_id(output, parent_id)
 
     def handle_spider_error(
         self,
@@ -362,7 +390,9 @@ class Scraper:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+                self.crawler.engine.close_spider_async(
+                    reason=exc.reason or "cancelled", error=exc.error
+                )
             )
             return
         logkws = self.logformatter.spider_error(
