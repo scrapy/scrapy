@@ -4,12 +4,9 @@ from __future__ import annotations
 
 import socket
 import threading
-from typing import TYPE_CHECKING
+from typing import Self
 
 from scrapy.utils.asyncio import sleep
-
-if TYPE_CHECKING:
-    from typing import Self
 
 
 class StallingProxyConnection:
