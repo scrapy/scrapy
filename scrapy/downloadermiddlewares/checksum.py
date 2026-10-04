@@ -7,8 +7,7 @@ from scrapy.downloadermiddlewares.retry import get_retry_request
 from scrapy.exceptions import ChecksumError
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from typing import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
