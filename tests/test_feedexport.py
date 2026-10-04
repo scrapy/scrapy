@@ -32,13 +32,15 @@ from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.utils.bases.feedexport import TestFeedExportBase
-from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.decorators import coroutine_test
 from tests.utils.feedexport import (
     MyItem,
     MyItem2,
     crawl_items,
+    export_by_format,
     path_to_url,
     printf_escape,
+    unique_path,
 )
 
 if TYPE_CHECKING:
@@ -316,25 +318,29 @@ class TestFeedExport(TestFeedExportBase):
         result = self._load_until_eof(data["marshal"], load_func=marshal.load)
         assert result == expected
 
-    @inline_callbacks_test
-    def test_stats_file_success(self):
+    @coroutine_test
+    async def test_stats_file_success(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEEDS": {
-                printf_escape(path_to_url(str(self._random_temp_filename()))): {
+                printf_escape(path_to_url(str(unique_path(tmp_path)))): {
                     "format": "json",
                 }
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        yield crawler.crawl(mockserver=self.mockserver)
+        await crawler.crawl_async(mockserver=mockserver)
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
 
-    @inline_callbacks_test
-    def test_stats_file_failed(self):
+    @coroutine_test
+    async def test_stats_file_failed(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEEDS": {
-                printf_escape(path_to_url(str(self._random_temp_filename()))): {
+                printf_escape(path_to_url(str(unique_path(tmp_path)))): {
                     "format": "json",
                 }
             },
@@ -349,15 +355,17 @@ class TestFeedExport(TestFeedExportBase):
             "scrapy.extensions.feedexport.FileFeedStorage.store",
             side_effect=store,
         ):
-            yield crawler.crawl(mockserver=self.mockserver)
+            await crawler.crawl_async(mockserver=mockserver)
         assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/failed_count/FileFeedStorage") == 1
 
-    @inline_callbacks_test
-    def test_stats_multiple_file(self):
+    @coroutine_test
+    async def test_stats_multiple_file(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEEDS": {
-                printf_escape(path_to_url(str(self._random_temp_filename()))): {
+                printf_escape(path_to_url(str(unique_path(tmp_path)))): {
                     "format": "json",
                 },
                 "stdout:": {
@@ -366,7 +374,7 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        yield crawler.crawl(mockserver=self.mockserver)
+        await crawler.crawl_async(mockserver=mockserver)
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert "feedexport/success_count/StdoutFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
@@ -456,25 +464,29 @@ class TestFeedExport(TestFeedExportBase):
         assert files[0].suffix == ".json"
 
     @coroutine_test
-    async def test_export_no_items_not_store_empty(self):
+    async def test_export_no_items_not_store_empty(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename(): {"format": fmt},
+                    unique_path(tmp_path): {"format": fmt},
                 },
                 "FEED_STORE_EMPTY": False,
             }
-            data = await self.exported_no_data(settings)
+            data = await export_by_format(mockserver, [], settings)
             assert data[fmt] is None
 
     @coroutine_test
-    async def test_start_finish_exporting_items(self):
+    async def test_start_finish_exporting_items(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
+                unique_path(tmp_path): {"format": "json"},
             },
             "FEED_EXPORT_INDENT": None,
         }
@@ -483,16 +495,18 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await export_by_format(mockserver, items, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
-    async def test_start_finish_exporting_no_items(self):
+    async def test_start_finish_exporting_no_items(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items: list[Any] = []
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
+                unique_path(tmp_path): {"format": "json"},
             },
             "FEED_EXPORT_INDENT": None,
         }
@@ -501,18 +515,20 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await export_by_format(mockserver, items, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
-    async def test_start_finish_exporting_items_exception(self):
+    async def test_start_finish_exporting_items_exception(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
+                unique_path(tmp_path): {"format": "json"},
             },
             "FEED_EXPORTERS": {"json": ExceptionJsonItemExporter},
             "FEED_EXPORT_INDENT": None,
@@ -522,32 +538,34 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await export_by_format(mockserver, items, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
     async def test_export_item_exception_mentions_item(
-        self, caplog: pytest.LogCaptureFixture
-    ):
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [{"foo": {None: "bar"}}]
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
+                unique_path(tmp_path): {"format": "json"},
             },
             "FEED_EXPORTERS": {"json": ExceptionJsonItemExporter},
         }
         with caplog.at_level(logging.ERROR):
-            await self.exported_data(items, settings)
+            await export_by_format(mockserver, items, settings)
         assert "RuntimeError: foo" in caplog.text
         assert "Item: {'foo': {None: 'bar'}}" in caplog.text
 
     @coroutine_test
-    async def test_start_finish_exporting_no_items_exception(self):
+    async def test_start_finish_exporting_no_items_exception(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items: list[Any] = []
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
+                unique_path(tmp_path): {"format": "json"},
             },
             "FEED_EXPORTERS": {"json": ExceptionJsonItemExporter},
             "FEED_EXPORT_INDENT": None,
@@ -557,12 +575,14 @@ class TestFeedExport(TestFeedExportBase):
         InstrumentedFeedSlot.subscribe__listener(listener)
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
-            await self.exported_data(items, settings)
+            await export_by_format(mockserver, items, settings)
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
     @coroutine_test
-    async def test_export_no_items_store_empty(self):
+    async def test_export_no_items_store_empty(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         formats = (
             ("json", b"[]"),
             ("jsonlines", b""),
@@ -573,31 +593,31 @@ class TestFeedExport(TestFeedExportBase):
         for fmt, expctd in formats:
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename(): {"format": fmt},
+                    unique_path(tmp_path): {"format": fmt},
                 },
                 "FEED_STORE_EMPTY": True,
                 "FEED_EXPORT_INDENT": None,
             }
-            data = await self.exported_no_data(settings)
+            data = await export_by_format(mockserver, [], settings)
             assert expctd == data[fmt]
 
     @coroutine_test
     async def test_export_no_items_multiple_feeds(
-        self, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, tmp_path: Path
     ) -> None:
         """Make sure that `storage.store` is not called."""
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
-                self._random_temp_filename(): {"format": "xml"},
-                self._random_temp_filename(): {"format": "csv"},
+                unique_path(tmp_path): {"format": "json"},
+                unique_path(tmp_path): {"format": "xml"},
+                unique_path(tmp_path): {"format": "csv"},
             },
             "FEED_STORAGES": {"file": LogOnStoreFileStorage},
             "FEED_STORE_EMPTY": False,
         }
 
         with caplog.at_level(logging.INFO):
-            await self.exported_no_data(settings)
+            await export_by_format(mockserver, [], settings)
 
         assert caplog.text.count("Storage.store is called") == 0
 
@@ -685,7 +705,9 @@ class TestFeedExport(TestFeedExportBase):
         await self.assertExported(items, list(header.values()), rows, settings=settings)
 
     @coroutine_test
-    async def test_export_based_on_item_classes(self):
+    async def test_export_based_on_item_classes(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
             MyItem2({"hello": "world2", "foo": "bar2"}),
@@ -708,30 +730,32 @@ class TestFeedExport(TestFeedExportBase):
 
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "csv",
                     "item_classes": [MyItem],
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "json",
                     "item_classes": [MyItem2],
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "jsonlines",
                     "item_classes": [MyItem, MyItem2],
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "xml",
                 },
             },
         }
 
-        data = await self.exported_data(items, settings)
+        data = await export_by_format(mockserver, items, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_based_on_custom_filters(self):
+    async def test_export_based_on_custom_filters(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
             MyItem2({"hello": "world2", "foo": "bar2"}),
@@ -767,15 +791,15 @@ class TestFeedExport(TestFeedExportBase):
 
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "json",
                     "item_filter": CustomFilter1,
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "xml",
                     "item_filter": CustomFilter2,
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "jsonlines",
                     "item_classes": [MyItem, MyItem2],
                     "item_filter": CustomFilter3,
@@ -783,12 +807,14 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(items, settings)
+        data = await export_by_format(mockserver, items, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_based_on_item_processors(self):
+    async def test_export_based_on_item_processors(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [
             MyItem({"foo": "bar1,bar2"}),
             {"foo": "bar3"},
@@ -806,49 +832,43 @@ class TestFeedExport(TestFeedExportBase):
 
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "jsonlines",
                     "item_processor": split_foo,
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "json",
                     "item_processor": "tests.test_feedexport.split_foo",
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "xml",
                     "item_classes": [MyItem],
                     "item_processor": split_foo,
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "csv",
                     "item_processor": drop_item,
                 },
             },
         }
 
-        data = await self.exported_data(items, settings)
+        data = await export_by_format(mockserver, items, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_item_processor_stats(self):
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-            start_urls = [self.mockserver.url("/")]
-
-            def parse(self, response):
-                yield {"foo": "bar1,bar2"}
-
+    async def test_item_processor_stats(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEEDS": {
-                path_to_url(self._random_temp_filename()): {
+                path_to_url(unique_path(tmp_path)): {
                     "format": "jsonlines",
                     "item_processor": split_foo,
                 },
             },
         }
-        crawler = get_crawler(TestSpider, settings)
-        await crawler.crawl_async()
+        crawler = await crawl_items(mockserver, [{"foo": "bar1,bar2"}], settings)
 
         assert crawler.stats.get_value("item_scraped_count") == 1
         assert crawler.stats.get_value("feedexport/item_count/FileFeedStorage") == 2
@@ -904,7 +924,9 @@ class TestFeedExport(TestFeedExportBase):
             await self.assertExported(items, ["egg", "baz"], rows, settings=settings)
 
     @coroutine_test
-    async def test_export_encoding(self):
+    async def test_export_encoding(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [{"foo": "Test\xd6"}]
 
         formats = {
@@ -920,11 +942,11 @@ class TestFeedExport(TestFeedExportBase):
         for fmt, expected in formats.items():
             settings: dict[str, Any] = {
                 "FEEDS": {
-                    self._random_temp_filename(): {"format": fmt},
+                    unique_path(tmp_path): {"format": fmt},
                 },
                 "FEED_EXPORT_INDENT": None,
             }
-            data = await self.exported_data(items, settings)
+            data = await export_by_format(mockserver, items, settings)
             assert data[fmt] == expected
 
         formats = {
@@ -940,16 +962,18 @@ class TestFeedExport(TestFeedExportBase):
         for fmt, expected in formats.items():
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename(): {"format": fmt},
+                    unique_path(tmp_path): {"format": fmt},
                 },
                 "FEED_EXPORT_INDENT": None,
                 "FEED_EXPORT_ENCODING": "latin-1",
             }
-            data = await self.exported_data(items, settings)
+            data = await export_by_format(mockserver, items, settings)
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_multiple_configs(self):
+    async def test_export_multiple_configs(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [{"foo": "FOO", "bar": "BAR"}]
 
         formats = {
@@ -963,19 +987,19 @@ class TestFeedExport(TestFeedExportBase):
 
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "json",
                     "indent": 0,
                     "fields": ["bar"],
                     "encoding": "utf-8",
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "xml",
                     "indent": 2,
                     "fields": ["foo"],
                     "encoding": "latin-1",
                 },
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "csv",
                     "indent": None,
                     "fields": ["bar", "foo"],
@@ -984,12 +1008,14 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
 
-        data = await self.exported_data(items, settings)
+        data = await export_by_format(mockserver, items, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
     @coroutine_test
-    async def test_export_indentation(self):
+    async def test_export_indentation(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [
             {"foo": ["bar"]},
             {"key": "value"},
@@ -1135,46 +1161,48 @@ class TestFeedExport(TestFeedExportBase):
         for row in test_cases:
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename(): {
+                    unique_path(tmp_path): {
                         "format": row["format"],
                         "indent": row["indent"],
                     },
                 },
             }
-            data = await self.exported_data(items, settings)
+            data = await export_by_format(mockserver, items, settings)
             assert data[row["format"]] == row["expected"]
 
     @coroutine_test
-    async def test_init_exporters_storages_with_crawler(self):
+    async def test_init_exporters_storages_with_crawler(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEED_EXPORTERS": {"csv": FromCrawlerCsvItemExporter},
             "FEED_STORAGES": {"file": FromCrawlerFileFeedStorage},
             "FEEDS": {
-                self._random_temp_filename(): {"format": "csv"},
+                unique_path(tmp_path): {"format": "csv"},
             },
         }
-        await self.exported_data(items=[], settings=settings)
+        await export_by_format(mockserver, [], settings)
         assert FromCrawlerCsvItemExporter.init_with_crawler
         assert FromCrawlerFileFeedStorage.init_with_crawler
 
     @coroutine_test
-    async def test_str_uri(self):
+    async def test_str_uri(self, mockserver: MockServer, tmp_path: Path) -> None:
         settings = {
             "FEED_STORE_EMPTY": True,
-            "FEEDS": {str(self._random_temp_filename()): {"format": "csv"}},
+            "FEEDS": {str(unique_path(tmp_path)): {"format": "csv"}},
         }
-        data = await self.exported_no_data(settings)
+        data = await export_by_format(mockserver, [], settings)
         assert data["csv"] == b""
 
     @coroutine_test
     async def test_multiple_feeds_success_logs_blocking_feed_storage(
-        self, caplog: pytest.LogCaptureFixture
-    ):
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
-                self._random_temp_filename(): {"format": "xml"},
-                self._random_temp_filename(): {"format": "csv"},
+                unique_path(tmp_path): {"format": "json"},
+                unique_path(tmp_path): {"format": "xml"},
+                unique_path(tmp_path): {"format": "csv"},
             },
             "FEED_STORAGES": {"file": DummyBlockingFeedStorage},
         }
@@ -1183,20 +1211,20 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar2", "baz": "quux"},
         ]
         with caplog.at_level(logging.DEBUG):
-            await self.exported_data(items, settings)
+            await export_by_format(mockserver, items, settings)
 
         for fmt in ["json", "xml", "csv"]:
             assert f"Stored {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
     async def test_multiple_feeds_failing_logs_blocking_feed_storage(
-        self, caplog: pytest.LogCaptureFixture
-    ):
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "json"},
-                self._random_temp_filename(): {"format": "xml"},
-                self._random_temp_filename(): {"format": "csv"},
+                unique_path(tmp_path): {"format": "json"},
+                unique_path(tmp_path): {"format": "xml"},
+                unique_path(tmp_path): {"format": "csv"},
             },
             "FEED_STORAGES": {"file": FailingBlockingFeedStorage},
         }
@@ -1205,13 +1233,13 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar2", "baz": "quux"},
         ]
         with caplog.at_level(logging.DEBUG):
-            await self.exported_data(items, settings)
+            await export_by_format(mockserver, items, settings)
 
         for fmt in ["json", "xml", "csv"]:
             assert f"Error storing {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
-    async def test_extend_kwargs(self):
+    async def test_extend_kwargs(self, mockserver: MockServer, tmp_path: Path) -> None:
         items = [{"foo": "FOO", "bar": "BAR"}]
 
         expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
@@ -1239,16 +1267,18 @@ class TestFeedExport(TestFeedExportBase):
             feed_options = row["options"]
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename(): feed_options,
+                    unique_path(tmp_path): feed_options,
                 },
                 "FEED_EXPORT_INDENT": None,
             }
 
-            data = await self.exported_data(items, settings)
+            data = await export_by_format(mockserver, items, settings)
             assert data[feed_options["format"]] == row["expected"]
 
     @coroutine_test
-    async def test_storage_file_no_postprocessing(self):
+    async def test_storage_file_no_postprocessing(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         class Storage:
             open_file: IO[bytes]
             store_file: IO[bytes]
@@ -1265,14 +1295,16 @@ class TestFeedExport(TestFeedExportBase):
                 file.close()
 
         settings = {
-            "FEEDS": {self._random_temp_filename(): {"format": "jsonlines"}},
+            "FEEDS": {unique_path(tmp_path): {"format": "jsonlines"}},
             "FEED_STORAGES": {"file": Storage},
         }
-        await self.exported_no_data(settings)
+        await export_by_format(mockserver, [], settings)
         assert Storage.open_file is Storage.store_file
 
     @coroutine_test
-    async def test_storage_file_postprocessing(self):
+    async def test_storage_file_postprocessing(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         class Storage:
             open_file: IO[bytes]
             store_file: IO[bytes]
@@ -1292,7 +1324,7 @@ class TestFeedExport(TestFeedExportBase):
 
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {
+                unique_path(tmp_path): {
                     "format": "jsonlines",
                     "postprocessing": [
                         "scrapy.extensions.postprocessing.GzipPlugin",
@@ -1301,7 +1333,7 @@ class TestFeedExport(TestFeedExportBase):
             },
             "FEED_STORAGES": {"file": Storage},
         }
-        await self.exported_no_data(settings)
+        await export_by_format(mockserver, [], settings)
         assert Storage.open_file is Storage.store_file
         assert not Storage.file_was_closed
 
