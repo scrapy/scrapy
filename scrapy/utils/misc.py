@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overl
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
-from scrapy.utils.datatypes import LocalWeakReferencedCache
+from scrapy.utils._datatypes import LocalWeakReferencedCache
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator

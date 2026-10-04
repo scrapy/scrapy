@@ -11,14 +11,14 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from itemadapter import ItemAdapter
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore
 from scrapy.pipelines.media import FileException
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
@@ -28,9 +28,6 @@ if TYPE_CHECKING:
     from os import PathLike
 
     from PIL import Image
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
@@ -78,7 +75,7 @@ class ImagesPipeline(FilesPipeline):
             self._ImageOps = ImageOps
         except ImportError:
             raise NotConfigured(
-                "ImagesPipeline requires installing Pillow 8.3.2 or later"
+                "ImagesPipeline requires the Scrapy[images] extra to be installed"
             ) from None
 
         super().__init__(store_uri, crawler=crawler)
@@ -158,7 +155,7 @@ class ImagesPipeline(FilesPipeline):
         for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
-                checksum = _md5sum(buf)
+                checksum = hashlib.file_digest(buf, "md5").hexdigest()
             width, height = image.size
             content_type = self._Image.MIME.get(image.format or "JPEG", "image/jpeg")
             await ensure_awaitable(
@@ -235,13 +232,7 @@ class ImagesPipeline(FilesPipeline):
 
         if size:
             image = image.copy()
-            try:
-                # Image.Resampling.LANCZOS was added in Pillow 9.1.0
-                # remove this try except block,
-                # when updating the minimum requirements for Pillow.
-                resampling_filter = self._Image.Resampling.LANCZOS
-            except AttributeError:
-                resampling_filter = self._Image.ANTIALIAS  # type: ignore[attr-defined]
+            resampling_filter = self._Image.Resampling.LANCZOS
             image.thumbnail(size, resampling_filter)
         elif target_format == image_format:
             image.format = target_format

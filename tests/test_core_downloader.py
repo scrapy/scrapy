@@ -34,10 +34,13 @@ from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
 )
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
+from scrapy.http import Response
 from scrapy.resolver import dnscache
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
@@ -56,7 +59,7 @@ if TYPE_CHECKING:
     from twisted.python.failure import Failure
     from twisted.web.iweb import IBodyProducer
 
-    from scrapy.http import Response
+    from scrapy.crawler import Crawler
     from tests.mockserver.http import MockServer
 
 
@@ -714,6 +717,47 @@ async def test_stop_cancels_pending_download_tasks() -> None:
     assert dropped == 1
     assert len(failures) == 1
     assert failures[0].check(CancelledError)
+
+
+class ConcurrencyRecordingHandler(BaseDownloadHandler):
+    """Download handler that keeps each download in progress for a moment and
+    records the most downloads it had in progress at once."""
+
+    def __init__(self, crawler: Crawler):
+        super().__init__(crawler)
+        self._in_progress = 0
+
+    async def download_request(self, request: Request) -> Response:
+        self._in_progress += 1
+        self.crawler.stats.max_value("test/max_in_progress", self._in_progress)
+        await sleep(0.05)
+        self._in_progress -= 1
+        return Response(request.url)
+
+
+class ManyRequestsSpider(Spider):
+    name = "many_requests"
+
+    async def start(self):
+        for i in range(10):
+            yield Request(f"https://example.com/{i}")
+
+    def parse(self, response):
+        pass
+
+
+@coroutine_test
+async def test_slot_concurrency() -> None:
+    crawler = get_crawler(
+        ManyRequestsSpider,
+        {
+            "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+            "DOWNLOAD_HANDLERS": {"https": ConcurrencyRecordingHandler},
+        },
+    )
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("test/max_in_progress") == 2
+    assert crawler.stats.get_value("response_received_count") == 10
 
 
 def test_deprecated_tls_module_names() -> None:

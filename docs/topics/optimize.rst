@@ -295,6 +295,13 @@ Lowering memory usage
 
     -   Set :setting:`JOBDIR` to offload all scheduled requests to disk.
 
+-   Set :setting:`DUPEFILTER_CLASS` to
+    :class:`~scrapy.dupefilters.DiskDupeFilter` to keep the fingerprint of
+    every sent request on disk instead of in memory.
+
+-   Set :setting:`MEDIA_CACHE_SIZE` if you use :ref:`media pipelines
+    <topics-media-pipeline>`.
+
 -   Be on the lookout for :ref:`memory leaks <topics-leaks>`.
 
 

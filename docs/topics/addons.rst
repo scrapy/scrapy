@@ -141,6 +141,19 @@ Set some basic configuration:
     :meth:`~scrapy.settings.BaseSettings.setdefault_in_component_priority_dict`
     to avoid mistakes.
 
+Log the versions of the packages the add-on uses, unless the user has set
+:setting:`LOG_VERSIONS`:
+
+.. code-block:: python
+
+    from scrapy.settings import SETTINGS_PRIORITIES
+
+
+    class MyAddon:
+        def update_settings(self, settings):
+            if settings.getpriority("LOG_VERSIONS") == SETTINGS_PRIORITIES["default"]:
+                settings.add_to_list("LOG_VERSIONS", "boto")
+
 Check dependencies:
 
 .. code-block:: python

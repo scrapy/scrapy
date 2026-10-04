@@ -60,6 +60,16 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    @pytest.mark.parametrize("header", ["X-Flag:", "X-Flag: "])
+    def test_get_header_without_value(self, header):
+        curl_command = f'curl "http://example.org/" -H "{header}"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Flag", None)],
+        }
+        self._test_command(curl_command, expected_result)
+
     @pytest.mark.parametrize("header", ["X-Flag", "X-Flag;extra", "X-Flag ; ", ";"])
     def test_get_header_curl_would_not_send(self, header):
         curl_command = f'curl "http://example.org/" -H "{header}"'

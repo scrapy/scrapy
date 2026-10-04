@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
 
     from twisted.python.failure import Failure
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http import Headers, Response
