@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import hashlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy.downloadermiddlewares.retry import get_retry_request
 from scrapy.exceptions import ChecksumError
 
 if TYPE_CHECKING:
-    from typing import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
 
