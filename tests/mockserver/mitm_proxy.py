@@ -42,8 +42,9 @@ class MitmProxy:
     auth_user = "scrapy"
     auth_pass = "scrapy"
 
-    def __init__(self, mode: str | None = None) -> None:
+    def __init__(self, mode: str | None = None, host: str = "127.0.0.1") -> None:
         self.mode = mode
+        self.host = host
 
     def start(self) -> str:
         cmd = mitmdump_cmd()
@@ -55,7 +56,7 @@ class MitmProxy:
         # Choose a free port ourselves instead of reading the mitmdump output
         # as there is no easy way to disable stdout buffering for all kinds of
         # mitmdump installs that we support.
-        host = "127.0.0.1"
+        host = self.host
         port = _free_port()
         args = [
             "--listen-host",
@@ -79,6 +80,7 @@ class MitmProxy:
             start_new_session=True,  # needed for killpg() to make sense
         )
         scheme = "socks5" if self.mode == "socks5" else "http"
+        authority_host = f"[{host}]" if ":" in host else host
         deadline = time.monotonic() + 60
         while True:
             if self.proc.poll() is not None:
@@ -88,7 +90,10 @@ class MitmProxy:
                 )
             try:
                 with socket.create_connection((host, port), timeout=1):
-                    return f"{scheme}://{self.auth_user}:{self.auth_pass}@{host}:{port}"
+                    return (
+                        f"{scheme}://{self.auth_user}:{self.auth_pass}"
+                        f"@{authority_host}:{port}"
+                    )
             except OSError:
                 if time.monotonic() >= deadline:
                     break
