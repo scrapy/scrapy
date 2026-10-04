@@ -9,8 +9,7 @@ from typing import TYPE_CHECKING
 from scrapy.utils.asyncio import sleep
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from typing import Self
 
 
 class StallingProxyConnection:
@@ -37,10 +36,10 @@ class StallingProxyConnection:
             self.request += data
         self.closed = True
 
-    async def wait_closed(self, timeout: float = 10.0) -> bool:
+    async def wait_closed(self) -> bool:
         """Wait for the client to close the connection, and return whether it
-        did so within *timeout* seconds."""
-        for _ in range(int(timeout / 0.05)):
+        did so within 10 seconds."""
+        for _ in range(200):
             if self.closed:
                 return True
             await sleep(0.05)
@@ -99,12 +98,10 @@ class StallingProxy:
             self.connections.append(connection)
             threading.Thread(target=connection._read, daemon=True).start()
 
-    async def wait_for_connection(
-        self, timeout: float = 10.0
-    ) -> StallingProxyConnection:
+    async def wait_for_connection(self) -> StallingProxyConnection:
         """Wait for a client connection with a complete request, and return it."""
-        for _ in range(int(timeout / 0.05)):
+        for _ in range(200):
             if self.connections and b"\r\n\r\n" in self.connections[0].request:
                 return self.connections[0]
             await sleep(0.05)
-        raise AssertionError(f"No request reached the proxy in {timeout} seconds")
+        raise AssertionError("No request reached the proxy in 10 seconds")
