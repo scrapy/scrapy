@@ -33,10 +33,18 @@ from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
-from tests.utils.feedexport import MyItem, MyItem2, path_to_url, printf_escape
+from tests.utils.feedexport import (
+    MyItem,
+    MyItem2,
+    crawl_items,
+    path_to_url,
+    printf_escape,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
+
+    from tests.mockserver.http import MockServer
 
 
 class FromCrawlerMixin:
@@ -381,25 +389,19 @@ class TestFeedExport(TestFeedExportBase):
         await self.assertExported(items, header, rows)
 
     @coroutine_test
-    async def test_pathlib_uri_with_placeholders(self):
-        feed_dir = Path(self.temp_dir, "pathlib_placeholders")
+    async def test_pathlib_uri_with_placeholders(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        feed_dir = tmp_path / "pathlib_placeholders"
         feed_dir.mkdir()
         items = [MyItem({"foo": "bar1", "egg": "spam1"})]
 
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        TestSpider.start_urls = [self.mockserver.url("/")]
         settings = {
             "FEEDS": {
                 feed_dir / "%(time)s.json": {"format": "json"},
             },
         }
-        crawler = get_crawler(TestSpider, settings)
-        await crawler.crawl_async()
+        await crawl_items(mockserver, items, settings)
 
         files = list(feed_dir.iterdir())
         assert len(files) == 1
@@ -407,58 +409,46 @@ class TestFeedExport(TestFeedExportBase):
         assert files[0].suffix == ".json"
 
     @coroutine_test
-    async def test_pathlib_uri_with_spaces_and_unicode(self):
+    async def test_pathlib_uri_with_spaces_and_unicode(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         # A pathlib.Path key with spaces and non-ASCII characters must be kept
         # verbatim (not percent-encoded), while %()s placeholders are still
         # substituted. %(name)s resolves to the spider name deterministically,
         # so the resulting file name can be asserted exactly.
-        feed_dir = Path(self.temp_dir, "pathlib_spaces_unicode")
+        feed_dir = tmp_path / "pathlib_spaces_unicode"
         feed_dir.mkdir()
         items = [MyItem({"foo": "bar1", "egg": "spam1"})]
 
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        TestSpider.start_urls = [self.mockserver.url("/")]
         settings = {
             "FEEDS": {
                 feed_dir / "out %(name)s ünïcode.json": {"format": "json"},
             },
         }
-        crawler = get_crawler(TestSpider, settings)
-        await crawler.crawl_async()
+        await crawl_items(mockserver, items, settings)
 
         files = list(feed_dir.iterdir())
         assert len(files) == 1
         assert files[0].name == "out testspider ünïcode.json"
 
     @coroutine_test
-    async def test_str_uri_with_percent_encoding_and_placeholder(self):
+    async def test_str_uri_with_percent_encoding_and_placeholder(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         # A percent-encoded string URI (e.g. %20 for a space) must reach
         # storage verbatim rather than being misinterpreted as a printf
         # directive, while %()s placeholders are still substituted. See #6425
         # and #5794.
-        feed_dir = Path(self.temp_dir, "dir with spaces")
+        feed_dir = tmp_path / "dir with spaces"
         feed_dir.mkdir()
         items = [MyItem({"foo": "bar1", "egg": "spam1"})]
 
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        TestSpider.start_urls = [self.mockserver.url("/")]
         settings = {
             "FEEDS": {
                 f"{feed_dir.as_uri()}/%(time)s.json": {"format": "json"},
             },
         }
-        crawler = get_crawler(TestSpider, settings)
-        await crawler.crawl_async()
+        await crawl_items(mockserver, items, settings)
 
         files = list(feed_dir.iterdir())
         assert len(files) == 1

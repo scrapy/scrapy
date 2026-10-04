@@ -24,10 +24,12 @@ from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
-from tests.utils.feedexport import MyItem
+from tests.utils.feedexport import MyItem, crawl_items
 
 if TYPE_CHECKING:
     from os import PathLike
+
+    from tests.mockserver.http import MockServer
 
 
 def build_url(path: str | PathLike[str]) -> str:
@@ -454,8 +456,8 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
     @pytest.mark.requires_boto3
-    @inline_callbacks_test
-    def test_s3_export(self):
+    @coroutine_test
+    async def test_s3_export(self, mockserver: MockServer) -> None:
         bucket = "mybucket"
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -507,15 +509,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             },
         }
 
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        TestSpider.start_urls = [self.mockserver.url("/")]
-        crawler = get_crawler(TestSpider, settings)
-        yield crawler.crawl()
+        crawler = await crawl_items(mockserver, items, settings)
 
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs:
