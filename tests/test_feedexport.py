@@ -31,7 +31,6 @@ from scrapy.extensions.feedexport import (
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
@@ -47,6 +46,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
 
     from scrapy.crawler import Crawler
+    from tests.mockserver.http import MockServer
 
 
 class FromCrawlerMixin:
@@ -1415,19 +1415,9 @@ class TestFeedExporterSignals:
 class TestFeedMode:
     """End-to-end tests of the mode feed option and the FEED_MODE setting."""
 
-    mockserver: MockServer
-
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     @pytest.fixture(autouse=True)
-    def _temp_dir(self, tmp_path: Path) -> None:
+    def _setup(self, mockserver: MockServer, tmp_path: Path) -> None:
+        self.mockserver = mockserver
         self.temp_dir = tmp_path
 
     def _path(self, content: bytes | None = None) -> Path:
