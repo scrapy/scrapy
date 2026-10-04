@@ -14,14 +14,14 @@ import sys
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
+from typing import IO, TYPE_CHECKING, Any, Protocol, Self, TypeAlias, cast
 from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, DeferredList, DeferredLock
 from w3lib.url import file_uri_to_path
 from zope.interface import Interface
 
@@ -32,15 +32,18 @@ from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
 from scrapy.utils.boto import _get_max_pool_connections
 from scrapy.utils.conf import feed_complete_default_values_from_settings
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
+from scrapy.utils.defer import (
+    deferred_from_coro,
+    ensure_awaitable,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from _typeshed import OpenBinaryMode
+    from collections.abc import Coroutine
 
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from _typeshed import OpenBinaryMode
 
     from scrapy.crawler import Crawler
     from scrapy.exporters import BaseItemExporter
@@ -162,21 +165,39 @@ class _IFeedStorage(Interface):  # type: ignore[misc]  # pragma: no cover
 
 
 class FeedStorageProtocol(Protocol):
-    """Protocol that all Feed Storages must follow."""
+    """Protocol that all Feed Storages must follow.
 
-    def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
-        """Initialize the storage with the parameters given in the URI and the
-        feed-specific options (see :setting:`FEEDS`)"""
+    :param uri: Feed URI.
 
-    def open(self, spider: Spider) -> IO[bytes]:
-        """Open the storage for the given spider. It must return a file-like
-        object that will be used for the exporters"""
+    :param feed_options: :ref:`Feed options <feed-options>` of the feed.
 
-    def store(self, file: IO[bytes]) -> Deferred[None] | None:
-        """Store the given file stream"""
+    A feed storage may define a ``from_crawler(cls, crawler, uri, *,
+    feed_options=None)`` class method instead of ``__init__``, to also get the
+    :class:`~scrapy.crawler.Crawler` object.
+    """
+
+    def open(self, spider: Spider) -> IO[bytes] | Coroutine[Any, Any, IO[bytes]]:
+        """Open the storage for *spider* and return the file-like object that
+        item exporters write into.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``).
+        """
+
+    def store(
+        self, file: IO[bytes]
+    ) -> Coroutine[Any, Any, None] | Deferred[None] | None:
+        """Store *file*, the file-like object returned by :meth:`open`, and
+        close it.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``).
+        """
 
 
 class BlockingFeedStorage(ABC):
+    """Base class for feed storages that store feeds using blocking code."""
+
     def open(self, spider: Spider) -> IO[bytes]:
         path = spider.crawler.settings["FEED_TEMPDIR"]
         if path and not Path(path).is_dir():
@@ -189,10 +210,16 @@ class BlockingFeedStorage(ABC):
 
     @abstractmethod
     def _store_in_thread(self, file: IO[bytes]) -> None:
+        """Store *file* and close it.
+
+        This method runs in a separate thread, so it may use blocking code.
+        """
         raise NotImplementedError
 
 
 class StdoutFeedStorage:
+    """:ref:`Standard output <topics-feed-storage-stdout>` storage backend."""
+
     # The mode is irrelevant here: writing to a stream cannot destroy data.
     supported_modes: frozenset[str] = FEED_MODES
 
@@ -222,6 +249,12 @@ _WRITE_MODES: dict[str, OpenBinaryMode] = {
 
 
 class FileFeedStorage:
+    """:ref:`Local filesystem <topics-feed-storage-fs>` storage backend.
+
+    *uri* may be a ``file://`` URI or a plain path. Missing parent directories
+    are created when the feed is opened.
+    """
+
     supported_modes: frozenset[str] = FEED_MODES
 
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
@@ -243,6 +276,8 @@ class FileFeedStorage:
 
 
 class S3FeedStorage(BlockingFeedStorage):
+    """:ref:`Amazon S3 <topics-feed-storage-s3>` storage backend."""
+
     supported_modes: frozenset[str] = frozenset({"create", "overwrite"})
 
     def __init__(
@@ -362,6 +397,8 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class GCSFeedStorage(BlockingFeedStorage):
+    """:ref:`GCS <topics-feed-storage-gcs>` storage backend."""
+
     supported_modes: frozenset[str] = FEED_MODES
 
     def __init__(
@@ -447,6 +484,9 @@ class GCSFeedStorage(BlockingFeedStorage):
 
 
 class FTPFeedStorage(BlockingFeedStorage):
+    """:ref:`FTP <feed-storage-ftp>` storage backend, which also handles
+    :ref:`FTPS <feed-storage-ftps>` when *uri* uses the ``ftps`` scheme."""
+
     supported_modes: frozenset[str] = FEED_MODES
 
     def __init__(
@@ -547,9 +587,11 @@ class FeedSlot:
         self._exporting: bool = False
         self._fileloaded: bool = False
 
-    def start_exporting(self) -> None:
+    async def start_exporting(self) -> None:
         if not self._fileloaded:
-            self.file = self.storage.open(self.spider)
+            self.file = cast(
+                "IO[bytes]", await ensure_awaitable(self.storage.open(self.spider))
+            )
             if "postprocessing" in self.feed_options:
                 self.file = cast(
                     "IO[bytes]",
@@ -571,7 +613,7 @@ class FeedSlot:
 
         if not self._exporting:
             assert self.exporter
-            self.exporter.start_exporting()
+            await ensure_awaitable(self.exporter.start_exporting())
             self._exporting = True
 
     def _get_exporter(
@@ -581,10 +623,10 @@ class FeedSlot:
             self.exporters[format_], self.crawler, file, *args, **kwargs
         )
 
-    def finish_exporting(self) -> None:
+    async def finish_exporting(self) -> None:
         if self._exporting:  # pragma: no branch
             assert self.exporter
-            self.exporter.finish_exporting()
+            await ensure_awaitable(self.exporter.finish_exporting())
             self._exporting = False
 
 
@@ -605,6 +647,12 @@ class FeedExporter:
         self.filters: dict[str, ItemFilter] = {}
         self.processors: dict[str, _ItemProcessor | None] = {}
         self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
+        # Item export may await user-defined code (e.g. an async def
+        # export_item() method), while item_scraped signals are sent
+        # concurrently (see the CONCURRENT_ITEMS setting). This lock prevents
+        # overlapping item export calls, which item exporters, being stateful,
+        # cannot handle.
+        self._export_lock = DeferredLock()
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -762,11 +810,11 @@ class FeedExporter:
 
         if slot.itemcount:
             # Normal case
-            slot.finish_exporting()
+            await slot.finish_exporting()
         elif slot.store_empty and slot.batch_id == 1:
             # Need to store the empty file
-            slot.start_exporting()
-            slot.finish_exporting()
+            await slot.start_exporting()
+            await slot.finish_exporting()
         else:
             # In this case, the file is not stored, so no processing is required.
             return
@@ -829,7 +877,14 @@ class FeedExporter:
             crawler=self.crawler,
         )
 
-    def item_scraped(self, item: Any, spider: Spider) -> None:
+    async def item_scraped(self, item: Any, spider: Spider) -> None:
+        await maybe_deferred_to_future(self._export_lock.acquire())
+        try:
+            await self._export_item(item, spider)
+        finally:
+            self._export_lock.release()
+
+    async def _export_item(self, item: Any, spider: Spider) -> None:
         slots = []
         for slot in self.slots:
             if not slot.filter.accepts(item):
@@ -842,16 +897,15 @@ class FeedExporter:
             for exported_item in processor(item) if processor else (item,):
                 if not slot._skipped:
                     try:
-                        slot.start_exporting()
+                        await slot.start_exporting()
                     except FileExistsError:
                         self._skip(slot)
                 if not slot._skipped:
                     assert slot.exporter
                     try:
-                        slot.exporter.export_item(exported_item)
+                        await ensure_awaitable(slot.exporter.export_item(exported_item))
                     except Exception as e:
-                        if sys.version_info >= (3, 11):
-                            e.add_note(f"Item: {exported_item!r}")
+                        e.add_note(f"Item: {exported_item!r}")
                         raise
                 # Skipped items are counted, so that the following files of
                 # this feed still cover the same items as those of any other
@@ -966,7 +1020,7 @@ class FeedExporter:
         slot: FeedSlot | None = None,
     ) -> dict[str, Any]:
         params = {k: getattr(spider, k) for k in dir(spider)}
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")
         params["batch_id"] = slot.batch_id + 1 if slot is not None else 1

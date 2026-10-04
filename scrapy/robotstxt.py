@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Self, cast
 from urllib.robotparser import RobotFileParser
 
 from protego import Protego
@@ -11,9 +11,6 @@ from protego import Protego
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Spider
     from scrapy.crawler import Crawler
 

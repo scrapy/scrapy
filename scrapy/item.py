@@ -10,15 +10,12 @@ from abc import ABCMeta
 from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn, Self
 
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, KeysView
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 class Field(dict[str, Any]):
