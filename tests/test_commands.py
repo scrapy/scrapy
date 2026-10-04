@@ -258,28 +258,6 @@ class MySpider(scrapy.Spider):
         assert "(Pdb)" not in out
 
 
-class TestSettingsCommand:
-    @pytest.mark.parametrize(
-        ("option", "setting", "expected"),
-        [
-            ("--get", "BOT_NAME", "scrapybot"),
-            ("--getbool", "COOKIES_ENABLED", "True"),
-            ("--getint", "CONCURRENT_REQUESTS", "16"),
-            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
-            ("--getlist", "SPIDER_MODULES", "[]"),
-        ],
-    )
-    def test_get(self, option: str, setting: str, expected: str) -> None:
-        returncode, out, err = proc("settings", option, setting)
-        assert returncode == 0, err
-        assert out.startswith(expected)
-
-    def test_no_option(self) -> None:
-        returncode, out, err = proc("settings")
-        assert returncode == 0, err
-        assert not out
-
-
 class TestCommandCrawlerProcess(TestProjectBase):
     """Test that the command uses the expected kind of *CrawlerProcess
     and produces expected errors when needed."""
@@ -845,6 +823,26 @@ class MySpider(scrapy.Spider):
         )
         assert returncode == 2
         assert "Unable to find spider: nope" in err
+
+    @pytest.mark.parametrize(
+        ("option", "setting", "expected"),
+        [
+            ("--get", "BOT_NAME", "scrapybot"),
+            ("--getbool", "COOKIES_ENABLED", "True"),
+            ("--getint", "CONCURRENT_REQUESTS", "16"),
+            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
+            ("--getlist", "SPIDER_MODULES", "[]"),
+        ],
+    )
+    def test_get_standalone(self, option: str, setting: str, expected: str) -> None:
+        returncode, out, err = proc("settings", option, setting)
+        assert returncode == 0, err
+        assert out.startswith(expected)
+
+    def test_no_option(self) -> None:
+        returncode, out, err = proc("settings")
+        assert returncode == 0, err
+        assert not out
 
 
 class TestBenchCommand:

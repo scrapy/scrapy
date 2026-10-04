@@ -883,10 +883,11 @@ class TestHttpCompression:
             (b"not compressed", "zstd"),
         ],
     )
-    def test_process_response_invalid(self, body, encoding):
+    @coroutine_test
+    async def test_process_response_invalid(self, body: bytes, encoding: str) -> None:
         request = Request("http://example.com")
         response = Response(
             "http://example.com", body=body, headers={"Content-Encoding": encoding}
         )
         with pytest.raises(DecompressionError):
-            self.mw.process_response(request, response)
+            await self.mw.process_response(request, response)
