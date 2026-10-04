@@ -3,6 +3,7 @@ from __future__ import annotations
 import numbers
 import os
 import sys
+import tomllib
 import warnings
 from configparser import ConfigParser
 from operator import itemgetter
@@ -19,10 +20,6 @@ from scrapy.utils.python import without_none_values
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 # Project-independent options that the global configuration file supports, as
 # (section, option) pairs.

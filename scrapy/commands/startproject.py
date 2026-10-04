@@ -160,7 +160,7 @@ class Command(ScrapyCommand):
         assert self.settings is not None
         return str(
             Path(
-                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),
+                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),  # pylint: disable=unsubscriptable-object
                 "project",
             )
         )

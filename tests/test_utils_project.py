@@ -4,7 +4,6 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 
@@ -18,39 +17,24 @@ from scrapy.utils.project import (
     project_data_dir,
 )
 
-if TYPE_CHECKING:
-    from collections.abc import Generator
-
 
 @pytest.fixture
-def proj_path(tmp_path: Path) -> Generator[Path]:
-    prev_dir = Path.cwd()
+def proj_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     project_dir = tmp_path
-
-    try:
-        os.chdir(project_dir)
-        Path("pyproject.toml").write_text("[tool.scrapy]\n", encoding="utf-8")
-
-        yield project_dir
-    finally:
-        os.chdir(prev_dir)
+    monkeypatch.chdir(project_dir)
+    Path("pyproject.toml").write_text("[tool.scrapy]\n", encoding="utf-8")
+    return project_dir
 
 
 @pytest.fixture
-def no_proj_path(tmp_path: Path) -> Generator[Path]:
+def no_proj_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A working directory without a scrapy.cfg file, also isolated from the
     user-wide and system-wide Scrapy configuration files."""
-    prev_dir = Path.cwd()
-    try:
-        os.chdir(tmp_path)
-        with set_environ(
-            HOME=str(tmp_path),
-            USERPROFILE=str(tmp_path),
-            XDG_CONFIG_HOME=str(tmp_path),
-        ):
-            yield tmp_path
-    finally:
-        os.chdir(prev_dir)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    return tmp_path
 
 
 def test_data_path_outside_project() -> None:
@@ -157,7 +141,10 @@ class TestGetProjectSettings:
     def test_unimportable_module_from_project_config(
         self, proj_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE", raising=False)
+        # Set before deleting so that monkeypatch also undoes the value that
+        # get_project_settings() writes into the environment.
+        monkeypatch.setenv("SCRAPY_SETTINGS_MODULE", "")
+        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE")
         Path("pyproject.toml").write_text(
             '[tool.scrapy.settings]\ndefault = "no_such_module.settings"\n',
             encoding="utf-8",
@@ -173,7 +160,10 @@ class TestGetProjectSettings:
     def test_unimportable_module_from_global_config(
         self, no_proj_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE", raising=False)
+        # Set before deleting so that monkeypatch also undoes the value that
+        # get_project_settings() writes into the environment.
+        monkeypatch.setenv("SCRAPY_SETTINGS_MODULE", "")
+        monkeypatch.delenv("SCRAPY_SETTINGS_MODULE")
         (no_proj_path / ".scrapy.cfg").write_text(
             "[settings]\ndefault = no_such_module.settings\n", encoding="utf-8"
         )
