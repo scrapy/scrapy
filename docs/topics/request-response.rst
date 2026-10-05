@@ -859,6 +859,7 @@ Those are:
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`header_order`
 * :reqmeta:`http_auth_domain`
 * :reqmeta:`http_pass`
 * :reqmeta:`http_user`
@@ -966,6 +967,30 @@ give_up_log_level
 
 :ref:`Logging level <levels>` used for the message logged when a request
 exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+.. reqmeta:: header_order
+
+header_order
+------------
+
+.. versionadded:: VERSION
+
+The order in which to send the request headers, as a list of header names.
+Overrides :setting:`REQUEST_HEADER_ORDER`, see that setting for details.
+
+For example:
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        headers={"x-api-key": "..."},
+        meta={"header_order": ["Host", "x-api-key", "User-Agent"]},
+    )
+
+Set it to an empty list to send headers in the order they have in
+:attr:`Request.headers <scrapy.Request.headers>`, ignoring
+:setting:`REQUEST_HEADER_ORDER`.
 
 .. reqmeta:: http_auth_domain
 

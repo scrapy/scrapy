@@ -161,7 +161,7 @@ individual handler docs for more differences:
      - HTTP
      - Skip bad
      - ``cryptography``
-     - Capitalized
+     - As written
    * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
      - asyncio, :ref:`httpx <extras>` extra
      - 1.1, 2
@@ -177,6 +177,10 @@ them; other handlers also lose those, or cannot download such responses at all.
 
 Because HTTP/2 requires lowercase header names, handlers only keep the case of
 your header names over HTTP/1.1.
+
+All these handlers send request headers in the order set by
+:setting:`REQUEST_HEADER_ORDER`, but they differ in where they put the headers
+that they generate themselves, like ``Host``; see that setting for details.
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
