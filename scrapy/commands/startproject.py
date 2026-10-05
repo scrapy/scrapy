@@ -137,8 +137,6 @@ class Command(ScrapyCommand):
                 ProjectName=string_camelcase(project_name),
             )
         if existing_pyproject:
-            # Append the generated tables to the pre-existing pyproject.toml
-            # instead of replacing it.
             pyproject_path.write_text(
                 existing_pyproject.rstrip("\n")
                 + "\n\n"
