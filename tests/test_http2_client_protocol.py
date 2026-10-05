@@ -798,3 +798,49 @@ class TestHttps2ClientProtocol:
             k_decoded, v_decoded = str(k, "utf-8").lower(), str(v[0], "utf-8")
             assert k_decoded in received
             assert v_decoded == received[k_decoded]
+
+    async def _received_header_order(
+        self, server_port: int, client: H2ClientProtocol, meta: dict[str, Any]
+    ) -> list[str]:
+        request = Request(
+            self.get_url(server_port, "/request-headers"),
+            headers=[("X-A", "1"), ("x-b", "2"), ("X-C", "3")],
+            meta=meta,
+        )
+        response = await make_request(client, request)
+        received = json.loads(str(response.body, "utf-8"))
+        wanted = {"x-a", "x-b", "x-c", "content-length"}
+        return [name.lower() for name in received if name.lower() in wanted]
+
+    @pytest.mark.parametrize(
+        "crawler",
+        [{"REQUEST_HEADER_ORDER": ["X-C", "Content-Length"]}],
+        indirect=True,
+    )
+    @deferred_f_from_coro_f
+    async def test_request_header_order_setting(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        order = await self._received_header_order(server_port, client, {})
+        assert order == ["x-c", "content-length", "x-a", "x-b"]
+
+    @pytest.mark.parametrize(
+        "crawler",
+        [{"REQUEST_HEADER_ORDER": ["X-C"]}],
+        indirect=True,
+    )
+    @deferred_f_from_coro_f
+    async def test_request_header_order_meta(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        order = await self._received_header_order(
+            server_port, client, {"header_order": ["x-b"]}
+        )
+        assert order == ["x-b", "content-length", "x-a", "x-c"]
+
+    @deferred_f_from_coro_f
+    async def test_request_header_order_default(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        order = await self._received_header_order(server_port, client, {})
+        assert order == ["content-length", "x-a", "x-b", "x-c"]

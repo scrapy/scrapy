@@ -180,8 +180,10 @@ async def _canned_proxy(response: bytes, split_at: int = 0) -> AsyncGenerator[st
 
 
 @asynccontextmanager
-async def _get_dh() -> AsyncGenerator[HTTP11DownloadHandler]:
-    crawler = get_crawler(DefaultSpider)
+async def _get_dh(
+    settings_dict: dict[str, Any] | None = None,
+) -> AsyncGenerator[HTTP11DownloadHandler]:
+    crawler = get_crawler(DefaultSpider, settings_dict)
     crawler.spider = crawler._create_spider()
     dh = build_from_crawler(HTTP11DownloadHandler, crawler)
     try:
@@ -231,14 +233,17 @@ class TestTunnelingErrors:
 
 
 async def _capture(
-    request_kwargs: dict[str, Any], *, via_proxy: bool = False
+    request_kwargs: dict[str, Any],
+    settings_dict: dict[str, Any] | None = None,
+    *,
+    via_proxy: bool = False,
 ) -> _CapturingServer:
     with capturing_server() as server:
         if via_proxy:
             request_kwargs.setdefault("meta", {})["proxy"] = server.url
         else:
             request_kwargs.setdefault("url", server.url + "/path")
-        async with _get_dh() as dh:
+        async with _get_dh(settings_dict) as dh:
             await dh.download_request(Request(**request_kwargs))
     return server
 
@@ -259,6 +264,18 @@ class TestWireHeaders:
             (b"X-A", b"1"),
             (b"Host", server.url.removeprefix("http://").encode()),
         ]
+
+    @coroutine_test
+    async def test_order_places_generated_headers(self) -> None:
+        server = await _capture(
+            {
+                "method": "POST",
+                "body": b"abc",
+                "headers": [("X-B", "2"), ("X-A", "1")],
+            },
+            {"REQUEST_HEADER_ORDER": ["host", "X-A", "Content-Length"]},
+        )
+        assert server.header_names() == [b"Host", b"X-A", b"Content-Length", b"X-B"]
 
     @coroutine_test
     async def test_explicit_host_keeps_position_and_case(self) -> None:
@@ -305,13 +322,14 @@ class TestWireHeaders:
             {
                 "url": "http://example.com/path",
                 "headers": [("x-b", "2"), ("X-A", "1")],
+                "meta": {"header_order": ["X-A"]},
             },
             via_proxy=True,
         )
         assert server.request_line() == b"GET http://example.com/path HTTP/1.1"
         assert server.header_lines() == [
-            (b"x-b", b"2"),
             (b"X-A", b"1"),
+            (b"x-b", b"2"),
             (b"Host", b"example.com"),
         ]
 
@@ -326,22 +344,26 @@ class _FakeTransport:
 
 class TestScrapyTxRequest:
     def test_headers_copy(self) -> None:
-        headers = _ScrapyTxHeaders({b"x-a": [b"1"]}, names={b"x-a": b"x-a"})
+        headers = _ScrapyTxHeaders(
+            {b"x-a": [b"1"]}, names={b"x-a": b"x-a"}, order=(b"x-a",)
+        )
         copy = headers.copy()
         assert isinstance(copy, _ScrapyTxHeaders)
         assert copy._names == headers._names
+        assert copy._order == headers._order
         assert list(copy.getAllRawHeaders()) == list(headers.getAllRawHeaders())
 
     def test_not_persistent(self, caplog: pytest.LogCaptureFixture) -> None:
         headers = _ScrapyTxHeaders(
             {b"Host": [b"example.com"], b"connection": [b"keep-alive"]},
             names={b"host": b"Host", b"connection": b"connection"},
+            order=(b"host",),
         )
         request = _ScrapyTxRequest(b"GET", b"/", headers, None, persistent=False)  # type: ignore[no-untyped-call]
         transport = _FakeTransport()
         request._writeHeaders(transport, None)
         assert transport.data == (
-            b"GET / HTTP/1.1\r\nconnection: close\r\nHost: example.com\r\n\r\n"
+            b"GET / HTTP/1.1\r\nHost: example.com\r\nconnection: close\r\n\r\n"
         )
         assert "Ignoring the b'connection' request header" in caplog.text
 

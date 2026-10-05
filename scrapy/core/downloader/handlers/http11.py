@@ -52,6 +52,7 @@ from scrapy.exceptions import (
     StopDownload,
 )
 from scrapy.http import Headers, Response
+from scrapy.http.headers import _sort_header_items
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
@@ -139,6 +140,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
             tls_verbose_logging=self._tls_verbose_logging,
+            header_order=self._get_header_order(request),
         )
         try:
             with wrap_twisted_exceptions():
@@ -442,6 +444,7 @@ class _ScrapyAgent:
         fail_on_dataloss: bool = True,
         crawler: Crawler,
         tls_verbose_logging: bool = False,
+        header_order: tuple[bytes, ...] = (),
     ):
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectTimeout: float = connectTimeout
@@ -453,6 +456,7 @@ class _ScrapyAgent:
         self._txresponse: TxResponse | None = None
         self._crawler: Crawler = crawler
         self._tls_verbose_logging: bool = tls_verbose_logging
+        self._header_order: tuple[bytes, ...] = header_order
 
     def _get_agent(self, request: Request, timeout: float) -> Agent:
         from twisted.internet import reactor
@@ -512,6 +516,7 @@ class _ScrapyAgent:
         headers = _ScrapyTxHeaders(
             request.headers,
             names={name.lower(): name for name in request.headers},
+            order=self._header_order,
         )
         if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
@@ -839,7 +844,7 @@ class _LenientHTTPClientParser(HTTPClientParser):
 
 class _ScrapyTxHeaders(TxHeaders):
     """Twisted headers that also keep the header names as Scrapy spelled them,
-    keyed by lowercase name.
+    keyed by lowercase name, and the lowercase header order to write them in.
 
     Twisted changes the case of the header names it stores, so
     :class:`_ScrapyTxRequest` uses these to write the header block.
@@ -849,17 +854,22 @@ class _ScrapyTxHeaders(TxHeaders):
         self,
         rawHeaders: Any = None,
         names: dict[bytes, bytes] | None = None,
+        order: tuple[bytes, ...] = (),
     ):
         super().__init__(rawHeaders)
         self._names: dict[bytes, bytes] = names or {}
+        self._order: tuple[bytes, ...] = order
 
     def copy(self) -> _ScrapyTxHeaders:
         # Agent._requestWithEndpoint() copies headers to add Host.
-        return _ScrapyTxHeaders(dict(self.getAllRawHeaders()), names=self._names)
+        return _ScrapyTxHeaders(
+            dict(self.getAllRawHeaders()), names=self._names, order=self._order
+        )
 
 
 class _ScrapyTxRequest(TxRequest):
-    """Request that writes header names as Scrapy spelled them.
+    """Request that writes header names as Scrapy spelled them, in the
+    configured header order.
 
     Based on twisted.web._newclient.Request._writeHeaders(). Headers that
     Twisted generates (Content-Length or Transfer-Encoding, Connection) replace
@@ -910,7 +920,7 @@ class _ScrapyTxRequest(TxRequest):
                 ]
             )
         ]
-        for name, values in items:
+        for name, values in _sort_header_items(items, headers._order):
             lines.extend(name + b": " + value + b"\r\n" for value in values)
         lines.append(b"\r\n")
         transport.writeSequence(lines)

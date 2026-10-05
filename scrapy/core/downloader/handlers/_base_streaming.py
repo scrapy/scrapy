@@ -14,6 +14,8 @@ from scrapy.exceptions import (
     NotConfigured,
     ResponseDataLossError,
 )
+from scrapy.http import Headers
+from scrapy.http.headers import _sort_header_items
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
@@ -38,7 +40,7 @@ if TYPE_CHECKING:
     from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
-    from scrapy.http import Headers, Response
+    from scrapy.http import Response
 
 
 logger = logging.getLogger(__name__)
@@ -239,14 +241,19 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
             body=response_body.getvalue(),
         )
 
-    @staticmethod
-    def _request_headers(request: Request) -> Headers:
+    def _request_headers(self, request: Request) -> Headers:
         """Get a prepared copy of the request headers.
 
-        This removes the Proxy-Authorization header.
+        This removes the Proxy-Authorization header and applies the header
+        order.
         """
         headers = request.headers.copy()
         headers.pop(b"Proxy-Authorization", None)
+        if order := self._get_header_order(request):
+            headers = Headers(
+                _sort_header_items(headers.items(), order),
+                encoding=headers.encoding,
+            )
         return headers
 
     def _get_bind_address_host(self) -> str | None:

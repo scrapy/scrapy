@@ -15,9 +15,10 @@ from twisted.web.client import ResponseFailed
 
 from scrapy import signals
 from scrapy.exceptions import DownloadCancelledError, StopDownload
-from scrapy.http.headers import Headers
+from scrapy.http.headers import Headers, _sort_header_items
 from scrapy.utils._download_handlers import (
     check_stop_download,
+    get_header_order,
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
@@ -245,7 +246,7 @@ class Stream:
             ]
 
         content_length = str(len(self._request.body))
-        headers.append(("Content-Length", content_length))
+        regular_headers = [(b"Content-Length", content_length)]
 
         for name, values in self._request.headers.items():
             for value_bytes in values:
@@ -260,8 +261,15 @@ class Stream:
                             content_length,
                         )
                     continue
-                headers.append((str(name, "utf-8"), value))
+                regular_headers.append((name, value))
 
+        order = get_header_order(
+            self._request, self._protocol.metadata["default_header_order"]
+        )
+        headers += [
+            (str(name, "utf-8"), value)
+            for name, value in _sort_header_items(regular_headers, order)
+        ]
         return headers
 
     def initiate_request(self) -> None:

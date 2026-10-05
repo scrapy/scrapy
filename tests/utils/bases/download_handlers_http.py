@@ -263,7 +263,10 @@ class TestHttpBase(ABC):
         assert not extra_headers, body["headers"]
 
     async def _send_to_capturing_server(
-        self, headers: list[tuple[str, str]]
+        self,
+        headers: list[tuple[str, str]],
+        settings_dict: dict[str, Any] | None = None,
+        meta: dict[str, Any] | None = None,
     ) -> list[bytes]:
         """Return the names of *headers* as the server received them, in the
         order it received them."""
@@ -271,8 +274,8 @@ class TestHttpBase(ABC):
             pytest.skip("The capturing server only supports plain HTTP")
         wanted = {name.lower().encode() for name, _ in headers}
         with capturing_server() as server:
-            request = Request(server.url, headers=headers)
-            async with self.get_dh() as download_handler:
+            request = Request(server.url, headers=headers, meta=meta)
+            async with self.get_dh(settings_dict) as download_handler:
                 await download_handler.download_request(request)
         return [name for name in server.header_names() if name.lower() in wanted]
 
@@ -282,6 +285,32 @@ class TestHttpBase(ABC):
             [("x-API-key", "a"), ("dnt", "1"), ("ETag", "b")]
         )
         assert names == [b"x-API-key", b"dnt", b"ETag"]
+
+    @coroutine_test
+    async def test_wire_header_order_setting(self) -> None:
+        names = await self._send_to_capturing_server(
+            [("X-A", "1"), ("X-B", "2"), ("X-C", "3")],
+            settings_dict={"REQUEST_HEADER_ORDER": ["x-c", "X-A"]},
+        )
+        assert names == [b"X-C", b"X-A", b"X-B"]
+
+    @coroutine_test
+    async def test_wire_header_order_meta(self) -> None:
+        names = await self._send_to_capturing_server(
+            [("X-A", "1"), ("X-B", "2"), ("X-C", "3")],
+            settings_dict={"REQUEST_HEADER_ORDER": ["X-C"]},
+            meta={"header_order": ["X-B"]},
+        )
+        assert names == [b"X-B", b"X-A", b"X-C"]
+
+    @coroutine_test
+    async def test_wire_header_order_meta_empty(self) -> None:
+        names = await self._send_to_capturing_server(
+            [("X-A", "1"), ("X-B", "2"), ("X-C", "3")],
+            settings_dict={"REQUEST_HEADER_ORDER": ["X-C"]},
+            meta={"header_order": []},
+        )
+        assert names == [b"X-A", b"X-B", b"X-C"]
 
     @coroutine_test
     async def test_server_receives_correct_request_body(

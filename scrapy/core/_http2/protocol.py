@@ -35,6 +35,7 @@ from zope.interface import implementer
 from scrapy.core._http2.stream import Stream, StreamCloseReason
 from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
+from scrapy.utils._download_handlers import normalize_header_order
 from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
@@ -142,6 +143,9 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             # Variables taken from Project Settings
             "default_download_maxsize": crawler.settings.getint("DOWNLOAD_MAXSIZE"),
             "default_download_warnsize": crawler.settings.getint("DOWNLOAD_WARNSIZE"),
+            "default_header_order": normalize_header_order(
+                crawler.settings.getlist("REQUEST_HEADER_ORDER")
+            ),
             # Counter to keep track of opened streams. This counter
             # is used to make sure that not more than MAX_CONCURRENT_STREAMS
             # streams are opened which leads to ProtocolError

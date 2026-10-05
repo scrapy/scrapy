@@ -25,9 +25,10 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.utils.log import logger
+from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
     from http.client import HTTPResponse
     from http.cookiejar import Cookie
     from ipaddress import IPv4Address, IPv6Address
@@ -151,3 +152,16 @@ def normalize_bind_address(
     if isinstance(value, str):
         return (value, 0)
     return value
+
+
+def normalize_header_order(names: Iterable[str | bytes]) -> tuple[bytes, ...]:
+    return tuple(to_bytes(name).lower() for name in names)
+
+
+def get_header_order(request: Request, default: tuple[bytes, ...]) -> tuple[bytes, ...]:
+    """Return the lowercase header order for *request*: its
+    :reqmeta:`header_order` if set, else *default*."""
+    order = request.meta.get("header_order")
+    if order is None:
+        return default
+    return normalize_header_order(order)
