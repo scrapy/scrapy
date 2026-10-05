@@ -104,13 +104,12 @@ class Command(ScrapyCommand):
             return
 
         pyproject_path = project_dir / "pyproject.toml"
-        # Read before the template overwrites it, to restore it below.
-        pyproject_content = (
+        existing_pyproject = (
             pyproject_path.read_text(encoding="utf-8")
             if pyproject_path.is_file()
             else None
         )
-        if pyproject_content is not None and _scrapy_table(pyproject_path) is not None:
+        if existing_pyproject is not None and _scrapy_table(pyproject_path) is not None:
             self.exitcode = 1
             print(
                 "Error: pyproject.toml already has a [tool.scrapy] table in "
@@ -137,11 +136,11 @@ class Command(ScrapyCommand):
                 project_name=project_name,
                 ProjectName=string_camelcase(project_name),
             )
-        if pyproject_content:
+        if existing_pyproject:
             # Append the generated tables to the pre-existing pyproject.toml
             # instead of replacing it.
             pyproject_path.write_text(
-                pyproject_content.rstrip("\n")
+                existing_pyproject.rstrip("\n")
                 + "\n\n"
                 + pyproject_path.read_text(encoding="utf-8"),
                 encoding="utf-8",
