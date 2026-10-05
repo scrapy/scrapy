@@ -120,8 +120,9 @@ use :func:`~scrapy.utils.project.find_projects`:
 Sharing the root directory between projects
 ===========================================
 
-A project root directory, the one that contains the :file:`pyproject.toml`, may
-be shared by multiple Scrapy projects, each with its own settings module.
+A project root directory, the one that contains the :file:`pyproject.toml`
+file, may be shared by multiple Scrapy projects, each with its own settings
+module.
 
 In that case, you must define one or more aliases for those settings modules
 under ``[tool.scrapy.settings]`` in your :file:`pyproject.toml` file:
