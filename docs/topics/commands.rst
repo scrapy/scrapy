@@ -23,7 +23,8 @@ Configuration settings
 ======================
 
 Scrapy reads configuration parameters from the ``[tool.scrapy]`` table of the
-:file:`pyproject.toml` file at the root of your project (see next section):
+:file:`pyproject.toml` file at the :ref:`root of your project
+<topics-project-structure>`:
 
 .. code-block:: toml
 
