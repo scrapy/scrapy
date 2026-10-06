@@ -305,9 +305,9 @@ response body, as :class:`bytes` or as a hexadecimal :class:`str`:
         },
     )
 
-A mismatch is retried like any other download failure, and once retries are
-exhausted the request fails with :exc:`~scrapy.exceptions.ChecksumError`. Set
-the :reqmeta:`dont_retry` meta key to fail on the first mismatch.
+A mismatch raises :exc:`~scrapy.exceptions.ChecksumError`, which
+:class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` retries if
+:setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` is ``True``.
 
 CookiesMiddleware
 -----------------
@@ -1164,6 +1164,7 @@ Default::
 
     [
         'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.ChecksumError',
         'scrapy.exceptions.DecompressionError',
         'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadFailedError',

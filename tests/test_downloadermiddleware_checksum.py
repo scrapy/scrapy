@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from gzip import compress
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -12,8 +13,9 @@ from scrapy.downloadermiddlewares.checksum import ChecksumMiddleware
 from scrapy.exceptions import ChecksumError
 from scrapy.http import Response
 from scrapy.pipelines.files import FilesPipeline
-from scrapy.utils.spider import DefaultSpider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+from tests.test_downloadermiddleware import TestManagerBase
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -29,58 +31,69 @@ SHA256 = hashlib.sha256(BODY).hexdigest()
 WRONG_SHA256 = "0" * 64
 
 
-class TestChecksumMiddleware:
-    def setup_method(self) -> None:
-        self.crawler = get_crawler(DefaultSpider, {"RETRY_TIMES": 1})
-        self.crawler.spider = self.crawler._create_spider()
-        self.mw = ChecksumMiddleware.from_crawler(self.crawler)
+URL = "https://example.com/file"
 
-    def _process(self, meta: dict[str, Any]) -> Request | Response:
-        return self.mw.process_response(
-            Request("https://example.com/file", meta=meta),
-            Response("https://example.com/file", body=BODY),
+
+def _process(meta: dict[str, Any]) -> Response:
+    mw = build_from_crawler(ChecksumMiddleware, get_crawler(Spider))
+    return mw.process_response(Request(URL, meta=meta), Response(URL, body=BODY))
+
+
+def test_no_expected_checksum() -> None:
+    assert isinstance(_process({}), Response)
+
+
+@pytest.mark.parametrize("expected", [SHA256, SHA256.upper(), bytes.fromhex(SHA256)])
+def test_match(expected: str | bytes) -> None:
+    assert isinstance(_process({"expected_checksum": {"sha256": expected}}), Response)
+
+
+def test_mismatch() -> None:
+    with pytest.raises(ChecksumError, match="sha256"):
+        _process({"expected_checksum": {"sha256": WRONG_SHA256}})
+
+
+def test_every_algorithm_checked() -> None:
+    with pytest.raises(ChecksumError, match="sha256"):
+        _process(
+            {
+                "expected_checksum": {
+                    "sha512": hashlib.sha512(BODY).hexdigest(),
+                    "sha256": WRONG_SHA256,
+                }
+            }
         )
 
-    def test_no_expected_checksum(self) -> None:
-        assert isinstance(self._process({}), Response)
 
-    @pytest.mark.parametrize(
-        "expected", [SHA256, SHA256.upper(), bytes.fromhex(SHA256)]
-    )
-    def test_match(self, expected: str | bytes) -> None:
-        result = self._process({"expected_checksum": {"sha256": expected}})
-        assert isinstance(result, Response)
+class TestChain(TestManagerBase):
+    settings_dict = {"DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS": True}
 
-    def test_mismatch_retries(self) -> None:
-        result = self._process({"expected_checksum": {"sha256": WRONG_SHA256}})
+    @coroutine_test
+    async def test_retry(self) -> None:
+        req = Request(URL, meta={"expected_checksum": {"sha256": WRONG_SHA256}})
+        async with self.get_mwman() as mwman:
+            result = await self._download(mwman, req, Response(URL, body=BODY))
         assert isinstance(result, Request)
         assert result.meta["retry_times"] == 1
-        assert self.crawler.stats
-        assert self.crawler.stats.get_value("retry/reason_count/checksum/sha256") == 1
 
-    def test_mismatch_gives_up(self) -> None:
-        with pytest.raises(ChecksumError, match="sha256"):
-            self._process(
-                {"expected_checksum": {"sha256": WRONG_SHA256}, "retry_times": 1}
-            )
+    @coroutine_test
+    async def test_dont_retry(self) -> None:
+        req = Request(
+            URL,
+            meta={"expected_checksum": {"sha256": WRONG_SHA256}, "dont_retry": True},
+        )
+        async with self.get_mwman() as mwman:
+            with pytest.raises(ChecksumError):
+                await self._download(mwman, req, Response(URL, body=BODY))
 
-    def test_dont_retry(self) -> None:
-        with pytest.raises(ChecksumError, match="sha256"):
-            self._process(
-                {"expected_checksum": {"sha256": WRONG_SHA256}, "dont_retry": True}
-            )
-
-    def test_every_algorithm_checked(self) -> None:
-        with pytest.raises(ChecksumError, match="sha256"):
-            self._process(
-                {
-                    "expected_checksum": {
-                        "sha512": hashlib.sha512(BODY).hexdigest(),
-                        "sha256": WRONG_SHA256,
-                    },
-                    "dont_retry": True,
-                }
-            )
+    @coroutine_test
+    async def test_compressed(self) -> None:
+        req = Request(URL, meta={"expected_checksum": {"sha256": SHA256}})
+        resp = Response(URL, body=compress(BODY), headers={"Content-Encoding": "gzip"})
+        async with self.get_mwman() as mwman:
+            result = await self._download(mwman, req, resp)
+        assert isinstance(result, Response)
+        assert result.body == BODY
 
 
 class ChecksumFilesPipeline(FilesPipeline):
@@ -98,13 +111,15 @@ class ChecksumFilesPipeline(FilesPipeline):
 
 class FileItemSpider(Spider):
     name = "file_item"
+    good_url: str
+    bad_url: str
 
     async def start(self) -> AsyncIterator[Request]:
-        yield Request(self.good_url)  # type: ignore[attr-defined]
+        yield Request(self.good_url)
 
     def parse(self, response: Response) -> Iterator[Any]:
         yield {
-            "file_urls": [self.good_url, self.bad_url],  # type: ignore[attr-defined]
+            "file_urls": [self.good_url, self.bad_url],
             "file_sha256": [
                 hashlib.sha256(b"Works").hexdigest(),
                 WRONG_SHA256,
@@ -112,32 +127,31 @@ class FileItemSpider(Spider):
         }
 
 
-class TestMediaPipelineIntegration:
-    @coroutine_test
-    async def test_files_pipeline(
-        self, mockserver: MockServer, tmp_path: Path, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        items = []
+@coroutine_test
+async def test_files_pipeline(
+    mockserver: MockServer, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    items: list[Any] = []
 
-        def _on_item_scraped(item: Any) -> None:
-            items.append(item)
+    def _on_item_scraped(item: Any) -> None:
+        items.append(item)
 
-        crawler = get_crawler(
-            FileItemSpider,
-            {
-                "FILES_STORE": str(tmp_path),
-                "ITEM_PIPELINES": {ChecksumFilesPipeline: 1},
-                "RETRY_TIMES": 0,
-            },
+    crawler = get_crawler(
+        FileItemSpider,
+        {
+            "FILES_STORE": str(tmp_path),
+            "ITEM_PIPELINES": {ChecksumFilesPipeline: 1},
+            "RETRY_TIMES": 0,
+        },
+    )
+    crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+    with caplog.at_level(logging.WARNING):
+        await crawler.crawl_async(
+            good_url=mockserver.url("/text"),
+            bad_url=mockserver.url("/html"),
         )
-        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
-        with caplog.at_level(logging.WARNING):
-            await crawler.crawl_async(
-                good_url=mockserver.url("/text"),
-                bad_url=mockserver.url("/html"),
-            )
 
-        assert len(items) == 1
-        assert [file["url"] for file in items[0]["files"]] == [mockserver.url("/text")]
-        assert "does not match the expected checksum" in caplog.text
-        assert len(list(tmp_path.glob("full/*"))) == 1
+    assert len(items) == 1
+    assert [file["url"] for file in items[0]["files"]] == [mockserver.url("/text")]
+    assert "does not match the expected checksum" in caplog.text
+    assert len(list(tmp_path.glob("full/*"))) == 1

@@ -162,7 +162,8 @@ class ChecksumError(Exception):
 
     .. versionadded:: VERSION
 
-    See :reqmeta:`expected_checksum`."""
+    See :reqmeta:`expected_checksum`.
+    """
 
 
 # Items
