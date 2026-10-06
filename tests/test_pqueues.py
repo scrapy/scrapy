@@ -121,16 +121,16 @@ class TestPriorityQueue:
         assert dequeued.priority == req3.priority
         assert set(queue.close()) == {-1, -2}
 
-    def test_next_priority_empty_startprios(self):
+    def test_next_priority_empty_startprios(self, crawler: Crawler) -> None:
         queue = build_from_crawler(
-            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, "", [-1]
+            ScrapyPriorityQueue, crawler, FifoMemoryQueue, "", [-1]
         )
         assert queue.next_priority() is None
 
-    def test_next_priority_with_start_queue(self):
+    def test_next_priority_with_start_queue(self, crawler: Crawler) -> None:
         queue = build_from_crawler(
             ScrapyPriorityQueue,
-            self.crawler,
+            crawler,
             FifoMemoryQueue,
             "",
             start_queue_cls=FifoMemoryQueue,

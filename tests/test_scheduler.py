@@ -80,7 +80,7 @@ def _active_json(jobdir: Path) -> Any:
 
 def _enqueue_across_queues(scheduler: Scheduler) -> None:
     for name, priority in (("memory", 0), ("disk", 1), ("disk", 0), ("memory", -1)):
-        request = Request(f"http://foo.com/{name}{priority}", priority=priority)
+        request = Request(f"https://example.com/{name}{priority}", priority=priority)
         if name == "memory":
             request.meta["unserializable"] = lambda: None
         scheduler.enqueue_request(request)
@@ -186,10 +186,10 @@ class TestSchedulerOnDiskBase(SchedulerTestMixin):
         async with self.create_scheduler(jobdir) as scheduler:
             _enqueue_across_queues(scheduler)
             assert _dequeue_urls(scheduler) == [
-                "http://foo.com/disk1",
-                "http://foo.com/memory0",
-                "http://foo.com/disk0",
-                "http://foo.com/memory-1",
+                "https://example.com/disk1",
+                "https://example.com/memory0",
+                "https://example.com/disk0",
+                "https://example.com/memory-1",
             ]
 
 
@@ -448,10 +448,10 @@ async def test_priority_queue_without_next_priority(tmp_path: Path) -> None:
     ) as scheduler:
         _enqueue_across_queues(scheduler)
         assert _dequeue_urls(scheduler) == [
-            "http://foo.com/memory0",
-            "http://foo.com/memory-1",
-            "http://foo.com/disk1",
-            "http://foo.com/disk0",
+            "https://example.com/memory0",
+            "https://example.com/memory-1",
+            "https://example.com/disk1",
+            "https://example.com/disk0",
         ]
 
 
