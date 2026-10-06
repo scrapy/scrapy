@@ -333,9 +333,7 @@ class TestFilesPipeline:
         item = _create_item_with_files(item_url)
         request = Request(
             item_url,
-            meta={
-                "response": Response(item_url, status=status, body=b"not a file")
-            },
+            meta={"response": Response(item_url, status=status, body=b"not a file")},
         )
         with (
             caplog.at_level(logging.WARNING),
