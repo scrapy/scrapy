@@ -12,6 +12,7 @@ from typing import (
     ClassVar,
     Generic,
     NoReturn,
+    NotRequired,
     TypedDict,
     TypeVar,
 )
@@ -43,9 +44,6 @@ if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
     from _typeshed import SizedBuffer
-
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
     from scrapy.http import Headers, Response
@@ -269,6 +267,28 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         headers = request.headers.copy()
         headers.pop(b"Proxy-Authorization", None)
         return headers
+
+    def _utf8_request_headers(self, request: Request) -> list[tuple[str, str]]:
+        """Get a prepared copy of the request headers as ``(name, value)`` str
+        pairs, for libraries that can only send UTF-8.
+
+        Bytes that are not valid UTF-8 are replaced with U+FFFD, with a
+        warning.
+        """
+        pairs: list[tuple[str, str]] = []
+        for name, values in self._request_headers(request).items():
+            for value in values:
+                try:
+                    pairs.append((name.decode(), value.decode()))
+                except UnicodeDecodeError:
+                    str_name = name.decode(errors="replace")
+                    logger.warning(
+                        f"The {str_name} header of {request} is not valid UTF-8,"
+                        f" which {type(self).__name__} cannot send. Sending it"
+                        f" with U+FFFD in place of the invalid bytes."
+                    )
+                    pairs.append((str_name, value.decode(errors="replace")))
+        return pairs
 
     def _get_bind_address_host(self) -> str | None:
         """Return the host portion of the bind address.

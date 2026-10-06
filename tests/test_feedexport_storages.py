@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import string
 import sys
 import tempfile
@@ -48,14 +47,12 @@ class TestFileFeedStorage:
         path = tmp_path / "file.txt"
         self._assert_stores(FileFeedStorage(str(path)), path)
 
-    def test_store_direct_path_relative(self, tmp_path):
-        old_cwd = Path.cwd()
-        try:
-            os.chdir(tmp_path)
-            path = Path("foo", "bar")
-            self._assert_stores(FileFeedStorage(str(path)), path)
-        finally:
-            os.chdir(old_cwd)
+    def test_store_direct_path_relative(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        path = Path("foo", "bar")
+        self._assert_stores(FileFeedStorage(str(path)), path)
 
     @staticmethod
     def _store(path: Path, feed_options: dict[str, Any] | None = None) -> None:

@@ -147,6 +147,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
             creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
         )
         filepath = unquote(parsed_url.path)
+        is_listing = filepath == "" or filepath.endswith("/")
         maxsize: int = request.meta.get("download_maxsize", self._default_maxsize)
         protocol = ReceivedDataProtocol(
             request.meta.get("ftp_local_filename"),
@@ -155,7 +156,10 @@ class FTPDownloadHandler(BaseDownloadHandler):
             warnsize=get_warnsize(request.meta, self._default_warnsize),
         )
         try:
-            await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
+            if is_listing:
+                await maybe_deferred_to_future(client.nlst(filepath, protocol))
+            else:
+                await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
         except CommandFailed as e:
             if not protocol._exceeded_maxsize:
                 message = str(e)

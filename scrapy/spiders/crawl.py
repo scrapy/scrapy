@@ -10,7 +10,7 @@ from __future__ import annotations
 import copy
 import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
@@ -26,9 +26,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT

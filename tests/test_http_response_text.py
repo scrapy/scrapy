@@ -273,7 +273,8 @@ class TestTextResponse(TestResponseBase):
 
         assert isinstance(response.selector, Selector)
         assert response.selector.type == "html"
-        assert response.selector is response.selector  # property is cached
+        # property is cached
+        assert response.selector is response.selector  # pylint: disable=comparison-with-itself
         assert response.selector.response is response
 
         assert response.selector.xpath("//title/text()").getall() == ["Some page"]
@@ -628,7 +629,8 @@ class TestXmlResponse(TestTextResponse):
 
         assert isinstance(response.selector, Selector)
         assert response.selector.type == "xml"
-        assert response.selector is response.selector  # property is cached
+        # property is cached
+        assert response.selector is response.selector  # pylint: disable=comparison-with-itself
         assert response.selector.response is response
 
         assert response.selector.xpath("//elem/text()").getall() == ["value"]

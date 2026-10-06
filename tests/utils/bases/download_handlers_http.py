@@ -41,6 +41,7 @@ from scrapy.utils.test import get_crawler
 from tests import IDNA_REJECTED_HOSTNAMES, NON_EXISTING_RESOLVABLE
 from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
+from tests.mockserver.proxy_stalling import StallingProxy
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import (
     BytesReceivedCallbackSpider,
@@ -61,6 +62,7 @@ if TYPE_CHECKING:
 
 
 BadHeaderHandling = Literal["skip-bad", "skip-rest", "fail"]
+NonUtf8RequestHeaderHandling = Literal["send", "replace"]
 
 
 class TestHttpBase(ABC):
@@ -75,9 +77,17 @@ class TestHttpBase(ABC):
     # h2.connection.H2Connection.receive_data()), thus closing all streams that
     # were using it, and we handle this as a normal exception.
     handler_supports_http2_dataloss: bool = True
+    # whether the handler sends a request Content-Length header as is, instead
+    # of building its own (https://github.com/scrapy/scrapy/issues/4919)
+    handler_supports_custom_content_length: bool = True
     # whether the handler can request hostnames that the idna package rejects
     # (see IDNA_REJECTED_HOSTNAMES)
     handler_supports_idna_rejected_hostnames: bool = True
+    # What the handler does with a request header value that is not valid
+    # UTF-8:
+    # "send": the value is sent as it is;
+    # "replace": the invalid bytes are replaced with U+FFFD, with a warning.
+    handler_non_utf8_request_header_handling: NonUtf8RequestHeaderHandling = "send"
     # What the handler does with a bad response header line, e.g. one with no
     # colon in it:
     # "skip-bad": the bad line is skipped and the header lines that follow it
@@ -242,6 +252,39 @@ class TestHttpBase(ABC):
         assert body["headers"]["X-Custom-Header"] == ["foo", "bar"]
 
     @coroutine_test
+    async def test_request_header_utf8(self, mockserver: MockServer) -> None:
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers={"X-Custom-Header": "café"},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert body["headers"]["X-Custom-Header"] == ["café"]
+
+    @coroutine_test
+    async def test_request_header_non_utf8(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers={"X-Custom-Header": b"caf\xe9"},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        # the mockserver decodes invalid UTF-8 with surrogateescape
+        received = [
+            value.encode("utf-8", "surrogateescape")
+            for value in body["headers"]["X-Custom-Header"]
+        ]
+        replaced = self.handler_non_utf8_request_header_handling == "replace"
+        assert received == [b"caf\xef\xbf\xbd" if replaced else b"caf\xe9"]
+        assert ("is not valid UTF-8" in caplog.text) == replaced
+
+    @coroutine_test
     async def test_server_receives_no_extra_headers(
         self, mockserver: MockServer
     ) -> None:
@@ -277,6 +320,23 @@ class TestHttpBase(ABC):
         assert response.status == HTTPStatus.OK
         body = json.loads(response.body.decode("utf-8"))
         assert json.loads(body["body"]) == request_body
+
+    @coroutine_test
+    async def test_download_response_header_non_utf8(
+        self, mockserver: MockServer
+    ) -> None:
+        value = b"caf\xe9"
+        request = Request(
+            mockserver.url("/response-headers", is_secure=self.is_secure),
+            headers={"content-type": "application/json"},
+            body=json.dumps(
+                {"X-Custom-Header": value.decode("utf-8", "surrogateescape")}
+            ),
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.headers.getlist("X-Custom-Header") == [value]
 
     @coroutine_test
     async def test_download_has_correct_response_headers(
@@ -477,6 +537,40 @@ class TestHttpBase(ABC):
         contentlengths = headers.getlist("Content-Length")
         assert len(contentlengths) == 1
         assert contentlengths == [b"0"]
+
+    @coroutine_test
+    async def test_custom_content_length(self, mockserver: MockServer) -> None:
+        body = b"1" * 100
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            method="POST",
+            body=body,
+            headers={"Content-Length": str(len(body))},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        if not self.handler_supports_custom_content_length:
+            # The server gets two Content-Length headers and rejects the
+            # request.
+            assert response.status == 400
+            return
+        echo = json.loads(response.text)
+        assert Headers(echo["headers"]).getlist("Content-Length") == [b"100"]
+        assert echo["body"] == body.decode()
+
+    @coroutine_test
+    async def test_custom_content_length_bodyless(self, mockserver: MockServer) -> None:
+        request = Request(
+            mockserver.url("/contentlength", is_secure=self.is_secure),
+            method="POST",
+            headers={"Content-Length": "0"},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        if not self.handler_supports_custom_content_length:
+            assert response.status == 400
+            return
+        assert response.body == b"0"
 
     @coroutine_test
     async def test_payload(self, mockserver: MockServer) -> None:
@@ -1024,7 +1118,7 @@ class TestHttpBase(ABC):
         assert response.body == path.encode()
 
 
-class TestHttpsBase(TestHttpBase):
+class TestHttpsBase(TestHttpBase, ABC):
     is_secure = True
 
     tls_log_message = (
@@ -1172,7 +1266,7 @@ class TestSimpleHttpsBase(ABC):
         assert response.body == b"0123456789"
 
 
-class TestHttpsWrongHostnameBase(TestSimpleHttpsBase):
+class TestHttpsWrongHostnameBase(TestSimpleHttpsBase, ABC):
     # above tests use a server certificate for "localhost",
     # client connection to "localhost" too.
     # here we test that even if the server certificate is for another domain,
@@ -1182,24 +1276,24 @@ class TestHttpsWrongHostnameBase(TestSimpleHttpsBase):
     certfile = "keys/example-com.cert.pem"
 
 
-class TestHttpsInvalidDNSIdBase(TestSimpleHttpsBase):
+class TestHttpsInvalidDNSIdBase(TestSimpleHttpsBase, ABC):
     """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
 
     host = "127.0.0.1"
 
 
-class TestHttpsInvalidDNSPatternBase(TestSimpleHttpsBase):
+class TestHttpsInvalidDNSPatternBase(TestSimpleHttpsBase, ABC):
     """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
 
     keyfile = "keys/localhost.ip.key"
     certfile = "keys/localhost.ip.crt"
 
 
-class TestHttpsCustomCiphersBase(TestSimpleHttpsBase):
+class TestHttpsCustomCiphersBase(TestSimpleHttpsBase, ABC):
     cipher_string = "CAMELLIA256-SHA"
 
 
-class TestHttpsDefaultCiphersBase(TestSimpleHttpsBase):
+class TestHttpsDefaultCiphersBase(TestSimpleHttpsBase, ABC):
     """A ``None`` cipher list leaves the TLS library defaults in place."""
 
     client_settings: dict[str, Any] | None = {"DOWNLOADER_CLIENT_TLS_CIPHERS": None}
@@ -1518,17 +1612,14 @@ class TestHttpWithCrawlerBase(ABC):
 
 class TestHttpProxyBase(ABC):
     is_secure = False
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    handler_supports_tls_in_tls: bool = True
     expected_http_proxy_request_body = b"http://example.com"
 
     @property
     @abstractmethod
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         raise NotImplementedError
-
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    @property
-    def handler_supports_tls_in_tls(self) -> bool:
-        return True
 
     @pytest.fixture(scope="session")
     def proxy_mockserver(self) -> Generator[ProxyEchoMockServer]:
@@ -1587,6 +1678,26 @@ class TestHttpProxyBase(ABC):
         assert domain in str(exc_info.value)
 
     @coroutine_test
+    async def test_download_with_proxy_stalled_connect(self) -> None:
+        """A download that times out while the proxy is being asked to open a
+        tunnel must not leave the connection to the proxy open."""
+        if self.is_secure:
+            pytest.skip("The stalling proxy only speaks plain HTTP")
+        with StallingProxy() as proxy:
+            request = Request(
+                "https://example.com",
+                meta={"proxy": proxy.url, "download_timeout": 0.2},
+            )
+            async with self.get_dh() as download_handler:
+                with pytest.raises(DownloadTimeoutError):
+                    await download_handler.download_request(request)
+                connection = await proxy.wait_for_connection()
+                assert connection.request.startswith(b"CONNECT example.com:443")
+                assert await connection.wait_closed(), (
+                    "The connection to the proxy was left open"
+                )
+
+    @coroutine_test
     async def test_download_with_proxy_without_http_scheme(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
@@ -1604,16 +1715,13 @@ PROXY_KINDS = ["http", "https", "socks5"]
 
 class TestMitmProxyBase(ABC):
     handler_supports_socks: bool = False
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    handler_supports_tls_in_tls: bool = True
 
     @property
     @abstractmethod
     def settings_dict(self) -> dict[str, Any] | None:
         raise NotImplementedError
-
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    @property
-    def handler_supports_tls_in_tls(self) -> bool:
-        return True
 
     def _maybe_skip(self, proxy_kind: str, https_dest: bool) -> None:
         if proxy_kind == "socks5" and not self.handler_supports_socks:

@@ -203,7 +203,7 @@ class TestRedirectBase(ABC):
         assert {
             **safe_headers,
             **cookie_header,
-        } == different_port_redirect_request.headers.to_unicode_dict()
+        } == dict(different_port_redirect_request.headers.to_tuple_list())
 
         # A domain change drops both the Authorization and the Cookie header.
         external_response = self.get_response(original_request, "https://example.org/a")
@@ -211,7 +211,7 @@ class TestRedirectBase(ABC):
             original_request, external_response
         )
         assert isinstance(external_redirect_request, Request)
-        assert safe_headers == external_redirect_request.headers.to_unicode_dict()
+        assert safe_headers == dict(external_redirect_request.headers.to_tuple_list())
 
         # A scheme upgrade (http → https) drops the Authorization header
         # because the origin changes, but keeps the Cookie header because the
@@ -224,7 +224,7 @@ class TestRedirectBase(ABC):
         assert {
             **safe_headers,
             **cookie_header,
-        } == upgrade_redirect_request.headers.to_unicode_dict()
+        } == dict(upgrade_redirect_request.headers.to_tuple_list())
 
         # A scheme downgrade (https → http) drops the Authorization header
         # because the origin changes, and the Cookie header because its value
@@ -240,7 +240,7 @@ class TestRedirectBase(ABC):
             original_request, downgrade_response
         )
         assert isinstance(downgrade_redirect_request, Request)
-        assert safe_headers == downgrade_redirect_request.headers.to_unicode_dict()
+        assert safe_headers == dict(downgrade_redirect_request.headers.to_tuple_list())
 
     def _check_proxy_scenario(
         self,

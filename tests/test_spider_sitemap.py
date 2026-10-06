@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import gzip
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
@@ -66,6 +66,30 @@ class TestSitemapSpider(TestSpiderBase):
 
         r = XmlResponse(url="http://www.example.com/", body=b"")
         self.assertSitemapBody(r, b"")
+
+    def test_get_sitemap_body_xml_content_type(self):
+        r = TextResponse(
+            url="http://www.example.com/sitemap",
+            body=self.BODY,
+            headers={"Content-Type": "application/xml"},
+        )
+        self.assertSitemapBody(r, self.BODY)
+
+        r = TextResponse(
+            url="http://www.example.com/sitemap",
+            body=self.BODY,
+            headers={"Content-Type": "text/html"},
+        )
+        self.assertSitemapBody(r, None)
+
+    def test_get_sitemap_body_xml_body(self):
+        body = b'<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>'
+        r = TextResponse(url="http://www.example.com/sitemap", body=body)
+        self.assertSitemapBody(r, body)
+
+    def test_get_sitemap_body_xml_file_url(self):
+        r = Response(url="file:///tmp/sitemap.rss", body=self.BODY)
+        self.assertSitemapBody(r, self.BODY)
 
     def test_get_sitemap_body_gzip_headers(self):
         r = Response(
@@ -183,7 +207,7 @@ Sitemap: /sitemap-relative-url.xml
             def sitemap_filter(self, entries):
                 for entry in entries:
                     date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d").replace(
-                        tzinfo=timezone.utc
+                        tzinfo=UTC
                     )
                     if date_time.year > 2008:
                         yield entry
@@ -255,7 +279,7 @@ Sitemap: /sitemap-relative-url.xml
                 for entry in entries:
                     date_time = datetime.strptime(
                         entry["lastmod"].split("T")[0], "%Y-%m-%d"
-                    ).replace(tzinfo=timezone.utc)
+                    ).replace(tzinfo=UTC)
                     if date_time.year > 2004:
                         yield entry
 
@@ -531,4 +555,4 @@ Sitemap: /sitemap-relative-url.xml
         request = requests[0]
         assert request.url == "https://toscrape.com/sitemap.xml"
         assert request.dont_filter is False
-        assert request.callback == spider._parse_sitemap
+        assert request.callback == spider._parse_sitemap  # pylint: disable=comparison-with-callable

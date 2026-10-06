@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from itertools import chain
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import (
@@ -23,13 +23,11 @@ from scrapy.utils._compression import (
     gunzip,
 )
 from scrapy.utils._download_handlers import get_warnsize
+from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
 
@@ -37,6 +35,13 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate", b"br", b"zstd"]
+
+# Dispatching to a thread costs a few hundred microseconds. That is
+# negligible next to network latency, but wasted when there is no other
+# in-flight request for the reactor to get back to; above this compressed
+# size, decoding concurrently with other requests outweighs that cost.
+# Tuned by tests/benchmarks/test_httpcompression.py.
+_THREAD_DECODE_MIN_SIZE = 8192
 
 
 class HttpCompressionMiddleware:
@@ -89,7 +94,7 @@ class HttpCompressionMiddleware:
         return None
 
     @_warn_spider_arg
-    def process_response(
+    async def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.method == "HEAD":
@@ -99,7 +104,7 @@ class HttpCompressionMiddleware:
             max_size = request.meta.get("download_maxsize", self._max_size)
             warn_size = get_warnsize(request.meta, self._warn_size)
             try:
-                decoded_body, content_encoding = self._handle_encoding(
+                decoded_body, content_encoding = await self._handle_encoding(
                     response.body, content_encoding, max_size
                 )
             except _DecompressionMaxSizeExceeded as e:
@@ -144,12 +149,15 @@ class HttpCompressionMiddleware:
                 del response.headers["Content-Encoding"]
         return response
 
-    def _handle_encoding(
+    async def _handle_encoding(
         self, body: bytes, content_encoding: list[bytes], max_size: int
     ) -> tuple[bytes, list[bytes]]:
         to_decode, to_keep = self._split_encodings(content_encoding)
         for encoding in to_decode:
-            body = self._decode(body, encoding, max_size)
+            if len(body) >= _THREAD_DECODE_MIN_SIZE:
+                body = await run_in_thread(self._decode, body, encoding, max_size)
+            else:
+                body = self._decode(body, encoding, max_size)
         return body, to_keep
 
     @staticmethod
