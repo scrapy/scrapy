@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy.exceptions import DownloadFailedError
 from scrapy.http.response import Response
@@ -11,9 +11,6 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
     from websockets.asyncio.client import ClientConnection
 
 

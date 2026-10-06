@@ -20,7 +20,6 @@ from scrapy.exceptions import (
 )
 from scrapy.http import WebSocketResponse
 from scrapy.spidermiddlewares.httperror import HttpError
-from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
@@ -60,9 +59,7 @@ async def _crawl(
 
     crawler = get_crawler(SingleRequestSpider, settings)
     crawler.signals.connect(collect, signal=signals.item_scraped)
-    await maybe_deferred_to_future(
-        crawler.crawl(seed=Request(url), callback_func=callback)
-    )
+    await crawler.crawl_async(seed=Request(url), callback_func=callback)
     return items, crawler
 
 
@@ -261,7 +258,7 @@ class TestWebSocketDownloadHandler:
                 yield
 
         crawler = get_crawler(TwoRequestSpider)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert TwoRequestSpider.order == ["open 0", "close 0", "open 1", "close 1"]
 
     @coroutine_test

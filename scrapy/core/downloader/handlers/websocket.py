@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import ipaddress
 import ssl
 import time
@@ -104,7 +103,7 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
         try:
             connection = await _Connect(
                 request.url,
-                additional_headers=self._request_headers(request).to_tuple_list(),
+                additional_headers=self._utf8_request_headers(request),
                 # Scrapy sets its own User-Agent header.
                 user_agent_header=None,
                 # HttpProxyMiddleware is the only source of proxies, so the
@@ -123,9 +122,7 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
             )
         except InvalidStatus as e:
             return self._make_rejection_response(request, e)
-        except (TimeoutError, asyncio.TimeoutError) as e:
-            # asyncio.TimeoutError is a separate class from the builtin
-            # TimeoutError on Python < 3.11.
+        except TimeoutError as e:
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
             ) from e

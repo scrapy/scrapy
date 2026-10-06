@@ -87,12 +87,13 @@ class RobotsTxtMiddleware:
 
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
-            robotsurl = f"{_to_http_scheme(url.scheme)}://{url.netloc}/robots.txt"
+            scheme = _to_http_scheme(url.scheme)
+            robotsurl = f"{scheme}://{url.netloc}/robots.txt"
             meta: dict[str, Any] = {
                 "dont_obey_robotstxt": True,
                 "is_robotstxt_request": True,
             }
-            if "download_handler" in request.meta:
+            if "download_handler" in request.meta and scheme == url.scheme:
                 meta["download_handler"] = request.meta["download_handler"]
             robotsreq = Request(
                 robotsurl,
