@@ -7,7 +7,7 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import PIPE, Popen
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import FTPHandler, TLS_FTPHandler
@@ -17,9 +17,6 @@ from tests.utils import get_script_run_env
 
 if TYPE_CHECKING:
     from types import TracebackType
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 class MockFTPServer:

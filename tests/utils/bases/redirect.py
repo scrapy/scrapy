@@ -203,7 +203,7 @@ class TestRedirectBase(ABC):
         assert {
             **safe_headers,
             **cookie_header,
-        } == different_port_redirect_request.headers.to_unicode_dict()
+        } == dict(different_port_redirect_request.headers.to_tuple_list())
 
         # A domain change drops both the Authorization and the Cookie header.
         external_response = self.get_response(original_request, "https://example.org/a")
@@ -211,7 +211,7 @@ class TestRedirectBase(ABC):
             original_request, external_response
         )
         assert isinstance(external_redirect_request, Request)
-        assert safe_headers == external_redirect_request.headers.to_unicode_dict()
+        assert safe_headers == dict(external_redirect_request.headers.to_tuple_list())
 
         # A scheme upgrade (http → https) drops the Authorization header
         # because the origin changes, but keeps the Cookie header because the
@@ -224,7 +224,7 @@ class TestRedirectBase(ABC):
         assert {
             **safe_headers,
             **cookie_header,
-        } == upgrade_redirect_request.headers.to_unicode_dict()
+        } == dict(upgrade_redirect_request.headers.to_tuple_list())
 
         # A scheme downgrade (https → http) drops the Authorization header
         # because the origin changes, and the Cookie header because its value
@@ -240,7 +240,7 @@ class TestRedirectBase(ABC):
             original_request, downgrade_response
         )
         assert isinstance(downgrade_redirect_request, Request)
-        assert safe_headers == downgrade_redirect_request.headers.to_unicode_dict()
+        assert safe_headers == dict(downgrade_redirect_request.headers.to_tuple_list())
 
     def _check_proxy_scenario(
         self,
@@ -284,64 +284,44 @@ class TestRedirectBase(ABC):
 
     # A proxy set through Request.meta is kept on redirects, even on
     # cross-scheme ones.
-
-    def test_meta_proxy_http_absolute(self):
+    @pytest.mark.parametrize(
+        ("url", "location1", "location2"),
+        [
+            pytest.param(
+                "http://example.com",
+                "http://example.com",
+                "http://example.com",
+                id="http-absolute",
+            ),
+            pytest.param("http://example.com", "/a", "/a", id="http-relative"),
+            pytest.param(
+                "https://example.com",
+                "https://example.com",
+                "https://example.com",
+                id="https-absolute",
+            ),
+            pytest.param("https://example.com", "/a", "/a", id="https-relative"),
+            pytest.param(
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                id="http-to-https",
+            ),
+            pytest.param(
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                id="https-to-http",
+            ),
+        ],
+    )
+    def test_meta_proxy(self, url: str, location1: str, location2: str) -> None:
         self._check_proxy_scenario(
             env={},
             meta={"proxy": PROXY_A},
-            url="http://example.com",
-            location1="http://example.com",
-            location2="http://example.com",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_meta_proxy_http_relative(self):
-        self._check_proxy_scenario(
-            env={},
-            meta={"proxy": PROXY_A},
-            url="http://example.com",
-            location1="/a",
-            location2="/a",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_meta_proxy_https_absolute(self):
-        self._check_proxy_scenario(
-            env={},
-            meta={"proxy": PROXY_A},
-            url="https://example.com",
-            location1="https://example.com",
-            location2="https://example.com",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_meta_proxy_https_relative(self):
-        self._check_proxy_scenario(
-            env={},
-            meta={"proxy": PROXY_A},
-            url="https://example.com",
-            location1="/a",
-            location2="/a",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_meta_proxy_http_to_https(self):
-        self._check_proxy_scenario(
-            env={},
-            meta={"proxy": PROXY_A},
-            url="http://example.com",
-            location1="https://example.com",
-            location2="http://example.com",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_meta_proxy_https_to_http(self):
-        self._check_proxy_scenario(
-            env={},
-            meta={"proxy": PROXY_A},
-            url="https://example.com",
-            location1="http://example.com",
-            location2="https://example.com",
+            url=url,
+            location1=location1,
+            location2=location2,
             expected=("a", "a", "a", "a", "a"),
         )
 
@@ -349,123 +329,120 @@ class TestRedirectBase(ABC):
     # redirect drops it and HttpProxyMiddleware then sets the proxy of the new
     # scheme, if any. Cross-scheme scenarios use proxy a for http and proxy b
     # for https.
-
-    def test_system_proxy_http_absolute(self):
+    @pytest.mark.parametrize(
+        ("env", "url", "location1", "location2", "expected"),
+        [
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "http://example.com",
+                "http://example.com",
+                "http://example.com",
+                ("a", "a", "a", "a", "a"),
+                id="http-absolute",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "http://example.com",
+                "/a",
+                "/a",
+                ("a", "a", "a", "a", "a"),
+                id="http-relative",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_A},
+                "https://example.com",
+                "https://example.com",
+                "https://example.com",
+                ("a", "a", "a", "a", "a"),
+                id="https-absolute",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_A},
+                "https://example.com",
+                "/a",
+                "/a",
+                ("a", "a", "a", "a", "a"),
+                id="https-relative",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A, "https_proxy": PROXY_B},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                ("a", None, "b", None, "a"),
+                id="proxied-http-to-proxied-https",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                ("a", None, None, None, "a"),
+                id="proxied-http-to-unproxied-https",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_B},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                (None, None, "b", None, None),
+                id="unproxied-http-to-proxied-https",
+            ),
+            pytest.param(
+                {},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                (None, None, None, None, None),
+                id="unproxied-http-to-unproxied-https",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A, "https_proxy": PROXY_B},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                ("b", None, "a", None, "b"),
+                id="proxied-https-to-proxied-http",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_B},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                ("b", None, None, None, "b"),
+                id="proxied-https-to-unproxied-http",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                (None, None, "a", None, None),
+                id="unproxied-https-to-proxied-http",
+            ),
+            pytest.param(
+                {},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                (None, None, None, None, None),
+                id="unproxied-https-to-unproxied-http",
+            ),
+        ],
+    )
+    def test_system_proxy(
+        self,
+        env: dict[str, str],
+        url: str,
+        location1: str,
+        location2: str,
+        expected: tuple[str | None, ...],
+    ) -> None:
         self._check_proxy_scenario(
-            env={"http_proxy": PROXY_A},
+            env=env,
             meta={},
-            url="http://example.com",
-            location1="http://example.com",
-            location2="http://example.com",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_system_proxy_http_relative(self):
-        self._check_proxy_scenario(
-            env={"http_proxy": PROXY_A},
-            meta={},
-            url="http://example.com",
-            location1="/a",
-            location2="/a",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_system_proxy_https_absolute(self):
-        self._check_proxy_scenario(
-            env={"https_proxy": PROXY_A},
-            meta={},
-            url="https://example.com",
-            location1="https://example.com",
-            location2="https://example.com",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_system_proxy_https_relative(self):
-        self._check_proxy_scenario(
-            env={"https_proxy": PROXY_A},
-            meta={},
-            url="https://example.com",
-            location1="/a",
-            location2="/a",
-            expected=("a", "a", "a", "a", "a"),
-        )
-
-    def test_system_proxy_proxied_http_to_proxied_https(self):
-        self._check_proxy_scenario(
-            env={"http_proxy": PROXY_A, "https_proxy": PROXY_B},
-            meta={},
-            url="http://example.com",
-            location1="https://example.com",
-            location2="http://example.com",
-            expected=("a", None, "b", None, "a"),
-        )
-
-    def test_system_proxy_proxied_http_to_unproxied_https(self):
-        self._check_proxy_scenario(
-            env={"http_proxy": PROXY_A},
-            meta={},
-            url="http://example.com",
-            location1="https://example.com",
-            location2="http://example.com",
-            expected=("a", None, None, None, "a"),
-        )
-
-    def test_system_proxy_unproxied_http_to_proxied_https(self):
-        self._check_proxy_scenario(
-            env={"https_proxy": PROXY_B},
-            meta={},
-            url="http://example.com",
-            location1="https://example.com",
-            location2="http://example.com",
-            expected=(None, None, "b", None, None),
-        )
-
-    def test_system_proxy_unproxied_http_to_unproxied_https(self):
-        self._check_proxy_scenario(
-            env={},
-            meta={},
-            url="http://example.com",
-            location1="https://example.com",
-            location2="http://example.com",
-            expected=(None, None, None, None, None),
-        )
-
-    def test_system_proxy_proxied_https_to_proxied_http(self):
-        self._check_proxy_scenario(
-            env={"http_proxy": PROXY_A, "https_proxy": PROXY_B},
-            meta={},
-            url="https://example.com",
-            location1="http://example.com",
-            location2="https://example.com",
-            expected=("b", None, "a", None, "b"),
-        )
-
-    def test_system_proxy_proxied_https_to_unproxied_http(self):
-        self._check_proxy_scenario(
-            env={"https_proxy": PROXY_B},
-            meta={},
-            url="https://example.com",
-            location1="http://example.com",
-            location2="https://example.com",
-            expected=("b", None, None, None, "b"),
-        )
-
-    def test_system_proxy_unproxied_https_to_proxied_http(self):
-        self._check_proxy_scenario(
-            env={"http_proxy": PROXY_A},
-            meta={},
-            url="https://example.com",
-            location1="http://example.com",
-            location2="https://example.com",
-            expected=(None, None, "a", None, None),
-        )
-
-    def test_system_proxy_unproxied_https_to_unproxied_http(self):
-        self._check_proxy_scenario(
-            env={},
-            meta={},
-            url="https://example.com",
-            location1="http://example.com",
-            location2="https://example.com",
-            expected=(None, None, None, None, None),
+            url=url,
+            location1=location1,
+            location2=location2,
+            expected=expected,
         )

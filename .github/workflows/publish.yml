@@ -119,6 +119,6 @@ jobs:
     if: endsWith(github.ref_name, '.0')
     needs:
       - publish
-    uses: ./.github/workflows/upgrade-ci-pins.yml
+    uses: $/.github/workflows/upgrade-ci-pins.yml
     secrets:
       CI_PINS_APP_PRIVATE_KEY: ${{ secrets.CI_PINS_APP_PRIVATE_KEY }}

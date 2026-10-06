@@ -11,13 +11,13 @@ from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider
 from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
 
     from scrapy.http import Response
+    from tests.mockserver.http import MockServer
 
 
 class MemoryScheduler(BaseScheduler):
@@ -264,27 +264,17 @@ class TestMain:
 
 
 class TestRequestSendOrder:
-    mockserver: MockServer
-
     seconds = 0.1  # increase if flaky
 
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
+    @staticmethod
     def request(
-        self,
+        mockserver: MockServer,
         num: int,
         response_seconds: float,
         download_slots: int,
         priority: int = 0,
     ) -> Request:
-        url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
+        url = mockserver.url(f"/delay?n={response_seconds}&{num}")
         meta = {"download_slot": str(num % download_slots)}
         return Request(url, meta=meta, priority=priority)
 
@@ -293,6 +283,7 @@ class TestRequestSendOrder:
 
     async def _test_request_order(
         self,
+        mockserver: MockServer,
         start_nums: list[int],
         cb_nums: list[int] | None = None,
         settings: dict[str, Any] | None = None,
@@ -306,14 +297,14 @@ class TestRequestSendOrder:
         seconds = response_seconds or self.seconds
 
         cb_requests = deque(
-            [self.request(num, seconds, download_slots) for num in cb_nums]
+            [self.request(mockserver, num, seconds, download_slots) for num in cb_nums]
         )
 
         if start_fn is None:
 
             async def default_start(spider: Spider) -> AsyncIterator[Any]:
                 for num in start_nums:
-                    yield self.request(num, seconds, download_slots)
+                    yield self.request(mockserver, num, seconds, download_slots)
 
             start_fn = default_start
 
@@ -346,7 +337,7 @@ class TestRequestSendOrder:
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
 
     @coroutine_test
-    async def test_default(self):
+    async def test_default(self, mockserver: MockServer) -> None:
         """By default, callback requests take priority over start requests and
         are sent in order. Priority matters, but given the same priority, a
         callback request takes precedence."""
@@ -356,7 +347,7 @@ class TestRequestSendOrder:
 
         def _request(num: int, priority: int = 0) -> Request:
             return self.request(
-                num, response_seconds, download_slots, priority=priority
+                mockserver, num, response_seconds, download_slots, priority=priority
             )
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
@@ -379,6 +370,7 @@ class TestRequestSendOrder:
             yield
 
         await self._test_request_order(
+            mockserver,
             start_nums=nums,
             settings={"CONCURRENT_REQUESTS": 1},
             response_seconds=response_seconds,
@@ -387,7 +379,7 @@ class TestRequestSendOrder:
         )
 
     @coroutine_test
-    async def test_lifo_start(self):
+    async def test_lifo_start(self, mockserver: MockServer) -> None:
         """Changing the queues of start requests to LIFO, matching the queues
         of non-start requests, does not cause all requests to be stored in the
         same queue objects, it only affects the order of start requests."""
@@ -397,7 +389,7 @@ class TestRequestSendOrder:
 
         def _request(num: int, priority: int = 0) -> Request:
             return self.request(
-                num, response_seconds, download_slots, priority=priority
+                mockserver, num, response_seconds, download_slots, priority=priority
             )
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
@@ -420,6 +412,7 @@ class TestRequestSendOrder:
             yield
 
         await self._test_request_order(
+            mockserver,
             start_nums=nums,
             settings={
                 "CONCURRENT_REQUESTS": 1,
@@ -431,7 +424,7 @@ class TestRequestSendOrder:
         )
 
     @coroutine_test
-    async def test_shared_queues(self):
+    async def test_shared_queues(self, mockserver: MockServer) -> None:
         """If SCHEDULER_START_*_QUEUE is falsy, start requests and other
         requests share the same queue, i.e. start requests are not prioritized
         over other requests if their priority matches."""
@@ -441,7 +434,7 @@ class TestRequestSendOrder:
 
         def _request(num: int, priority: int = 0) -> Request:
             return self.request(
-                num, response_seconds, download_slots, priority=priority
+                mockserver, num, response_seconds, download_slots, priority=priority
             )
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
@@ -479,6 +472,7 @@ class TestRequestSendOrder:
             yield
 
         await self._test_request_order(
+            mockserver,
             start_nums=nums,
             settings={
                 "CONCURRENT_REQUESTS": 1,
@@ -493,7 +487,7 @@ class TestRequestSendOrder:
     # spiders.
 
     @coroutine_test
-    async def test_lazy(self):
+    async def test_lazy(self, mockserver: MockServer) -> None:
         start_nums = [1, 2, 4]
         cb_nums = [3]
         response_seconds = self.seconds * 2**1  # increase if flaky
@@ -503,10 +497,13 @@ class TestRequestSendOrder:
             for num in start_nums:
                 if spider.crawler.engine.needs_backout():
                     await spider.crawler.signals.wait_for(signals.scheduler_empty)
-                request = self.request(num, response_seconds, download_slots)
+                request = self.request(
+                    mockserver, num, response_seconds, download_slots
+                )
                 yield request
 
         await self._test_request_order(
+            mockserver,
             start_nums=start_nums,
             cb_nums=cb_nums,
             settings={

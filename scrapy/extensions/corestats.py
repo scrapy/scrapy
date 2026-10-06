@@ -4,16 +4,13 @@ Extension for collecting core stats like items scraped and start/finish times
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from time import monotonic
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy import Spider, signals
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
 
@@ -35,14 +32,14 @@ class CoreStats:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        self.start_time = datetime.now(tz=timezone.utc)
+        self.start_time = datetime.now(tz=UTC)
         self._start_time_mono = monotonic()
         self.stats.set_value("start_time", self.start_time)
 
     def spider_closed(self, spider: Spider, reason: str, error: bool = False) -> None:
         assert self.start_time is not None
         assert self._start_time_mono is not None
-        finish_time, finish_time_mono = datetime.now(tz=timezone.utc), monotonic()
+        finish_time, finish_time_mono = datetime.now(tz=UTC), monotonic()
         elapsed_time_seconds = finish_time_mono - self._start_time_mono
         self.stats.set_value("elapsed_time_seconds", elapsed_time_seconds)
         self.stats.set_value("finish_time", finish_time)

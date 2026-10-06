@@ -23,7 +23,7 @@ stats_dump_1 = {
     "log_count/INFO": 10,
     "log_count/WARNING": 1,
     "start_time": datetime.datetime(
-        2023, 6, 16, 8, 59, 18, 993170, tzinfo=datetime.timezone.utc
+        2023, 6, 16, 8, 59, 18, 993170, tzinfo=datetime.UTC
     ),
     "scheduler/enqueued/memory": 190,
     "scheduler/enqueued": 190,
@@ -46,7 +46,7 @@ stats_dump_2 = {
     "log_count/INFO": 12,
     "log_count/WARNING": 1,
     "start_time": datetime.datetime(
-        2023, 6, 16, 8, 59, 18, 993170, tzinfo=datetime.timezone.utc
+        2023, 6, 16, 8, 59, 18, 993170, tzinfo=datetime.UTC
     ),
     "scheduler/enqueued/memory": 337,
     "scheduler/enqueued": 337,

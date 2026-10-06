@@ -273,7 +273,9 @@ class Echo(LeafResource):
         assert request.content
         output = {
             "headers": {
-                to_unicode(k): [to_unicode(v) for v in vs]
+                to_unicode(k, errors="surrogateescape"): [
+                    to_unicode(v, errors="surrogateescape") for v in vs
+                ]
                 for k, vs in request.requestHeaders.getAllRawHeaders()
             },
             "body": to_unicode(request.content.read()),
@@ -444,7 +446,10 @@ class ResponseHeadersResource(BaseResource):
         assert request.content
         body = json.loads(request.content.read().decode())
         for header_name, header_value in body.items():
-            request.responseHeaders.setRawHeaders(header_name, [header_value])
+            # surrogateescape lets tests send bytes that are not valid UTF-8
+            request.responseHeaders.setRawHeaders(
+                header_name, [header_value.encode("utf-8", "surrogateescape")]
+            )
         return json.dumps(body).encode("utf-8")
 
 

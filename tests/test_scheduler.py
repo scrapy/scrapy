@@ -4,7 +4,7 @@ import json
 import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from unittest.mock import Mock
 
 import pytest
@@ -27,9 +27,6 @@ from tests.utils.downloader import MockDownloader
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
     from pathlib import Path
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 class MockCrawler(Crawler):

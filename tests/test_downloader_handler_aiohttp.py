@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -46,11 +45,13 @@ class AiohttpDownloadHandlerMixin:
 class TestHttp(AiohttpDownloadHandlerMixin, TestHttpBase):
     handler_supports_bindaddress_meta = False
     handler_bad_header_handling = "fail"
+    handler_non_utf8_request_header_handling = "replace"
 
 
 class TestHttps(AiohttpDownloadHandlerMixin, TestHttpsBase):
     handler_supports_bindaddress_meta = False
     handler_bad_header_handling = "fail"
+    handler_non_utf8_request_header_handling = "replace"
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
     @pytest.mark.skip(reason="The check is Twisted-specific")
@@ -103,18 +104,10 @@ class TestHttpProxy(AiohttpDownloadHandlerMixin, TestHttpProxyBase):
 class TestHttpsProxy(AiohttpDownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
 
-    @property
-    def handler_supports_tls_in_tls(self) -> bool:
-        return sys.version_info >= (3, 11)
-
 
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(AiohttpDownloadHandlerMixin, TestMitmProxyBase):
     handler_supports_socks: bool = False
-
-    @property
-    def handler_supports_tls_in_tls(self) -> bool:
-        return sys.version_info >= (3, 11)
 
 
 @pytest.mark.requires_internet

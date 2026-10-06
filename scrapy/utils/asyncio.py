@@ -6,7 +6,16 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
-from typing import TYPE_CHECKING, Any, Concatenate, Generic, ParamSpec, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    Self,
+    TypeVar,
+    TypeVarTuple,
+)
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall, deferLater
@@ -18,14 +27,10 @@ from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_insta
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
 
-    # typing.Self, typing.TypeVarTuple and typing.Unpack require Python 3.11
-    from typing_extensions import Self, TypeVarTuple, Unpack
-
-    _Ts = TypeVarTuple("_Ts")
-
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
+_Ts = TypeVarTuple("_Ts")
 
 
 logger = logging.getLogger(__name__)
@@ -236,7 +241,7 @@ def create_looping_call(
 
 
 def call_later(
-    delay: float, func: Callable[[Unpack[_Ts]], object], *args: Unpack[_Ts]
+    delay: float, func: Callable[[*_Ts], object], *args: *_Ts
 ) -> CallLaterResult:
     """Schedule a function to be called after a delay.
 
