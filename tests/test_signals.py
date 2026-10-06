@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -54,3 +55,31 @@ async def test_simple_pipeline(mockserver: MockServer) -> None:
     assert len(items) == 10
     for index in range(10):
         assert {"index": index} in items
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_response_downloaded_handler_finishes_before_callback(
+    mockserver: MockServer,
+) -> None:
+    events: list[str] = []
+
+    class SignalSpider(Spider):
+        name = "response_downloaded_signal"
+
+        async def start(self):
+            yield Request(mockserver.url("/status?n=200"))
+
+        def parse(self, response):
+            events.append("callback")
+
+    async def on_response_downloaded() -> None:
+        events.append("signal started")
+        await asyncio.sleep(0)
+        events.append("signal finished")
+
+    crawler = get_crawler(SignalSpider)
+    crawler.signals.connect(on_response_downloaded, signals.response_downloaded)
+    await crawler.crawl_async()
+
+    assert events == ["signal started", "signal finished", "callback"]

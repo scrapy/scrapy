@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import random
 import warnings
 from collections import deque
@@ -7,7 +8,12 @@ from dataclasses import dataclass, field
 from time import monotonic
 from typing import TYPE_CHECKING, Any
 
-from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
+from twisted.internet.defer import (
+    CancelledError,
+    Deferred,
+    DeferredList,
+    inlineCallbacks,
+)
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
@@ -333,12 +339,16 @@ class Downloader:
             response: Response = await self.handlers.download_request_async(request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
-            self.signals.send_catch_log(
+            await self.signals.send_catch_log_async(
                 signal=signals.response_downloaded,
                 response=response,
                 request=request,
                 spider=self.crawler.spider,
+                dont_log=CancelledError,
             )
+            # With a non-asyncio reactor, signal dispatch may swallow cancellation.
+            if not self._accepting_requests:
+                raise DownloadCancelledError("Download cancelled during shutdown")
             return response
         except Exception:
             await _process_pending_io()
@@ -361,6 +371,9 @@ class Downloader:
     ) -> None:
         try:
             response = await self._download(slot, request)
+        except asyncio.CancelledError:
+            if not queue_dfd.called:
+                queue_dfd.errback(Failure(DownloadCancelledError("Download cancelled")))
         except Exception:
             if not queue_dfd.called:
                 queue_dfd.errback(Failure())

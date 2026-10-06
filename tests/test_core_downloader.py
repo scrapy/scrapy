@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import warnings
 from typing import TYPE_CHECKING, Any, cast
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import OpenSSL.SSL
 import pytest
@@ -23,7 +24,7 @@ from twisted.web.client import (
 )
 from twisted.web.client import Response as TxResponse
 
-from scrapy import Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader._idna_patch import (
     _install_twisted_idna_fallbacks,
@@ -41,7 +42,7 @@ from scrapy.http import Response
 from scrapy.resolver import dnscache
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.asyncio import sleep
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
@@ -183,6 +184,161 @@ class TestDownloaderStop:
         await downloader.stop()
 
         assert not downloader._download_tasks
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_response_downloaded_waits_for_async_handler() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    response = Response(request.url)
+    slot = Slot(concurrency=1, delay=0, jitter=0)
+    slot.transferring.add(request)
+    entered = asyncio.Event()
+    release = asyncio.Event()
+    events: list[str] = []
+
+    async def on_response_downloaded(response: Response) -> None:
+        events.append("downloaded started")
+        entered.set()
+        await release.wait()
+        events.append("downloaded finished")
+
+    def on_request_left() -> None:
+        events.append("request left")
+
+    crawler.signals.connect(on_response_downloaded, signals.response_downloaded)
+    crawler.signals.connect(on_request_left, signals.request_left_downloader)
+    try:
+        with patch.object(
+            downloader.handlers,
+            "download_request_async",
+            new=AsyncMock(return_value=response),
+        ):
+            task = asyncio.create_task(downloader._download(slot, request))
+            await asyncio.wait_for(entered.wait(), timeout=1)
+            assert not task.done()
+            assert request in slot.transferring
+            assert events == ["downloaded started"]
+            release.set()
+            assert await task is response
+            assert request not in slot.transferring
+            assert events == [
+                "downloaded started",
+                "downloaded finished",
+                "request left",
+            ]
+    finally:
+        release.set()
+        downloader.close()
+        await downloader.handlers._close()
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_stop_while_response_downloaded_handler_is_pending() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    response = Response(request.url)
+    entered = asyncio.Event()
+    release = asyncio.Event()
+
+    async def on_response_downloaded() -> None:
+        entered.set()
+        await release.wait()
+
+    crawler.signals.connect(on_response_downloaded, signals.response_downloaded)
+    try:
+        with patch.object(
+            downloader.handlers,
+            "download_request_async",
+            new=AsyncMock(return_value=response),
+        ):
+            task = asyncio.create_task(downloader._enqueue_request(request))
+            await asyncio.wait_for(entered.wait(), timeout=1)
+            assert await asyncio.wait_for(downloader.stop(), timeout=1) == 1
+            assert not downloader._download_tasks
+            with pytest.raises((DownloadCancelledError, asyncio.CancelledError)):
+                await asyncio.wait_for(task, timeout=1)
+    finally:
+        release.set()
+        downloader.close()
+        await downloader.handlers._close()
+
+
+@pytest.mark.only_not_asyncio
+@coroutine_test
+async def test_response_downloaded_waits_for_deferred_handler() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    response = Response(request.url)
+    slot = Slot(concurrency=1, delay=0, jitter=0)
+    slot.transferring.add(request)
+    release: Deferred[None] = Deferred()
+
+    async def on_response_downloaded() -> None:
+        await release
+
+    crawler.signals.connect(on_response_downloaded, signals.response_downloaded)
+    try:
+        with patch.object(
+            downloader.handlers,
+            "download_request_async",
+            new=AsyncMock(return_value=response),
+        ):
+            download_dfd = deferred_from_coro(downloader._download(slot, request))
+            assert not download_dfd.called
+            assert request in slot.transferring
+            release.callback(None)
+            assert await download_dfd is response
+            assert request not in slot.transferring
+    finally:
+        if not release.called:
+            release.callback(None)
+        downloader.close()
+        await downloader.handlers._close()
+
+
+@pytest.mark.only_not_asyncio
+@coroutine_test
+async def test_stop_while_deferred_response_downloaded_handler_is_pending(
+    caplog,
+) -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    response = Response(request.url)
+    release: Deferred[None] = Deferred()
+
+    async def on_response_downloaded() -> None:
+        await release
+
+    crawler.signals.connect(on_response_downloaded, signals.response_downloaded)
+    try:
+        with patch.object(
+            downloader.handlers,
+            "download_request_async",
+            new=AsyncMock(return_value=response),
+        ):
+            download_dfd = deferred_from_coro(downloader._enqueue_request(request))
+            assert not download_dfd.called
+            assert await downloader.stop() == 1
+            assert not downloader._download_tasks
+            with pytest.raises(DownloadCancelledError):
+                await download_dfd
+            assert "Error caught on signal handler" not in caplog.text
+    finally:
+        if not release.called:
+            release.callback(None)
+        downloader.close()
+        await downloader.handlers._close()
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code

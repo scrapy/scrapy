@@ -608,7 +608,10 @@ response_downloaded
 
     Sent by the downloader right after a :class:`~scrapy.http.Response` is downloaded.
 
-    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+    .. versionchanged:: VERSION
+        Added support for asynchronous handlers.
 
     :param response: the response downloaded
     :type response: :class:`~scrapy.http.Response` object
