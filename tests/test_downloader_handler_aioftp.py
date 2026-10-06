@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
 from contextlib import asynccontextmanager
 from ipaddress import ip_address
 from typing import TYPE_CHECKING, Any
@@ -100,9 +99,6 @@ async def test_download(
     assert response.certificate is None
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 11), reason="Explicit FTPS requires Python 3.11+"
-)
 @coroutine_test
 async def test_download_ftps(
     ftps_server: MockFTPServer, caplog: pytest.LogCaptureFixture
@@ -125,6 +121,23 @@ async def test_tls_verbose_logging_without_tls(ftp_server: MockFTPServer) -> Non
 @coroutine_test
 async def test_nonexistent(ftp_server: MockFTPServer) -> None:
     response = await _download(Request(ftp_server.url("nonexistent.txt")))
+    assert response.status == 404
+    assert response.body == b""
+
+
+@pytest.mark.parametrize("path", ["", "/"])
+@coroutine_test
+async def test_list(ftp_server: MockFTPServer, path: str) -> None:
+    url = f"ftp://{ftp_server.host}:{ftp_server.port}{path}"
+    response = await _download(Request(url))
+    assert isinstance(response, TextResponse)
+    assert response.status == 200
+    assert set(response.text.splitlines()) == set(FILES)
+
+
+@coroutine_test
+async def test_list_nonexistent(ftp_server: MockFTPServer) -> None:
+    response = await _download(Request(ftp_server.url("nonexistent/")))
     assert response.status == 404
     assert response.body == b""
 
@@ -199,7 +212,9 @@ async def test_cannot_resolve_host() -> None:
 
 @coroutine_test
 async def test_timeout() -> None:
-    async def never_greet(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    async def never_greet(
+        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
         await reader.read()
         writer.close()
 
@@ -222,12 +237,16 @@ def _fake_ftp(
     """Return a minimal FTP server connection handler that sends *data*, if
     any, and then answers RETR with *retr_reply*."""
 
-    async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    async def handle(
+        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
         data_writer: asyncio.Future[asyncio.StreamWriter] = (
             asyncio.get_running_loop().create_future()
         )
 
-        def on_data_connection(_: asyncio.StreamReader, w: asyncio.StreamWriter):
+        def on_data_connection(
+            _: asyncio.StreamReader, w: asyncio.StreamWriter
+        ) -> None:
             data_writer.set_result(w)
 
         writer.write(b"220 Ready\r\n")
@@ -372,9 +391,6 @@ async def test_socks_proxy_wrong_credentials(ftp_server: MockFTPServer) -> None:
 
 
 @requires_socks
-@pytest.mark.skipif(
-    sys.version_info < (3, 11), reason="Explicit FTPS requires Python 3.11+"
-)
 @coroutine_test
 async def test_socks_proxy_ftps(ftps_server: MockFTPServer) -> None:
     async with _socks_proxy() as proxy:

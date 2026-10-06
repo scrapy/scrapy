@@ -475,6 +475,10 @@ It's implemented using the aioftp_ library.
 
 .. _aioftp: https://aioftp.rtfd.io/
 
+A path ending in ``/`` is listed instead of downloaded. The response body is
+the plain-text output of the FTP ``NLST`` command, one file or directory name
+per line.
+
 It supports SOCKS4 and SOCKS5 :reqmeta:`proxies <proxy>` if you install the
 :ref:`ftp-socks <extras>` extra.
 
@@ -490,8 +494,6 @@ Limitations:
     :setting:`FTP_PASSIVE_MODE` is ``False``, and requests that set the
     :reqmeta:`ftp_passive` request meta key to ``False`` are downloaded in
     passive mode, with an error logged.
-
--   On Python 3.10, ``ftps://`` URLs only work on port 990.
 
 DataURIDownloadHandler
 ----------------------

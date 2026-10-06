@@ -792,8 +792,12 @@ class TestHttpBase(ABC):
     @pytest.mark.parametrize(
         ("meta", "warns"),
         [
-            ({"download_maxsize": 100}, False),
-            ({"download_maxsize": 100, "download_warnsize": 4}, True),
+            pytest.param({"download_maxsize": 100}, False, id="maxsize-only"),
+            pytest.param(
+                {"download_maxsize": 100, "download_warnsize": 4},
+                True,
+                id="maxsize-and-warnsize",
+            ),
         ],
     )
     @coroutine_test

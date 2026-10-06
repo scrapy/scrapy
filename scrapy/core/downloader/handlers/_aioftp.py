@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_TIMEOUT_EXCEPTIONS: tuple[type[Exception], ...] = (asyncio.TimeoutError,)
+_TIMEOUT_EXCEPTIONS: tuple[type[Exception], ...] = (TimeoutError,)
 _CONNECTION_REFUSED_EXCEPTIONS: tuple[type[Exception], ...] = (ConnectionRefusedError,)
 _DOWNLOAD_FAILED_EXCEPTIONS: tuple[type[Exception], ...] = (
     aioftp.AIOFTPException,
@@ -112,7 +112,9 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
 
     @asynccontextmanager
     async def _make_request(
-        self, request: Request, timeout: float
+        self,
+        request: Request,
+        timeout: float,  # noqa: ASYNC109
     ) -> AsyncGenerator[_AioftpResponse]:
         url = urlparse_cached(request)
         assert url.hostname
@@ -147,7 +149,9 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
                 client, reader, writer, throttles={}, timeout=timeout
             )
             try:
-                await client.command(f"RETR {unquote(url.path)}", "1xx")
+                path = unquote(url.path)
+                command = "NLST" if not path or path.endswith("/") else "RETR"
+                await client.command(f"{command} {path}".rstrip(), "1xx")
             except aioftp.StatusCodeError as e:
                 data.close()
                 status = 404 if e.received_codes[-1].matches("550") else 503
