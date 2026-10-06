@@ -6,6 +6,7 @@ from unittest import TextTestResult
 import pytest
 from twisted.python import failure
 
+from scrapy import signals
 from scrapy.contracts import Contract, ContractsManager
 from scrapy.contracts.default import (
     CallbackKeywordArgumentsContract,
@@ -14,7 +15,7 @@ from scrapy.contracts.default import (
     ScrapesContract,
     UrlContract,
 )
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import ContractFail, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.spidermiddlewares.httperror import HttpError
@@ -865,6 +866,13 @@ class PostProcessErrorContract(Contract):
         raise ValueError("post-process error")
 
 
+class ExplodingContract(Contract):
+    name = "exploding"
+
+    def post_process(self, output: list[Any]) -> None:
+        raise RuntimeError("boom")
+
+
 class TestCustomContractPrePostProcess:
     def setup_method(self):
         self.results = TextTestResult(  # type: ignore[type-var]
@@ -997,6 +1005,54 @@ class LegacyHookContract(Contract):
 
     def add_pre_hook(self, request, results):
         return request
+
+
+@inline_callbacks_test
+def test_contract_failed_signal():
+    received: list[tuple[Any, Any, Any]] = []
+    conman = ContractsManager([UrlContract, ReturnsContract, ExplodingContract])
+    results = TextTestResult(  # type: ignore[type-var]
+        stream=None, descriptions=False, verbosity=0
+    )
+
+    class SignalSpider(Spider):
+        name = "contract_signal"
+
+        @classmethod
+        def from_crawler(cls, crawler, *args, **kwargs):
+            spider = super().from_crawler(crawler, *args, **kwargs)
+            crawler.signals.connect(spider.record, signal=signals.contract_failed)
+            return spider
+
+        def record(self, failure, spider, contract):
+            received.append((failure, spider, contract))
+
+        async def start(self):
+            for request in conman.from_spider(self, results):
+                yield request
+
+        def parse(self, response):
+            return None
+
+        def parse_ok(self, response):
+            yield {"ok": True}
+
+        def parse_error(self, response):
+            return None
+
+    with MockServer() as mockserver:
+        url = mockserver.url("/status?n=200")
+        SignalSpider.parse.__doc__ = f"@url {url}\n@returns items 1"
+        SignalSpider.parse_ok.__doc__ = f"@url {url}\n@returns items 1"
+        SignalSpider.parse_error.__doc__ = f"@url {url}\n@exploding"
+        crawler = get_crawler(SignalSpider)
+        yield crawler.crawl()
+
+    assert len(received) == 2
+    by_name = {contract.name: failure for failure, _, contract in received}
+    assert isinstance(by_name["returns"].value, ContractFail)
+    assert isinstance(by_name["exploding"].value, RuntimeError)
+    assert {spider for _, spider, _ in received} == {crawler.spider}
 
 
 def test_hook_override_deprecation():

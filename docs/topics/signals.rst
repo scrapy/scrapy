@@ -379,6 +379,28 @@ spider_error
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.Spider` object
 
+contract_failed
+~~~~~~~~~~~~~~~
+
+.. signal:: contract_failed
+.. function:: contract_failed(failure, spider, contract)
+
+    Sent when a :ref:`spider contract <topics-contracts>` check raises an
+    exception, including :exc:`~scrapy.exceptions.ContractFail`.
+
+    .. versionadded:: VERSION
+
+    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param failure: the exception raised
+    :type failure: twisted.python.failure.Failure
+
+    :param spider: the spider whose callback is being checked
+    :type spider: :class:`~scrapy.Spider` object
+
+    :param contract: the contract that failed
+    :type contract: :class:`~scrapy.contracts.Contract` object
+
 feed_slot_closed
 ~~~~~~~~~~~~~~~~
 

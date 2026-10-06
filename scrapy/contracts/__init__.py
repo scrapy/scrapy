@@ -10,6 +10,9 @@ from types import CoroutineType
 from typing import TYPE_CHECKING, Any, ClassVar
 from unittest import TestCase, TestResult
 
+from twisted.python.failure import Failure
+
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -18,8 +21,6 @@ from scrapy.utils.python import get_spec
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
-
-    from twisted.python.failure import Failure
 
     from scrapy import Spider
 
@@ -59,8 +60,10 @@ def _run_hook(
         results.stopTest(testcase)
     except AssertionError:
         results.addFailure(testcase, sys.exc_info())
+        _notify_contract_failed(process)
     except Exception:
         results.addError(testcase, sys.exc_info())
+        _notify_contract_failed(process)
     else:
         results.addSuccess(testcase)
 
@@ -89,6 +92,7 @@ class Contract:
     name: str
 
     def __init__(self, method: Callable[..., Any], *args: str):
+        self._method = method
         self.testcase_pre = _create_testcase(method, f"@{self.name} pre-hook")
         self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
         self.args: tuple[str, ...] = args
@@ -160,6 +164,26 @@ class Contract:
         define this attribute, the last one is used.
         """
         return args
+
+
+def _notify_contract_failed(process: Callable[..., Any]) -> None:
+    """Send the ``contract_failed`` signal for the spider that owns *process*.
+
+    Called while the exception is still active, so ``Failure`` can capture it.
+    """
+    contract = getattr(process, "__self__", None)
+    if not isinstance(contract, Contract):
+        return  # pragma: no cover
+    spider = getattr(contract._method, "__self__", None)
+    crawler = getattr(spider, "crawler", None)
+    if crawler is None or spider is None:
+        return
+    crawler.signals.send_catch_log(
+        signals.contract_failed,
+        failure=Failure(),
+        spider=spider,
+        contract=contract,
+    )
 
 
 class ContractsManager:

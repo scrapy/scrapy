@@ -14,8 +14,10 @@ integrated way of testing your spiders by the means of contracts.
 
 This allows you to test each callback of your spider by hardcoding a sample URL
 and checking various constraints for how the callback processes the response.
-Each contract is prefixed with an ``@`` and included in the docstring. See the
-following example:
+A failed check sends the :signal:`contract_failed` signal.
+
+Each contract is prefixed with an ``@`` and included in the docstring. See
+the following example:
 
 .. code-block:: python
 
