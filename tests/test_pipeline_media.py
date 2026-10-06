@@ -105,7 +105,7 @@ class TestBaseMediaPipeline:
         The memory leak is triggered when an exception is raised when a Response
         scheduled by the Media Pipeline is being returned. For example, when a
         FileException('download-error') is raised because the Response status
-        code is not 200 OK.
+        code is not 200 or 201.
 
         It happens because we are keeping a reference to the Response object
         inside the FileException context. This is caused by the way Twisted

@@ -54,6 +54,12 @@ this:
    in the original ``file_urls`` field. If some file failed downloading, an
    error will be logged and the file won't be present in the ``files`` field.
 
+A response is stored when its status is 200 or 201 and its body is not empty.
+The :class:`ImagesPipeline` uses the same check.
+
+.. versionchanged:: VERSION
+   Status 201 responses are stored.
+
 
 .. _images-pipeline:
 

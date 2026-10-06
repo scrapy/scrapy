@@ -309,6 +309,45 @@ class TestFilesPipeline:
         assert result["files"][0]["status"] == "downloaded"
 
     @coroutine_test
+    async def test_file_created_status_is_stored(self) -> None:
+        item_url = "http://example.com/created.bin"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={"response": Response(item_url, status=201, body=b"data")},
+        )
+        with mock.patch.object(
+            FilesPipeline, "get_media_requests", return_value=[request]
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        path = Path(self.tempdir) / result["files"][0]["path"]
+        assert path.read_bytes() == b"data"
+
+    @pytest.mark.parametrize("status", [204, 404])
+    @coroutine_test
+    async def test_file_unsuccessful_status(
+        self, status: int, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        item_url = "http://example.com/missing.bin"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={
+                "response": Response(item_url, status=status, body=b"not a file")
+            },
+        )
+        with (
+            caplog.at_level(logging.WARNING),
+            mock.patch.object(
+                FilesPipeline, "get_media_requests", return_value=[request]
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"] == []
+        assert f"File (code: {status})" in caplog.text
+
+    @coroutine_test
     async def test_file_empty_content(self, caplog: pytest.LogCaptureFixture) -> None:
         item_url = "http://example.com/empty.pdf"
         item = _create_item_with_files(item_url)
