@@ -73,6 +73,7 @@ __all__ = [
     "DOWNLOAD_FAIL_ON_DATALOSS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
+    "DOWNLOAD_HANDLERS_BY_NAME",
     "DOWNLOAD_MAXSIZE",
     "DOWNLOAD_SLOTS",
     "DOWNLOAD_TIMEOUT",
@@ -152,6 +153,7 @@ __all__ = [
     "LOG_FORMATTER",
     "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
+    "LOG_LEVELS",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
     "LOG_VERSIONS",
@@ -310,6 +312,7 @@ DOWNLOAD_HANDLERS_BASE = {
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
+DOWNLOAD_HANDLERS_BY_NAME: dict[str, str] = {}
 
 DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024  # 1024m
 DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
@@ -477,6 +480,7 @@ LOG_FILE_APPEND = True
 LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
+LOG_LEVELS: dict[str, str] = {}
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
 LOG_VERSIONS = [

@@ -4,7 +4,7 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
@@ -14,11 +14,7 @@ from scrapy.utils.conf import _job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
-    # requires queuelib >= 1.6.2
     from queuelib.queue import BaseQueue
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.dupefilters import BaseDupeFilter
@@ -65,6 +61,16 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     The methods defined in this class constitute the minimal interface that the Scrapy engine will interact with.
     """
 
+    supports_skip_dupefilter_once: bool = False
+    """Must be ``True``, to declare that :meth:`enqueue_request` handles the
+    :reqmeta:`skip_dupefilter_once` meta key.
+
+    It is not inherited by subclasses that override :meth:`enqueue_request`,
+    which must set it again.
+
+    .. versionadded:: VERSION
+    """
+
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         """
@@ -102,12 +108,19 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         Process a request received by the engine.
 
+        .. versionchanged:: VERSION
+           Must handle the :reqmeta:`skip_dupefilter_once` meta key.
+
         Return ``True`` if the request is stored correctly, ``False`` otherwise.
 
         If ``False``, the engine will fire a ``request_dropped`` signal, and
         will not make further attempts to schedule the request at a later time.
         For reference, the default Scrapy scheduler returns ``False`` when the
         request is rejected by the dupefilter.
+
+        If the request has the :reqmeta:`skip_dupefilter_once` meta key, remove
+        it and, if it was ``True``, do not filter out the request as a
+        duplicate. See also :attr:`supports_skip_dupefilter_once`.
         """
         raise NotImplementedError
 
@@ -254,6 +267,8 @@ class Scheduler(BaseScheduler):
     which may also write data inside the job directory.
     """
 
+    supports_skip_dupefilter_once = True
+
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         dupefilter_cls = load_object(crawler.settings["DUPEFILTER_CLASS"])
@@ -380,7 +395,12 @@ class Scheduler(BaseScheduler):
 
         Return ``True`` if the request was stored successfully, ``False`` otherwise.
         """
-        if not request.dont_filter and self.df.request_seen(request):
+        skip_dupefilter = request.meta.pop("skip_dupefilter_once", False)
+        if (
+            not request.dont_filter
+            and not skip_dupefilter
+            and self.df.request_seen(request)
+        ):
             self.df.log(request, self.spider)
             return False
         dqok = self._dqpush(request)

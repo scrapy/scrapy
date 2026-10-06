@@ -179,7 +179,7 @@ class ScrapyCommand(ABC):
         raise NotImplementedError
 
 
-class BaseRunSpiderCommand(ScrapyCommand):
+class BaseRunSpiderCommand(ScrapyCommand, ABC):
     """
     Common class used to share functionality between the crawl, parse and runspider commands
     """
