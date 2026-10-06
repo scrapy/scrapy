@@ -86,7 +86,7 @@ UriParamsCallableT: TypeAlias = Callable[
 _ItemProcessor: TypeAlias = Callable[[Any], Iterable[Any]]
 
 
-FEED_MODES: frozenset[str] = frozenset({"append", "create", "overwrite"})
+_FEED_MODES: frozenset[str] = frozenset({"append", "create", "overwrite"})
 
 
 def _get_mode(storage: Any, feed_options: dict[str, Any] | None, legacy: str) -> str:
@@ -104,10 +104,10 @@ def _get_mode(storage: Any, feed_options: dict[str, Any] | None, legacy: str) ->
 
 
 def _check_mode(mode: str, storage: Any, uri: str | None = None) -> None:
-    if mode not in FEED_MODES:
+    if mode not in _FEED_MODES:
         raise ValueError(
             f"Invalid feed mode: {mode!r}. Supported modes: "
-            f"{', '.join(sorted(FEED_MODES))}."
+            f"{', '.join(sorted(_FEED_MODES))}."
         )
     supported: frozenset[str] | None = getattr(storage, "supported_modes", None)
     if supported is not None and mode not in supported:
@@ -221,7 +221,7 @@ class StdoutFeedStorage:
     """:ref:`Standard output <topics-feed-storage-stdout>` storage backend."""
 
     # The mode is irrelevant here: writing to a stream cannot destroy data.
-    supported_modes: frozenset[str] = FEED_MODES
+    supported_modes: frozenset[str] = _FEED_MODES
 
     def __init__(
         self,
@@ -255,7 +255,7 @@ class FileFeedStorage:
     are created when the feed is opened.
     """
 
-    supported_modes: frozenset[str] = FEED_MODES
+    supported_modes: frozenset[str] = _FEED_MODES
 
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path: str = file_uri_to_path(uri) if uri.startswith("file:") else uri
@@ -398,7 +398,7 @@ class S3FeedStorage(BlockingFeedStorage):
 class GCSFeedStorage(BlockingFeedStorage):
     """:ref:`GCS <topics-feed-storage-gcs>` storage backend."""
 
-    supported_modes: frozenset[str] = FEED_MODES
+    supported_modes: frozenset[str] = _FEED_MODES
 
     def __init__(
         self,
@@ -486,7 +486,7 @@ class FTPFeedStorage(BlockingFeedStorage):
     """:ref:`FTP <feed-storage-ftp>` storage backend, which also handles
     :ref:`FTPS <feed-storage-ftps>` when *uri* uses the ``ftps`` scheme."""
 
-    supported_modes: frozenset[str] = FEED_MODES
+    supported_modes: frozenset[str] = _FEED_MODES
 
     def __init__(
         self,
@@ -744,11 +744,10 @@ class FeedExporter:
         that nothing is written to it."""
         slot._skipped = True
         logger.error(
-            "Not writing %(uri)s because it already exists and the feed mode "
-            "is 'create'; its items are lost. To write it instead, remove the "
-            "target, or set the mode feed option or the FEED_MODE setting to "
-            "'overwrite' or 'append' (-O implies 'overwrite').",
-            {"uri": slot.uri},
+            f"Not writing {slot.uri} because it already exists and the feed "
+            "mode is 'create'; its items are lost. To write it instead, remove "
+            "the target, or set the mode feed option or the FEED_MODE setting "
+            "to 'overwrite' or 'append' (-O implies 'overwrite').",
             extra={"spider": slot.spider},
         )
         assert self.crawler.stats
@@ -996,10 +995,9 @@ class FeedExporter:
             return
         if getattr(storage, "supported_modes", None) is None:
             logger.warning(
-                "%(storage)s does not declare which feed modes it supports, so "
-                "the mode feed option of the %(uri)s feed (%(mode)r) may be "
-                "ignored.",
-                {"storage": type(storage).__name__, "uri": uri, "mode": mode},
+                f"{type(storage).__name__} does not declare which feed modes it "
+                f"supports, so the mode feed option of the {uri} feed ({mode!r}) "
+                "may be ignored."
             )
             return
         _check_mode(mode, storage, uri)

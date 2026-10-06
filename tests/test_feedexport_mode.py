@@ -7,11 +7,7 @@ from typing import IO, TYPE_CHECKING, Any
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.extensions.feedexport import (
-    FEED_MODES,
-    BlockingFeedStorage,
-    FileFeedStorage,
-)
+from scrapy.extensions.feedexport import BlockingFeedStorage, FileFeedStorage
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 from tests.utils.feedexport import crawl_items, path_to_url, printf_escape
@@ -25,7 +21,7 @@ class DelayedFileStorage(BlockingFeedStorage):
     """Feed storage that, like the S3 or GCS ones, can only detect a conflict
     when the feed is delivered, at the end of the crawl or of a batch."""
 
-    supported_modes = FEED_MODES
+    supported_modes = frozenset({"append", "create", "overwrite"})
 
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path = Path(uri.split("://", 1)[1])
@@ -117,9 +113,10 @@ class TestFeedMode:
         the other feeds are written."""
         existing = self._path(b"old content")
         missing = self.temp_dir / "missing.jl"
-        crawler = await self._crawl(
-            existing,
-            settings={
+        crawler = await crawl_items(
+            self.mockserver,
+            [{"foo": "bar"}],
+            {
                 "FEEDS": {
                     printf_escape(path_to_url(existing)): {"format": "jl"},
                     printf_escape(path_to_url(missing)): {"format": "jl"},
@@ -143,9 +140,10 @@ class TestFeedMode:
         existing2 = self.temp_dir / "items2.jl"
         existing2.write_bytes(b"old content")
         with caplog.at_level(logging.ERROR):
-            crawler = await self._crawl(
-                existing1,
-                settings={
+            crawler = await crawl_items(
+                self.mockserver,
+                [{"foo": "bar"}],
+                {
                     "FEEDS": {
                         printf_escape(path_to_url(existing1)): {"format": "jl"},
                         printf_escape(path_to_url(existing2)): {"format": "jl"},

@@ -17,7 +17,6 @@ from w3lib.url import path_to_file_uri
 import scrapy
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.feedexport import (
-    FEED_MODES,
     BlockingFeedStorage,
     FileFeedStorage,
     FTPFeedStorage,
@@ -588,6 +587,8 @@ class TestS3FeedStorage:
 
     @coroutine_test
     async def test_store_create(self) -> None:
+        from botocore.stub import ANY, Stubber  # noqa: PLC0415
+
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
             "access_key",
@@ -595,23 +596,33 @@ class TestS3FeedStorage:
             "custom-acl",
             feed_options={"mode": "create"},
         )
-        storage.s3_client = mock.MagicMock()
-        file = BytesIO(b"test file")
-        stored = storage.store(file)
-        assert stored is not None
-        await maybe_deferred_to_future(stored)
-        storage.s3_client.upload_fileobj.assert_not_called()
-        assert storage.s3_client.put_object.call_args == mock.call(
-            Bucket="mybucket",
-            Key="export.csv",
-            Body=file,
-            IfNoneMatch="*",
-            ACL="custom-acl",
-        )
+        with Stubber(storage.s3_client) as stub:
+            stub.add_response(
+                "put_object",
+                {},
+                expected_params={
+                    "Bucket": "mybucket",
+                    "Key": "export.csv",
+                    "Body": ANY,
+                    "IfNoneMatch": "*",
+                    "ACL": "custom-acl",
+                },
+            )
+            stored = storage.store(BytesIO(b"test file"))
+            assert stored is not None
+            await maybe_deferred_to_future(stored)
+            stub.assert_no_pending_responses()
 
+    @pytest.mark.parametrize(
+        ("error_code", "exception"),
+        [("PreconditionFailed", FileExistsError), ("AccessDenied", None)],
+    )
     @coroutine_test
-    async def test_store_create_existing(self) -> None:
+    async def test_store_create_error(
+        self, error_code: str, exception: type[Exception] | None
+    ) -> None:
         from botocore.exceptions import ClientError  # noqa: PLC0415
+        from botocore.stub import Stubber  # noqa: PLC0415
 
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
@@ -619,33 +630,12 @@ class TestS3FeedStorage:
             "secret_key",
             feed_options={"mode": "create"},
         )
-        storage.s3_client = mock.MagicMock()
-        storage.s3_client.put_object.side_effect = ClientError(
-            {"Error": {"Code": "PreconditionFailed"}}, "PutObject"
-        )
-        stored = storage.store(BytesIO(b"test file"))
-        assert stored is not None
-        with pytest.raises(FileExistsError):
-            await maybe_deferred_to_future(stored)
-
-    @coroutine_test
-    async def test_store_create_error(self) -> None:
-        from botocore.exceptions import ClientError  # noqa: PLC0415
-
-        storage = S3FeedStorage(
-            "s3://mybucket/export.csv",
-            "access_key",
-            "secret_key",
-            feed_options={"mode": "create"},
-        )
-        storage.s3_client = mock.MagicMock()
-        storage.s3_client.put_object.side_effect = ClientError(
-            {"Error": {"Code": "AccessDenied"}}, "PutObject"
-        )
-        stored = storage.store(BytesIO(b"test file"))
-        assert stored is not None
-        with pytest.raises(ClientError):
-            await maybe_deferred_to_future(stored)
+        with Stubber(storage.s3_client) as stub:
+            stub.add_client_error("put_object", service_error_code=error_code)
+            stored = storage.store(BytesIO(b"test file"))
+            assert stored is not None
+            with pytest.raises(exception or ClientError):
+                await maybe_deferred_to_future(stored)
 
 
 class TestGCSFeedStorage:
@@ -972,7 +962,7 @@ class TestStdoutFeedStorage:
         storage.store(file)
         assert out.getvalue() == b"content"
 
-    @pytest.mark.parametrize("mode", sorted(FEED_MODES))
+    @pytest.mark.parametrize("mode", ["append", "create", "overwrite"])
     def test_mode_ignored(self, mode: str, caplog: pytest.LogCaptureFixture):
         out = BytesIO()
         with caplog.at_level(logging.DEBUG):
