@@ -25,65 +25,6 @@ Request objects
 
 .. autoclass:: scrapy.Request
 
-    :param url: the URL of this request
-
-        If the URL is invalid, a :exc:`ValueError` exception is raised.
-    :type url: str
-
-    :param callback: sets :attr:`callback`, defaults to ``None``.
-    :type callback: Callable[Concatenate[Response, ...], Any] | None
-
-    :param method: the HTTP method of this request. Defaults to ``'GET'``.
-    :type method: str
-
-    :param meta: the initial values for the :attr:`.Request.meta` attribute. If
-       given, the dict passed in this parameter will be shallow copied.
-    :type meta: dict
-
-    :param body: the request body. If a string is passed, then it's encoded as
-      bytes using the ``encoding`` passed (which defaults to ``utf-8``). If
-      ``body`` is not given, an empty bytes object is stored. Regardless of the
-      type of this argument, the final value stored will be a bytes object
-      (never a string or ``None``).
-    :type body: bytes or str
-
-    :param headers: the headers of this request. The dict values can be strings
-       (for single valued headers) or lists (for multi-valued headers). If
-       ``None`` is passed as value, the HTTP header will not be sent at all.
-
-       .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-           :ref:`cookie middleware <cookies>`. If you need to set cookies for a
-           request, use the ``cookies`` argument.
-
-    :type headers: dict
-
-    :param cookies: the request cookies, as a dict of cookie names and values
-        or as a list of dicts with a cookie each. See :ref:`cookies`.
-    :type cookies: dict or list
-
-    :param encoding: the encoding of this request (defaults to ``'utf-8'``).
-       This encoding will be used to percent-encode the URL and to convert the
-       body to bytes (if given as a string).
-
-       To disable URL percent-encoding for a request, use the
-       :reqmeta:`verbatim_url` request meta key.
-    :type encoding: str
-
-    :param priority: sets :attr:`priority`, defaults to ``0``.
-    :type priority: int
-
-    :param dont_filter: sets :attr:`dont_filter`, defaults to ``False``.
-    :type dont_filter: bool
-
-    :param errback: sets :attr:`errback`, defaults to ``None``.
-    :type errback: Callable[[Failure], Any] | None
-
-    :param flags:  Flags sent to the request, can be used for logging or similar purposes.
-    :type flags: list
-
-    :param cb_kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
-    :type cb_kwargs: dict
-
     .. attribute:: Request.url
 
         A string containing the URL of this request.
@@ -199,6 +140,10 @@ Request objects
 
     .. autoattribute:: dont_filter
 
+    .. autoattribute:: id
+
+    .. autoattribute:: parent_id
+
     .. autoattribute:: Request.attributes
 
     .. method:: Request.copy()
@@ -206,13 +151,7 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`callback-data`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs, cls])
-
-       Return a Request object with the same members, except for those members
-       given new values by whichever keyword arguments are specified. The
-       :attr:`~scrapy.Request.cb_kwargs` and :attr:`~scrapy.Request.meta` attributes are shallow
-       copied by default (unless new values are given as arguments). See also
-       :ref:`callback-data`.
+    .. automethod:: replace
 
     .. automethod:: from_curl
 
@@ -903,6 +842,7 @@ Those are:
 * :reqmeta:`referrer_policy`
 * :reqmeta:`retry_times`
 * :reqmeta:`rule`
+* :reqmeta:`skip_dupefilter_once`
 * :reqmeta:`verbatim_url`
 
 Scrapy components also use meta keys whose name starts with an underscore, such
@@ -948,6 +888,17 @@ This meta key is not supported by
 :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
 :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
 the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
+
+.. reqmeta:: download_handler
+
+download_handler
+----------------
+
+.. versionadded:: VERSION
+
+ID of the :ref:`download handler <topics-download-handlers>` to use for this
+request, either a name from :setting:`DOWNLOAD_HANDLERS_BY_NAME` or a URL
+scheme from :setting:`DOWNLOAD_HANDLERS`. See :ref:`download-handler-ids`.
 
 .. reqmeta:: download_timeout
 
@@ -1023,6 +974,18 @@ http_user
 
 Overrides :setting:`HTTPAUTH_USER` for this request.
 
+.. reqmeta:: is_robotstxt_request
+
+is_robotstxt_request
+--------------------
+
+.. versionadded:: VERSION
+
+``True`` on the ``robots.txt`` requests that
+:class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` sends, so
+that :ref:`downloader middlewares <topics-downloader-middleware>` can tell them
+apart from other requests.
+
 .. reqmeta:: max_retry_times
 
 max_retry_times
@@ -1031,6 +994,20 @@ max_retry_times
 The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: skip_dupefilter_once
+
+skip_dupefilter_once
+--------------------
+
+.. versionadded:: VERSION
+
+Set this key to ``True`` to skip :setting:`duplicate filtering
+<DUPEFILTER_CLASS>` for this request. The :ref:`scheduler <topics-scheduler>`
+removes this key, so requests derived from this request, e.g. redirects, are
+filtered as usual.
+
+:func:`~scrapy.downloadermiddlewares.retry.get_retry_request` sets this key.
 
 .. reqmeta:: verbatim_url
 

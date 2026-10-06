@@ -5,7 +5,7 @@ import random
 import socket
 import warnings
 from asyncio import Future
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from unittest import mock
 
 import pytest
@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 
     from twisted.python.failure import Failure
-    from typing_extensions import Self
 
 
 @pytest.mark.requires_reactor  # mustbe_deferred() requires a reactor

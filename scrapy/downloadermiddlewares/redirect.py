@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 from urllib.parse import urljoin, urlparse
 
 from w3lib.url import safe_url_string
@@ -16,9 +16,6 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.response import get_meta_refresh
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings

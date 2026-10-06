@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 from urllib.parse import unquote, urlunparse
 from urllib.request import (  # type: ignore[attr-defined]
     _parse_proxy,
@@ -16,9 +16,6 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.url import _to_http_scheme
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
     from scrapy.http import Response

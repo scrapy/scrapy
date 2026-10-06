@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 
 from scrapy.http import Request
-from scrapy.utils.datatypes import (
+from scrapy.utils._datatypes import (
     CaseInsensitiveDict,
     LocalCache,
     LocalWeakReferencedCache,

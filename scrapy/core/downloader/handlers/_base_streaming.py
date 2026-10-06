@@ -4,7 +4,16 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, NoReturn, TypedDict, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Generic,
+    NoReturn,
+    NotRequired,
+    TypedDict,
+    TypeVar,
+)
 
 from scrapy import Request, signals
 from scrapy.exceptions import (
@@ -29,9 +38,6 @@ if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
     from _typeshed import SizedBuffer
-
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
     from scrapy.http import Headers, Response

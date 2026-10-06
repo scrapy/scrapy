@@ -1,33 +1,27 @@
 from __future__ import annotations
 
-import csv
 import json
-import marshal
-import pickle
-from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-import lxml.etree
 import pytest
 from packaging.version import Version
 
 import scrapy
-from scrapy import Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import FeedExporter, S3FeedStorage
-from scrapy.settings import Settings
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
-from tests.utils.bases.feedexport import TestFeedExportBase
-from tests.utils.decorators import coroutine_test, inline_callbacks_test
-from tests.utils.feedexport import MyItem
+from tests.utils.decorators import coroutine_test
+from tests.utils.feedexport import PARSERS, MyItem, crawl_items, csv_header, unique_path
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from os import PathLike
+
+    from tests.mockserver.http import MockServer
 
 
 def build_url(path: str | PathLike[str]) -> str:
@@ -37,187 +31,64 @@ def build_url(path: str | PathLike[str]) -> str:
     return urljoin("file:", path_str)
 
 
-class TestBatchDeliveries(TestFeedExportBase):
+async def export_batches(
+    mockserver: MockServer, items: Iterable[Any], settings: dict[str, Any]
+) -> dict[str, list[bytes]]:
+    """Export *items* with *settings*, whose ``FEEDS`` are keyed by local
+    batch paths with a separate parent directory for each feed, and return
+    the contents of the batch files of each feed format, in file name order."""
+    feeds = settings["FEEDS"]
+    feed_urls = {build_url(path): options for path, options in feeds.items()}
+    await crawl_items(mockserver, items, {**settings, "FEEDS": feed_urls})
+    return {
+        options["format"]: [
+            file.read_bytes() for file in sorted(Path(path).parent.iterdir())
+        ]
+        if Path(path).parent.exists()
+        else []
+        for path, options in feeds.items()
+    }
+
+
+class TestBatchDeliveries:
     _file_mark = "_%(batch_time)s_%(batch_id)02d_"
 
-    async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
-    ) -> dict[str, list[bytes]]:
-        """Run spider with specified settings; return exported data."""
-
-        FEEDS = settings.get("FEEDS") or {}
-        settings["FEEDS"] = {
-            build_url(file_path): feed for file_path, feed in FEEDS.items()
-        }
-        content: defaultdict[str, list[bytes]] = defaultdict(list)
-        spider_cls.start_urls = [self.mockserver.url("/")]
-        crawler = get_crawler(spider_cls, settings)
-        await crawler.crawl_async()
-
-        for path, feed in FEEDS.items():
-            dir_name = Path(path).parent
-            if not dir_name.exists():
-                content[feed["format"]] = []
-                continue
-            for file in sorted(dir_name.iterdir()):
-                content[feed["format"]].append(file.read_bytes())
-        return content
-
-    async def assertExportedJsonLines(self, items, rows, settings=None):
-        settings = settings or {}
-        settings.update(
-            {
-                "FEEDS": {
-                    self._random_temp_filename() / "jl" / self._file_mark: {
-                        "format": "jl"
-                    },
-                },
-            }
-        )
-        batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
-        rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
-        for batch in data["jl"]:
-            got_batch = [
-                json.loads(to_unicode(batch_item)) for batch_item in batch.splitlines()
-            ]
-            expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            assert got_batch == expected_batch
-
-    async def assertExportedCsv(self, items, header, rows, settings=None):
-        settings = settings or {}
-        settings.update(
-            {
-                "FEEDS": {
-                    self._random_temp_filename() / "csv" / self._file_mark: {
-                        "format": "csv"
-                    },
-                },
-            }
-        )
-        batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
-        data = await self.exported_data(items, settings)
-        for batch in data["csv"]:
-            got_batch = csv.DictReader(to_unicode(batch).splitlines())
-            assert list(header) == got_batch.fieldnames
-            expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            assert list(got_batch) == expected_batch
-
-    async def assertExportedXml(self, items, rows, settings=None):
-        settings = settings or {}
-        settings.update(
-            {
-                "FEEDS": {
-                    self._random_temp_filename() / "xml" / self._file_mark: {
-                        "format": "xml"
-                    },
-                },
-            }
-        )
-        batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
-        rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
-        for batch in data["xml"]:
-            root = lxml.etree.fromstring(batch)
-            got_batch = [{e.tag: e.text for e in it} for it in root.findall("item")]
-            expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            assert got_batch == expected_batch
-
-    async def assertExportedMultiple(self, items, rows, settings=None):
-        settings = settings or {}
-        settings.update(
-            {
-                "FEEDS": {
-                    self._random_temp_filename() / "xml" / self._file_mark: {
-                        "format": "xml"
-                    },
-                    self._random_temp_filename() / "json" / self._file_mark: {
-                        "format": "json"
-                    },
-                },
-            }
-        )
-        batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
-        rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
-        # XML
-        xml_rows = rows.copy()
-        for batch in data["xml"]:
-            root = lxml.etree.fromstring(batch)
-            got_batch = [{e.tag: e.text for e in it} for it in root.findall("item")]
-            expected_batch, xml_rows = xml_rows[:batch_size], xml_rows[batch_size:]
-            assert got_batch == expected_batch
-        # JSON
-        json_rows = rows.copy()
-        for batch in data["json"]:
-            got_batch = json.loads(batch.decode("utf-8"))
-            expected_batch, json_rows = json_rows[:batch_size], json_rows[batch_size:]
-            assert got_batch == expected_batch
-
-    async def assertExportedPickle(self, items, rows, settings=None):
-        settings = settings or {}
-        settings.update(
-            {
-                "FEEDS": {
-                    self._random_temp_filename() / "pickle" / self._file_mark: {
-                        "format": "pickle"
-                    },
-                },
-            }
-        )
-        batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
-        rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
-
-        for batch in data["pickle"]:
-            got_batch = self._load_until_eof(batch, load_func=pickle.load)
-            expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            assert got_batch == expected_batch
-
-    async def assertExportedMarshal(self, items, rows, settings=None):
-        settings = settings or {}
-        settings.update(
-            {
-                "FEEDS": {
-                    self._random_temp_filename() / "marshal" / self._file_mark: {
-                        "format": "marshal"
-                    },
-                },
-            }
-        )
-        batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
-        rows = [{k: v for k, v in row.items() if v} for row in rows]
-        data = await self.exported_data(items, settings)
-
-        for batch in data["marshal"]:
-            got_batch = self._load_until_eof(batch, load_func=marshal.load)
-            expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            assert got_batch == expected_batch
-
+    @pytest.mark.parametrize("fmt", list(PARSERS))
     @coroutine_test
-    async def test_export_items(self):
+    async def test_export_items(
+        self, fmt: str, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         """Test partial deliveries in all supported formats"""
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
             MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
             MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
-        rows = [
-            {"egg": "spam1", "foo": "bar1", "baz": ""},
-            {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
-            {"foo": "bar3", "baz": "quux3", "egg": ""},
+        settings = {
+            "FEEDS": {unique_path(tmp_path) / self._file_mark: {"format": fmt}},
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+        }
+        batches = (await export_batches(mockserver, items, settings))[fmt]
+        if fmt == "csv":
+            header = list(MyItem.fields)
+            assert [csv_header(batch) for batch in batches] == [header, header]
+        assert [PARSERS[fmt](batch) for batch in batches] == [
+            [
+                {"egg": "spam1", "foo": "bar1"},
+                {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
+            ],
+            [{"foo": "bar3", "baz": "quux3"}],
         ]
-        settings = {"FEED_EXPORT_BATCH_ITEM_COUNT": 2}
-        header = MyItem.fields.keys()
-        await self.assertExported(items, header, rows, settings=settings)
 
     @coroutine_test
-    async def test_batch_delivered_when_full(self):
+    async def test_batch_delivered_when_full(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         """Full batches must be finalized and delivered as soon as they are
         full, instead of when the spider closes."""
-        dir_path = self._random_temp_filename()
+        dir_path = unique_path(tmp_path)
         batch1_path = Path(dir_path, "1.json")
-        mockserver_url = self.mockserver.url("/")
+        mockserver_url = mockserver.url("/")
         batch1_contents: list[bytes | None] = []
 
         class TestSpider(scrapy.Spider):
@@ -252,11 +123,11 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert batch1_contents[0] is not None, "batch 1 was not stored during the crawl"
         assert json.loads(batch1_contents[0]) == [{"foo": "bar1"}, {"foo": "bar2"}]
 
-    def test_wrong_path(self):
+    def test_wrong_path(self, tmp_path: Path) -> None:
         """If path is without %(batch_time)s and %(batch_id) an exception must be raised"""
         settings = {
             "FEEDS": {
-                self._random_temp_filename(): {"format": "xml"},
+                unique_path(tmp_path): {"format": "xml"},
             },
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
@@ -265,23 +136,24 @@ class TestBatchDeliveries(TestFeedExportBase):
             build_from_crawler(FeedExporter, crawler)
 
     @coroutine_test
-    async def test_export_no_items_not_store_empty(self):
+    async def test_export_no_items_not_store_empty(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename() / fmt / self._file_mark: {
-                        "format": fmt
-                    },
+                    unique_path(tmp_path) / self._file_mark: {"format": fmt},
                 },
                 "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
                 "FEED_STORE_EMPTY": False,
             }
-            data = await self.exported_no_data(settings)
-            data = dict(data)
+            data = await export_batches(mockserver, [], settings)
             assert len(data[fmt]) == 0
 
     @coroutine_test
-    async def test_export_no_items_store_empty(self):
+    async def test_export_no_items_store_empty(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         formats = (
             ("json", b"[]"),
             ("jsonlines", b""),
@@ -292,20 +164,19 @@ class TestBatchDeliveries(TestFeedExportBase):
         for fmt, expctd in formats:
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename() / fmt / self._file_mark: {
-                        "format": fmt
-                    },
+                    unique_path(tmp_path) / self._file_mark: {"format": fmt},
                 },
                 "FEED_STORE_EMPTY": True,
                 "FEED_EXPORT_INDENT": None,
                 "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
             }
-            data = await self.exported_no_data(settings)
-            data = dict(data)
+            data = await export_batches(mockserver, [], settings)
             assert data[fmt][0] == expctd
 
     @coroutine_test
-    async def test_export_multiple_configs(self):
+    async def test_export_multiple_configs(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [
             {"foo": "FOO", "bar": "BAR"},
             {"foo": "FOO1", "bar": "BAR1"},
@@ -334,19 +205,19 @@ class TestBatchDeliveries(TestFeedExportBase):
 
         settings = {
             "FEEDS": {
-                self._random_temp_filename() / "json" / self._file_mark: {
+                unique_path(tmp_path) / self._file_mark: {
                     "format": "json",
                     "indent": 0,
                     "fields": ["bar"],
                     "encoding": "utf-8",
                 },
-                self._random_temp_filename() / "xml" / self._file_mark: {
+                unique_path(tmp_path) / self._file_mark: {
                     "format": "xml",
                     "indent": 2,
                     "fields": ["foo"],
                     "encoding": "latin-1",
                 },
-                self._random_temp_filename() / "csv" / self._file_mark: {
+                unique_path(tmp_path) / self._file_mark: {
                     "format": "csv",
                     "indent": None,
                     "fields": ["foo", "bar"],
@@ -355,13 +226,15 @@ class TestBatchDeliveries(TestFeedExportBase):
             },
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
-        data = await self.exported_data(items, settings)
+        data = await export_batches(mockserver, items, settings)
         for fmt, expected in formats.items():
             for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
                 assert got_batch == expected_batch
 
     @coroutine_test
-    async def test_batch_item_count_feeds_setting(self):
+    async def test_batch_item_count_feeds_setting(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         items = [{"foo": "FOO"}, {"foo": "FOO1"}]
         formats = {
             "json": [
@@ -371,7 +244,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         settings = {
             "FEEDS": {
-                self._random_temp_filename() / "json" / self._file_mark: {
+                unique_path(tmp_path) / self._file_mark: {
                     "format": "json",
                     "indent": None,
                     "encoding": "utf-8",
@@ -379,13 +252,15 @@ class TestBatchDeliveries(TestFeedExportBase):
                 },
             },
         }
-        data = await self.exported_data(items, settings)
+        data = await export_batches(mockserver, items, settings)
         for fmt, expected in formats.items():
             for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
                 assert got_batch == expected_batch
 
     @coroutine_test
-    async def test_batch_item_count_with_item_processor(self):
+    async def test_batch_item_count_with_item_processor(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         def split_foo(item):
             for value in item["foo"].split(","):
                 yield {"foo": value}
@@ -400,7 +275,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         settings = {
             "FEEDS": {
-                self._random_temp_filename() / "json" / self._file_mark: {
+                unique_path(tmp_path) / self._file_mark: {
                     "format": "json",
                     "indent": None,
                     "encoding": "utf-8",
@@ -409,13 +284,15 @@ class TestBatchDeliveries(TestFeedExportBase):
                 },
             },
         }
-        data = await self.exported_data(items, settings)
+        data = await export_batches(mockserver, items, settings)
         for fmt, expected in formats.items():
             for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
                 assert got_batch == expected_batch
 
     @coroutine_test
-    async def test_batch_path_differ(self):
+    async def test_batch_path_differ(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         """
         Test that the name of all batch files differ from each other.
         So %(batch_id)d replaced with the current id.
@@ -427,35 +304,35 @@ class TestBatchDeliveries(TestFeedExportBase):
         ]
         settings = {
             "FEEDS": {
-                self._random_temp_filename() / "%(batch_id)d": {
+                unique_path(tmp_path) / "%(batch_id)d": {
                     "format": "json",
                 },
             },
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
-        data = await self.exported_data(items, settings)
+        data = await export_batches(mockserver, items, settings)
         assert len(items) == len(data["json"])
 
-    @inline_callbacks_test
-    def test_stats_batch_file_success(self):
+    @coroutine_test
+    async def test_stats_batch_file_success(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         settings = {
             "FEEDS": {
-                build_url(
-                    str(self._random_temp_filename() / "json" / self._file_mark)
-                ): {
+                build_url(str(unique_path(tmp_path) / self._file_mark)): {
                     "format": "json",
                 }
             },
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
         crawler = get_crawler(ItemSpider, settings)
-        yield crawler.crawl(total=2, mockserver=self.mockserver)
+        await crawler.crawl_async(total=2, mockserver=mockserver)
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
     @pytest.mark.requires_boto3
-    @inline_callbacks_test
-    def test_s3_export(self):
+    @coroutine_test
+    async def test_s3_export(self, mockserver: MockServer) -> None:
         bucket = "mybucket"
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -507,15 +384,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             },
         }
 
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        TestSpider.start_urls = [self.mockserver.url("/")]
-        crawler = get_crawler(TestSpider, settings)
-        yield crawler.crawl()
+        crawler = await crawl_items(mockserver, items, settings)
 
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs:
