@@ -38,9 +38,9 @@ def get_base_url(response: TextResponse) -> str:
     return _baseurl_cache[response]
 
 
-_metaref_cache: WeakKeyDictionary[Response, tuple[None, None] | tuple[float, str]] = (
-    WeakKeyDictionary()
-)
+_metaref_cache: WeakKeyDictionary[
+    Response, dict[tuple[str, ...], tuple[None, None] | tuple[float, str]]
+] = WeakKeyDictionary()
 
 
 def get_meta_refresh(
@@ -48,12 +48,14 @@ def get_meta_refresh(
     ignore_tags: Iterable[str] = ("script", "noscript"),
 ) -> tuple[None, None] | tuple[float, str]:
     """Parse the http-equiv refresh parameter from the given response"""
-    if response not in _metaref_cache:
+    ignore_tags = tuple(ignore_tags)
+    cache = _metaref_cache.setdefault(response, {})
+    if ignore_tags not in cache:
         text = response.text[0:4096]
-        _metaref_cache[response] = html.get_meta_refresh(
+        cache[ignore_tags] = html.get_meta_refresh(
             text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
         )
-    return _metaref_cache[response]
+    return cache[ignore_tags]
 
 
 def response_from_dict(d: dict[str, Any]) -> Response:

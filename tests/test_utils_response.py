@@ -91,6 +91,69 @@ if(!checkCookies()){
     )
 
 
+@pytest.mark.parametrize("tag", ["script", "noscript"])
+@pytest.mark.parametrize("ignore_first", [False, True])
+@pytest.mark.parametrize("tags_type", [tuple, list, iter])
+def test_get_meta_refresh_ignore_tags_cache(tag, ignore_first, tags_type):
+    response = HtmlResponse(
+        "https://example.com/page",
+        body=(
+            f'<{tag}><meta http-equiv="refresh" content="5;url=/target"></{tag}>'
+        ).encode(),
+    )
+    if ignore_first:
+        assert get_meta_refresh(response, ignore_tags=tags_type([tag])) == (None, None)
+        assert get_meta_refresh(response, ignore_tags=tags_type([])) == (
+            5.0,
+            "https://example.com/target",
+        )
+    else:
+        assert get_meta_refresh(response, ignore_tags=tags_type([])) == (
+            5.0,
+            "https://example.com/target",
+        )
+        assert get_meta_refresh(response, ignore_tags=tags_type([tag])) == (None, None)
+    assert get_meta_refresh(response, ignore_tags=(tag,)) == (None, None)
+    assert get_meta_refresh(response, ignore_tags=()) == (
+        5.0,
+        "https://example.com/target",
+    )
+
+
+@pytest.mark.parametrize("default_first", [False, True])
+def test_get_meta_refresh_default_ignore_tags_cache(default_first):
+    response = HtmlResponse(
+        "https://example.com/page",
+        body=b'<script><meta http-equiv="refresh" content="5;url=/target"></script>',
+    )
+    if default_first:
+        assert get_meta_refresh(response) == (None, None)
+    else:
+        assert get_meta_refresh(response, ignore_tags=["noscript"]) == (
+            5.0,
+            "https://example.com/target",
+        )
+    assert get_meta_refresh(response) == (None, None)
+    assert get_meta_refresh(response, ignore_tags=["noscript"]) == (
+        5.0,
+        "https://example.com/target",
+    )
+
+
+def test_get_meta_refresh_mutable_ignore_tags():
+    response = HtmlResponse(
+        "https://example.com/page",
+        body=b'<noscript><meta http-equiv="refresh" content="5;url=/target"></noscript>',
+    )
+    ignore_tags = ["noscript"]
+    assert get_meta_refresh(response, ignore_tags=ignore_tags) == (None, None)
+    ignore_tags.clear()
+    assert get_meta_refresh(response, ignore_tags=ignore_tags) == (
+        5.0,
+        "https://example.com/target",
+    )
+
+
 def test_get_base_url():
     resp = HtmlResponse(
         "http://www.example.com",
