@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler

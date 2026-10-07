@@ -3,13 +3,9 @@ from __future__ import annotations
 import copy
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, overload
+from typing import Any, Self, overload
 
 from scrapy.http.request import Request, RequestTypeVar
-
-if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 class JsonRequest(Request):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
@@ -10,9 +10,6 @@ from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector

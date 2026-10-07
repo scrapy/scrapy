@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -14,9 +14,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
@@ -174,6 +171,9 @@ class Spider(object_ref):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
+
+    def __str__(self) -> str:
+        return self.name
 
 
 # Top-level imports

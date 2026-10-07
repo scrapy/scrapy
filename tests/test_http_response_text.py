@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import codecs
+import gc
+import platform
+import weakref
 from typing import cast
 from unittest import mock
 
@@ -87,6 +90,21 @@ class TestTextResponse(TestResponseBase):
         assert isinstance(r1.text, str)
         assert r1.text == unicode_string
 
+    @pytest.mark.parametrize(
+        ("body", "encoding", "text", "reused"),
+        [
+            ("\xa3\U0001f600", "utf8", "\xa3\U0001f600", True),
+            ("\ufeffWORD", "utf-8", "WORD", False),
+            ("\x80", "latin-1", "\u20ac", False),
+        ],
+    )
+    def test_str_body_text(
+        self, body: str, encoding: str, text: str, reused: bool
+    ) -> None:
+        r = self.response_class("http://www.example.com", body=body, encoding=encoding)
+        assert r.text == text
+        assert (r.text is body) is reused
+
     def test_encoding(self):
         r1 = self.response_class(
             "http://www.example.com",
@@ -144,15 +162,15 @@ class TestTextResponse(TestResponseBase):
         assert r9._declared_encoding() is None
         self._assert_response_encoding(r5, "utf-8")
         self._assert_response_encoding(r8, "utf-8")
-        self._assert_response_encoding(r9, "cp1252")
         assert r4._body_inferred_encoding() is not None
         assert r4._body_inferred_encoding() != "ascii"
+        assert r9._body_inferred_encoding() is not None
+        assert r9._body_inferred_encoding() != "ascii"
         self._assert_response_values(r1, "utf-8", "\xa3")
         self._assert_response_values(r2, "utf-8", "\xa3")
         self._assert_response_values(r3, "iso-8859-1", "\xa3")
         self._assert_response_values(r6, "gb18030", "\u2015")
         self._assert_response_values(r7, "gb18030", "\u2015")
-        self._assert_response_values(r9, "cp1252", "€")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         with pytest.raises(TypeError):
@@ -167,6 +185,13 @@ class TestTextResponse(TestResponseBase):
         )
         assert r._declared_encoding() is None
         self._assert_response_values(r, "utf-8", "\xa3")
+
+    def test_body_inferred_encoding_of_undeclared_legacy_page(self):
+        body = "ICD10 国際疾病分類第10版2013年版 病名マスター".encode("shift-jis")
+        r = self.response_class("http://www.example.com", body=body)
+        assert r._declared_encoding() is None
+        assert r.encoding in {"shift_jis", "cp932"}
+        assert r.text == body.decode(r.encoding)
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
@@ -248,12 +273,29 @@ class TestTextResponse(TestResponseBase):
 
         assert isinstance(response.selector, Selector)
         assert response.selector.type == "html"
-        assert response.selector is response.selector  # property is cached
+        # property is cached
+        assert response.selector is response.selector  # pylint: disable=comparison-with-itself
         assert response.selector.response is response
 
         assert response.selector.xpath("//title/text()").getall() == ["Some page"]
         assert response.selector.css("title::text").getall() == ["Some page"]
         assert response.selector.re("Some (.*)</title>") == ["page"]
+
+    @pytest.mark.skipif(
+        platform.python_implementation() != "CPython",
+        reason="Relies on reference counting",
+    )
+    def test_selector_response_refcounting(self):
+        response = self.response_class("http://www.example.com", body=b"<a>b</a>")
+        selector = response.selector
+        ref = weakref.ref(response)
+        gc.disable()
+        try:
+            del response
+            assert ref() is None
+        finally:
+            gc.enable()
+        assert selector.response is None
 
     def test_selector_shortcuts(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
@@ -587,7 +629,8 @@ class TestXmlResponse(TestTextResponse):
 
         assert isinstance(response.selector, Selector)
         assert response.selector.type == "xml"
-        assert response.selector is response.selector  # property is cached
+        # property is cached
+        assert response.selector is response.selector  # pylint: disable=comparison-with-itself
         assert response.selector.response is response
 
         assert response.selector.xpath("//elem/text()").getall() == ["value"]

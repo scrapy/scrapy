@@ -22,5 +22,5 @@ def main(reactor):
     return runner.join()
 
 
-install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+install_reactor()
 react(main)

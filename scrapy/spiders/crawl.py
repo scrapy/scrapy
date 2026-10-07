@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
@@ -19,9 +19,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
@@ -40,9 +37,10 @@ def _identity_process_request(request: Request, response: Response) -> Request |
     return request
 
 
-def _get_method(
-    method: Callable[..., Any] | str | None, spider: Spider
-) -> Callable[..., Any] | None:
+_CallableT = TypeVar("_CallableT", bound="Callable[..., Any]")
+
+
+def _get_method(method: _CallableT | str | None, spider: Spider) -> _CallableT | None:
     if callable(method):
         return method
     if isinstance(method, str):
@@ -63,6 +61,8 @@ class Rule:
         process_links: ProcessLinksT | str | None = None,
         process_request: ProcessRequestT | str | None = None,
         errback: Callable[[Failure], Any] | str | None = None,
+        name: str | None = None,
+        from_rules: Iterable[str] | str | None = None,
     ):
         self.link_extractor: LinkExtractor = link_extractor or _default_link_extractor
         self.callback: CallbackT | str | None = callback
@@ -73,13 +73,17 @@ class Rule:
             process_request or _identity_process_request
         )
         self.follow: bool = follow if follow is not None else not callback
+        self.name: str | None = name
+        if isinstance(from_rules, str):
+            from_rules = (from_rules,)
+        self.from_rules: frozenset[str] | None = (
+            frozenset(from_rules) if from_rules is not None else None
+        )
 
     def _compile(self, spider: Spider) -> None:
         # this replaces method names with methods and we can't express this in type hints
-        self.callback = cast("CallbackT", _get_method(self.callback, spider))
-        self.errback = cast(
-            "Callable[[Failure], Any]", _get_method(self.errback, spider)
-        )
+        self.callback = _get_method(self.callback, spider)
+        self.errback = _get_method(self.errback, spider)
         self.process_links = cast(
             "ProcessLinksT", _get_method(self.process_links, spider)
         )
@@ -128,14 +132,26 @@ class CrawlSpider(Spider):
             url=link.url,
             callback=self._callback,
             errback=self._errback,
-            meta={"rule": rule_index, "link_text": link.text},
+            meta={
+                "rule": rule_index,
+                "link_text": link.text,
+                "rule_name": self._rules[rule_index].name,
+            },
         )
 
     def _requests_to_follow(self, response: Response) -> Iterable[Request | None]:
         if not isinstance(response, HtmlResponse):
             return
         seen: set[Link] = set()
+        response_rule_name = (
+            response.request.meta.get("rule_name") if response.request else None
+        )
         for rule_index, rule in enumerate(self._rules):
+            if (
+                rule.from_rules is not None
+                and response_rule_name not in rule.from_rules
+            ):
+                continue
             links: list[Link] = [
                 lnk
                 for lnk in rule.link_extractor.extract_links(response)
@@ -168,19 +184,20 @@ class CrawlSpider(Spider):
         cb_kwargs: dict[str, Any],
         follow: bool = True,
     ) -> AsyncIterator[Any]:
-        if callback:
-            cb_res = callback(response, **cb_kwargs) or ()
-            if isinstance(cb_res, AsyncIterator):
-                cb_res = await collect_asyncgen(cb_res)
-            elif isinstance(cb_res, Awaitable):
-                cb_res = await cb_res
-            cb_res = self.process_results(response, cb_res)
-            for request_or_item in iterate_spider_output(cb_res):
-                yield request_or_item
-
-        if follow and self._follow_links:
-            for request_or_item in self._requests_to_follow(response):
-                yield request_or_item
+        try:
+            if callback:
+                cb_res = callback(response, **cb_kwargs) or ()
+                if isinstance(cb_res, AsyncIterator):
+                    cb_res = await collect_asyncgen(cb_res)
+                elif isinstance(cb_res, Awaitable):
+                    cb_res = await cb_res
+                cb_res = self.process_results(response, cb_res)
+                for request_or_item in iterate_spider_output(cb_res):
+                    yield request_or_item
+        finally:
+            if follow and self._follow_links:
+                for request_or_item in self._requests_to_follow(response):
+                    yield request_or_item
 
     def _parse_response(
         self,

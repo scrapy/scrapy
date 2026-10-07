@@ -7,16 +7,13 @@ import sys
 import threading
 import traceback
 from pdb import Pdb
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy.utils.engine import format_engine_status
 from scrapy.utils.trackref import format_live_refs
 
 if TYPE_CHECKING:
     from types import FrameType
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 

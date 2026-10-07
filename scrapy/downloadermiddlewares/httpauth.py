@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from w3lib.http import basic_auth_header
 
@@ -12,9 +12,6 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http import Response
 

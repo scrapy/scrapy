@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from scrapy.settings import Settings
 
 
-class ExtensionManager(MiddlewareManager):
+class ExtensionManager(MiddlewareManager):  # pylint: disable=abstract-method
     component_name = "extension"
 
     @classmethod

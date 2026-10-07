@@ -9,7 +9,7 @@ from urllib.parse import unquote
 from twisted.internet.protocol import ClientCreator, Protocol
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -64,7 +64,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
 
     async def download_request(self, request: Request) -> Response:
         from twisted.internet import reactor
-        from twisted.protocols.ftp import CommandFailed, FTPClient
+        from twisted.protocols.ftp import CommandFailed, ConnectionLost, FTPClient
 
         parsed_url = urlparse_cached(request)
         user = request.meta.get("ftp_user", self.default_user)
@@ -79,21 +79,28 @@ class FTPDownloadHandler(BaseDownloadHandler):
             creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
         )
         filepath = unquote(parsed_url.path)
+        is_listing = filepath == "" or filepath.endswith("/")
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         try:
-            await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
+            if is_listing:
+                await maybe_deferred_to_future(client.nlst(filepath, protocol))
+            else:
+                await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
         except CommandFailed as e:
             message = str(e)
-            if m := _CODE_RE.search(message):
-                ftpcode = m.group()
-                httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
-                return Response(url=request.url, status=httpcode, body=message.encode())
-            raise
+            # Twisted only raises CommandFailed for a reply whose numeric code
+            # it has parsed, so the message always carries that code.
+            m = _CODE_RE.search(message)
+            assert m
+            httpcode = self.CODE_MAPPING.get(m.group(), self.CODE_MAPPING["default"])
+            return Response(url=request.url, status=httpcode, body=message.encode())
+        except ConnectionLost as e:
+            raise DownloadFailedError(str(e)) from e
         finally:
             protocol.close()
             assert client.transport
             client.transport.loseConnection()
-        headers = {"local filename": protocol.filename or b"", "size": protocol.size}
+        headers = {"Local Filename": protocol.filename or b"", "Size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
         return respcls(url=request.url, status=200, body=body, headers=headers)

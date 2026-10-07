@@ -11,7 +11,7 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
-from typing import IO, TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any, Self
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
@@ -27,9 +27,6 @@ if TYPE_CHECKING:
     # imports twisted.internet.reactor
     from twisted.mail.smtp import ESMTPSenderFactory
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 

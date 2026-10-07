@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler

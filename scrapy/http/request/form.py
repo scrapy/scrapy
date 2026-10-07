@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 from warnings import warn
 
@@ -13,7 +13,6 @@ from scrapy.http.request import Request
 from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
     from lxml.html import (
         FormElement,
         InputElement,
@@ -21,7 +20,6 @@ if TYPE_CHECKING:
         SelectElement,
         TextareaElement,
     )
-    from typing_extensions import Self
 
     from scrapy.http.response.text import TextResponse
 

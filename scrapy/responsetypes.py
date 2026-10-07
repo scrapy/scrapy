@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from io import StringIO
+from importlib.resources import files
 from mimetypes import MimeTypes
-from pkgutil import get_data
 from typing import TYPE_CHECKING, ClassVar
 
 from scrapy.http import Response
@@ -34,9 +33,8 @@ class ResponseTypes:
     def __init__(self) -> None:
         self.classes: dict[str, type[Response]] = {}
         self.mimetypes: MimeTypes = MimeTypes()
-        mimedata = get_data("scrapy", "mime.types")
-        assert mimedata is not None
-        self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
+        with files("scrapy").joinpath("mime.types").open(encoding="utf8") as f:
+            self.mimetypes.readfp(f)
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Self, TypedDict, Unpack, cast
 from urllib.parse import urlparse
 from warnings import warn
 
@@ -14,9 +14,6 @@ from scrapy.utils.python import _looks_like_import_path, to_unicode
 from scrapy.utils.url import strip_url
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self, TypedDict, Unpack
-
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 

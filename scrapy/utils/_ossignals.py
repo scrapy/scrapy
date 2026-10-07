@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+import signal
+from collections.abc import Callable
+from types import FrameType
+from typing import Any, TypeAlias
+
+# copy of _HANDLER from typeshed/stdlib/signal.pyi
+SignalHandlerT: TypeAlias = (
+    Callable[[int, FrameType | None], Any] | int | signal.Handlers | None
+)
+
+signal_names: dict[int, str] = {member.value: member.name for member in signal.Signals}
+
+
+def install_shutdown_handlers(
+    function: SignalHandlerT, override_sigint: bool = True
+) -> None:
+    """Install the given function as a signal handler for all common shutdown
+    signals (such as SIGINT, SIGTERM, etc). If ``override_sigint`` is ``False`` the
+    SIGINT handler won't be installed if there is already a handler in place
+    (e.g. Pdb)
+    """
+    signal.signal(signal.SIGTERM, function)
+    if (
+        signal.getsignal(signal.SIGINT)  # pylint: disable=comparison-with-callable
+        == signal.default_int_handler
+        or override_sigint
+    ):
+        signal.signal(signal.SIGINT, function)
+    # Catch Ctrl-Break in windows
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, function)

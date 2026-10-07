@@ -7,7 +7,7 @@ from contextlib import suppress
 from functools import partial
 from io import BytesIO
 from time import monotonic
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
@@ -55,12 +55,12 @@ from scrapy.utils._download_handlers import (
     normalize_bind_address,
     wrap_twisted_exceptions,
 )
+from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.ssl import _log_ssl_conn_debug_info
-from scrapy.utils.url import add_http_if_no_scheme
+from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -68,9 +68,6 @@ if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
     from twisted.web._newclient import Request as TxRequest
-
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
 
@@ -161,7 +158,9 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         try:
             await maybe_deferred_to_future(d)
         finally:
-            if delayed_call.active():
+            # Only inactive if the timeout above won the race, which the tests
+            # cannot force.
+            if delayed_call.active():  # pragma: no branch
                 delayed_call.cancel()
 
 
@@ -196,7 +195,9 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
-        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
+        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred(self._cancelTunnel)
+        self._connectDeferred: Deferred[Protocol] | None = None
+        self._protocol: Protocol | None = None
         self._tunneledHost: str = host
         self._tunneledPort: int = port
         self._contextFactory: IPolicyForHTTPS = contextFactory
@@ -219,6 +220,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         created, notifies the client that we are ready to send requests. If not
         raises a TunnelError.
         """
+        assert self._protocol
         assert self._protocol.transport
         self._connectBuffer += data
         # make sure that enough (all) bytes are consumed
@@ -232,9 +234,9 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         respm = _TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
-            sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
+            sslOptions = self._contextFactory.creatorForNetloc(
                 self._tunneledHost,  # type: ignore[arg-type]
-                self._tunneledPort,
+                self._tunneledPort,  # type: ignore[call-arg,misc]
             )
             self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
@@ -258,9 +260,24 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         """Propagates the errback to the appropriate deferred."""
         self._tunnelReadyDeferred.errback(reason)
 
+    def _cancelTunnel(self, deferred: Deferred[Protocol]) -> None:
+        """Tear down the connection to the proxy when the deferred returned by
+        :meth:`connect` is cancelled, e.g. on a download timeout."""
+        if self._protocol is not None:
+            # The proxy connection is up; drop it, and stop intercepting data
+            # in case the proxy answers the CONNECT after this point.
+            self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
+            assert self._protocol.transport
+            self._protocol.transport.loseConnection()
+        else:
+            # Still connecting to the proxy; stop the connection attempt. This
+            # errbacks _tunnelReadyDeferred through connectFailed().
+            assert self._connectDeferred is not None
+            self._connectDeferred.cancel()
+
     def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
         self._protocolFactory = protocolFactory
-        connectDeferred = super().connect(protocolFactory)
+        self._connectDeferred = connectDeferred = super().connect(protocolFactory)
         connectDeferred.addCallback(self.requestTunnel)
         connectDeferred.addErrback(self.connectFailed)
         return self._tunnelReadyDeferred
@@ -289,7 +306,38 @@ def _tunnel_request_data(
     return tunnel_req
 
 
-class _TunnelingAgent(Agent):
+class _BindAddressAgent(Agent):
+    """An Agent that adds the configured local bind address to the
+    connection pool key, so pooled connections are not shared between
+    requests bound to different addresses."""
+
+    def __init__(
+        self,
+        reactor: ReactorBase,
+        contextFactory: IPolicyForHTTPS,
+        connectTimeout: float | None = None,
+        bindAddress: tuple[str, int] | None = None,
+        pool: HTTPConnectionPool | None = None,
+    ):
+        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
+
+    def _requestWithEndpoint(
+        self,
+        key: tuple[Any, ...],
+        endpoint: TCP4ClientEndpoint,
+        method: bytes,
+        parsedURI: URI,
+        headers: TxHeaders | None,
+        bodyProducer: IBodyProducer | None,
+        requestPath: bytes,
+    ) -> Deferred[IResponse]:
+        key += (self._endpointFactory._bindAddress,)
+        return super()._requestWithEndpoint(
+            key, endpoint, method, parsedURI, headers, bodyProducer, requestPath
+        )
+
+
+class _TunnelingAgent(_BindAddressAgent):
     """An agent that uses a ``_TunnelingTCP4ClientEndpoint`` to make HTTPS
     downloads. It may look strange that we have chosen to subclass Agent and not
     ProxyAgent but consider that after the tunnel is opened the proxy is
@@ -307,7 +355,7 @@ class _TunnelingAgent(Agent):
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
+        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
@@ -347,7 +395,7 @@ class _TunnelingAgent(Agent):
         )
 
 
-class _ScrapyProxyAgent(Agent):
+class _ScrapyProxyAgent(_BindAddressAgent):
     def __init__(
         self,
         reactor: ReactorBase,
@@ -357,7 +405,7 @@ class _ScrapyProxyAgent(Agent):
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(  # type: ignore[no-untyped-call]
+        super().__init__(
             reactor=reactor,
             contextFactory=contextFactory,
             connectTimeout=connectTimeout,
@@ -421,7 +469,7 @@ class _ScrapyAgent:
         bindaddress = normalize_bind_address(bindaddress)
         proxy = request.meta.get("proxy")
         if proxy:
-            proxy = add_http_if_no_scheme(proxy)
+            proxy = _add_http_if_no_scheme(proxy)
             proxy_parsed = urlparse(proxy)
             proxy_host = proxy_parsed.hostname
             proxy_port = proxy_parsed.port
@@ -452,7 +500,7 @@ class _ScrapyAgent:
                 pool=self._pool,
             )
 
-        return Agent(
+        return _BindAddressAgent(
             reactor=reactor,
             contextFactory=self._contextFactory,
             connectTimeout=timeout,
@@ -534,6 +582,8 @@ class _ScrapyAgent:
         if cast("int", txresponse.length) == 0:
             return {
                 "txresponse": txresponse,
+                "certificate": getattr(txresponse, "_scrapy_certificate", None),
+                "ip_address": getattr(txresponse, "_scrapy_ip_address", None),
             }
 
         maxsize = request.meta.get("download_maxsize", self._maxsize)
@@ -589,11 +639,8 @@ class _ScrapyAgent:
 
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
-        try:
-            version = result["txresponse"].version
-            protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
-        except (AttributeError, TypeError, IndexError):
-            protocol = None
+        version = result["txresponse"].version
+        protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
         return make_response(
             url=url,
             status=int(result["txresponse"].code),
@@ -668,16 +715,11 @@ class _ResponseReader(Protocol):
 
     def connectionMade(self) -> None:
         assert self.transport
-        if self._certificate is None:
-            with suppress(AttributeError):
-                self._certificate = ssl.Certificate(
-                    self.transport._producer.getPeerCertificate()
-                )
-
-        if self._ip_address is None:
-            self._ip_address = ipaddress.ip_address(
-                self.transport._producer.getPeer().host
+        with suppress(AttributeError):
+            self._certificate = ssl.Certificate(
+                self.transport._producer.getPeerCertificate()
             )
+        self._ip_address = ipaddress.ip_address(self.transport._producer.getPeer().host)
 
         if self._tls_verbose_logging:
             connection = self.transport._producer.getHandle()
@@ -735,18 +777,21 @@ class _ResponseReader(Protocol):
             self._finish_response(flags=["partial"])
             return
 
-        if reason.check(ResponseFailed) and any(
+        # Twisted ends a response body in one of three ways: ResponseDone,
+        # PotentialDataLoss, or a ResponseFailed wrapping _DataLoss. See
+        # twisted.web._newclient.HTTPClientParser.connectionLost().
+        assert reason.check(ResponseFailed)
+        assert any(
             r.check(_DataLoss)
             for r in reason.value.reasons  # type: ignore[union-attr]
-        ):
-            if not self._fail_on_dataloss:
-                self._finish_response(flags=["dataloss"])
-                return
+        )
+        if not self._fail_on_dataloss:
+            self._finish_response(flags=["dataloss"])
+            return
 
-            exc = ResponseDataLossError()
-            exc.__cause__ = reason.value
-            reason = Failure(exc)
-
+        exc = ResponseDataLossError()
+        exc.__cause__ = reason.value
+        reason = Failure(exc)
         self._finished.errback(reason)
 
 
@@ -765,8 +810,7 @@ class _LenientHTTPClientParser(HTTPClientParser):
         # a colon.
 
         # Handle the normal CR LF case.
-        if line[-1:] == b"\r":
-            line = line[:-1]
+        line = line.removesuffix(b"\r")
 
         if self.state == STATUS:
             self.statusReceived(line)  # type: ignore[no-untyped-call]
@@ -812,6 +856,29 @@ class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
         # creates a parser.
         assert self._parser is not None
         self._parser.__class__ = _LenientHTTPClientParser
+
+        # For responses without a body, twisted.web.client.Response never
+        # hands its transport to a protocol, so the certificate and IP
+        # address cannot be read from it later (see
+        # _ResponseReader.connectionMade). self.transport, however, is the
+        # connection's real transport and outlives any single request, so
+        # read the certificate and IP address from it directly and stash
+        # them on the response.
+        assert self.transport is not None
+        transport = self.transport
+
+        def _attach_connection_info(response: IResponse) -> IResponse:
+            with suppress(AttributeError):
+                response._scrapy_certificate = ssl.Certificate(
+                    transport.getPeerCertificate()
+                )
+            with suppress(AttributeError):
+                response._scrapy_ip_address = ipaddress.ip_address(
+                    transport.getPeer().host
+                )
+            return response
+
+        d.addCallback(_attach_connection_info)
         return d
 
 
