@@ -474,8 +474,9 @@ class ExecutionEngine:
             await self.stop_async()
 
     def _start_scheduled_requests(self) -> None:
-        if self._slot is None or self._slot.closing is not None or self.paused:
+        if self._state is not EngineState.RUNNING or self.paused:
             return
+        assert self._slot is not None
 
         while not self.needs_backout():
             if not self._start_scheduled_request():
@@ -699,6 +700,17 @@ class ExecutionEngine:
         """Open the spider.
 
         Raises :exc:`RuntimeError` if a spider has already been opened.
+
+        If an exception is raised during opening, the spider is still
+        considered open (the engine always transitions to the
+        :attr:`EngineState.SPIDER_OPEN` state).
+
+        .. versionchanged:: VERSION
+            A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the
+            spider is opening now closes the spider instead of being re-raised.
+
+        If the engine is requested to close the spider during opening, that is
+        done right after the spider is opened.
         """
         assert self.crawler.spider
         if self._state is EngineState.STOPPED:
@@ -721,7 +733,6 @@ class ExecutionEngine:
             # The rest of the startup runs anyway, so that components that are
             # started also get stopped, and the request is honored once the spider
             # is open.
-            close_spider_exc: CloseSpider | None = None
             try:
                 self._start = await self.scraper.spidermw.process_start()
                 if hasattr(scheduler, "open") and (
@@ -730,7 +741,7 @@ class ExecutionEngine:
                     await maybe_deferred_to_future(d)
                 await self.scraper.open_spider_async()
             except CloseSpider as exc:
-                close_spider_exc = exc
+                await self.close_spider_async(reason=exc.reason, error=exc.error)
             stats = self.crawler.stats
             if argument_is_required(stats.open_spider, "spider"):
                 warnings.warn(
@@ -747,14 +758,14 @@ class ExecutionEngine:
             )
             for _, result in results:
                 if isinstance(result, CloseSpider):
-                    close_spider_exc = close_spider_exc or result
-            if close_spider_exc is not None:
-                raise close_spider_exc
+                    await self.close_spider_async(
+                        reason=result.reason, error=result.error
+                    )
         finally:
             # Partially open counts as open because we still want to close the
             # components that were opened (close_spider_async() will do that).
             self._transition_to(EngineState.SPIDER_OPEN)
-        await self._close_spider_if_pending()
+            await self._close_spider_if_pending()
 
     async def _close_spider_if_pending(self) -> None:
         """Perform a close requested while the spider was opening."""
