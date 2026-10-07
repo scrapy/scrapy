@@ -699,15 +699,15 @@ class ExecutionEngine:
     async def open_spider_async(self, *, close_if_idle: bool = True) -> None:
         """Open the spider.
 
-        .. versionchanged:: VERSION
-            A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the
-            spider is opening now closes the spider instead of being re-raised.
-
         Raises :exc:`RuntimeError` if a spider has already been opened.
 
         If an exception is raised during opening, the spider is still
         considered open (the engine always transitions to the
         :attr:`EngineState.SPIDER_OPEN` state).
+
+        .. versionchanged:: VERSION
+            A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the
+            spider is opening now closes the spider instead of being re-raised.
 
         If the engine is requested to close the spider during opening, that is
         done right after the spider is opened.
