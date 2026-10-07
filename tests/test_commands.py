@@ -258,28 +258,6 @@ class MySpider(scrapy.Spider):
         assert "(Pdb)" not in out
 
 
-class TestSettingsCommand:
-    @pytest.mark.parametrize(
-        ("option", "setting", "expected"),
-        [
-            ("--get", "BOT_NAME", "scrapybot"),
-            ("--getbool", "COOKIES_ENABLED", "True"),
-            ("--getint", "CONCURRENT_REQUESTS", "16"),
-            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
-            ("--getlist", "SPIDER_MODULES", "[]"),
-        ],
-    )
-    def test_get(self, option: str, setting: str, expected: str) -> None:
-        returncode, out, err = proc("settings", option, setting)
-        assert returncode == 0, err
-        assert out.startswith(expected)
-
-    def test_no_option(self) -> None:
-        returncode, out, err = proc("settings")
-        assert returncode == 0, err
-        assert not out
-
-
 class TestCommandCrawlerProcess(TestProjectBase):
     """Test that the command uses the expected kind of *CrawlerProcess
     and produces expected errors when needed."""
@@ -773,6 +751,100 @@ class TestExecute:
         assert capsys.readouterr().out.strip() == "scrapybot"
 
 
+class TestSettingsCommand(TestProjectBase):
+    @pytest.fixture(autouse=True)
+    def create_files(self, proj_path: Path) -> None:
+        proj_mod_path = proj_path / self.project_name
+        (proj_mod_path / "addons.py").write_text("""
+class MyAddon:
+    def update_settings(self, settings):
+        settings.set("FROM_ADDON", "addon", priority="addon")
+        settings.set("SPIDER_WINS", "addon", priority="addon")
+        settings.set("SEEN_BY_ADDON", settings.get("FROM_SPIDER"), priority="addon")
+
+    @classmethod
+    def update_pre_crawler_settings(cls, settings):
+        settings.set("FROM_ADDON_PRE_CRAWLER", "addon", priority="addon")
+""")
+        (proj_mod_path / "spiders" / "sp.py").write_text("""
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = "sp"
+    custom_settings = {
+        "FROM_SPIDER": "spider",
+        "SPIDER_WINS": "spider",
+    }
+""")
+        self._append_settings(
+            proj_mod_path,
+            f'ADDONS = {{"{self.project_name}.addons.MyAddon": 100}}\n',
+        )
+
+    @staticmethod
+    def _get(proj_path: Path, setting: str, *args: str) -> str:
+        returncode, out, err = proc("settings", "--get", setting, *args, cwd=proj_path)
+        assert returncode == 0, err
+        return out.strip()
+
+    def test_project_setting(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "BOT_NAME") == self.project_name
+
+    def test_addon(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_ADDON") == "addon"
+
+    def test_addon_pre_crawler(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_ADDON_PRE_CRAWLER") == "addon"
+
+    def test_cmdline_beats_addon(self, proj_path: Path) -> None:
+        assert (
+            self._get(proj_path, "FROM_ADDON", "-s", "FROM_ADDON=cmdline") == "cmdline"
+        )
+
+    def test_no_spider(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_SPIDER") == "None"
+        assert self._get(proj_path, "SPIDER_WINS") == "addon"
+
+    def test_spider(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_SPIDER", "--spider", "sp") == "spider"
+        assert self._get(proj_path, "FROM_ADDON", "--spider", "sp") == "addon"
+
+    def test_spider_beats_addon(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "SPIDER_WINS", "--spider", "sp") == "spider"
+
+    def test_addons_see_spider_settings(self, proj_path: Path) -> None:
+        """Add-ons are loaded after spider settings are applied, as in a crawl."""
+        assert self._get(proj_path, "SEEN_BY_ADDON") == "None"
+        assert self._get(proj_path, "SEEN_BY_ADDON", "--spider", "sp") == "spider"
+
+    def test_unknown_spider(self, proj_path: Path) -> None:
+        returncode, _, err = proc(
+            "settings", "--get", "FROM_SPIDER", "--spider", "nope", cwd=proj_path
+        )
+        assert returncode == 2
+        assert "Unable to find spider: nope" in err
+
+    @pytest.mark.parametrize(
+        ("option", "setting", "expected"),
+        [
+            ("--get", "BOT_NAME", "scrapybot"),
+            ("--getbool", "COOKIES_ENABLED", "True"),
+            ("--getint", "CONCURRENT_REQUESTS", "16"),
+            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
+            ("--getlist", "SPIDER_MODULES", "[]"),
+        ],
+    )
+    def test_get_standalone(self, option: str, setting: str, expected: str) -> None:
+        returncode, out, err = proc("settings", option, setting)
+        assert returncode == 0, err
+        assert out.startswith(expected)
+
+    def test_no_option(self) -> None:
+        returncode, out, err = proc("settings")
+        assert returncode == 0, err
+        assert not out
+
+
 class TestBenchCommand:
     @pytest.mark.parametrize("use_reactor", [True, False])
     def test_run(self, use_reactor: bool) -> None:
@@ -865,6 +937,7 @@ class TestHelpMessage(TestProjectBase):
             "runspider",
             "version",
             "genspider",
+            "genrequest",
             "check",
             "bench",
         ],

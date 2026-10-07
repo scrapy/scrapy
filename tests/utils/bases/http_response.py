@@ -279,6 +279,13 @@ class TestResponseBase(ABC):
         fol = res.follow("http://example.com/", flags=["cached", "allowed"])
         assert fol.flags == ["cached", "allowed"]
 
+    def test_follow_parent_id(self):
+        assert self.response_class("http://example.com").follow("foo").parent_id is None
+        request = Request("http://example.com")
+        res = self.response_class("http://example.com", request=request)
+        assert res.follow("foo").parent_id == request.id
+        assert [r.parent_id for r in res.follow_all(["foo"])] == [request.id]
+
     # Response.follow_all
 
     def test_follow_all_absolute(self):

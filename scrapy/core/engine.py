@@ -64,6 +64,21 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _supports_skip_dupefilter_once(scheduler: BaseScheduler) -> bool:
+    # A subclass that overrides enqueue_request() does not inherit support.
+    cls = type(scheduler)
+    owner = next(
+        (
+            c
+            for c in cls.__mro__
+            if "enqueue_request" in vars(c)
+            or "supports_skip_dupefilter_once" in vars(c)
+        ),
+        cls,
+    )
+    return bool(vars(owner).get("supports_skip_dupefilter_once", False))
+
+
 class EngineState(Enum):
     """The lifecycle state of :class:`ExecutionEngine`.
 
@@ -173,6 +188,7 @@ class ExecutionEngine:
         self.signals: SignalManager = crawler.signals
         self.logformatter: LogFormatter = crawler.logformatter
         self._slot: _Slot | None = None
+        self._warned_skip_dupefilter_once: bool = False
         self.spider: Spider | None = None
         self._state: EngineState = EngineState.CREATED
         # The reason and error flag of a close requested while the spider is
@@ -582,7 +598,24 @@ class ExecutionEngine:
         for _, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
+        assert self._slot is not None
+        if request.meta.get(
+            "skip_dupefilter_once"
+        ) and not _supports_skip_dupefilter_once(self._slot.scheduler):
+            del request.meta["skip_dupefilter_once"]
+            request.dont_filter = True
+            if not self._warned_skip_dupefilter_once:
+                self._warned_skip_dupefilter_once = True
+                warnings.warn(
+                    f"{global_object_name(type(self._slot.scheduler))} does "
+                    f"not set supports_skip_dupefilter_once to True, so "
+                    f"requests with the skip_dupefilter_once meta key get "
+                    f"dont_filter=True instead, which requests derived from "
+                    f"them inherit. Support for such schedulers is deprecated.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+        if not self._slot.scheduler.enqueue_request(request):
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=self.spider
             )

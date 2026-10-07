@@ -204,7 +204,7 @@ class Response(object_ref):
         so subclasses only need to override this method, and :meth:`from_dict`,
         if some of their attributes cannot be stored as is.
         """
-        d: dict[str, Any] = {"headers": dict(self.headers)}
+        d: dict[str, Any] = {"headers": {k: list(v) for k, v in self.headers.items()}}
         for attr in self.attributes:
             if attr in {"request", "certificate"}:
                 continue
@@ -303,6 +303,7 @@ class Response(object_ref):
             errback=errback,
             cb_kwargs=cb_kwargs,
             flags=flags,
+            parent_id=self.request.id if self.request else None,
         )
 
     def follow_all(
