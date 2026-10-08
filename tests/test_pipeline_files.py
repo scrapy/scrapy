@@ -309,6 +309,27 @@ class TestFilesPipeline:
         assert result["files"][0]["status"] == "downloaded"
 
     @coroutine_test
+    async def test_file_created_status_is_saved(self) -> None:
+        # GH-1615: a 201 response whose body is the created file is a download,
+        # not an error.
+        item_url = "http://example.com/created.jpg"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={
+                "response": Response(item_url, status=201, body=b"image-bytes")
+            },
+        )
+        with mock.patch.object(
+            FilesPipeline, "get_media_requests", return_value=[request]
+        ):
+            result = await self.pipeline.process_item(item)
+        assert len(result["files"]) == 1
+        assert result["files"][0]["status"] == "downloaded"
+        stored = Path(self.tempdir) / result["files"][0]["path"]
+        assert stored.read_bytes() == b"image-bytes"
+
+    @coroutine_test
     async def test_file_empty_content(self, caplog: pytest.LogCaptureFixture) -> None:
         item_url = "http://example.com/empty.pdf"
         item = _create_item_with_files(item_url)

@@ -632,7 +632,9 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        # 201 Created is a successful download when the response body is the
+        # new file (GH-1615). Other non-200 statuses stay download errors.
+        if response.status not in {200, 201}:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
