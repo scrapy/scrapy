@@ -22,7 +22,6 @@ class DataAction(argparse.Action):
         option_string: str | None = None,
     ) -> None:
         value = str(values)
-        value = value.removeprefix("$")
         # curl merges repeated -d/--data/--data-raw options into a single body
         # joined with "&"; mirror that instead of keeping only the last one.
         previous = getattr(namespace, self.dest, None)
@@ -95,6 +94,47 @@ def _parse_headers_and_cookies(
     return headers, cookies
 
 
+def _normalize_curl_command(curl_command: str) -> str:
+    """Normalize Bash ANSI-C quote prefixes for shlex."""
+    result: list[str] = []
+    in_single_quote = False
+    in_double_quote = False
+    escaped = False
+
+    i = 0
+    while i < len(curl_command):
+        char = curl_command[i]
+
+        if escaped:
+            result.append(char)
+            escaped = False
+        elif char == "\\" and not in_single_quote:
+            result.append(char)
+            escaped = True
+        elif char == "'" and not in_double_quote:
+            in_single_quote = not in_single_quote
+            result.append(char)
+        elif char == '"' and not in_single_quote:
+            in_double_quote = not in_double_quote
+            result.append(char)
+        elif (
+            char == "$"
+            and i + 1 < len(curl_command)
+            and curl_command[i + 1] == "'"
+            and not in_single_quote
+            and not in_double_quote
+        ):
+            result.append("'")
+            in_single_quote = True
+            i += 1
+        else:
+            result.append(char)
+
+        i += 1
+
+    return "".join(result)
+
+
 def curl_to_request_kwargs(
     curl_command: str, ignore_unknown_options: bool = True
 ) -> dict[str, Any]:
@@ -107,7 +147,7 @@ def curl_to_request_kwargs(
     :return: dictionary of Request kwargs
     """
 
-    curl_args = split(curl_command)
+    curl_args = split(_normalize_curl_command(curl_command))
 
     if not curl_args or curl_args[0] != "curl":
         raise ValueError('A curl command must start with "curl"')

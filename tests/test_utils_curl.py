@@ -237,6 +237,15 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_raw_preserves_leading_dollar(self):
+        curl_command = "curl 'https://www.example.org/' --data-raw '$top=10&$skip=5'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "$top=10&$skip=5",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_post_data_multiple(self):
         # curl merges repeated -d/--data/--data-raw options into a single body
         # joined with "&"; scrapy must do the same, not keep only the last one.
