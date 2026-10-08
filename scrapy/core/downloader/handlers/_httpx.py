@@ -18,12 +18,12 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Headers
 from scrapy.utils._download_handlers import NullCookieJar
-from scrapy.utils.python import _iter_exc_causes
-from scrapy.utils.ssl import (
+from scrapy.utils._ssl import (
     _log_sslobj_debug_info,
     _make_insecure_ssl_ctx,
     _make_ssl_context,
 )
+from scrapy.utils.python import _iter_exc_causes
 
 from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 
@@ -148,7 +148,9 @@ class HttpxDownloadHandler(_Base):
 
     @asynccontextmanager
     async def _make_request(
-        self, request: Request, timeout: float
+        self,
+        request: Request,
+        timeout: float,  # noqa: ASYNC109
     ) -> AsyncIterator[httpx.Response]:
         proxy = self._extract_proxy_url_with_creds(request)
         if proxy and proxy.startswith("socks") and not HAS_SOCKS:  # pragma: no cover
@@ -156,7 +158,12 @@ class HttpxDownloadHandler(_Base):
                 f"SOCKS proxy support in {type(self).__name__} requires the 'httpx2[socks]' extra to be installed."
             )
         client = self._get_client(proxy)
-        headers = self._request_headers(request).to_tuple_list()
+        # httpx sends bytes as they are but encodes str values as ASCII.
+        headers = [
+            (name, value)
+            for name, values in self._request_headers(request).items()
+            for value in values
+        ]
 
         try:
             async with client.stream(
@@ -184,7 +191,7 @@ class HttpxDownloadHandler(_Base):
 
     @staticmethod
     def _extract_headers(response: httpx.Response) -> Headers:
-        return Headers(response.headers.multi_items())
+        return Headers(response.headers.raw)
 
     @staticmethod
     def _build_base_response_args(

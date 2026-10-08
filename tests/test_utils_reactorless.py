@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import sys
 
 import pytest
@@ -7,8 +8,14 @@ import pytest
 from scrapy.utils.reactorless import (
     ReactorImportHook,
     install_reactor_import_hook,
+    is_reactorless,
     uninstall_reactor_import_hook,
 )
+from tests.utils.decorators import coroutine_test
+
+
+def _no_running_loop() -> asyncio.AbstractEventLoop:
+    raise RuntimeError("no running event loop")
 
 
 class TestReactorImportHook:
@@ -48,3 +55,22 @@ class TestReactorImportHook:
         ):
             hook.find_spec("twisted.internet.reactor", None)
         assert hook.find_spec("twisted.internet.defer", None) is None
+
+
+class TestIsReactorless:
+    @coroutine_test
+    async def test_is_asyncio_reactor_installed(self, reactor_pytest: str) -> None:
+        assert is_reactorless() == (reactor_pytest == "none")
+
+    @pytest.mark.requires_reactor  # needs a reactor
+    def test_reactor_installed_no_running_loop(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(asyncio, "get_running_loop", _no_running_loop)
+        assert not is_reactorless()
+
+    def test_no_reactor_no_running_loop(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delitem(sys.modules, "twisted.internet.reactor", raising=False)
+        monkeypatch.setattr(asyncio, "get_running_loop", _no_running_loop)
+        with pytest.raises(RuntimeError, match=r"is_reactorless\(\) called without"):
+            is_reactorless()

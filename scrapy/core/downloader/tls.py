@@ -4,6 +4,7 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, Any
 
+from formerly import deprecated_class
 from OpenSSL import SSL
 from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
@@ -22,7 +23,6 @@ from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers, TLSVersion
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.deprecate import create_deprecated_class
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -81,9 +81,8 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
     (for genuinely invalid certificates or bugs in verification code).
 
     Same as Twisted's private _sslverify.ClientTLSOptions,
-    except that VerificationError, CertificateError and ValueError
-    exceptions are caught, so that the connection is not closed, only
-    logging warnings.
+    except that VerificationError and CertificateError exceptions are caught,
+    so that the connection is not closed, only logging warnings.
 
     Instances of this class are returned from
     :class:`._ScrapyClientContextFactory`.
@@ -106,22 +105,16 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
                     self._hostnameASCII,
                     e,
                 )
-            except ValueError as e:
-                logger.warning(
-                    "Ignoring error while verifying certificate "
-                    'from host "%s" (exception: %r)',
-                    self._hostnameASCII,
-                    e,
-                )
         else:
             super()._identityVerifyingInfoCallback(connection, where, ret)  # type: ignore[misc]
 
 
-ScrapyClientTLSOptions = create_deprecated_class(
+ScrapyClientTLSOptions = deprecated_class(
     "ScrapyClientTLSOptions",
     _ScrapyClientTLSOptions,
-    subclass_warn_message="{old} is deprecated.",
-    instance_warn_message="{cls} is deprecated.",
+    category=ScrapyDeprecationWarning,
+    subclass_message="{old} is deprecated.",
+    instance_message="{cls} is deprecated.",
 )
 
 
@@ -170,13 +163,6 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
             except (CertificateError, VerificationError) as e:
                 logger.warning(
                     'Remote certificate is not valid for hostname "%s"; %s',
-                    hostnameASCII,
-                    e,
-                )
-            except ValueError as e:
-                logger.warning(
-                    "Ignoring error while verifying certificate "
-                    'from host "%s" (exception: %r)',
                     hostnameASCII,
                     e,
                 )

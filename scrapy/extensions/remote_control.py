@@ -12,7 +12,7 @@ import secrets
 import time
 import traceback
 from types import CodeType
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, Self, cast
 
 from aiohttp import web
 
@@ -31,9 +31,6 @@ from scrapy.utils.asyncio import is_asyncio_available
 if TYPE_CHECKING:
     from datetime import datetime
     from pathlib import Path
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 
@@ -94,6 +91,9 @@ class RemoteControl:
           truncated (omitted if ``false``).
         - ``traceback_truncated`` (boolean, optional): whether ``traceback``
           was truncated (omitted if ``false``).
+
+    This extension can be used with any HTTP client, but it is intended to be
+    used by the Scrapy MCP server (see :ref:`using-mcp-server`).
     """
 
     def __init__(self, crawler: Crawler):
@@ -127,6 +127,8 @@ class RemoteControl:
         self._auth_token: str | None = None
         self._runner: web.AppRunner | None = None
         self._job_file_path: Path | None = None
+        # Makes stop() wait until start() finishes.
+        self._lock = asyncio.Lock()
 
         crawler.signals.connect(self.start, signal=signals.engine_started)
         crawler.signals.connect(self.stop, signal=signals.engine_stopped)
@@ -144,6 +146,10 @@ class RemoteControl:
 
     async def start(self) -> None:
         """Start the HTTP server."""
+        async with self._lock:
+            await self._start()
+
+    async def _start(self) -> None:
         try:
             self._auth_token = secrets.token_urlsafe(32)
             app = web.Application()
@@ -182,10 +188,14 @@ class RemoteControl:
                 "Remote control HTTP server failed to start",
                 extra={"crawler": self._crawler},
             )
-            await self.stop()
+            await self._stop()
 
     async def stop(self) -> None:
         """Stop the HTTP server and remove the job file."""
+        async with self._lock:
+            await self._stop()
+
+    async def _stop(self) -> None:
         if self._job_file_path is not None:
             # we remove the job file before stopping the HTTP server
             with contextlib.suppress(OSError):
@@ -256,7 +266,7 @@ class RemoteControl:
             and hmac.compare_digest(token, self._auth_token)
         )
 
-    async def _run_code(self, code_obj: CodeType, timeout: float) -> ExecuteResult:
+    async def _run_code(self, code_obj: CodeType, timeout: float) -> ExecuteResult:  # noqa: ASYNC109
         """Run a compiled code object with a timeout and capture its output."""
         buf = io.StringIO()
         ns = self._make_namespace(buf)
@@ -269,9 +279,9 @@ class RemoteControl:
             eval_result = eval(code_obj, ns)  # noqa: S307 - arbitrary code by design
             if inspect.iscoroutine(eval_result):
                 try:
-                    await asyncio.wait_for(eval_result, timeout)
-                except asyncio.TimeoutError:
-                    # wait_for cancelled the coroutine at an await point.
+                    async with asyncio.timeout(timeout):
+                        await eval_result
+                except TimeoutError:
                     status = "timeout"
         except Exception:
             # intentionally doesn't catch asyncio.CancelledError, which is a BaseException

@@ -28,10 +28,11 @@ from scrapy.exceptions import (
     DownloadFailedError,
     DownloadTimeoutError,
     NotConfigured,
+    NotSupported,
     ScrapyDeprecationWarning,
     UnsupportedURLSchemeError,
 )
-from scrapy.http import Request, TextResponse
+from scrapy.http import Request, Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._download_handlers import wrap_twisted_exceptions
 from scrapy.utils.boto import is_botocore_available
@@ -45,6 +46,20 @@ class DummyDH:
 
     async def download_request(self, request):
         pass
+
+
+class NamedDH:
+    lazy = False
+
+    async def download_request(self, request):
+        return Response(request.url, body=b"named")
+
+
+class SchemeDH:
+    lazy = False
+
+    async def download_request(self, request):
+        return Response(request.url, body=b"scheme")
 
 
 class DummyLazyDH:
@@ -100,7 +115,7 @@ class TestLoad:
         assert "scheme" not in dh._handlers
         assert "scheme" in dh._notconfigured
         assert (
-            'Loading "<class \'tests.test_downloader_handlers.BuggyDH\'>" for scheme "scheme"'
+            'Loading "<class \'tests.test_downloader_handlers.BuggyDH\'>" for handler ID "scheme"'
             in caplog.text
         )
 
@@ -129,6 +144,58 @@ class TestLoad:
         assert handler
         assert "scheme" in dh._handlers
         assert "scheme" not in dh._notconfigured
+
+
+class TestHandlerID:
+    @staticmethod
+    def _get_dh() -> DownloadHandlers:
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOAD_HANDLERS": {"https": SchemeDH},
+                "DOWNLOAD_HANDLERS_BY_NAME": {"named": NamedDH},
+            }
+        )
+        crawler.spider = crawler._create_spider()
+        return DownloadHandlers(crawler)
+
+    def test_clashing_ids(self) -> None:
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOAD_HANDLERS": {"https": SchemeDH},
+                "DOWNLOAD_HANDLERS_BY_NAME": {"https": NamedDH},
+            }
+        )
+        with pytest.raises(ValueError, match="defined both in DOWNLOAD_HANDLERS"):
+            DownloadHandlers(crawler)
+
+    @coroutine_test
+    async def test_name_not_a_scheme(self) -> None:
+        dh = self._get_dh()
+        with pytest.raises(NotSupported, match="Unsupported URL scheme 'named'"):
+            await dh.download_request_async(Request("named://example.com"))
+
+    @coroutine_test
+    async def test_name_in_meta(self) -> None:
+        dh = self._get_dh()
+        request = Request("https://example.com", meta={"download_handler": "named"})
+        response = await dh.download_request_async(request)
+        assert response.body == b"named"
+
+    @coroutine_test
+    async def test_scheme_in_meta(self) -> None:
+        dh = self._get_dh()
+        request = Request("ftp://example.com", meta={"download_handler": "https"})
+        response = await dh.download_request_async(request)
+        assert response.body == b"scheme"
+
+    @coroutine_test
+    async def test_unknown_id_in_meta(self) -> None:
+        dh = self._get_dh()
+        request = Request("https://example.com", meta={"download_handler": "nmaed"})
+        with pytest.raises(
+            NotSupported, match="Unusable download handler 'nmaed': no handler with"
+        ):
+            await dh.download_request_async(request)
 
 
 class TestFile:
@@ -377,7 +444,7 @@ class TestDataURI:
         request = Request("data:,A%20brief%20note")
         response = await self.download_request(request)
         assert response.text == "A brief note"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "US-ASCII"
 
@@ -386,7 +453,7 @@ class TestDataURI:
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
@@ -408,7 +475,7 @@ class TestDataURI:
         )
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "utf-8"
 
@@ -417,6 +484,14 @@ class TestDataURI:
         request = Request("data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D")
         response = await self.download_request(request)
         assert response.text == "Hello, world."
+
+    @coroutine_test
+    async def test_binary_mediatype(self):
+        request = Request("data:image/png;base64,iVBORw0KGgo%3D")
+        response = await self.download_request(request)
+        assert response.body == b"\x89PNG\r\n\x1a\n"
+        assert type(response) is responsetypes.from_mimetype("image/png")
+        assert not isinstance(response, TextResponse)
 
     @coroutine_test
     async def test_protocol(self):

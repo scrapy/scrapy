@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -23,9 +23,6 @@ from scrapy.utils.defer import _schedule_coro
 if TYPE_CHECKING:
     from twisted.internet.task import LoopingCall
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -42,7 +39,7 @@ class CloseSpider:
         self.task: CallLaterResult | None = None
 
         # for CLOSESPIDER_TIMEOUT_NO_ITEM
-        self.task_no_item: AsyncioLoopingCall | LoopingCall | None = None
+        self.task_no_item: AsyncioLoopingCall[[], None] | LoopingCall | None = None
 
         self.close_on: dict[str, Any] = {
             "timeout": crawler.settings.getfloat("CLOSESPIDER_TIMEOUT"),
@@ -87,7 +84,7 @@ class CloseSpider:
     def error_count(self, failure: Failure, response: Response, spider: Spider) -> None:
         self.counter["errorcount"] += 1
         if self.counter["errorcount"] == self.close_on["errorcount"]:
-            self._close_spider("closespider_errorcount")
+            self._close_spider("closespider_errorcount", error=True)
 
     def page_count(self, response: Response, request: Request, spider: Spider) -> None:
         self.counter["pagecount"] += 1
@@ -144,5 +141,7 @@ class CloseSpider:
             )
             self._close_spider("closespider_timeout_no_item")
 
-    def _close_spider(self, reason: str) -> None:
-        _schedule_coro(self.crawler.engine.close_spider_async(reason=reason))
+    def _close_spider(self, reason: str, *, error: bool = False) -> None:
+        _schedule_coro(
+            self.crawler.engine.close_spider_async(reason=reason, error=error)
+        )

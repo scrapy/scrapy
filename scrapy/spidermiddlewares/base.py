@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy import Request, Spider
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -86,8 +83,9 @@ class BaseSpiderMiddleware:
         :type request: :class:`~scrapy.Request` object
 
         :param response: the response being processed
-        :type response: :class:`~scrapy.http.Response` object or ``None`` for
-            start requests
+        :type response: :class:`~scrapy.http.Response` object, or ``None`` for
+            start requests and for the output of a request errback called
+            because a download failed
 
         :return: the processed request or ``None``
         """
@@ -104,8 +102,9 @@ class BaseSpiderMiddleware:
         :type item: item object
 
         :param response: the response being processed
-        :type response: :class:`~scrapy.http.Response` object or ``None`` for
-            start items
+        :type response: :class:`~scrapy.http.Response` object, or ``None`` for
+            start items and for the output of a request errback called because
+            a download failed
 
         :return: the processed item or ``None``
         """

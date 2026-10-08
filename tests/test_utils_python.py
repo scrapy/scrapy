@@ -60,7 +60,7 @@ class TestMutableAsyncChain:
         m.extend(self.g2())
         m.extend(self.g3())
 
-        assert await m.__anext__() == 0
+        assert await anext(m) == 0
         results = await collect_asyncgen(m)
         assert results == list(range(1, 10))
 
@@ -189,15 +189,18 @@ def test_get_func_args():
     assert get_func_args(" ".join, stripself=True) == ["iterable"]
 
     if sys.version_info >= (3, 13) or platform.python_implementation() == "PyPy":
-        # the correct and correctly extracted signature
         assert get_func_args(operator.itemgetter(2), stripself=True) == ["obj"]
-    elif platform.python_implementation() == "CPython":
-        # ["args", "kwargs"] is a correct result for the pre-3.13 incorrect function signature
-        # [] is an incorrect result on even older CPython (https://github.com/python/cpython/issues/86951)
-        assert get_func_args(operator.itemgetter(2), stripself=True) in [
-            [],
-            ["args", "kwargs"],
+    else:
+        # The interpreter returns a wrong signature
+        assert get_func_args(operator.itemgetter(2), stripself=True) == [
+            "args",
+            "kwargs",
         ]
+
+    # inspect.signature() fails for these
+    assert get_func_args(type) == []
+    if platform.python_implementation() != "PyPy":
+        assert get_func_args(max) == []
 
 
 @pytest.mark.skipif(

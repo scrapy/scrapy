@@ -1,0 +1,23 @@
+name: Close spam PRs
+on:  # zizmor: ignore[dangerous-triggers]
+  pull_request_target:
+    types: [opened]
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  unattended-pr-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: scrapy/unattended-pr-guard@2ea7eff575dd0912d03cf3e3ae7acf65052c6445 # 0.2.0
+        with:
+          trusted-orgs: scrapy,scrapy-plugins,scrapinghub,zytedata
+          trusted-users: >-
+            adnan-awan,akhterwahab,alexldide,ankitjavalkar,DiogoCastro,
+            diogosuguimoto,emarondan,gutsytechster,haideriqbal1,
+            hammadqureshi-web,hassaan-naushahi,hygorcluz,imhamzaa,kishan3,
+            Nykakin,serhii73
+          label: spam

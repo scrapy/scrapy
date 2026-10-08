@@ -5,7 +5,7 @@ import pprint
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, Self, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import ensure_awaitable
@@ -17,9 +17,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -38,7 +35,7 @@ class MiddlewareManager(ABC):
     component_name: str
     _compat_spider: Spider | None = None
 
-    def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
+    def __init__(self, *middlewares: object, crawler: Crawler | None = None) -> None:
         self.crawler: Crawler | None = crawler
         if crawler is None:
             warnings.warn(
@@ -48,7 +45,7 @@ class MiddlewareManager(ABC):
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-        self.middlewares: tuple[Any, ...] = middlewares
+        self.middlewares: tuple[object, ...] = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         self.methods: dict[str, deque[Callable[..., Any] | None]] = defaultdict(deque)
         self._mw_methods_requiring_spider: set[Callable[..., Any]] = set()
@@ -76,7 +73,7 @@ class MiddlewareManager(ABC):
         elif self._compat_spider is not spider:
             raise RuntimeError(
                 f"Different instances of Spider were passed to {type(self).__name__}:"
-                f" {self._compat_spider} and {spider}"
+                f" {self._compat_spider!r} and {spider!r}"
             )
 
     @classmethod

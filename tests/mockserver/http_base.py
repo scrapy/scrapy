@@ -6,7 +6,7 @@ import argparse
 import sys
 from abc import ABC, abstractmethod
 from subprocess import PIPE, Popen
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 from urllib.parse import urlparse
 
 from twisted.web.server import Site
@@ -20,9 +20,6 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from twisted.web import resource
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 class BaseMockServer(ABC):
