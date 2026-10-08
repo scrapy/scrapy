@@ -22,11 +22,9 @@ from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
     deferred_to_future,
-    iter_errback,
     maybe_deferred_to_future,
     maybeDeferred_coro,
     mustbe_deferred,
-    parallel,
     parallel_async,
 )
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
@@ -77,30 +75,6 @@ class TestMustbeDeferred:
         yield dfd
 
 
-class TestIterErrback:
-    def test_iter_errback_good(self):
-        def itergood() -> Generator[int, None, None]:
-            yield from range(10)
-
-        errors: list[Failure] = []
-        out = list(iter_errback(itergood(), errors.append))
-        assert out == list(range(10))
-        assert not errors
-
-    def test_iter_errback_bad(self):
-        def iterbad() -> Generator[int, None, None]:
-            for x in range(10):
-                if x == 5:
-                    1 / 0
-                yield x
-
-        errors: list[Failure] = []
-        out = list(iter_errback(iterbad(), errors.append))
-        assert out == [0, 1, 2, 3, 4]
-        assert len(errors) == 1
-        assert isinstance(errors[0].value, ZeroDivisionError)
-
-
 class TestAiterErrback:
     @coroutine_test
     async def test_aiter_errback_good(self):
@@ -114,7 +88,7 @@ class TestAiterErrback:
         assert not errors
 
     @coroutine_test
-    async def test_iter_errback_bad(self):
+    async def test_aiter_errback_bad(self):
         async def iterbad() -> AsyncGenerator[int, None]:
             for x in range(10):
                 if x == 5:
@@ -137,20 +111,6 @@ class TestAsyncDefTestsuite:
     @coroutine_test
     async def test_coroutine_test_xfail(self):
         raise RuntimeError("This is expected to be raised")
-
-
-@pytest.mark.requires_reactor  # parallel() requires a reactor
-class TestParallel:
-    @inline_callbacks_test
-    def test_count_higher_than_work(self) -> Generator[Deferred[Any], Any, None]:
-        results: list[int] = []
-        with mock.patch.object(
-            Cooperator, "coiterate", autospec=True, side_effect=Cooperator.coiterate
-        ) as coiterate:
-            yield parallel(range(3), 1_000_000, results.append)
-        assert results == [0, 1, 2]
-        # One task per item, plus the one that finds no more work.
-        assert coiterate.call_count <= 4
 
 
 @implementer(IReadDescriptor)

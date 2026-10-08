@@ -79,7 +79,7 @@ ipython = ["ipython>=8.15.0"]
 memusage = ["psutil>=5.9.0"]
 ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
-s3 = ["boto3>=1.20.0"]
+s3 = ["boto3>=1.35.2"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.17.0; platform_system != 'Windows' and implementation_name != 'pypy'",
