@@ -86,6 +86,38 @@ UriParamsCallableT: TypeAlias = Callable[
 _ItemProcessor: TypeAlias = Callable[[Any], Iterable[Any]]
 
 
+_FEED_MODES: frozenset[str] = frozenset({"append", "create", "overwrite"})
+
+
+def _get_mode(storage: Any, feed_options: dict[str, Any] | None, legacy: str) -> str:
+    """Return the mode of *storage*, based on the *mode* feed option, or on the
+    deprecated *overwrite* feed option, or, if neither is set, on *legacy*,
+    which must be the mode that the storage used before the *mode* feed option
+    existed."""
+    feed_options = feed_options or {}
+    mode = feed_options.get("mode")
+    if mode is None:
+        overwrite = feed_options.get("overwrite")
+        mode = legacy if overwrite is None else "overwrite" if overwrite else "append"
+    _check_mode(mode, storage)
+    return mode
+
+
+def _check_mode(mode: str, storage: Any, uri: str | None = None) -> None:
+    if mode not in _FEED_MODES:
+        raise ValueError(
+            f"Invalid feed mode: {mode!r}. Supported modes: "
+            f"{', '.join(sorted(_FEED_MODES))}."
+        )
+    supported: frozenset[str] | None = getattr(storage, "supported_modes", None)
+    if supported is not None and mode not in supported:
+        suffix = f" (feed URI: {uri})" if uri else ""
+        raise ValueError(
+            f"{type(storage).__name__} does not support the {mode!r} feed "
+            f"mode{suffix}. Supported modes: {', '.join(sorted(supported))}."
+        )
+
+
 class ItemFilter:
     """
     This will be used by FeedExporter to decide if an item should be allowed
@@ -188,6 +220,9 @@ class BlockingFeedStorage(ABC):
 class StdoutFeedStorage:
     """:ref:`Standard output <topics-feed-storage-stdout>` storage backend."""
 
+    # The mode is irrelevant here: writing to a stream cannot destroy data.
+    supported_modes: frozenset[str] = _FEED_MODES
+
     def __init__(
         self,
         uri: str,
@@ -198,19 +233,19 @@ class StdoutFeedStorage:
         if not _stdout:
             _stdout = sys.stdout.buffer
         self._stdout: IO[bytes] = _stdout
-        if feed_options and feed_options.get("overwrite", False) is True:
-            logger.warning(
-                "Standard output (stdout) storage does not support "
-                "overwriting. To suppress this warning, remove the "
-                "overwrite option from your FEEDS setting, or set "
-                "it to False."
-            )
 
     def open(self, spider: Spider) -> IO[bytes]:
         return self._stdout
 
     def store(self, file: IO[bytes]) -> Deferred[None] | None:
         pass
+
+
+_WRITE_MODES: dict[str, OpenBinaryMode] = {
+    "append": "ab",
+    "create": "xb",
+    "overwrite": "wb",
+}
 
 
 class FileFeedStorage:
@@ -220,12 +255,13 @@ class FileFeedStorage:
     are created when the feed is opened.
     """
 
+    supported_modes: frozenset[str] = _FEED_MODES
+
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path: str = file_uri_to_path(uri) if uri.startswith("file:") else uri
-        feed_options = feed_options or {}
-        self.write_mode: OpenBinaryMode = (
-            "wb" if feed_options.get("overwrite", False) else "ab"
-        )
+        self.write_mode: OpenBinaryMode = _WRITE_MODES[
+            _get_mode(self, feed_options, "append")
+        ]
 
     def open(self, spider: Spider) -> IO[bytes]:
         dirname = Path(self.path).parent
@@ -240,6 +276,8 @@ class FileFeedStorage:
 
 class S3FeedStorage(BlockingFeedStorage):
     """:ref:`Amazon S3 <topics-feed-storage-s3>` storage backend."""
+
+    supported_modes: frozenset[str] = frozenset({"create", "overwrite"})
 
     def __init__(
         self,
@@ -291,12 +329,7 @@ class S3FeedStorage(BlockingFeedStorage):
             config=Config(**config_kwargs),
         )
 
-        if feed_options and feed_options.get("overwrite", True) is False:
-            logger.warning(
-                "S3 does not support appending to files. To "
-                "suppress this warning, remove the overwrite "
-                "option from your FEEDS setting or set it to True."
-            )
+        self._mode: str = _get_mode(self, feed_options, "overwrite")
 
     @classmethod
     def from_crawler(
@@ -320,14 +353,37 @@ class S3FeedStorage(BlockingFeedStorage):
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
+        from botocore.exceptions import ClientError  # noqa: PLC0415
+
         file.seek(0)
+        extra_args: dict[str, Any] = {"ACL": self.acl} if self.acl else {}
         try:
-            if self.acl:
+            if self._mode == "create":
+                # upload_fileobj() does not allow IfNoneMatch
+                # (https://github.com/boto/boto3/issues/4366).
+                try:
+                    self.s3_client.put_object(
+                        Bucket=self.bucketname,
+                        Key=self.keyname,
+                        Body=file,
+                        IfNoneMatch="*",
+                        **extra_args,
+                    )
+                except ClientError as error:
+                    if (
+                        error.response.get("Error", {}).get("Code")
+                        == "PreconditionFailed"
+                    ):
+                        raise FileExistsError(
+                            f"s3://{self.bucketname}/{self.keyname} already exists"
+                        ) from error
+                    raise
+            elif extra_args:
                 self.s3_client.upload_fileobj(
                     Bucket=self.bucketname,
                     Key=self.keyname,
                     Fileobj=file,
-                    ExtraArgs={"ACL": self.acl},
+                    ExtraArgs=extra_args,
                 )
             else:
                 self.s3_client.upload_fileobj(
@@ -341,6 +397,8 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class GCSFeedStorage(BlockingFeedStorage):
     """:ref:`GCS <topics-feed-storage-gcs>` storage backend."""
+
+    supported_modes: frozenset[str] = _FEED_MODES
 
     def __init__(
         self,
@@ -358,7 +416,8 @@ class GCSFeedStorage(BlockingFeedStorage):
         assert u.hostname
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
-        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
+
+        self._mode: str = _get_mode(self, feed_options, "overwrite")
 
     @classmethod
     def from_crawler(
@@ -377,18 +436,35 @@ class GCSFeedStorage(BlockingFeedStorage):
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
+        from google.api_core.exceptions import PreconditionFailed  # noqa: PLC0415
+        from google.cloud.storage import Client  # noqa: PLC0415
+
         file.seek(0)
         try:
-            from google.cloud.storage import Client  # noqa: PLC0415
-
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
-            kwargs = {} if self.timeout is None else {"timeout": self.timeout}
-            blob = None if self.overwrite else bucket.get_blob(self.blob_name, **kwargs)
+            kwargs: dict[str, Any] = (
+                {} if self.timeout is None else {"timeout": self.timeout}
+            )
+            blob = (
+                bucket.get_blob(self.blob_name, **kwargs)
+                if self._mode == "append"
+                else None
+            )
             if blob is None:
-                bucket.blob(self.blob_name).upload_from_file(
-                    file, predefined_acl=self.acl, **kwargs
+                upload_kwargs = (
+                    {**kwargs, "if_generation_match": 0}
+                    if self._mode == "create"
+                    else kwargs
                 )
+                try:
+                    bucket.blob(self.blob_name).upload_from_file(
+                        file, predefined_acl=self.acl, **upload_kwargs
+                    )
+                except PreconditionFailed as error:
+                    raise FileExistsError(
+                        f"gs://{self.bucket_name}/{self.blob_name} already exists"
+                    ) from error
                 return
             # Appending uploads the new data as a separate object and composes
             # it with the existing one, leaving the data already stored
@@ -410,6 +486,8 @@ class FTPFeedStorage(BlockingFeedStorage):
     """:ref:`FTP <feed-storage-ftp>` storage backend, which also handles
     :ref:`FTPS <feed-storage-ftps>` when *uri* uses the ``ftps`` scheme."""
 
+    supported_modes: frozenset[str] = _FEED_MODES
+
     def __init__(
         self,
         uri: str,
@@ -429,7 +507,16 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.tls: bool = u.scheme == "ftps"
         self.use_active_mode: bool = use_active_mode
         self.timeout: float | None = timeout
-        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
+        self._mode: str = _get_mode(self, feed_options, "overwrite")
+
+    @property
+    def overwrite(self) -> bool:
+        warnings.warn(
+            "FTPFeedStorage.overwrite is deprecated, use the mode feed option instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._mode != "append"
 
     @classmethod
     def from_crawler(
@@ -455,7 +542,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             username=self.username,
             password=self.password,
             use_active_mode=self.use_active_mode,
-            overwrite=self.overwrite,
+            mode=self._mode,
             tls=self.tls,
             timeout=self.timeout,
         )
@@ -495,6 +582,7 @@ class FeedSlot:
         self.crawler: Crawler = crawler
         # flags
         self.itemcount: int = 0
+        self._skipped: bool = False
         self._exporting: bool = False
         self._fileloaded: bool = False
 
@@ -607,6 +695,19 @@ class FeedExporter:
         self.exporters: dict[str, type[BaseItemExporter]] = self._load_components(
             "FEED_EXPORTERS"
         )
+        if any(
+            feed_options.get("mode") is None for feed_options in self.feeds.values()
+        ):
+            warnings.warn(
+                "The default value of the FEED_MODE setting will change from "
+                "None to 'create' in a future Scrapy version, i.e. Scrapy will "
+                "stop writing feeds whose target already exists. Explicitly "
+                "set FEED_MODE, or the mode feed option of every feed, to "
+                "silence this warning.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         for uri, feed_options in self.feeds.items():
             if not self._storage_supported(uri, feed_options):
                 raise NotConfigured
@@ -637,6 +738,22 @@ class FeedExporter:
                     uri_template=uri,
                 )
             )
+
+    def _skip(self, slot: FeedSlot) -> None:
+        """Report that the target of *slot* already exists, and mark *slot* so
+        that nothing is written to it."""
+        slot._skipped = True
+        logger.error(
+            f"Not writing {slot.uri} because it already exists and the feed "
+            "mode is 'create'; its items are lost. To write it instead, remove "
+            "the target, or set the mode feed option or the FEED_MODE setting "
+            "to 'overwrite' or 'append' (-O implies 'overwrite').",
+            extra={"spider": slot.spider},
+        )
+        assert self.crawler.stats
+        self.crawler.stats.inc_value(
+            f"feedexport/conflicts/{type(slot.storage).__name__}"
+        )
 
     async def close_spider(self, spider: Spider) -> None:
         for slot in self.slots:
@@ -686,6 +803,8 @@ class FeedExporter:
         return slot_.file
 
     async def _close_slot(self, slot: FeedSlot, spider: Spider) -> None:
+        if slot._skipped:
+            return
 
         if slot.itemcount:
             # Normal case
@@ -705,6 +824,9 @@ class FeedExporter:
         )
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
+        except FileExistsError:
+            self._skip(slot)
+            self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
         except Exception:
             logger.exception(
                 "Error storing %s",
@@ -771,13 +893,21 @@ class FeedExporter:
 
             processor = self.processors[slot.uri_template]
             for exported_item in processor(item) if processor else (item,):
-                await slot.start_exporting()
-                assert slot.exporter
-                try:
-                    await ensure_awaitable(slot.exporter.export_item(exported_item))
-                except Exception as e:
-                    e.add_note(f"Item: {exported_item!r}")
-                    raise
+                if not slot._skipped:
+                    try:
+                        await slot.start_exporting()
+                    except FileExistsError:
+                        self._skip(slot)
+                if not slot._skipped:
+                    assert slot.exporter
+                    try:
+                        await ensure_awaitable(slot.exporter.export_item(exported_item))
+                    except Exception as e:
+                        e.add_note(f"Item: {exported_item!r}")
+                        raise
+                # Skipped items are counted, so that the following files of
+                # this feed still cover the same items as those of any other
+                # feed.
                 slot.itemcount += 1
                 # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
                 if (
@@ -843,7 +973,8 @@ class FeedExporter:
         scheme = urlparse(uri).scheme
         if scheme in self.storages or PureWindowsPath(uri).drive:
             try:
-                self._get_storage(uri, feed_options)
+                storage = self._get_storage(uri, feed_options)
+                self._check_storage_mode(uri, storage, feed_options)
                 return True
             except NotConfigured as e:
                 logger.error(
@@ -853,6 +984,23 @@ class FeedExporter:
         else:
             logger.error("Unknown feed storage scheme: %(scheme)s", {"scheme": scheme})
         return False
+
+    @staticmethod
+    def _check_storage_mode(
+        uri: str, storage: FeedStorageProtocol, feed_options: dict[str, Any]
+    ) -> None:
+        mode = feed_options.get("mode")
+        if mode is None:
+            # Every storage keeps its own historical mode.
+            return
+        if getattr(storage, "supported_modes", None) is None:
+            logger.warning(
+                f"{type(storage).__name__} does not declare which feed modes it "
+                f"supports, so the mode feed option of the {uri} feed ({mode!r}) "
+                "may be ignored."
+            )
+            return
+        _check_mode(mode, storage, uri)
 
     def _get_storage(
         self, uri: str, feed_options: dict[str, Any]
