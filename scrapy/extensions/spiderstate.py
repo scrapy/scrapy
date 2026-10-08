@@ -38,9 +38,9 @@ class SpiderState:
     def spider_opened(self, spider: Spider) -> None:
         if self.jobdir and Path(self.statefn).exists():
             with Path(self.statefn).open("rb") as f:
-                spider.state = pickle.load(f)  # type: ignore[attr-defined]  # noqa: S301
+                spider.state = pickle.load(f)  # noqa: S301
         else:
-            spider.state = {}  # type: ignore[attr-defined]
+            spider.state = {}
 
     @property
     def statefn(self) -> str:
