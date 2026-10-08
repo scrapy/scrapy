@@ -23,7 +23,7 @@ from twisted.web.client import (
 )
 from twisted.web.client import Response as TxResponse
 
-from scrapy import Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader._idna_patch import (
     _install_twisted_idna_fallbacks,
@@ -41,7 +41,7 @@ from scrapy.http import Response
 from scrapy.resolver import dnscache
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.asyncio import sleep
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
@@ -49,6 +49,7 @@ from scrapy.utils.test import get_crawler
 from tests import IDNA_REJECTED_HOSTNAMES
 from tests.mockserver.http_resources import PayloadResource, put_child
 from tests.mockserver.utils import ssl_context_factory
+from tests.spiders import SimpleSpider
 from tests.utils.cmdline import proc
 from tests.utils.decorators import coroutine_test
 
@@ -717,6 +718,22 @@ async def test_stop_cancels_pending_download_tasks() -> None:
     assert dropped == 1
     assert len(failures) == 1
     assert failures[0].check(CancelledError)
+
+
+@coroutine_test
+async def test_fast_stop_with_download_in_flight(mockserver: MockServer) -> None:
+    crawler = get_crawler(SimpleSpider)
+    crawl_dfd = deferred_from_coro(
+        crawler.crawl_async(url=mockserver.url("/delay?n=10"))
+    )
+    await crawler.signals.wait_for(signals.headers_received)
+    # Let the download handler start waiting for the response body.
+    await sleep(0)
+    await crawler.stop_async(mode="fast")
+    await maybe_deferred_to_future(crawl_dfd)
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_dropped_count") == 1
+    assert crawler.stats.get_value("response_received_count") is None
 
 
 class ConcurrencyRecordingHandler(BaseDownloadHandler):
