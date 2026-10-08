@@ -16,22 +16,20 @@ accepts a different set of arguments and options.
 (The ``scrapy deploy`` command has been removed in 1.0 in favor of the
 standalone ``scrapyd-deploy``. See `Deploying your project`_.)
 
+.. _config:
 .. _topics-config-settings:
 
 Configuration settings
 ======================
 
-Scrapy will look for configuration parameters in ini-style ``scrapy.cfg`` files
-in standard locations:
+Scrapy reads configuration parameters from the ``[tool.scrapy]`` table of the
+:file:`pyproject.toml` file at the :ref:`root of your project
+<topics-project-structure>`:
 
-1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
-2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
-   for global (user-wide) settings, and
-3. ``scrapy.cfg`` inside a Scrapy project's root (see next section).
+.. code-block:: toml
 
-Settings from these files are merged in the listed order of preference:
-user-defined values have higher priority than system-wide defaults
-and project-wide settings will override all others, when defined.
+    [tool.scrapy.settings]
+    default = "myproject.settings"
 
 Scrapy also understands, and can be configured through, a number of environment
 variables. Currently these are:
@@ -39,6 +37,33 @@ variables. Currently these are:
 * ``SCRAPY_SETTINGS_MODULE`` (see :ref:`topics-settings-module-envvar`)
 * ``SCRAPY_PROJECT`` (see :ref:`topics-project-envvar`)
 * ``SCRAPY_PYTHON_SHELL`` (see :ref:`topics-shell`)
+
+.. _global-config:
+
+Global configuration
+--------------------
+
+Project-independent configuration parameters may also be set for all your
+projects in the :file:`scrapy/config.toml` file of your user configuration
+folder:
+
+* Linux and macOS: :file:`$XDG_CONFIG_HOME/scrapy/config.toml`, i.e.
+  :file:`~/.config/scrapy/config.toml` by default
+* Windows: :file:`%LOCALAPPDATA%\\scrapy\\config.toml`
+
+For example:
+
+.. code-block:: toml
+
+    [settings]
+    shell = "bpython"
+
+Only the following parameters are supported there:
+
+* ``settings.shell`` (see :ref:`topics-shell`)
+
+Any project may override them, using the same section and parameter name in its
+:file:`pyproject.toml` file.
 
 .. _topics-project-structure:
 
@@ -51,7 +76,7 @@ understand the directory structure of a Scrapy project.
 Though it can be modified, all Scrapy projects have the same file
 structure by default, similar to this::
 
-   scrapy.cfg
+   pyproject.toml
    myproject/
        __init__.py
        items.py
@@ -64,14 +89,14 @@ structure by default, similar to this::
            spider2.py
            ...
 
-The directory where the ``scrapy.cfg`` file resides is known as the *project
-root directory*. That file contains the name of the Python module that defines
-the project settings. Here is an example:
+The directory where the :file:`pyproject.toml` file resides is known as the
+*project root directory*. That file contains the name of the Python module
+that defines the project settings. Here is an example:
 
-.. code-block:: ini
+.. code-block:: toml
 
-    [settings]
-    default = myproject.settings
+    [tool.scrapy.settings]
+    default = "myproject.settings"
 
 The project name also appears elsewhere by default. :setting:`SPIDER_MODULES`
 and :setting:`NEWSPIDER_MODULE` reference the project module itself, so they
@@ -95,18 +120,19 @@ use :func:`~scrapy.utils.project.find_projects`:
 Sharing the root directory between projects
 ===========================================
 
-A project root directory, the one that contains the ``scrapy.cfg``, may be
-shared by multiple Scrapy projects, each with its own settings module.
+A project root directory, the one that contains the :file:`pyproject.toml`
+file, may be shared by multiple Scrapy projects, each with its own settings
+module.
 
 In that case, you must define one or more aliases for those settings modules
-under ``[settings]`` in your ``scrapy.cfg`` file:
+under ``[tool.scrapy.settings]`` in your :file:`pyproject.toml` file:
 
-.. code-block:: ini
+.. code-block:: toml
 
-    [settings]
-    default = myproject1.settings
-    project1 = myproject1.settings
-    project2 = myproject2.settings
+    [tool.scrapy.settings]
+    default = "myproject1.settings"
+    project1 = "myproject1.settings"
+    project2 = "myproject2.settings"
 
 By default, the ``scrapy`` command-line tool will use the ``default`` settings.
 Use the ``SCRAPY_PROJECT`` environment variable to specify a different project
