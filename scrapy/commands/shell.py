@@ -16,7 +16,7 @@ from scrapy.crawler import AsyncCrawlerProcess, Crawler
 from scrapy.exceptions import UsageError
 from scrapy.http import Request
 from scrapy.shell import Shell
-from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils._datatypes import SequenceExclude
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
