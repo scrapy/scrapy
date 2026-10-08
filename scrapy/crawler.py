@@ -15,7 +15,7 @@ from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from scrapy import Spider
 from scrapy.addons import AddonManager
 from scrapy.core.engine import EngineState, ExecutionEngine
-from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
@@ -305,17 +305,11 @@ class Crawler:
             self._apply_settings()
             self._update_logging()
             self.engine = ExecutionEngine(self)
-            try:
-                yield deferred_from_coro(self.engine.open_spider_async())
-            except CloseSpider as exc:
-                yield deferred_from_coro(
-                    self.engine.close_async(reason=exc.reason, error=exc.error)
-                )
-            else:
-                # The spider may have been closed already, e.g. by an
-                # extension, in which case the engine is already stopped.
-                if self.engine.state is EngineState.SPIDER_OPEN:
-                    yield deferred_from_coro(self.engine.start_async())
+            yield deferred_from_coro(self.engine.open_spider_async())
+            # The spider may have been closed already, e.g. by an
+            # extension, in which case the engine is already stopped.
+            if self.engine.state is EngineState.SPIDER_OPEN:
+                yield deferred_from_coro(self.engine.start_async())
         except Exception:
             if self._engine is not None:
                 yield deferred_from_coro(self._engine.close_async())
@@ -345,15 +339,11 @@ class Crawler:
             self._apply_settings()
             self._update_logging()
             self.engine = ExecutionEngine(self)
-            try:
-                await self.engine.open_spider_async()
-            except CloseSpider as exc:
-                await self.engine.close_async(reason=exc.reason, error=exc.error)
-            else:
-                # The spider may have been closed already, e.g. by an
-                # extension, in which case the engine is already stopped.
-                if self.engine.state is EngineState.SPIDER_OPEN:
-                    await self.engine.start_async()
+            await self.engine.open_spider_async()
+            # The spider may have been closed already, e.g. by an
+            # extension, in which case the engine is already stopped.
+            if self.engine.state is EngineState.SPIDER_OPEN:
+                await self.engine.start_async()
         except Exception:
             if self._engine is not None:
                 await self._engine.close_async()

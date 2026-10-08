@@ -330,9 +330,10 @@ Supported options:
 
 * ``-a NAME=VALUE``: set a spider argument (may be repeated)
 
-* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE
-  (use ``-`` for stdout). To define the output format, add a colon at the end
-  of the output URI (for example, ``-o FILE:FORMAT``)
+* ``--output FILE`` or ``-o FILE``: dump scraped items into FILE (use ``-`` for
+  stdout), handling an existing FILE as the :setting:`FEED_MODE` setting
+  indicates. To define the output format, add a colon at the end of the output
+  URI (for example, ``-o FILE:FORMAT``)
 
 * ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE,
   overwriting any existing file. To define the output format, add a colon at
@@ -461,9 +462,19 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument, taking the URL, HTTP method, headers, cookies and body from the
+  command (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It cannot
+  be combined with a URL argument.
+
+  .. versionadded:: VERSION
+
 Usage examples::
 
     $ scrapy fetch --nolog http://www.example.com/some/page.html
+    [ ... html content here ... ]
+
+    $ scrapy fetch --nolog --curl 'curl -d title=hello https://httpbin.org/post'
     [ ... html content here ... ]
 
     $ scrapy fetch --nolog --headers http://www.example.com/
@@ -499,6 +510,12 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
+
 Usage example::
 
     $ scrapy view http://www.example.com/some/page.html
@@ -526,6 +543,12 @@ Supported options:
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them);
   this only affects the URL you may pass as argument on the command line;
   once you are inside the shell, ``fetch(url)`` will still follow HTTP redirects by default.
+
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
 
 Usage example::
 
@@ -564,6 +587,12 @@ Supported options:
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
+
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
 
 * ``--meta`` or ``-m``: additional request meta that will be passed to the
   callback request. This must be a valid JSON string. Example:
@@ -876,3 +905,5 @@ Example:
 .. code-block:: python
 
     COMMANDS_MODULE = "mybot.commands"
+
+.. _cURL: https://curl.se/
