@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import random
+import time
+from itertools import pairwise
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
 from twisted.internet.defer import Deferred
 
+import scrapy.utils.asyncio
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -183,3 +186,50 @@ class TestAsyncioLoopingCall:
         looping_call.start(0.1)
         assert not looping_call.running
         assert "Error calling the AsyncioLoopingCall function" in caplog.text
+
+    @coroutine_test
+    async def test_looping_call_early_wakeup(self) -> None:
+        """The function must be called exactly once per interval boundary even
+        if the event loop wakes the looping call before time.monotonic()
+        reaches the boundary (this can happen e.g. under uvloop).
+
+        This is simulated with a clock, used only by the looping call, that
+        runs slower than the real one used by the event loop timers.
+        """
+        real_monotonic = time.monotonic
+        slow_clock = mock.Mock(monotonic=lambda: real_monotonic() * 0.95)
+        interval = 0.05
+        calls: list[float] = []
+        looping_call = AsyncioLoopingCall(lambda: calls.append(slow_clock.monotonic()))
+        with mock.patch.object(scrapy.utils.asyncio, "time", slow_clock):
+            looping_call.start(interval, now=False)
+            await asyncio.sleep(0.4)
+            looping_call.stop()
+        assert len(calls) >= 3
+        gaps = [b - a for a, b in pairwise(calls)]
+        assert all(gap > interval / 2 for gap in gaps), gaps
+
+    @coroutine_test
+    async def test_looping_call_late_wakeup(self) -> None:
+        """If the function is late (e.g. because the event loop was blocked),
+        the calls for the missed boundaries are skipped and the next call
+        happens on the next boundary, not immediately."""
+        interval = 0.1
+        calls: list[float] = []
+
+        def func() -> None:
+            calls.append(time.monotonic())
+            if len(calls) == 1:
+                time.sleep(2.5 * interval)
+
+        looping_call = AsyncioLoopingCall(func)
+        start_time = time.monotonic()
+        looping_call.start(interval, now=False)
+        await asyncio.sleep(0.55)
+        looping_call.stop()
+        # calls on the 1st and 4th boundaries, then on the 5th
+        assert len(calls) == 3, calls
+        offsets = [(t - start_time) / interval for t in calls]
+        assert [round(offset) for offset in offsets] == [1, 4, 5], offsets
+        # the calls happen on the boundaries (allowing for some imprecision)
+        assert all(abs(offset - round(offset)) < 0.4 for offset in offsets), offsets
