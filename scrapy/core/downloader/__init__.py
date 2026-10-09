@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import random
 import warnings
 from collections import deque
@@ -361,7 +362,7 @@ class Downloader:
     ) -> None:
         try:
             response = await self._download(slot, request)
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             if not queue_dfd.called:
                 queue_dfd.errback(Failure())
         else:
