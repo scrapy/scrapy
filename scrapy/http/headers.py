@@ -228,6 +228,8 @@ class Headers(dict):  # type: ignore[type-arg]
         ]
 
     def __copy__(self) -> Self:
-        return self.__class__(self)
+        copied = self.__class__(self)
+        copied.encoding = self.encoding
+        return copied
 
     copy = __copy__

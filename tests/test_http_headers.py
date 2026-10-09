@@ -1,4 +1,5 @@
 import copy
+from collections.abc import Callable
 
 import pytest
 
@@ -153,6 +154,32 @@ def test_copy() -> None:
     assert h1.getlist("header1") == h2.getlist("header1")
     assert h1.getlist("header1") is not h2.getlist("header1")
     assert isinstance(h2, Headers)
+
+
+@pytest.mark.parametrize(
+    "copy_method",
+    [copy.copy, pytest.param(lambda headers: headers.copy(), id="headers.copy")],
+)
+@pytest.mark.parametrize(
+    ("encoding", "value"), [("utf-8", "£"), ("latin-1", "£"), ("cp1252", "€")]
+)
+@pytest.mark.parametrize("empty", [False, True])
+def test_copy_preserves_encoding(
+    copy_method: Callable[[Headers], Headers], encoding: str, value: str, empty: bool
+) -> None:
+    original = Headers(
+        {} if empty else {"X-Title": [value, "plain"]}, encoding=encoding
+    )
+    cloned = copy_method(original)
+
+    assert cloned.encoding == encoding
+    assert cloned.to_tuple_list() == original.to_tuple_list()
+    cloned.appendlist("X-Title", [value])
+    assert cloned.getlist("X-Title") == [
+        *original.getlist("X-Title"),
+        value.encode(encoding),
+    ]
+    assert cloned.getlist("X-Title") is not original.getlist("X-Title")
 
 
 def test_appendlist() -> None:
