@@ -153,36 +153,46 @@ async def test_export_tuple(fmt: str, mockserver: MockServer, tmp_path: Path) ->
     )
 
 
+@pytest.mark.parametrize(
+    ("fields", "header", "rows"),
+    [
+        pytest.param(
+            "foo,baz,egg",
+            ["foo", "baz", "egg"],
+            [
+                {"egg": "spam1", "foo": "bar1"},
+                {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
+            ],
+            id="all",
+        ),
+        pytest.param(
+            "egg,baz",
+            ["egg", "baz"],
+            [{"egg": "spam1"}, {"egg": "spam2", "baz": "quux2"}],
+            id="subset",
+        ),
+    ],
+)
+@pytest.mark.parametrize("item_cls", [MyItem, dict])
 @pytest.mark.parametrize("fmt", list(PARSERS))
 @coroutine_test
 async def test_export_feed_export_fields(
-    fmt: str, mockserver: MockServer, tmp_path: Path
+    fmt: str,
+    item_cls: type[MyItem | dict[str, Any]],
+    fields: str,
+    header: list[str],
+    rows: list[dict[str, Any]],
+    mockserver: MockServer,
+    tmp_path: Path,
 ) -> None:
     # FEED_EXPORT_FIELDS option allows to order export fields
     # and to select a subset of fields to export, both for Items and dicts.
-
-    for item_cls in [MyItem, dict]:
-        items = [
-            item_cls({"foo": "bar1", "egg": "spam1"}),
-            item_cls({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-        ]
-
-        # export all columns
-        settings = {"FEED_EXPORT_FIELDS": "foo,baz,egg"}
-        rows = [
-            {"egg": "spam1", "foo": "bar1"},
-            {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
-        ]
-        await assert_exported(
-            mockserver, tmp_path, fmt, items, ["foo", "baz", "egg"], rows, settings
-        )
-
-        # export a subset of columns
-        settings = {"FEED_EXPORT_FIELDS": "egg,baz"}
-        rows = [{"egg": "spam1"}, {"egg": "spam2", "baz": "quux2"}]
-        await assert_exported(
-            mockserver, tmp_path, fmt, items, ["egg", "baz"], rows, settings
-        )
+    items = [
+        item_cls({"foo": "bar1", "egg": "spam1"}),
+        item_cls({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+    ]
+    settings = {"FEED_EXPORT_FIELDS": fields}
+    await assert_exported(mockserver, tmp_path, fmt, items, header, rows, settings)
 
 
 # by default, Scrapy uses fields of the first Item for CSV and
