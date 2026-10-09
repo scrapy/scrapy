@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from typing import Any
+from urllib.parse import urlparse
+
 import pytest
 import w3lib.url
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http import Request, Response
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
 from scrapy.utils.url import (
@@ -41,6 +45,22 @@ def test_url_is_from_any_domain():
     )
     assert not url_is_from_any_domain(url, ["testdomain.com"])
     assert not url_is_from_any_domain(url + ".testdomain.com", ["testdomain.com"])
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://www.example.com/page",
+        b"https://www.example.com/page",
+        urlparse("https://www.example.com/page"),
+        Request("https://www.example.com/page"),
+        Response("https://www.example.com/page"),
+    ],
+    ids=["str", "bytes", "ParseResult", "Request", "Response"],
+)
+def test_url_is_from_any_domain_input_types(url: Any) -> None:
+    assert url_is_from_any_domain(url, ["example.com"])
+    assert not url_is_from_any_domain(url, ["example.org"])
 
 
 def test_url_is_from_spider():

@@ -7,13 +7,14 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
+from functools import lru_cache
 from typing import TYPE_CHECKING, Self, TypedDict, Unpack, cast
-from urllib.parse import urlparse
 from warnings import warn
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import _looks_like_import_path, to_unicode
 from scrapy.utils.url import strip_url
@@ -24,6 +25,13 @@ if TYPE_CHECKING:
 
     class _PolicyKwargs(TypedDict, total=False):
         resp_or_url: Response | str
+
+
+# Every request that a response yields gets its referrer from the URL of that
+# response.
+@lru_cache
+def _strip_url(url: str, origin_only: bool) -> str:
+    return strip_url(url, origin_only=origin_only)
 
 
 LOCAL_SCHEMES: tuple[str, ...] = (
@@ -55,12 +63,12 @@ class ReferrerPolicy(ABC):
         raise NotImplementedError
 
     def stripped_referrer(self, url: str) -> str | None:
-        if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:
+        if urlparse_cached(url).scheme not in self.NOREFERRER_SCHEMES:
             return self.strip_url(url)
         return None
 
     def origin_referrer(self, url: str) -> str | None:
-        if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:
+        if urlparse_cached(url).scheme not in self.NOREFERRER_SCHEMES:
             return self.origin(url)
         return None
 
@@ -80,13 +88,7 @@ class ReferrerPolicy(ABC):
         """
         if not url:
             return None
-        return strip_url(
-            url,
-            strip_credentials=True,
-            strip_fragment=True,
-            strip_default_port=True,
-            origin_only=origin_only,
-        )
+        return _strip_url(url, origin_only)
 
     def origin(self, url: str) -> str | None:
         """Return serialized origin (scheme, host, port) for a request or response URL."""
@@ -94,13 +96,13 @@ class ReferrerPolicy(ABC):
 
     def potentially_trustworthy(self, url: str) -> bool:
         # Note: this does not follow https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy
-        parsed_url = urlparse(url)
+        parsed_url = urlparse_cached(url)
         if parsed_url.scheme == "data":
             return False
         return self.tls_protected(url)
 
     def tls_protected(self, url: str) -> bool:
-        return urlparse(url).scheme in {"https", "ftps"}
+        return urlparse_cached(url).scheme in {"https", "ftps"}
 
 
 class NoReferrerPolicy(ReferrerPolicy):

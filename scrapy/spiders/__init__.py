@@ -166,7 +166,7 @@ class Spider(object_ref):
 
     @classmethod
     def handles_request(cls, request: Request) -> bool:
-        return url_is_from_spider(request.url, cls)
+        return url_is_from_spider(request, cls)
 
     @staticmethod
     def close(spider: Spider, reason: str) -> Deferred[None] | None:

@@ -10,7 +10,7 @@ from functools import partial
 from io import BytesIO
 from time import monotonic
 from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urldefrag
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
@@ -472,7 +472,7 @@ class _ScrapyAgent:
         proxy = request.meta.get("proxy")
         if proxy:
             proxy = _add_http_if_no_scheme(proxy)
-            proxy_parsed = urlparse(proxy)
+            proxy_parsed = urlparse_cached(proxy)
             proxy_host = proxy_parsed.hostname
             proxy_port = proxy_parsed.port
             if not proxy_port:
