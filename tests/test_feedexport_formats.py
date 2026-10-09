@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -35,50 +35,57 @@ async def test_export_items(fmt: str, mockserver: MockServer, tmp_path: Path) ->
     await assert_exported(mockserver, tmp_path, fmt, items, header, rows)
 
 
-@coroutine_test
-async def test_export_encoding(mockserver: MockServer, tmp_path: Path) -> None:
-    items = [{"foo": "Test\xd6"}]
-
-    formats = {
-        "json": b'[{"foo": "Test\\u00d6"}]',
-        "jsonlines": b'{"foo": "Test\\u00d6"}\n',
-        "xml": (
-            '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<items><item><foo>Test\xd6</foo></item></items>"
-        ).encode(),
-        "csv": "foo\r\nTest\xd6\r\n".encode(),
-    }
-
-    for fmt, expected in formats.items():
-        settings: dict[str, Any] = {
-            "FEEDS": {
-                unique_path(tmp_path): {"format": fmt},
-            },
-            "FEED_EXPORT_INDENT": None,
-        }
-        data = await export_by_format(mockserver, items, settings)
-        assert data[fmt] == expected
-
-    formats = {
-        "json": b'[{"foo": "Test\xd6"}]',
-        "jsonlines": b'{"foo": "Test\xd6"}\n',
-        "xml": (
-            b'<?xml version="1.0" encoding="latin-1"?>\n'
-            b"<items><item><foo>Test\xd6</foo></item></items>"
+@pytest.mark.parametrize(
+    ("fmt", "encoding", "expected"),
+    [
+        pytest.param("json", None, b'[{"foo": "Test\\u00d6"}]', id="json-default"),
+        pytest.param(
+            "jsonlines", None, b'{"foo": "Test\\u00d6"}\n', id="jsonlines-default"
         ),
-        "csv": b"foo\r\nTest\xd6\r\n",
+        pytest.param(
+            "xml",
+            None,
+            (
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                "<items><item><foo>Test\xd6</foo></item></items>"
+            ).encode(),
+            id="xml-default",
+        ),
+        pytest.param("csv", None, "foo\r\nTest\xd6\r\n".encode(), id="csv-default"),
+        pytest.param("json", "latin-1", b'[{"foo": "Test\xd6"}]', id="json-latin-1"),
+        pytest.param(
+            "jsonlines", "latin-1", b'{"foo": "Test\xd6"}\n', id="jsonlines-latin-1"
+        ),
+        pytest.param(
+            "xml",
+            "latin-1",
+            (
+                b'<?xml version="1.0" encoding="latin-1"?>\n'
+                b"<items><item><foo>Test\xd6</foo></item></items>"
+            ),
+            id="xml-latin-1",
+        ),
+        pytest.param("csv", "latin-1", b"foo\r\nTest\xd6\r\n", id="csv-latin-1"),
+    ],
+)
+@coroutine_test
+async def test_export_encoding(
+    fmt: str,
+    encoding: str | None,
+    expected: bytes,
+    mockserver: MockServer,
+    tmp_path: Path,
+) -> None:
+    items = [{"foo": "Test\xd6"}]
+    settings = {
+        "FEEDS": {
+            unique_path(tmp_path): {"format": fmt},
+        },
+        "FEED_EXPORT_INDENT": None,
+        "FEED_EXPORT_ENCODING": encoding,
     }
-
-    for fmt, expected in formats.items():
-        settings = {
-            "FEEDS": {
-                unique_path(tmp_path): {"format": fmt},
-            },
-            "FEED_EXPORT_INDENT": None,
-            "FEED_EXPORT_ENCODING": "latin-1",
-        }
-        data = await export_by_format(mockserver, items, settings)
-        assert data[fmt] == expected
+    data = await export_by_format(mockserver, items, settings)
+    assert data[fmt] == expected
 
 
 @coroutine_test
@@ -122,40 +129,34 @@ async def test_export_multiple_configs(mockserver: MockServer, tmp_path: Path) -
         assert data[fmt] == expected
 
 
-@coroutine_test
-async def test_export_indentation(mockserver: MockServer, tmp_path: Path) -> None:
-    items = [
-        {"foo": ["bar"]},
-        {"key": "value"},
-    ]
-
-    test_cases: list[dict[str, Any]] = [
-        # JSON
-        {
-            "format": "json",
-            "indent": None,
-            "expected": b'[{"foo": ["bar"]},{"key": "value"}]',
-        },
-        {
-            "format": "json",
-            "indent": -1,
-            "expected": b"""[
+@pytest.mark.parametrize(
+    ("fmt", "indent", "expected"),
+    [
+        pytest.param(
+            "json", None, b'[{"foo": ["bar"]},{"key": "value"}]', id="json-None"
+        ),
+        pytest.param(
+            "json",
+            -1,
+            b"""[
 {"foo": ["bar"]},
 {"key": "value"}
 ]""",
-        },
-        {
-            "format": "json",
-            "indent": 0,
-            "expected": b"""[
+            id="json--1",
+        ),
+        pytest.param(
+            "json",
+            0,
+            b"""[
 {"foo": ["bar"]},
 {"key": "value"}
 ]""",
-        },
-        {
-            "format": "json",
-            "indent": 2,
-            "expected": b"""[
+            id="json-0",
+        ),
+        pytest.param(
+            "json",
+            2,
+            b"""[
 {
   "foo": [
     "bar"
@@ -165,11 +166,12 @@ async def test_export_indentation(mockserver: MockServer, tmp_path: Path) -> Non
   "key": "value"
 }
 ]""",
-        },
-        {
-            "format": "json",
-            "indent": 4,
-            "expected": b"""[
+            id="json-2",
+        ),
+        pytest.param(
+            "json",
+            4,
+            b"""[
 {
     "foo": [
         "bar"
@@ -179,11 +181,12 @@ async def test_export_indentation(mockserver: MockServer, tmp_path: Path) -> Non
     "key": "value"
 }
 ]""",
-        },
-        {
-            "format": "json",
-            "indent": 5,
-            "expected": b"""[
+            id="json-4",
+        ),
+        pytest.param(
+            "json",
+            5,
+            b"""[
 {
      "foo": [
           "bar"
@@ -193,36 +196,39 @@ async def test_export_indentation(mockserver: MockServer, tmp_path: Path) -> Non
      "key": "value"
 }
 ]""",
-        },
-        # XML
-        {
-            "format": "xml",
-            "indent": None,
-            "expected": b"""<?xml version="1.0" encoding="utf-8"?>
+            id="json-5",
+        ),
+        pytest.param(
+            "xml",
+            None,
+            b"""<?xml version="1.0" encoding="utf-8"?>
 <items><item><foo><value>bar</value></foo></item><item><key>value</key></item></items>""",
-        },
-        {
-            "format": "xml",
-            "indent": -1,
-            "expected": b"""<?xml version="1.0" encoding="utf-8"?>
+            id="xml-None",
+        ),
+        pytest.param(
+            "xml",
+            -1,
+            b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
 <item><foo><value>bar</value></foo></item>
 <item><key>value</key></item>
 </items>""",
-        },
-        {
-            "format": "xml",
-            "indent": 0,
-            "expected": b"""<?xml version="1.0" encoding="utf-8"?>
+            id="xml--1",
+        ),
+        pytest.param(
+            "xml",
+            0,
+            b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
 <item><foo><value>bar</value></foo></item>
 <item><key>value</key></item>
 </items>""",
-        },
-        {
-            "format": "xml",
-            "indent": 2,
-            "expected": b"""<?xml version="1.0" encoding="utf-8"?>
+            id="xml-0",
+        ),
+        pytest.param(
+            "xml",
+            2,
+            b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
   <item>
     <foo>
@@ -233,11 +239,12 @@ async def test_export_indentation(mockserver: MockServer, tmp_path: Path) -> Non
     <key>value</key>
   </item>
 </items>""",
-        },
-        {
-            "format": "xml",
-            "indent": 4,
-            "expected": b"""<?xml version="1.0" encoding="utf-8"?>
+            id="xml-2",
+        ),
+        pytest.param(
+            "xml",
+            4,
+            b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
     <item>
         <foo>
@@ -248,11 +255,12 @@ async def test_export_indentation(mockserver: MockServer, tmp_path: Path) -> Non
         <key>value</key>
     </item>
 </items>""",
-        },
-        {
-            "format": "xml",
-            "indent": 5,
-            "expected": b"""<?xml version="1.0" encoding="utf-8"?>
+            id="xml-4",
+        ),
+        pytest.param(
+            "xml",
+            5,
+            b"""<?xml version="1.0" encoding="utf-8"?>
 <items>
      <item>
           <foo>
@@ -263,55 +271,57 @@ async def test_export_indentation(mockserver: MockServer, tmp_path: Path) -> Non
           <key>value</key>
      </item>
 </items>""",
-        },
-    ]
-
-    for row in test_cases:
-        settings = {
-            "FEEDS": {
-                unique_path(tmp_path): {
-                    "format": row["format"],
-                    "indent": row["indent"],
-                },
-            },
-        }
-        data = await export_by_format(mockserver, items, settings)
-        assert data[row["format"]] == row["expected"]
-
-
+            id="xml-5",
+        ),
+    ],
+)
 @coroutine_test
-async def test_extend_kwargs(mockserver: MockServer, tmp_path: Path) -> None:
-    items = [{"foo": "FOO", "bar": "BAR"}]
-
-    expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
-    expected_without_title_csv = b"FOO,BAR\r\n"
-    test_cases: list[dict[str, Any]] = [
-        # with title
-        {
-            "options": {
-                "format": "csv",
-                "item_export_kwargs": {"include_headers_line": True},
-            },
-            "expected": expected_with_title_csv,
-        },
-        # without title
-        {
-            "options": {
-                "format": "csv",
-                "item_export_kwargs": {"include_headers_line": False},
-            },
-            "expected": expected_without_title_csv,
-        },
+async def test_export_indentation(
+    fmt: str,
+    indent: int | None,
+    expected: bytes,
+    mockserver: MockServer,
+    tmp_path: Path,
+) -> None:
+    items = [
+        {"foo": ["bar"]},
+        {"key": "value"},
     ]
-
-    for row in test_cases:
-        feed_options = row["options"]
-        settings = {
-            "FEEDS": {
-                unique_path(tmp_path): feed_options,
+    settings = {
+        "FEEDS": {
+            unique_path(tmp_path): {
+                "format": fmt,
+                "indent": indent,
             },
-            "FEED_EXPORT_INDENT": None,
-        }
+        },
+    }
+    data = await export_by_format(mockserver, items, settings)
+    assert data[fmt] == expected
 
-        data = await export_by_format(mockserver, items, settings)
-        assert data[feed_options["format"]] == row["expected"]
+
+@pytest.mark.parametrize(
+    ("include_headers_line", "expected"),
+    [
+        pytest.param(True, b"foo,bar\r\nFOO,BAR\r\n", id="with-headers"),
+        pytest.param(False, b"FOO,BAR\r\n", id="without-headers"),
+    ],
+)
+@coroutine_test
+async def test_extend_kwargs(
+    include_headers_line: bool,
+    expected: bytes,
+    mockserver: MockServer,
+    tmp_path: Path,
+) -> None:
+    items = [{"foo": "FOO", "bar": "BAR"}]
+    settings = {
+        "FEEDS": {
+            unique_path(tmp_path): {
+                "format": "csv",
+                "item_export_kwargs": {"include_headers_line": include_headers_line},
+            },
+        },
+        "FEED_EXPORT_INDENT": None,
+    }
+    data = await export_by_format(mockserver, items, settings)
+    assert data["csv"] == expected

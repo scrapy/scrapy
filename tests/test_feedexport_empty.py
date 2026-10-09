@@ -5,6 +5,7 @@ import tempfile
 from logging import getLogger
 from typing import TYPE_CHECKING
 
+import pytest
 from w3lib.url import file_uri_to_path
 
 from tests.utils.decorators import coroutine_test
@@ -12,8 +13,6 @@ from tests.utils.feedexport import export_by_format, unique_path
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    import pytest
 
     from tests.mockserver.http import MockServer
 
@@ -36,42 +35,47 @@ class LogOnStoreFileStorage:
         file.close()
 
 
+@pytest.mark.parametrize("fmt", ["json", "jsonlines", "xml", "csv"])
 @coroutine_test
 async def test_export_no_items_not_store_empty(
-    mockserver: MockServer, tmp_path: Path
+    fmt: str, mockserver: MockServer, tmp_path: Path
 ) -> None:
-    for fmt in ("json", "jsonlines", "xml", "csv"):
-        settings = {
-            "FEEDS": {
-                unique_path(tmp_path): {"format": fmt},
-            },
-            "FEED_STORE_EMPTY": False,
-        }
-        data = await export_by_format(mockserver, [], settings)
-        assert data[fmt] is None
+    settings = {
+        "FEEDS": {
+            unique_path(tmp_path): {"format": fmt},
+        },
+        "FEED_STORE_EMPTY": False,
+    }
+    data = await export_by_format(mockserver, [], settings)
+    assert data[fmt] is None
 
 
+@pytest.mark.parametrize(
+    ("fmt", "expected"),
+    [
+        pytest.param("json", b"[]", id="json"),
+        pytest.param("jsonlines", b"", id="jsonlines"),
+        pytest.param(
+            "xml",
+            b'<?xml version="1.0" encoding="utf-8"?>\n<items></items>',
+            id="xml",
+        ),
+        pytest.param("csv", b"", id="csv"),
+    ],
+)
 @coroutine_test
 async def test_export_no_items_store_empty(
-    mockserver: MockServer, tmp_path: Path
+    fmt: str, expected: bytes, mockserver: MockServer, tmp_path: Path
 ) -> None:
-    formats = (
-        ("json", b"[]"),
-        ("jsonlines", b""),
-        ("xml", b'<?xml version="1.0" encoding="utf-8"?>\n<items></items>'),
-        ("csv", b""),
-    )
-
-    for fmt, expctd in formats:
-        settings = {
-            "FEEDS": {
-                unique_path(tmp_path): {"format": fmt},
-            },
-            "FEED_STORE_EMPTY": True,
-            "FEED_EXPORT_INDENT": None,
-        }
-        data = await export_by_format(mockserver, [], settings)
-        assert expctd == data[fmt]
+    settings = {
+        "FEEDS": {
+            unique_path(tmp_path): {"format": fmt},
+        },
+        "FEED_STORE_EMPTY": True,
+        "FEED_EXPORT_INDENT": None,
+    }
+    data = await export_by_format(mockserver, [], settings)
+    assert data[fmt] == expected
 
 
 @coroutine_test
