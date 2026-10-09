@@ -114,6 +114,49 @@ Disallow: /some/randome/page.html
         await asyncio.gather(c1, c2)
 
     @coroutine_test
+    async def test_robotstxt_multiple_reqs_forbidden(self) -> None:
+        """Every request waiting on the same robots.txt download must be
+        checked against the parsed rules, not only the first one."""
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        d1 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/admin/1"))
+        )
+        d2 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/admin/2"))
+        )
+        d3 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/admin/3"))
+        )
+        d4 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/allowed"))
+        )
+        results = await maybe_deferred_to_future(
+            DeferredList([d1, d2, d3, d4], consumeErrors=True)
+        )
+        for success, value in results[:3]:
+            assert success is False
+            assert isinstance(value.value, IgnoreRequest)
+        assert results[3][0] is True
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_forbidden_asyncio(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        results = await asyncio.gather(
+            middleware.process_request(Request("http://site.local/admin/1")),
+            middleware.process_request(Request("http://site.local/admin/2")),
+            middleware.process_request(Request("http://site.local/admin/3")),
+            middleware.process_request(Request("http://site.local/allowed")),
+            return_exceptions=True,
+        )
+        assert all(isinstance(r, IgnoreRequest) for r in results[:3])
+        assert results[3] is None
+
+    @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
