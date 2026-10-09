@@ -4,7 +4,7 @@ import json
 import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from unittest.mock import Mock
 
 import pytest
@@ -15,6 +15,7 @@ from scrapy.crawler import Crawler
 from scrapy.dupefilters import BaseDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
+from scrapy.pqueues import ScrapyPriorityQueue
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -75,6 +76,21 @@ _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
 def _active_json(jobdir: Path) -> Any:
     path = jobdir / "requests.queue" / "active.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _enqueue_across_queues(scheduler: Scheduler) -> None:
+    for name, priority in (("memory", 0), ("disk", 1), ("disk", 0), ("memory", -1)):
+        request = Request(f"https://example.com/{name}{priority}", priority=priority)
+        if name == "memory":
+            request.meta["unserializable"] = lambda: None
+        scheduler.enqueue_request(request)
+
+
+def _dequeue_urls(scheduler: Scheduler) -> list[str]:
+    urls = []
+    while request := scheduler.next_request():
+        urls.append(request.url)
+    return urls
 
 
 class TestSchedulerBase(ABC):
@@ -164,6 +180,17 @@ class TestSchedulerOnDiskBase(SchedulerTestMixin):
     @pytest.fixture
     def jobdir(self, tmp_path: Path) -> Path | None:
         return tmp_path
+
+    @coroutine_test
+    async def test_dequeue_priorities_across_queues(self, jobdir: Path | None) -> None:
+        async with self.create_scheduler(jobdir) as scheduler:
+            _enqueue_across_queues(scheduler)
+            assert _dequeue_urls(scheduler) == [
+                "https://example.com/disk1",
+                "https://example.com/memory0",
+                "https://example.com/disk0",
+                "https://example.com/memory-1",
+            ]
 
 
 class TestSchedulerInMemory(TestSchedulerInMemoryBase):
@@ -391,6 +418,41 @@ class TestIncompatibility:
                 ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
             ):
                 self._incompatible()
+
+
+class _PriorityQueueWithoutNextPriority:
+    @classmethod
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
+        return cls(ScrapyPriorityQueue.from_crawler(crawler, *args, **kwargs))
+
+    def __init__(self, queue: ScrapyPriorityQueue):
+        self._queue = queue
+
+    def push(self, request: Request) -> None:
+        self._queue.push(request)
+
+    def pop(self) -> Request | None:
+        return self._queue.pop()
+
+    def close(self) -> list[int]:
+        return self._queue.close()
+
+    def __len__(self) -> int:
+        return len(self._queue)
+
+
+@coroutine_test
+async def test_priority_queue_without_next_priority(tmp_path: Path) -> None:
+    async with create_scheduler(
+        f"{__name__}._PriorityQueueWithoutNextPriority", tmp_path
+    ) as scheduler:
+        _enqueue_across_queues(scheduler)
+        assert _dequeue_urls(scheduler) == [
+            "https://example.com/memory0",
+            "https://example.com/memory-1",
+            "https://example.com/disk1",
+            "https://example.com/disk0",
+        ]
 
 
 def test_scheduler_without_crawler() -> None:
