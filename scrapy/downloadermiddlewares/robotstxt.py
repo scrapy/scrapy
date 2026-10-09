@@ -113,7 +113,11 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            # The Deferred is shared and only passes its result to the first
+            # waiter, so wait for it and read the stored parser instead.
+            await maybe_deferred_to_future(parser)
+            parser = self._parsers[netloc]
+            assert not isinstance(parser, Deferred)
         return parser
 
     async def _parse_robots(
