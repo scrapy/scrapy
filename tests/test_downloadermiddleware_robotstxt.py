@@ -276,14 +276,23 @@ Disallow: /some/randome/page.html
         assert middleware.process_request_2.called
 
     @coroutine_test
-    async def test_robotstxt_download_handler(self) -> None:
+    @pytest.mark.parametrize(
+        ("url", "robots_url", "download_handler"),
+        [
+            ("http://site.local/allowed", "http://site.local/robots.txt", "named"),
+            ("ws://site.local/allowed", "http://site.local/robots.txt", None),
+        ],
+    )
+    async def test_robotstxt_download_handler(
+        self, url: str, robots_url: str, download_handler: str | None
+    ) -> None:
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
         await self.assertNotIgnored(
-            Request("http://site.local/allowed", meta={"download_handler": "named"}),
-            middleware,
+            Request(url, meta={"download_handler": "named"}), middleware
         )
         robotsreq = self.crawler.engine.download_async.call_args_list[0][0][0]
-        assert robotsreq.meta["download_handler"] == "named"
+        assert robotsreq.url == robots_url
+        assert robotsreq.meta.get("download_handler") == download_handler
         assert robotsreq.meta["is_robotstxt_request"] is True
 
     async def assertNotIgnored(

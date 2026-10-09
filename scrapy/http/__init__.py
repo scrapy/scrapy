@@ -14,6 +14,7 @@ from scrapy.http.response import Response
 from scrapy.http.response.html import HtmlResponse
 from scrapy.http.response.json import JsonResponse
 from scrapy.http.response.text import TextResponse
+from scrapy.http.response.websocket import WebSocketResponse
 from scrapy.http.response.xml import XmlResponse
 
 __all__ = [
@@ -25,6 +26,7 @@ __all__ = [
     "Request",
     "Response",
     "TextResponse",
+    "WebSocketResponse",
     "XmlResponse",
     "XmlRpcRequest",
 ]

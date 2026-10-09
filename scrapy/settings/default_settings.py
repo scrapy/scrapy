@@ -311,6 +311,8 @@ DOWNLOAD_HANDLERS_BASE = {
     "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
+    "ws": "scrapy.core.downloader.handlers.websocket.WebSocketDownloadHandler",
+    "wss": "scrapy.core.downloader.handlers.websocket.WebSocketDownloadHandler",
 }
 DOWNLOAD_HANDLERS_BY_NAME: dict[str, str] = {}
 

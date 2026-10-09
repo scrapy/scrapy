@@ -19,6 +19,7 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.url import _to_http_scheme
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -86,12 +87,13 @@ class RobotsTxtMiddleware:
 
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
-            robotsurl = f"{url.scheme}://{url.netloc}/robots.txt"
+            scheme = _to_http_scheme(url.scheme)
+            robotsurl = f"{scheme}://{url.netloc}/robots.txt"
             meta: dict[str, Any] = {
                 "dont_obey_robotstxt": True,
                 "is_robotstxt_request": True,
             }
-            if "download_handler" in request.meta:
+            if "download_handler" in request.meta and scheme == url.scheme:
                 meta["download_handler"] = request.meta["download_handler"]
             robotsreq = Request(
                 robotsurl,

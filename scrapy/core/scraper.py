@@ -276,6 +276,8 @@ class Scraper:
                 self.handle_spider_error(Failure(), request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
+            finally:
+                await result._release()
             return
 
         if result.check(CloseSpider):
