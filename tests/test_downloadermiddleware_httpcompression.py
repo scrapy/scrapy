@@ -813,6 +813,26 @@ class TestHttpCompression:
         ]
 
     @coroutine_test
+    async def test_download_warnsize_setting_ignored_with_request_maxsize(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
+        crawler = get_crawler(Spider, settings_dict=settings)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
+        mw.open_spider(spider)
+        response = self._getresponse("bomb-gzip")
+        response.meta["download_maxsize"] = 20_000_000
+
+        assert response.request
+        caplog.clear()
+        with caplog.at_level(
+            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+        ):
+            await mw.process_response(response.request, response)
+        assert not caplog.records
+
+    @coroutine_test
     async def test_download_warnsize_request_meta_br(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
