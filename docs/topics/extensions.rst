@@ -123,6 +123,13 @@ Log Stats extension
 
 Log basic stats like crawled pages and scraped items.
 
+.. _event-loop-lag:
+
+Event loop lag monitor
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: scrapy.extensions.event_loop_lag.EventLoopLagMonitor
+
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
