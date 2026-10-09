@@ -4,7 +4,7 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
@@ -14,16 +14,12 @@ from scrapy.utils.conf import _job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
-    # requires queuelib >= 1.6.2
     from queuelib.queue import BaseQueue
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.dupefilters import BaseDupeFilter
     from scrapy.http.request import Request
-    from scrapy.pqueues import ScrapyPriorityQueue
+    from scrapy.pqueues import PriorityQueueProtocol
     from scrapy.statscollectors import StatsCollector
 
 
@@ -65,6 +61,16 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     The methods defined in this class constitute the minimal interface that the Scrapy engine will interact with.
     """
 
+    supports_skip_dupefilter_once: bool = False
+    """Must be ``True``, to declare that :meth:`enqueue_request` handles the
+    :reqmeta:`skip_dupefilter_once` meta key.
+
+    It is not inherited by subclasses that override :meth:`enqueue_request`,
+    which must set it again.
+
+    .. versionadded:: VERSION
+    """
+
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         """
@@ -102,12 +108,19 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         Process a request received by the engine.
 
+        .. versionchanged:: VERSION
+           Must handle the :reqmeta:`skip_dupefilter_once` meta key.
+
         Return ``True`` if the request is stored correctly, ``False`` otherwise.
 
         If ``False``, the engine will fire a ``request_dropped`` signal, and
         will not make further attempts to schedule the request at a later time.
         For reference, the default Scrapy scheduler returns ``False`` when the
         request is rejected by the dupefilter.
+
+        If the request has the :reqmeta:`skip_dupefilter_once` meta key, remove
+        it and, if it was ``True``, do not filter out the request as a
+        duplicate. See also :attr:`supports_skip_dupefilter_once`.
         """
         raise NotImplementedError
 
@@ -239,8 +252,8 @@ class Scheduler(BaseScheduler):
         The file is generated whenever the job stops (cleanly) and is loaded
         when resuming the job. If :setting:`JOBDIR_SYNC_EVERY` is set and the
         priority queue implements
-        :attr:`~scrapy.pqueues.ScrapyPriorityQueue.changed` and
-        :meth:`~scrapy.pqueues.ScrapyPriorityQueue.state`, the file is also
+        :attr:`~scrapy.pqueues.PriorityQueueProtocol.changed` and
+        :meth:`~scrapy.pqueues.PriorityQueueProtocol.state`, the file is also
         generated while the job runs.
 
     -   Instantiates the configured :setting:`SCHEDULER_PRIORITY_QUEUE` with
@@ -253,6 +266,8 @@ class Scheduler(BaseScheduler):
     This scheduler class also uses the configured :setting:`DUPEFILTER_CLASS`,
     which may also write data inside the job directory.
     """
+
+    supports_skip_dupefilter_once = True
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -276,7 +291,7 @@ class Scheduler(BaseScheduler):
         mqclass: type[BaseQueue] | None = None,
         logunser: bool = False,
         stats: StatsCollector | None = None,
-        pqclass: type[ScrapyPriorityQueue] | None = None,
+        pqclass: type[PriorityQueueProtocol] | None = None,
         crawler: Crawler | None = None,
     ):
         """Initialize the scheduler.
@@ -317,7 +332,7 @@ class Scheduler(BaseScheduler):
         """
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
-        self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
+        self.pqclass: type[PriorityQueueProtocol] | None = pqclass
         self.dqclass: type[BaseQueue] | None = dqclass
         self.mqclass: type[BaseQueue] | None = mqclass
         self.logunser: bool = logunser
@@ -353,8 +368,8 @@ class Scheduler(BaseScheduler):
         (3) return the result of the dupefilter's ``open`` method
         """
         self.spider: Spider = spider
-        self.mqs: ScrapyPriorityQueue = self._mq()
-        self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        self.mqs: PriorityQueueProtocol = self._mq()
+        self.dqs: PriorityQueueProtocol | None = self._dq() if self.dqdir else None
         self._dqs_changes = 0
         self._sync_dqs_state()
         return self.df.open()
@@ -380,7 +395,12 @@ class Scheduler(BaseScheduler):
 
         Return ``True`` if the request was stored successfully, ``False`` otherwise.
         """
-        if not request.dont_filter and self.df.request_seen(request):
+        skip_dupefilter = request.meta.pop("skip_dupefilter_once", False)
+        if (
+            not request.dont_filter
+            and not skip_dupefilter
+            and self.df.request_seen(request)
+        ):
             self.df.log(request, self.spider)
             return False
         dqok = self._dqpush(request)
@@ -395,18 +415,21 @@ class Scheduler(BaseScheduler):
 
     def next_request(self) -> Request | None:
         """
-        Return a :class:`~scrapy.Request` object from the memory queue,
-        falling back to the disk queue if the memory queue is empty.
-        Return ``None`` if there are no more enqueued requests.
+        Return the :class:`~scrapy.Request` object with the highest
+        :attr:`~scrapy.Request.priority` from the memory and disk queues,
+        preferring the memory queue on a tie. Return ``None`` if there are no
+        more enqueued requests.
 
         Increment the appropriate stats, such as: :stat:`scheduler/dequeued`,
         :stat:`scheduler/dequeued/disk`, :stat:`scheduler/dequeued/memory`.
         """
-        request: Request | None = self.mqs.pop()
+        request: Request | None = None
         assert self.stats is not None
-        if request is not None:
-            self.stats.inc_value("scheduler/dequeued/memory")
-        else:
+        if not self._dqs_first():
+            request = self.mqs.pop()
+            if request is not None:
+                self.stats.inc_value("scheduler/dequeued/memory")
+        if request is None:
             request = self._dqpop()
             if request is not None:
                 self.stats.inc_value("scheduler/dequeued/disk")
@@ -449,6 +472,16 @@ class Scheduler(BaseScheduler):
     def _mqpush(self, request: Request) -> None:
         self.mqs.push(request)
 
+    def _dqs_first(self) -> bool:
+        # Priority queues without next_priority() pop memory requests first.
+        if self.dqs is None or not hasattr(self.mqs, "next_priority"):
+            return False
+        mqs_priority = self.mqs.next_priority()
+        if mqs_priority is None:
+            return False
+        dqs_priority = self.dqs.next_priority()
+        return dqs_priority is not None and dqs_priority < mqs_priority
+
     def _dqpop(self) -> Request | None:
         if self.dqs is None:
             return None
@@ -469,7 +502,7 @@ class Scheduler(BaseScheduler):
             assert isinstance(self.dqdir, str)
             self._write_dqs_state(self.dqdir, self.dqs.state())
 
-    def _mq(self) -> ScrapyPriorityQueue:
+    def _mq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
@@ -481,7 +514,7 @@ class Scheduler(BaseScheduler):
             start_queue_cls=self._smqclass,
         )
 
-    def _dq(self) -> ScrapyPriorityQueue:
+    def _dq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with disk storage"""
         assert self.crawler
         assert self.dqdir

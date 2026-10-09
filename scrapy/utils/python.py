@@ -13,7 +13,9 @@ import weakref
 from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, Self, TypeVar, overload
+
+from formerly import deprecated_class
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
@@ -21,9 +23,6 @@ from scrapy.utils.asyncgen import as_async_generator
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from re import Pattern
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 _T = TypeVar("_T")
@@ -348,11 +347,7 @@ async def _async_chain(
             yield o
 
 
-class MutableAsyncChain(AsyncIterator[_T]):
-    """
-    Similar to MutableChain but for async iterables
-    """
-
+class _MutableAsyncChain(AsyncIterator[_T]):
     def __init__(self, *args: Iterable[_T] | AsyncIterator[_T]):
         self.data: AsyncIterator[_T] = _async_chain(*args)
 
@@ -364,6 +359,15 @@ class MutableAsyncChain(AsyncIterator[_T]):
 
     async def __anext__(self) -> _T:
         return await anext(self.data)
+
+
+MutableAsyncChain = deprecated_class(
+    "MutableAsyncChain",
+    _MutableAsyncChain,
+    category=ScrapyDeprecationWarning,
+    subclass_message="{old} is deprecated.",
+    instance_message="{cls} is deprecated.",
+)
 
 
 def _looks_like_import_path(value: str) -> bool:

@@ -61,20 +61,21 @@ for argument in safe_to_ignore_arguments:
 
 def _parse_headers_and_cookies(
     parsed_args: argparse.Namespace,
-) -> tuple[list[tuple[str, str | bytes]], dict[str, str]]:
-    headers: list[tuple[str, str | bytes]] = []
+) -> tuple[list[tuple[str, str | bytes | None]], dict[str, str]]:
+    headers: list[tuple[str, str | bytes | None]] = []
     cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
+        val: str | None
         if ":" in header:
             name, val = header.split(":", 1)
+            val = val.strip() or None
         elif header.endswith(";") and header[:-1].strip():
             name, val = header[:-1], ""
         else:
             continue
         name = name.strip()
-        val = val.strip()
         if name.title() == "Cookie":
-            for name, morsel in SimpleCookie(val).items():
+            for name, morsel in SimpleCookie(val or "").items():
                 cookies[name] = morsel.value
         else:
             headers.append((name, val))

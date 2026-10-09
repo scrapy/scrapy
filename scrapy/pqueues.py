@@ -4,15 +4,12 @@ import hashlib
 import logging
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, Self, cast
 
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request
     from scrapy.core.downloader import Downloader
@@ -51,30 +48,73 @@ class QueueProtocol(Protocol):
     def __len__(self) -> int: ...
 
 
+class PriorityQueueProtocol(Protocol):
+    """Interface of :setting:`SCHEDULER_PRIORITY_QUEUE` classes.
+
+    :attr:`changed`, :meth:`next_priority` and :meth:`state` are optional.
+    """
+
+    @classmethod
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        downstream_queue_cls: type[QueueProtocol],
+        key: str,
+        startprios: Any = (),
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
+    ) -> Self:
+        """Return a priority queue that stores requests in instances of
+        *downstream_queue_cls*, or of *start_queue_cls* for :ref:`start
+        requests <start-requests>` if it is not ``None``.
+
+        *key* is the directory where the queue persists its requests, or an
+        empty string for an in-memory queue. *startprios* is what
+        :meth:`close` returned the last time the job stopped.
+        """
+
+    def push(self, request: Request) -> None:
+        """Store *request*."""
+
+    def pop(self) -> Request | None:
+        """Remove and return the next request, or return ``None`` if the queue
+        is empty.
+        """
+
+    def close(self) -> Any:
+        """Close the queue and return a JSON-serializable state to pass as
+        *startprios* to :meth:`from_crawler` when resuming the job.
+        """
+
+    def __len__(self) -> int:
+        """Return the number of stored requests."""
+
+    changed: bool
+    """Whether the return value of :meth:`state` changed since this
+    attribute was last set to ``False``.
+
+    With :setting:`JOBDIR_SYNC_EVERY`, the scheduler persists the state while
+    the job runs, and resets this attribute after persisting it.
+    """
+
+    def next_priority(self) -> int | None:
+        """Return the priority of the request that :meth:`pop` would return
+        next, or ``None`` if the queue is empty.
+
+        The scheduler pops requests from whichever of its memory and disk
+        queues returns the lowest value, or from its memory queue on a tie, so
+        any scale works as long as lower values pop first. Without this
+        method, the scheduler pops memory requests first.
+        """
+
+    def state(self) -> Any:
+        """Return the same as :meth:`close`, without closing the queue."""
+
+
 class ScrapyPriorityQueue:
-    """A priority queue implemented using multiple internal queues (typically,
-    FIFO queues). It uses one internal queue for each priority value. The
-    internal queue must implement the following methods:
-
-        * push(obj)
-        * pop()
-        * close()
-        * __len__()
-
-    Optionally, the queue could provide a ``peek`` method, that should return
-    the next object to be returned by ``pop``, but without removing it from the
-    queue.
-
-    ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls
-    argument, which is a class used to instantiate a new (internal) queue when
-    a new priority is allocated.
-
-    Only integer priorities should be used. Lower numbers are higher
-    priorities.
-
-    startprios is a sequence of priorities to start with. If the queue was
-    previously closed leaving some priority buckets non-empty, those priorities
-    should be passed in startprios.
+    """Priority queue that pops requests from highest to lowest
+    :attr:`~scrapy.Request.priority`, in :ref:`request order <request-order>`
+    within a priority.
 
     Disk persistence
     ================
@@ -135,10 +175,6 @@ class ScrapyPriorityQueue:
         self._start_queues: dict[int, QueueProtocol] = {}
         self.curprio: int | None = None
         self.changed: bool = False
-        """Whether the return value of :meth:`state` changed since this
-        attribute was last set to ``False``.
-
-        The scheduler resets it after persisting that state."""
         self.init_prios(startprios)
 
     def init_prios(self, startprios: Iterable[int]) -> None:
@@ -160,7 +196,7 @@ class ScrapyPriorityQueue:
                     q.close()
                     self.changed = True
 
-        self.curprio = min(startprios)
+        self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:
         return build_from_crawler(
@@ -209,8 +245,7 @@ class ScrapyPriorityQueue:
                     del self.queues[self.curprio]
                     q.close()
                     self.changed = True
-                    if not self._start_queues:
-                        self._update_curprio()
+                    self._update_curprio()
                 return m
             if self._start_queues:
                 try:
@@ -254,10 +289,10 @@ class ScrapyPriorityQueue:
         # Protocols can't declare optional members
         return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
-    def state(self) -> list[int]:
-        """Return what to pass as *startprios* to resume this queue later.
+    def next_priority(self) -> int | None:
+        return self.curprio
 
-        Same as the return value of :meth:`close`, without closing."""
+    def state(self) -> list[int]:
         return sorted(self.queues.keys() | self._start_queues.keys())
 
     def close(self) -> list[int]:
@@ -374,7 +409,6 @@ class DownloaderAwarePriorityQueue:
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         self._last_selected_slot: str | None = None
         self.changed: bool = False
-        """See :attr:`ScrapyPriorityQueue.changed`."""
         if slot_startprios:
             for slot, startprios in slot_startprios.items():
                 self.pqueues[slot] = self.pqfactory(slot, startprios)
@@ -467,8 +501,14 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         return queue.peek()
 
+    def next_priority(self) -> int | None:
+        if not self.pqueues:
+            return None
+        stats = self._downloader_interface.stats(self.pqueues)
+        slot = self._next_slot(stats, update_state=False)
+        return self.pqueues[slot].next_priority()
+
     def state(self) -> dict[str, list[int]]:
-        """See :meth:`ScrapyPriorityQueue.state`."""
         return {slot: queue.state() for slot, queue in self.pqueues.items()}
 
     def close(self) -> dict[str, list[int]]:

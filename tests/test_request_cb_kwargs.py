@@ -160,32 +160,31 @@ class KeywordArgumentsSpider(MockServerSpider):
         self._inc_checks()
 
 
-class TestCallbackKeywordArguments:
-    @coroutine_test
-    async def test_callback_kwargs(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        crawler = get_crawler(KeywordArgumentsSpider)
-        with caplog.at_level(logging.ERROR):
-            await crawler.crawl_async(mockserver=mockserver)
-        assert isinstance(crawler.spider, KeywordArgumentsSpider)
-        assert all(crawler.spider.checks)
-        assert len(crawler.spider.checks) == crawler.stats.get_value("boolean_checks")
-        # check exceptions for argument mismatch
-        exceptions = {}
-        for line in caplog.records:
-            for key in ("takes_less", "takes_more"):
-                if key in line.getMessage():
-                    exceptions[key] = line
-        takes_less_exc_info = exceptions["takes_less"].exc_info
-        assert takes_less_exc_info is not None
-        assert takes_less_exc_info[0] is TypeError
-        assert str(takes_less_exc_info[1]).endswith(
-            "parse_takes_less() got an unexpected keyword argument 'number'"
-        )
-        takes_more_exc_info = exceptions["takes_more"].exc_info
-        assert takes_more_exc_info is not None
-        assert takes_more_exc_info[0] is TypeError
-        assert str(takes_more_exc_info[1]).endswith(
-            "parse_takes_more() missing 1 required positional argument: 'other'"
-        )
+@coroutine_test
+async def test_callback_kwargs(
+    caplog: pytest.LogCaptureFixture, mockserver: MockServer
+) -> None:
+    crawler = get_crawler(KeywordArgumentsSpider)
+    with caplog.at_level(logging.ERROR):
+        await crawler.crawl_async(mockserver=mockserver)
+    assert isinstance(crawler.spider, KeywordArgumentsSpider)
+    assert all(crawler.spider.checks)
+    assert len(crawler.spider.checks) == crawler.stats.get_value("boolean_checks")
+    # check exceptions for argument mismatch
+    exceptions = {}
+    for line in caplog.records:
+        for key in ("takes_less", "takes_more"):
+            if key in line.getMessage():
+                exceptions[key] = line
+    takes_less_exc_info = exceptions["takes_less"].exc_info
+    assert takes_less_exc_info is not None
+    assert takes_less_exc_info[0] is TypeError
+    assert str(takes_less_exc_info[1]).endswith(
+        "parse_takes_less() got an unexpected keyword argument 'number'"
+    )
+    takes_more_exc_info = exceptions["takes_more"].exc_info
+    assert takes_more_exc_info is not None
+    assert takes_more_exc_info[0] is TypeError
+    assert str(takes_more_exc_info[1]).endswith(
+        "parse_takes_more() missing 1 required positional argument: 'other'"
+    )

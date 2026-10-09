@@ -15,11 +15,20 @@ import time
 import warnings
 from collections import defaultdict
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, ClassVar, NoReturn, Protocol, TypedDict, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    NoReturn,
+    Protocol,
+    Self,
+    TypedDict,
+    cast,
+)
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -35,10 +44,10 @@ from scrapy.pipelines.media import (
     MediaPipeline,
     _MediaRequestFiltered,
 )
+from scrapy.utils._datatypes import CaseInsensitiveDict
 from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.boto import _get_max_pool_connections, is_botocore_available
-from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
@@ -51,9 +60,6 @@ if TYPE_CHECKING:
 
     from twisted.python.failure import Failure
 
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 
@@ -63,23 +69,6 @@ logger = logging.getLogger(__name__)
 
 def _to_string(path: str | PathLike[str]) -> str:
     return str(path)  # convert a Path object to string
-
-
-def _md5sum(file: IO[bytes]) -> str:
-    """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory.
-
-    >>> from io import BytesIO
-    >>> _md5sum(BytesIO(b'file content to hash'))
-    '784406af91dd5a54fbb9c84c2236595a'
-    """
-    m = hashlib.md5()  # noqa: S324
-    while True:
-        d = file.read(8096)
-        if not d:
-            break
-        m.update(d)
-    return m.hexdigest()
 
 
 class StatInfo(TypedDict, total=False):
@@ -110,10 +99,10 @@ class FSFilesStore:
         if "://" in basedir:
             basedir = basedir.split("://", 1)[1]
         self.basedir: str = basedir
-        self._mkdir(Path(self.basedir))
         self.created_directories: defaultdict[MediaPipeline.SpiderInfo, set[str]] = (
             defaultdict(set)
         )
+        self._mkdir(Path(self.basedir))
 
     def persist_file(
         self,
@@ -137,7 +126,7 @@ class FSFilesStore:
             return {}
 
         with absolute_path.open("rb") as f:
-            checksum = _md5sum(f)
+            checksum = hashlib.file_digest(f, "md5").hexdigest()
 
         return {"last_modified": last_modified, "checksum": checksum}
 
@@ -237,50 +226,38 @@ class S3FilesStore:
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
+        kwargs: dict[str, Any] = {
+            "Metadata": {k: str(v) for k, v in meta.items()} if meta else {},
+            "ACL": self.POLICY,
+            **extra,
+        }
         return deferred_from_coro(
             run_in_thread(
                 self.s3_client.put_object,  # type: ignore[attr-defined]
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in meta.items()} if meta else {},
-                ACL=self.POLICY,
-                **extra,
+                **kwargs,
             )
+        )
+
+    @functools.cached_property
+    def _botocore_header_kwargs(self) -> CaseInsensitiveDict:
+        input_shape = self.s3_client.meta.service_model.operation_model(
+            "PutObject"
+        ).input_shape
+        assert input_shape is not None
+        return CaseInsensitiveDict(
+            {
+                shape.serialization["name"]: name
+                for name, shape in input_shape.members.items()
+                if shape.serialization.get("location") == "header"
+            }
         )
 
     def _headers_to_botocore_kwargs(self, headers: dict[str, str]) -> dict[str, str]:
         """Convert headers to botocore keyword arguments."""
-        # This is required while we need to support both boto and botocore.
-        mapping = CaseInsensitiveDict(
-            {
-                "Content-Type": "ContentType",
-                "Cache-Control": "CacheControl",
-                "Content-Disposition": "ContentDisposition",
-                "Content-Encoding": "ContentEncoding",
-                "Content-Language": "ContentLanguage",
-                "Content-Length": "ContentLength",
-                "Content-MD5": "ContentMD5",
-                "Expires": "Expires",
-                "X-Amz-Grant-Full-Control": "GrantFullControl",
-                "X-Amz-Grant-Read": "GrantRead",
-                "X-Amz-Grant-Read-ACP": "GrantReadACP",
-                "X-Amz-Grant-Write-ACP": "GrantWriteACP",
-                "X-Amz-Object-Lock-Legal-Hold": "ObjectLockLegalHoldStatus",
-                "X-Amz-Object-Lock-Mode": "ObjectLockMode",
-                "X-Amz-Object-Lock-Retain-Until-Date": "ObjectLockRetainUntilDate",
-                "X-Amz-Request-Payer": "RequestPayer",
-                "X-Amz-Server-Side-Encryption": "ServerSideEncryption",
-                "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": "SSEKMSKeyId",
-                "X-Amz-Server-Side-Encryption-Context": "SSEKMSEncryptionContext",
-                "X-Amz-Server-Side-Encryption-Customer-Algorithm": "SSECustomerAlgorithm",
-                "X-Amz-Server-Side-Encryption-Customer-Key": "SSECustomerKey",
-                "X-Amz-Server-Side-Encryption-Customer-Key-Md5": "SSECustomerKeyMD5",
-                "X-Amz-Storage-Class": "StorageClass",
-                "X-Amz-Tagging": "Tagging",
-                "X-Amz-Website-Redirect-Location": "WebsiteRedirectLocation",
-            }
-        )
+        mapping = self._botocore_header_kwargs
         extra: dict[str, Any] = {}
         for key, value in headers.items():
             try:
@@ -432,7 +409,7 @@ class FTPFilesStore:
                 time_format = "%Y%m%d%H%M%S.%f" if "." in modified else "%Y%m%d%H%M%S"
                 last_modified = (
                     datetime.strptime(modified, time_format)
-                    .replace(tzinfo=timezone.utc)
+                    .replace(tzinfo=UTC)
                     .timestamp()
                 )
                 m = hashlib.md5()  # noqa: S324
@@ -587,7 +564,7 @@ class FilesPipeline(MediaPipeline):
 
         age_seconds = time.time() - last_modified
         age_days = age_seconds / 60 / 60 / 24
-        if self.expires >= 0 and age_days > self.expires:
+        if 0 <= self.expires < age_days:
             return None  # returning None force download
 
         referer = referer_str(request)
@@ -727,7 +704,7 @@ class FilesPipeline(MediaPipeline):
     ) -> str:
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
-        checksum = _md5sum(buf)
+        checksum = hashlib.file_digest(buf, "md5").hexdigest()
         buf.seek(0)
         await ensure_awaitable(self.store.persist_file(path, buf, info))
         return checksum

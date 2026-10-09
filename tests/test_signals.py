@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -26,34 +26,31 @@ class ItemSpider(Spider):
         return {"index": response.meta["index"]}
 
 
-class TestMain:
-    @coroutine_test
-    async def test_scheduler_empty(self):
-        crawler = get_crawler()
-        calls = []
+@coroutine_test
+async def test_scheduler_empty() -> None:
+    crawler = get_crawler()
+    calls = []
 
-        def track_call():
-            calls.append(object())
+    def track_call() -> None:
+        calls.append(object())
 
-        crawler.signals.connect(track_call, signals.scheduler_empty)
-        await crawler.crawl_async()
-        assert len(calls) >= 1
+    crawler.signals.connect(track_call, signals.scheduler_empty)
+    await crawler.crawl_async()
+    assert len(calls) >= 1
 
 
-class TestMockServer:
-    def setup_method(self):
-        self.items = []
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_simple_pipeline(mockserver: MockServer) -> None:
+    items: list[Any] = []
 
-    async def _on_item_scraped(self, item):
+    async def _on_item_scraped(item: Any) -> None:
         item = await get_from_asyncio_queue(item)
-        self.items.append(item)
+        items.append(item)
 
-    @pytest.mark.only_asyncio
-    @coroutine_test
-    async def test_simple_pipeline(self, mockserver: MockServer) -> None:
-        crawler = get_crawler(ItemSpider)
-        crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
-        await crawler.crawl_async(mockserver=mockserver)
-        assert len(self.items) == 10
-        for index in range(10):
-            assert {"index": index} in self.items
+    crawler = get_crawler(ItemSpider)
+    crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+    await crawler.crawl_async(mockserver=mockserver)
+    assert len(items) == 10
+    for index in range(10):
+        assert {"index": index} in items

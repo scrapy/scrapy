@@ -22,6 +22,7 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Request, Response
 from scrapy.pipelines import ItemPipelineManager
+from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _process_pending_io_before_callback,
@@ -29,9 +30,7 @@ from scrapy.utils.defer import (
     aiter_errback,
     deferred_from_coro,
     ensure_awaitable,
-    iter_errback,
     maybe_deferred_to_future,
-    parallel,
     parallel_async,
 )
 from scrapy.utils.deprecate import method_is_overridden
@@ -57,6 +56,22 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
+
+
+def _set_parent_id(output: Iterable[_T], parent_id: int) -> Iterable[_T]:
+    for o in output:
+        if isinstance(o, Request) and o.parent_id is None:
+            o.parent_id = parent_id
+        yield o
+
+
+async def _aset_parent_id(
+    output: AsyncIterator[_T], parent_id: int
+) -> AsyncIterator[_T]:
+    async for o in output:
+        if isinstance(o, Request) and o.parent_id is None:
+            o.parent_id = parent_id
+        yield o
 
 
 class Slot:
@@ -272,8 +287,11 @@ class Scraper:
             return
 
         try:
-            # call the request errback with the downloader error
-            output = await self.call_spider_async(result, request)
+            # call the request errback with the downloader error and the spider
+            # middlewares with its output
+            output = await self.spidermw._scrape_failure_async(
+                self.call_spider_async, result, request
+            )
         except Exception as spider_exc:
             # the errback didn't silence the exception
             assert self.crawler.spider
@@ -325,6 +343,7 @@ class Scraper:
             if getattr(result, "request", None) is None:
                 result.request = request
             assert result.request
+            parent_id = result.request.id
             callback = result.request.callback or self.crawler.spider._parse
             warn_on_generator_with_return_value(self.crawler.spider, callback)
             output = callback(result, **result.request.cb_kwargs)
@@ -338,6 +357,7 @@ class Scraper:
         else:  # result is a Failure
             # TODO: properly type adding this attribute to a Failure
             result.request = request  # type: ignore[attr-defined]
+            parent_id = request.id
             if not request.errback:
                 result.raiseException()
             warn_on_generator_with_return_value(self.crawler.spider, request.errback)
@@ -353,7 +373,10 @@ class Scraper:
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
-        return await ensure_awaitable(iterate_spider_output(output))
+        output = await ensure_awaitable(iterate_spider_output(output))
+        if isinstance(output, AsyncIterator):
+            return _aset_parent_id(output, parent_id)
+        return _set_parent_id(output, parent_id)
 
     def handle_spider_error(
         self,
@@ -415,30 +438,21 @@ class Scraper:
 
         .. versionadded:: 2.13
         """
-        it: Iterable[_T] | AsyncIterator[_T]
+        if not isinstance(result, AsyncIterator):  # pragma: no cover
+            warnings.warn(
+                "Passing sync iterables to Scraper.handle_spider_output_async() is deprecated.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            result = as_async_generator(result)
+        it = aiter_errback(result, self.handle_spider_error, request, response)
         if is_asyncio_available():
-            if isinstance(result, AsyncIterator):
-                it = aiter_errback(result, self.handle_spider_error, request, response)
-            else:
-                it = iter_errback(result, self.handle_spider_error, request, response)
             await _parallel_asyncio(
                 it, self.concurrent_items, self._process_spidermw_output_async, response
             )
             return
-        if isinstance(result, AsyncIterator):
-            it = aiter_errback(result, self.handle_spider_error, request, response)
-            await maybe_deferred_to_future(
-                parallel_async(
-                    it,
-                    self.concurrent_items,
-                    self._process_spidermw_output,
-                    response,
-                )
-            )
-            return
-        it = iter_errback(result, self.handle_spider_error, request, response)
         await maybe_deferred_to_future(
-            parallel(
+            parallel_async(
                 it,
                 self.concurrent_items,
                 self._process_spidermw_output,
