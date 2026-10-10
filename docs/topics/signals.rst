@@ -469,7 +469,7 @@ request_reached_downloader
 
     Sent when a :class:`~scrapy.Request` reached the downloader.
 
-    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
     :param request: the request that reached the downloader
     :type request: :class:`~scrapy.Request` object
@@ -486,7 +486,7 @@ request_left_downloader
     Sent when a :class:`~scrapy.Request` leaves the downloader, even in case of
     failure.
 
-    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
     :param request: the request that reached the downloader
     :type request: :class:`~scrapy.Request` object
@@ -608,7 +608,7 @@ response_downloaded
 
     Sent by the downloader right after a :class:`~scrapy.http.Response` is downloaded.
 
-    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
     :param response: the response downloaded
     :type response: :class:`~scrapy.http.Response` object
