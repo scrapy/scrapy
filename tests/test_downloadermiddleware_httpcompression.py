@@ -528,22 +528,25 @@ class TestHttpCompression:
         assert not thread.is_alive(), "decompression did not terminate"
         assert result[0].body == plain
 
-    def test_deflate_chunked_output_leaves_nothing_to_flush(self) -> None:
-        """Guard the zlib behaviour that lets ``_inflate()`` skip ``flush()``.
-
-        ``decompress(max_length=...)`` leaves the input it could not turn into
-        output in ``unconsumed_tail``, so once that is empty every complete
-        stream has been fully emitted. If a future zlib buffers output instead,
-        this fails and ``_inflate()`` needs to flush the remainder again.
-        """
-        for size in (_CHUNK_SIZE - 1, _CHUNK_SIZE, _CHUNK_SIZE + 1, 4 * _CHUNK_SIZE):
-            decompressor = zlib.decompressobj()
-            decompressor.decompress(zlib.compress(b"a" * size), max_length=_CHUNK_SIZE)
-            while decompressor.unconsumed_tail and not decompressor.eof:
-                decompressor.decompress(
-                    decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
-                )
-            assert decompressor.flush() == b"", f"pending output for size {size}"
+    @pytest.mark.parametrize(
+        "wbits", [pytest.param(15, id="zlib"), pytest.param(-15, id="raw")]
+    )
+    @pytest.mark.parametrize(
+        "size", [_CHUNK_SIZE - 1, _CHUNK_SIZE, _CHUNK_SIZE + 1, 3 * _CHUNK_SIZE + 7]
+    )
+    @coroutine_test
+    async def test_deflate_output_larger_than_chunk(self, wbits: int, size: int):
+        plain = b"\0" * size
+        compressor = zlib.compressobj(9, zlib.DEFLATED, wbits)
+        response = Response(
+            "http://example.com",
+            body=compressor.compress(plain) + compressor.flush(),
+            headers={"Content-Encoding": "deflate"},
+        )
+        new_response = await self.mw.process_response(
+            Request("http://example.com"), response
+        )
+        assert new_response.body == plain
 
     async def _test_compression_bomb_setting(self, compression_id: str) -> None:
         settings = {"DOWNLOAD_MAXSIZE": 1_000_000}

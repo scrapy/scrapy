@@ -101,6 +101,12 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
+    # Raw deflate streams have no trailer, so their last input bytes can be
+    # consumed while some output is still pending.
+    tail = decompressor.flush()
+    decompressed_size += len(tail)
+    _check_max_size(decompressed_size, max_size)
+    output_stream.write(tail)
     return output_stream.getvalue()
 
 
