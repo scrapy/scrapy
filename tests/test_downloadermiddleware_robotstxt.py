@@ -114,6 +114,21 @@ Disallow: /some/randome/page.html
         await asyncio.gather(c1, c2)
 
     @coroutine_test
+    async def test_robotstxt_multiple_reqs_forbidden(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        dfds = [
+            deferred_from_coro(
+                middleware.process_request(Request(f"http://site.local/admin/{i}"))
+            )
+            for i in range(3)
+        ]
+        for dfd in dfds:
+            with pytest.raises(IgnoreRequest):
+                await maybe_deferred_to_future(dfd)
+
+    @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()

@@ -113,7 +113,17 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            # Awaiting a Deferred consumes its result, so every request waiting
+            # for this robots.txt gets its own Deferred, fired by a callback
+            # that also passes the result on to the next waiter.
+            waiter: Deferred[RobotParser | None] = Deferred()
+
+            def notify_waiter(rp: RobotParser | None) -> RobotParser | None:
+                waiter.callback(rp)
+                return rp
+
+            parser.addCallback(notify_waiter)
+            return await maybe_deferred_to_future(waiter)
         return parser
 
     async def _parse_robots(
