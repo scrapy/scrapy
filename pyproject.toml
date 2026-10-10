@@ -20,7 +20,7 @@ dependencies = [
     "packaging",
     "parsel>=1.8.1",
     "platformdirs>=2.0.0",
-    "protego>=0.1.15",
+    "protego>=0.2.0",
     "pyOpenSSL>=24.3.0",
     "queuelib>=1.8.0",
     "service_identity>=24.2.0",
