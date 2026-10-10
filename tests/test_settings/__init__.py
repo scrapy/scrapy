@@ -117,7 +117,10 @@ class TestBaseSettings:
         assert "TEST_OPTION" in self.settings.attributes
         assert attr is self.settings.attributes["TEST_OPTION"]
 
-    def test_set_calls_settings_attributes_methods_on_update(self):
+    @pytest.mark.parametrize("priority", [0, 10, 20])
+    def test_set_calls_settings_attributes_methods_on_update(
+        self, priority: int
+    ) -> None:
         attr = SettingsAttribute("value", 10)
         with (
             mock.patch.object(attr, "__setattr__") as mock_setattr,
@@ -125,12 +128,9 @@ class TestBaseSettings:
         ):
             self.settings.attributes = {"TEST_OPTION": attr}
 
-            for priority in (0, 10, 20):
-                self.settings.set("TEST_OPTION", "othervalue", priority)
-                mock_set.assert_called_once_with("othervalue", priority)
-                assert not mock_setattr.called
-                mock_set.reset_mock()
-                mock_setattr.reset_mock()
+            self.settings.set("TEST_OPTION", "othervalue", priority)
+            mock_set.assert_called_once_with("othervalue", priority)
+            assert not mock_setattr.called
 
     def test_setitem(self):
         settings = BaseSettings()
@@ -492,22 +492,24 @@ class TestBaseSettings:
                 == settings[setting_name]
             )
 
-    def test_getwithbase_for_non_component_priority_dicts(self):
+    @pytest.mark.parametrize(
+        "base_name", sorted(NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES)
+    )
+    def test_getwithbase_for_non_component_priority_dicts(self, base_name: str) -> None:
         settings = BaseSettings()
-        for base_name in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES:
-            base_value = getattr(scrapy_default_settings, base_name)
-            settings[base_name] = BaseSettings(base_value)
-            assert len(base_value) >= 2
-            keys = list(base_value)
-            values = list(base_value.values())
-            override = {keys[0]: values[1]}
-            expected = dict(base_value)
-            expected[keys[0]] = values[1]
-            name = base_name[: -len("_BASE")]
-            settings[name] = BaseSettings(override)
-            value = settings.getwithbase(name)
-            assert isinstance(value, BaseSettings)
-            assert dict(value) == expected
+        base_value = getattr(scrapy_default_settings, base_name)
+        settings[base_name] = BaseSettings(base_value)
+        assert len(base_value) >= 2
+        keys = list(base_value)
+        values = list(base_value.values())
+        override = {keys[0]: values[1]}
+        expected = dict(base_value)
+        expected[keys[0]] = values[1]
+        name = base_name[: -len("_BASE")]
+        settings[name] = BaseSettings(override)
+        value = settings.getwithbase(name)
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == expected
 
     def test_get_component_priority_dict_with_base_warns_on_duplicate_import_paths(
         self, caplog

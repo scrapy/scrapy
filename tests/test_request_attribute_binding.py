@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+import pytest
+
 from scrapy import Request, signals
 from scrapy.http.response import Response
 from scrapy.utils.test import get_crawler
@@ -10,8 +12,6 @@ from tests.spiders import SingleRequestSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    import pytest
-
     from tests.mockserver.http import MockServer
 
 OVERRIDDEN_URL = "https://example.org"
@@ -79,17 +79,17 @@ class TestCrawl:
         response = crawler.spider.meta["responses"][0]
         assert response.request.url == url
 
+    @pytest.mark.parametrize("status", [404, 500])
     @coroutine_test
-    async def test_response_error(self, mockserver: MockServer) -> None:
-        for status in ("404", "500"):
-            url = mockserver.url(f"/status?n={status}")
-            crawler = get_crawler(SingleRequestSpider)
-            await crawler.crawl_async(seed=url, mockserver=mockserver)
-            assert isinstance(crawler.spider, SingleRequestSpider)
-            failure = crawler.spider.meta["failure"]
-            response = failure.value.response
-            assert failure.request.url == url
-            assert response.request.url == url
+    async def test_response_error(self, status: int, mockserver: MockServer) -> None:
+        url = mockserver.url(f"/status?n={status}")
+        crawler = get_crawler(SingleRequestSpider)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        failure = crawler.spider.meta["failure"]
+        response = failure.value.response
+        assert failure.request.url == url
+        assert response.request.url == url
 
     @coroutine_test
     async def test_downloader_middleware_raise_exception(

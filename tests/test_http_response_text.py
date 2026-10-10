@@ -539,17 +539,16 @@ class TestTextResponse(TestResponseBase):
         )
         assert response.json() == {"message": "café"}
 
-    def test_cache_json_response(self):
-        json_valid_bodies = [b"""{"ip": "109.187.217.200"}""", b"""null"""]
-        for json_body in json_valid_bodies:
-            json_response = self.response_class(
-                "http://www.example.com", body=json_body
-            )
+    @pytest.mark.parametrize(
+        "json_body", [b"""{"ip": "109.187.217.200"}""", b"""null"""]
+    )
+    def test_cache_json_response(self, json_body: bytes) -> None:
+        json_response = self.response_class("http://www.example.com", body=json_body)
 
-            with mock.patch("json.loads") as mock_json:
-                for _ in range(2):
-                    json_response.json()
-                mock_json.assert_called_once_with(json_body)
+        with mock.patch("json.loads") as mock_json:
+            for _ in range(2):
+                json_response.json()
+            mock_json.assert_called_once_with(json_body)
 
 
 class TestHtmlResponse(TestTextResponse):
