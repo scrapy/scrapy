@@ -274,7 +274,7 @@ class Downloader:
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
-        self.signals.send_catch_log(
+        await self.signals.send_catch_log_async(
             signal=signals.request_reached_downloader,
             request=request,
             spider=self.crawler.spider,
@@ -334,7 +334,7 @@ class Downloader:
             response: Response = await self.handlers.download_request_async(request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
-            self.signals.send_catch_log(
+            await self.signals.send_catch_log_async(
                 signal=signals.response_downloaded,
                 response=response,
                 request=request,
@@ -351,7 +351,7 @@ class Downloader:
             # middleware itself)
             slot.transferring.remove(request)
             self._process_queue(slot)
-            self.signals.send_catch_log(
+            await self.signals.send_catch_log_async(
                 signal=signals.request_left_downloader,
                 request=request,
                 spider=self.crawler.spider,
@@ -386,7 +386,7 @@ class Downloader:
                             )
                         )
                     )
-                self.signals.send_catch_log(
+                await self.signals.send_catch_log_async(
                     signal=signals.request_left_downloader,
                     request=request,
                     spider=self.crawler.spider,
