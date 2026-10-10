@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
-from scrapy.signals import request_left_downloader
+from scrapy.signals import (
+    request_left_downloader,
+    request_reached_downloader,
+    response_downloaded,
+)
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -10,6 +15,7 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from scrapy import Request
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
     from tests.mockserver.http import MockServer
 
 
@@ -62,3 +68,30 @@ async def test_noconnect() -> None:
     await crawler.crawl_async("http://thereisdefinetelynosuchdomain.com")
     assert isinstance(crawler.spider, SignalCatcherSpider)
     assert crawler.spider.caught_times == 1
+
+
+@coroutine_test
+async def test_async_handlers(mockserver: MockServer) -> None:
+    """The downloader signals wait for asynchronous handlers."""
+    events: list[str] = []
+
+    async def on_reached(request: Request, spider: Spider) -> None:
+        await asyncio.sleep(0.01)
+        events.append("reached")
+
+    async def on_downloaded(
+        response: Response, request: Request, spider: Spider
+    ) -> None:
+        await asyncio.sleep(0.01)
+        events.append("downloaded")
+
+    async def on_left(request: Request, spider: Spider) -> None:
+        await asyncio.sleep(0.01)
+        events.append("left")
+
+    crawler = get_crawler(SignalCatcherSpider)
+    crawler.signals.connect(on_reached, signal=request_reached_downloader)
+    crawler.signals.connect(on_downloaded, signal=response_downloaded)
+    crawler.signals.connect(on_left, signal=request_left_downloader)
+    await crawler.crawl_async(mockserver.url("/status?n=200"))
+    assert events == ["reached", "downloaded", "left"]
