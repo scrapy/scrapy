@@ -314,6 +314,7 @@ class Downloader:
             assert isinstance(download_dfd, Deferred)
             self._download_tasks[request] = download_dfd
             download_dfd.addBoth(self._download_task_done, request)
+            download_dfd.addBoth(self._release_unstarted, slot, request, queue_dfd)
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)
@@ -321,6 +322,20 @@ class Downloader:
 
     def _download_task_done(self, result: Any, request: Request) -> Any:
         self._download_tasks.pop(request, None)
+        return result
+
+    def _release_unstarted(
+        self, result: Any, slot: Slot, request: Request, queue_dfd: Deferred[Response]
+    ) -> Any:
+        # Runs when the download task finishes. The task itself normally ends
+        # the transfer (in _download()) and fires queue_dfd (in
+        # _wait_for_download()). But a task that is cancelled before it starts
+        # running, e.g. by stop(), never runs any of its code, so this does
+        # both instead.
+        if request in slot.transferring:
+            self._end_transfer(slot, request)
+        if not queue_dfd.called:
+            queue_dfd.errback(result)
         return result
 
     def _latercall(self, slot: Slot) -> None:
@@ -349,13 +364,16 @@ class Downloader:
             # state to free up the transferring slot so it can be used by the
             # following requests (perhaps those which came from the downloader
             # middleware itself)
-            slot.transferring.remove(request)
-            self._process_queue(slot)
-            self.signals.send_catch_log(
-                signal=signals.request_left_downloader,
-                request=request,
-                spider=self.crawler.spider,
-            )
+            self._end_transfer(slot, request)
+
+    def _end_transfer(self, slot: Slot, request: Request) -> None:
+        slot.transferring.remove(request)
+        self._process_queue(slot)
+        self.signals.send_catch_log(
+            signal=signals.request_left_downloader,
+            request=request,
+            spider=self.crawler.spider,
+        )
 
     async def _wait_for_download(
         self, slot: Slot, request: Request, queue_dfd: Deferred[Response]
