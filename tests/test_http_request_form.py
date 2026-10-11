@@ -10,7 +10,6 @@ import pytest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, HtmlResponse
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_unicode
 from tests.utils.bases.http_request import TestRequestBase
 
 if TYPE_CHECKING:
@@ -38,7 +37,7 @@ def _qs_unicode(req: Request, encoding: str = "utf-8") -> dict[str, list[str]]:
 
 
 def _assert_query_equal(first: bytes, second: bytes) -> None:
-    assert sorted(to_unicode(first).split("&")) == sorted(to_unicode(second).split("&"))
+    assert sorted(first.decode().split("&")) == sorted(second.decode().split("&"))
 
 
 # FormRequest.from_response() is deprecated in favor of form2request, so the

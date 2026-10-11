@@ -17,7 +17,7 @@ from w3lib.url import canonicalize_url
 from scrapy import Request, Spider
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -106,7 +106,7 @@ def fingerprint(
         else:
             url = canonicalize_url(request.url, keep_fragments=keep_fragments)
         fingerprint_data = {
-            "method": to_unicode(request.method),
+            "method": request.method,
             "url": url,
             "body": (request.body or b"").hex(),
             "headers": headers,
@@ -159,8 +159,8 @@ def request_httprepr(request: Request) -> bytes:
     """
     parsed = urlparse_cached(request)
     path = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
-    s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
-    s += b"Host: " + to_bytes(parsed.hostname or b"") + b"\r\n"
+    s = f"{request.method} {path} HTTP/1.1\r\n".encode()
+    s += f"Host: {parsed.hostname or ''}\r\n".encode()
     if headers := request.headers.to_string():
         s += headers + b"\r\n"
     s += b"\r\n"
@@ -173,7 +173,7 @@ def referer_str(request: Request) -> str | None:
     referrer = request.headers.get("Referer")
     if referrer is None:
         return referrer
-    return to_unicode(referrer, errors="replace")
+    return referrer.decode(errors="replace")
 
 
 def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Request:
@@ -235,7 +235,7 @@ def _decode_cookie(cookie: VerboseCookie, request: Request) -> dict[str, str] | 
         else:
             assert isinstance(value, bytes)
             try:
-                decoded[key] = value.decode("utf8")
+                decoded[key] = value.decode()
             except UnicodeDecodeError:
                 logger.warning(
                     f"Non UTF-8 encoded cookie found in request {request}: {cookie}",
@@ -253,18 +253,18 @@ def request_to_curl(request: Request) -> str:
     """
     method = request.method
 
-    data = f"--data-raw '{request.body.decode('utf-8')}'" if request.body else ""
+    data = f"--data-raw '{request.body.decode()}'" if request.body else ""
 
     header_args: list[str] = []
     for name, values in request.headers.items():
-        str_name = to_unicode(name, errors="replace")
+        str_name = name.decode(errors="replace")
         if not values:
             # "Remove an internal header by giving a replacement without
             # content on the right side of the colon, as in: -H "Host:"."
             # (which is how Scrapy handles empty headers)
             header_args.append(f"-H '{str_name}:'")
         for value in values:
-            str_value = to_unicode(value, errors="replace")
+            str_value = value.decode(errors="replace")
             header_args.append(f"-H '{str_name}: {str_value}'")
     headers = " ".join(header_args)
 

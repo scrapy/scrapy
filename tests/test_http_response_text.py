@@ -11,7 +11,6 @@ import pytest
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
-from scrapy.utils.python import to_unicode
 from tests.utils.bases.http_response import TestResponseBase
 
 
@@ -57,7 +56,7 @@ class TestTextResponse(TestResponseBase):
         resp = self.response_class(
             url="http://www.example.com/price/\xa3", encoding="utf-8"
         )
-        assert resp.url == to_unicode(b"http://www.example.com/price/\xc2\xa3")
+        assert resp.url == b"http://www.example.com/price/\xc2\xa3".decode()
         resp = self.response_class(
             url="http://www.example.com/price/\xa3", encoding="latin-1"
         )
@@ -66,7 +65,7 @@ class TestTextResponse(TestResponseBase):
             "http://www.example.com/price/\xa3",
             headers={"Content-type": ["text/html; charset=utf-8"]},
         )
-        assert resp.url == to_unicode(b"http://www.example.com/price/\xc2\xa3")
+        assert resp.url == b"http://www.example.com/price/\xc2\xa3".decode()
         resp = self.response_class(
             "http://www.example.com/price/\xa3",
             headers={"Content-type": ["text/html; charset=iso-8859-1"]},

@@ -48,7 +48,7 @@ class ScriptRunnerMixin(ABC):
             stderr=subprocess.PIPE,
         )
         _, stderr = p.communicate()
-        return stderr.decode("utf-8")
+        return stderr.decode()
 
 
 class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):

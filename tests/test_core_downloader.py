@@ -43,7 +43,6 @@ from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import IDNA_REJECTED_HOSTNAMES
@@ -262,7 +261,7 @@ class TestContextFactory(TestContextFactoryBase):
     ) -> None:
         s = "0123456789" * 10
         body = await self.get_page(server_url + "payload", factory, body=s)
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     def test_no_context_sharing(self, factory: _ScrapyClientContextFactory) -> None:
         """Every call to creatorForNetloc() should give a fresh context."""
@@ -383,7 +382,7 @@ class TestContextFactoryCiphers(TestContextFactoryBase):
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     def test_default(self) -> None:
         """The default 'DEFAULT' value is passed to Twisted as is."""
@@ -426,7 +425,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     @coroutine_test
     async def test_setting_default(self, server_url: str) -> None:

@@ -23,7 +23,7 @@ def decode_robotstxt(
 ) -> str:
     try:
         if to_native_str_type:
-            body_decoded = to_unicode(robotstxt_body)
+            body_decoded = robotstxt_body.decode()
         else:
             body_decoded = robotstxt_body.decode("utf-8-sig", errors="ignore")
     except UnicodeDecodeError:

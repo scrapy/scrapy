@@ -8,7 +8,6 @@ from w3lib.http import headers_dict_to_raw
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._datatypes import CaseInsensitiveDict
-from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -206,8 +205,8 @@ class Headers(dict):  # type: ignore[type-arg]
         )
         return CaseInsensitiveDict(
             (
-                to_unicode(key, encoding=self.encoding, errors="replace"),
-                to_unicode(b",".join(value), encoding=self.encoding, errors="replace"),
+                key.decode(self.encoding, errors="replace"),
+                b",".join(value).decode(self.encoding, errors="replace"),
             )
             for key, value in self.items()
         )

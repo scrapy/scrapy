@@ -19,7 +19,6 @@ from scrapy.http import HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -132,7 +131,7 @@ class TestFTPBase(ABC):
         self, server_url: str, dh: FTPDownloadHandler
     ) -> None:
         f, local_fname = mkstemp()
-        fname_bytes = to_bytes(local_fname)
+        fname_bytes = local_fname.encode()
         local_path = Path(local_fname)
         os.close(f)
         meta = {"ftp_local_filename": fname_bytes}

@@ -16,7 +16,7 @@ from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import _looks_like_import_path, to_unicode
+from scrapy.utils.python import _looks_like_import_path
 from scrapy.utils.url import strip_url
 
 if TYPE_CHECKING:
@@ -373,7 +373,7 @@ class RefererMiddleware(BaseSpiderMiddleware):
         if policy_name is None and isinstance(response, Response):
             policy_header = response.headers.get("Referrer-Policy")
             if policy_header is not None:
-                policy_name = to_unicode(policy_header.decode("latin1"))
+                policy_name = policy_header.decode("latin1")
                 allow_import_path = False
         if policy_name is None:
             return self.default_policy()

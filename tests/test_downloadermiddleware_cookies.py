@@ -37,7 +37,7 @@ def _cookie_to_set_cookie_value(cookie: VerboseCookie) -> str | None:
         else:
             assert isinstance(value, bytes)
             try:
-                decoded[key] = value.decode("utf8")
+                decoded[key] = value.decode()
             except UnicodeDecodeError:
                 decoded[key] = value.decode("latin1", errors="replace")
 
