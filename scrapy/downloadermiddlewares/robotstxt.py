@@ -113,7 +113,16 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            # All waiters share this Deferred, and both
+            # Deferred.asFuture() (asyncio reactor) and the Twisted
+            # callback chain consume its result, so only the first waiter
+            # receives the parser and later waiters receive None. Both
+            # writers set self._parsers[netloc] *before* firing the
+            # Deferred, so the dict already holds the final value; await
+            # without using the awaited value and read it back instead.
+            await maybe_deferred_to_future(parser)
+            parser = self._parsers[netloc]
+            assert not isinstance(parser, Deferred)
         return parser
 
     async def _parse_robots(

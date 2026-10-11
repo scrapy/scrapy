@@ -113,6 +113,60 @@ Disallow: /some/randome/page.html
         c2 = middleware.process_request(Request("http://site.local/allowed2"))
         await asyncio.gather(c1, c2)
 
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_asyncio_disallowed(self) -> None:
+        # Regression test for https://github.com/scrapy/scrapy/issues/8297:
+        # concurrent waiters on the same host share one Deferred whose result
+        # Deferred.asFuture() consumes, so waiters after the first one got
+        # None and were allowed through even for disallowed URLs.
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+
+        async def process(request: Request) -> bool:
+            try:
+                await middleware.process_request(request)
+            except IgnoreRequest:
+                return False
+            return True
+
+        results = await asyncio.gather(
+            process(Request("http://site.local/allowed")),
+            process(Request("http://site.local/admin/main")),
+            process(Request("http://site.local/static/")),
+        )
+        assert results == [True, False, False]
+
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_disallowed(self) -> None:
+        # Regression test for https://github.com/scrapy/scrapy/issues/8297,
+        # covering the non-asyncio reactor where awaiting the shared Deferred
+        # hands later waiters None through the Twisted callback chain.
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+
+        async def process(request: Request) -> bool:
+            try:
+                await middleware.process_request(request)
+            except IgnoreRequest:
+                return False
+            return True
+
+        results = await maybe_deferred_to_future(
+            DeferredList(
+                [
+                    deferred_from_coro(process(Request("http://site.local/allowed"))),
+                    deferred_from_coro(
+                        process(Request("http://site.local/admin/main"))
+                    ),
+                    deferred_from_coro(process(Request("http://site.local/static/"))),
+                ]
+            )
+        )
+        assert results == [(True, True), (True, False), (True, False)]
+
     @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
