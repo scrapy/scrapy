@@ -113,6 +113,33 @@ Disallow: /some/randome/page.html
         c2 = middleware.process_request(Request("http://site.local/allowed2"))
         await asyncio.gather(c1, c2)
 
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_asyncio_disallowed(self) -> None:
+        # Regression test for https://github.com/scrapy/scrapy/issues/8297
+        # Concurrent requests to the same host share one Deferred for the
+        # robots.txt fetch. Deferred.asFuture() (used by
+        # maybe_deferred_to_future) consumes that Deferred's result, so without
+        # the fix every waiter after the first received None and the disallowed
+        # request failed open.
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+
+        async def is_ignored(url: str) -> bool:
+            try:
+                await middleware.process_request(Request(url))
+            except IgnoreRequest:
+                return True
+            return False
+
+        results = await asyncio.gather(
+            is_ignored("http://site.local/allowed"),
+            is_ignored("http://site.local/admin/a"),
+            is_ignored("http://site.local/admin/b"),
+        )
+        assert results == [False, True, True]
+
     @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(

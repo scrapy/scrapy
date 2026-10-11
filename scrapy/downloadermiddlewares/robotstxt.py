@@ -113,7 +113,13 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            # maybe_deferred_to_future() uses Deferred.asFuture(), which consumes
+            # the Deferred's result: the first waiter receives the parsed value,
+            # but any additional waiter receives None (see Twisted's
+            # Deferred.asFuture docstring). Read the final value from _parsers
+            # after waiting, so every concurrent waiter gets the actual parser.
+            await maybe_deferred_to_future(parser)
+            parser = self._parsers[netloc]
         return parser
 
     async def _parse_robots(
