@@ -69,6 +69,14 @@ Backward-incompatible changes
     effect.
     (:gh:`8181`)
 
+Bug fixes
+~~~~~~~~~
+
+-   Fixed an issue where concurrent requests to the same host while fetching
+    ``robots.txt`` bypassed robots exclusion rules due to
+    Twisted :class:`~twisted.internet.defer.Deferred` result consumption.
+    (:gh:`8297`)
+
 .. _release-2.19.0:
 
 Scrapy 2.19.0 (2026-09-10)
