@@ -61,24 +61,13 @@ def is_asyncio_available() -> bool:
     there is no such loop, it returns ``True`` if the Twisted reactor that is
     installed is
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, returns
-    ``False`` if a different reactor is installed, and raises a
-    :exc:`RuntimeError` if no reactor is installed.
+    ``False`` if a different reactor is installed (which is deprecated), and
+    raises a :exc:`RuntimeError` if no reactor is installed.
 
-    Code that doesn't directly require a Twisted reactor should use this
-    function while code that requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` should
-    also use :func:`~scrapy.utils.reactor.is_reactor_installed`.
-
-    When this returns ``True``, an asyncio loop is installed and used by
-    Scrapy. It's possible to call functions that require it, such as
-    :func:`asyncio.sleep`, and await on :class:`asyncio.Future` objects in
-    Scrapy-related code.
-
-    When this returns ``False``, a non-asyncio Twisted reactor is installed.
-    It's not possible to use asyncio features that require an asyncio event
-    loop or await on :class:`asyncio.Future` objects in Scrapy-related code,
-    but it's possible to await on :class:`~twisted.internet.defer.Deferred`
-    objects.
+    The case when this function returns ``False`` is deprecated, and in a
+    future Scrapy version this function will be deprecated and always return
+    ``True``. Use it only if you need to support non-asyncio reactors or if
+    you want to provide a better error message on those.
 
     .. note:: As this function uses :func:`asyncio.get_running_loop()`, it will
         only detect the event loop if called in the same thread and from the
