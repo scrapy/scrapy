@@ -259,6 +259,31 @@ Disallow: /some/randome/page.html
         await self.assertNotIgnored(Request("http://site.local"), middleware)
 
     @coroutine_test
+    async def test_robotstxt_error_multiple_reqs(self) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        err = CannotResolveHostError("Robotstxt address not found")
+
+        async def return_failure(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.errback, failure.Failure(err))
+            return await maybe_deferred_to_future(deferred)
+
+        self.crawler.engine.download_async.side_effect = return_failure
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+
+        d1 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/path1"))
+        )
+        d2 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/path2"))
+        )
+        d3 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/path3"))
+        )
+        dl = DeferredList([d1, d2, d3], fireOnOneErrback=True)
+        await maybe_deferred_to_future(dl)
+
+    @coroutine_test
     async def test_ignore_robotstxt_request(self):
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
 
