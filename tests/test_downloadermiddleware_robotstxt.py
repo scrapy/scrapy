@@ -416,6 +416,40 @@ Disallow: /some/randome/page.html
         assert robotsreq.meta["download_handler"] == "named"
         assert robotsreq.meta["is_robotstxt_request"] is True
 
+    @coroutine_test
+    async def test_robotstxt_concurrent_forbidden_stats(self) -> None:
+        crawler = self._get_successful_crawler()
+        middleware = build_from_crawler(RobotsTxtMiddleware, crawler)
+
+        req1 = Request("http://site.local/admin/disallowed1")
+        req2 = Request("http://site.local/admin/disallowed2")
+        req3 = Request("http://site.local/admin/disallowed3")
+
+        d1 = deferred_from_coro(middleware.process_request(req1))
+        d2 = deferred_from_coro(middleware.process_request(req2))
+        d3 = deferred_from_coro(middleware.process_request(req3))
+
+        dl = DeferredList([d1, d2, d3], consumeErrors=True)
+        results = await maybe_deferred_to_future(dl)
+
+        for success, failure_obj in results:
+            assert success is False
+            assert failure_obj.check(IgnoreRequest)
+
+        forbidden_calls = [
+            call
+            for call in crawler.stats.inc_value.call_args_list
+            if call[0][0] == "robotstxt/forbidden"
+        ]
+        assert len(forbidden_calls) == 3
+
+        request_count_calls = [
+            call
+            for call in crawler.stats.inc_value.call_args_list
+            if call[0][0] == "robotstxt/request_count"
+        ]
+        assert len(request_count_calls) == 1
+
     async def assertNotIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
