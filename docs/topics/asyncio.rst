@@ -28,6 +28,8 @@ manually. You can do that using :func:`~scrapy.utils.reactor.install_reactor`:
 
     install_reactor()
 
+.. autofunction:: scrapy.utils.reactor.install_reactor
+
 
 .. _asyncio-preinstalled-reactor:
 
@@ -121,10 +123,7 @@ requirement <enforce-component-requirements>`. For example:
         def __init__(self):
             if not is_asyncio_available():
                 raise ValueError(
-                    f"{MyComponent.__qualname__} requires the asyncio support. "
-                    f"Make sure you have configured the asyncio reactor in the "
-                    f"TWISTED_REACTOR setting. See the asyncio documentation "
-                    f"of Scrapy for more information."
+                    f"{MyComponent.__qualname__} requires the asyncio support."
                 )
 
 .. autofunction:: scrapy.utils.asyncio.is_asyncio_available

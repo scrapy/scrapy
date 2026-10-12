@@ -30,7 +30,7 @@ async def suspend() -> None:
     """Let other coroutines run before resuming the calling one.
 
     Unlike :func:`asyncio.sleep`, this works with any value of the
-    :setting:`TWISTED_REACTOR` setting.
+    ``TWISTED_REACTOR`` setting.
     """
     d: Deferred[None] = Deferred()
     call_later(0, d.callback, None)

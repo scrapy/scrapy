@@ -342,9 +342,6 @@ Other tips
 
     .. _uvloop: https://github.com/MagicStack/uvloop
 
-    Alternatively, try :ref:`switching to a non-asyncio reactor
-    <disable-asyncio>`.
-
 -   Disable unused :ref:`components <topics-components>`.
 
     For example, set :setting:`COOKIES_ENABLED` to ``False`` unless you need
