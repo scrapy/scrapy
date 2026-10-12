@@ -21,6 +21,8 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.robotstxt import RobotParser
@@ -119,7 +121,11 @@ class RobotsTxtMiddleware:
                 d.callback(result)
                 return result
 
-            parser.addCallback(cb)
+            def eb(failure: Failure) -> Failure:
+                d.errback(failure)
+                return failure
+
+            parser.addCallbacks(cb, eb)
             return await maybe_deferred_to_future(d)
         return parser
 
