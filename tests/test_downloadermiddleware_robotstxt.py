@@ -165,6 +165,41 @@ Disallow: /some/randome/page.html
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
 
     @coroutine_test
+    async def test_robotstxt_subsequent_requests_cached_parser(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        assert not isinstance(middleware._parsers["site.local"], Deferred)
+        assert middleware._parsers["site.local"] is not None
+
+        await self.assertNotIgnored(Request("http://site.local/allowed2"), middleware)
+        await self.assertIgnored(
+            Request("http://site.local/admin/disallowed"), middleware
+        )
+
+    @coroutine_test
+    async def test_robotstxt_multiple_hosts_concurrency(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+
+        async def try_req(url: str) -> str:
+            try:
+                await middleware.process_request(Request(url))
+                return "allowed"
+            except IgnoreRequest:
+                return "forbidden"
+
+        results = await asyncio.gather(
+            try_req("http://site1.local/admin/page"),
+            try_req("http://site2.local/admin/page"),
+            try_req("http://site1.local/allowed"),
+            try_req("http://site2.local/allowed"),
+        )
+        assert results == ["forbidden", "forbidden", "allowed", "allowed"]
+
+    @coroutine_test
     async def test_robotstxt_meta(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
