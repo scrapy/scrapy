@@ -478,3 +478,11 @@ class TestRobotsTxtMiddlewareWithRerp(TestRobotsTxtMiddleware):
         self.crawler.settings.set(
             "ROBOTSTXT_PARSER", "scrapy.robotstxt.RerpRobotParser"
         )
+
+
+class TestRobotsTxtMiddlewareWithPythonRobotParser(TestRobotsTxtMiddleware):
+    def setup_method(self):
+        super().setup_method()
+        self.crawler.settings.set(
+            "ROBOTSTXT_PARSER", "scrapy.robotstxt.PythonRobotParser"
+        )
