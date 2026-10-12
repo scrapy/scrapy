@@ -113,7 +113,14 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            d: Deferred[RobotParser | None] = Deferred()
+
+            def cb(result: RobotParser | None) -> RobotParser | None:
+                d.callback(result)
+                return result
+
+            parser.addCallback(cb)
+            return await maybe_deferred_to_future(d)
         return parser
 
     async def _parse_robots(
