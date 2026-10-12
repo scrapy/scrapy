@@ -212,7 +212,7 @@ class Crawler:
                 # but before something imports twisted.internet.reactor.
                 if reactor_class:
                     # Install a specific reactor.
-                    install_reactor(reactor_class, event_loop)
+                    install_reactor(reactor_class, event_loop, _warn=False)
                 else:
                     # Install the default one.
                     from twisted.internet import reactor  # noqa: F401

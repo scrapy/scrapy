@@ -124,7 +124,10 @@ def set_asyncio_event_loop_policy() -> None:
 
 
 def install_reactor(
-    reactor_path: str | None = None, event_loop_path: str | None = None
+    reactor_path: str | None = None,
+    event_loop_path: str | None = None,
+    *,
+    _warn: bool = True,
 ) -> None:
     """Installs the :mod:`~twisted.internet.reactor` with the specified
     import path. Also installs the asyncio event loop with the specified import
@@ -141,6 +144,13 @@ def install_reactor(
             event_loop = set_asyncio_event_loop(event_loop_path)
             asyncioreactor.install(eventloop=event_loop)
     else:
+        if _warn:
+            # TODO test coverage
+            warnings.warn(
+                "Passing a non-asyncio reactor to install_reactor() is deprecated.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         *module, _ = reactor_path.split(".")
         installer_path = [*module, "install"]
         installer = load_object(".".join(installer_path))
