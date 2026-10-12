@@ -135,6 +135,27 @@ Disallow: /some/randome/page.html
         c2 = middleware.process_request(Request("http://site.local/allowed2"))
         await asyncio.gather(c1, c2)
 
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_asyncio_forbidden(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+
+        async def execute_request(url: str) -> str:
+            try:
+                await middleware.process_request(Request(url))
+                return "allowed"
+            except IgnoreRequest:
+                return "forbidden"
+
+        results = await asyncio.gather(
+            execute_request("http://site.local/allowed1"),
+            execute_request("http://site.local/admin/disallowed1"),
+            execute_request("http://site.local/admin/disallowed2"),
+        )
+        assert results == ["allowed", "forbidden", "forbidden"]
+
     @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
