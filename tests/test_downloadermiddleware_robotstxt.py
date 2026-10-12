@@ -154,7 +154,7 @@ Disallow: /some/randome/page.html
             execute_request("http://site.local/admin/disallowed1"),
             execute_request("http://site.local/admin/disallowed2"),
         )
-        assert results == ["allowed", "forbidden", "forbidden"]
+        assert tuple(results) == ("allowed", "forbidden", "forbidden")
 
     @pytest.mark.only_asyncio
     @coroutine_test
@@ -224,7 +224,7 @@ Disallow: /some/randome/page.html
             try_req("http://site1.local/allowed"),
             try_req("http://site2.local/allowed"),
         )
-        assert results == ["forbidden", "forbidden", "allowed", "allowed"]
+        assert tuple(results) == ("forbidden", "forbidden", "allowed", "allowed")
 
     @coroutine_test
     async def test_robotstxt_meta(self):
