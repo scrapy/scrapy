@@ -661,27 +661,12 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     """Return *d* as an object that can be awaited from a :ref:`Scrapy callable
     defined as a coroutine <coroutine-support>`.
 
-    What you can await in Scrapy callables defined as coroutines depends on the
-    value of :setting:`TWISTED_REACTOR` and :setting:`TWISTED_REACTOR_ENABLED`:
+    This is similar to :func:`deferred_to_future`, but when a non-asyncio
+    Twisted reactor is installed (which is deprecated), it returns *d* as is,
+    because in that case it can be awaited directly.
 
-    -   When :ref:`using the asyncio reactor <install-asyncio>`, or :ref:`not
-        using a reactor at all <asyncio-without-reactor>`, you can only await
-        on :class:`asyncio.Future` objects.
-
-    -   When :ref:`using a non-asyncio reactor <disable-asyncio>`, you can only
-        await on :class:`~twisted.internet.defer.Deferred` objects.
-
-    If you want to write code that uses ``Deferred`` objects but works in both
-    of these states, use this function on all ``Deferred`` objects:
-
-    .. code-block:: python
-
-        class MySpider(Spider):
-            ...
-
-            async def parse(self, response):
-                deferred = some_dfd_helper()
-                result = await maybe_deferred_to_future(deferred)
+    Use this function only if you need to support non-asyncio reactors. It will
+    be deprecated in a later Scrapy version.
     """
     if not is_asyncio_available():
         return d
