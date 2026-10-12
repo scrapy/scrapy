@@ -156,6 +156,33 @@ Disallow: /some/randome/page.html
         )
         assert results == ["allowed", "forbidden", "forbidden"]
 
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_cancellation_isolation(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+
+        t1 = asyncio.create_task(
+            middleware.process_request(Request("http://site.local/allowed1"))
+        )
+        t2 = asyncio.create_task(
+            middleware.process_request(Request("http://site.local/admin/disallowed"))
+        )
+        t3 = asyncio.create_task(
+            middleware.process_request(Request("http://site.local/allowed2"))
+        )
+
+        t1.cancel()
+
+        with pytest.raises(asyncio.CancelledError):
+            await t1
+
+        with pytest.raises(IgnoreRequest):
+            await t2
+
+        await t3
+
     @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
