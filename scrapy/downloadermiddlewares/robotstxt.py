@@ -10,6 +10,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Self
 
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -113,7 +114,18 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            d: Deferred[RobotParser | None] = Deferred()
+
+            def cb(result: RobotParser | None) -> RobotParser | None:
+                d.callback(result)
+                return result
+
+            def eb(failure: Failure) -> Failure:
+                d.errback(failure)
+                return failure
+
+            parser.addCallbacks(cb, eb)
+            return await maybe_deferred_to_future(d)
         return parser
 
     async def _parse_robots(

@@ -114,6 +114,42 @@ Disallow: /some/randome/page.html
         await asyncio.gather(c1, c2)
 
     @coroutine_test
+    async def test_robotstxt_multiple_reqs_disallowed(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        d1 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/allowed1"))
+        )
+        d2 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/allowed2"))
+        )
+        d3 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/admin/disallowed"))
+        )
+        res = await maybe_deferred_to_future(DeferredList([d1, d2, d3], consumeErrors=True))
+        # d1 and d2 succeed
+        assert res[0][0] is True
+        assert res[1][0] is True
+        # d3 should fail with IgnoreRequest
+        assert res[2][0] is False
+        assert res[2][1].check(IgnoreRequest)
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_asyncio_disallowed(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        c1 = middleware.process_request(Request("http://site.local/allowed1"))
+        c2 = middleware.process_request(Request("http://site.local/allowed2"))
+        c3 = middleware.process_request(Request("http://site.local/admin/disallowed"))
+        with pytest.raises(IgnoreRequest):
+            await asyncio.gather(c1, c2, c3)
+
+
+
+    @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
