@@ -41,7 +41,11 @@ from scrapy.http import Response
 from scrapy.resolver import dnscache
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.asyncio import sleep
-from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
@@ -734,6 +738,24 @@ async def test_fast_stop_with_download_in_flight(mockserver: MockServer) -> None
     assert crawler.stats
     assert crawler.stats.get_value("downloader/request_dropped_count") == 1
     assert crawler.stats.get_value("response_received_count") is None
+
+
+@coroutine_test
+async def test_fast_stop_before_download_starts() -> None:
+    """A fast stop that cancels a download before the download starts ends
+    the crawl and frees the slot."""
+    crawler = get_crawler(SimpleSpider)
+
+    def stop(request: Request, spider: Spider) -> None:
+        # With asyncio, the stop runs before the download task that the
+        # downloader creates right after this signal.
+        _schedule_coro(crawler.stop_async(mode="fast"))
+
+    crawler.signals.connect(stop, signals.request_reached_downloader)
+    await crawler.crawl_async(url="data:,")
+    (slot,) = crawler.engine.downloader.slots.values()
+    assert not slot.active
+    assert not slot.transferring
 
 
 class ConcurrencyRecordingHandler(BaseDownloadHandler):
