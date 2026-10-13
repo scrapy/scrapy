@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 from urllib.parse import urlparse
 
 import pytest
@@ -39,645 +39,638 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
 
-class TestRefererMiddleware:
-    req_meta: dict[str, Any] = {}
-    resp_headers: dict[str, str] = {}
-    settings: dict[str, Any] = {}
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
-    ]
+ScenarioTable: TypeAlias = list[tuple[str, str, bytes | None]]
 
-    @pytest.fixture
-    def mw(self) -> RefererMiddleware:
-        settings = Settings(self.settings)
-        return RefererMiddleware(settings)
+# Referrer policy scenarios, as (origin, target, expected Referer) triples.
 
-    def get_request(self, target: str) -> Request:
-        return Request(target, meta=self.req_meta)
+# Based on https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
+# with some additional filtering of s3://
+SCENARII_DEFAULT: ScenarioTable = [
+    ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
+    ("https://example.com/", "https://scrapy.org/", b"https://example.com/"),
+    ("http://example.com/", "http://scrapy.org/", b"http://example.com/"),
+    ("http://example.com/", "https://scrapy.org/", b"http://example.com/"),
+    ("https://example.com/", "http://scrapy.org/", None),
+    # no credentials leak
+    (
+        "http://user:password@example.com/",
+        "https://scrapy.org/",
+        b"http://example.com/",
+    ),
+    # no referrer leak for local schemes
+    ("file:///home/path/to/somefile.html", "https://scrapy.org/", None),
+    ("file:///home/path/to/somefile.html", "http://scrapy.org/", None),
+    # no referrer leak for s3 origins
+    ("s3://mybucket/path/to/data.csv", "https://scrapy.org/", None),
+    ("s3://mybucket/path/to/data.csv", "http://scrapy.org/", None),
+]
 
-    def get_response(self, origin: str) -> Response:
-        return Response(origin, headers=self.resp_headers)
+SCENARII_NO_REFERRER: ScenarioTable = [
+    ("https://example.com/page.html", "https://example.com/", None),
+    ("http://www.example.com/", "https://scrapy.org/", None),
+    ("http://www.example.com/", "http://scrapy.org/", None),
+    ("https://www.example.com/", "http://scrapy.org/", None),
+    ("file:///home/path/to/somefile.html", "http://scrapy.org/", None),
+]
 
-    def test(self, mw: RefererMiddleware) -> None:
-        for origin, target, referrer in self.scenarii:
-            response = self.get_response(origin)
-            request = self.get_request(target)
-            out = list(mw.process_spider_output(response, [request]))
-            assert out[0].headers.get("Referer") == referrer
+SCENARII_NO_REFERRER_WHEN_DOWNGRADE: ScenarioTable = [
+    # TLS to TLS: send non-empty referrer
+    (
+        "https://example.com/page.html",
+        "https://not.example.com/",
+        b"https://example.com/page.html",
+    ),
+    (
+        "https://example.com/page.html",
+        "https://scrapy.org/",
+        b"https://example.com/page.html",
+    ),
+    (
+        "https://example.com:443/page.html",
+        "https://scrapy.org/",
+        b"https://example.com/page.html",
+    ),
+    (
+        "https://example.com:444/page.html",
+        "https://scrapy.org/",
+        b"https://example.com:444/page.html",
+    ),
+    (
+        "ftps://example.com/urls.zip",
+        "https://scrapy.org/",
+        b"ftps://example.com/urls.zip",
+    ),
+    # TLS to non-TLS: do not send referrer
+    ("https://example.com/page.html", "http://not.example.com/", None),
+    ("https://example.com/page.html", "http://scrapy.org/", None),
+    ("ftps://example.com/urls.zip", "http://scrapy.org/", None),
+    # non-TLS to TLS or non-TLS: send referrer
+    (
+        "http://example.com/page.html",
+        "https://not.example.com/",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "https://scrapy.org/",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com:8080/page.html",
+        "https://scrapy.org/",
+        b"http://example.com:8080/page.html",
+    ),
+    (
+        "http://example.com:80/page.html",
+        "http://not.example.com/",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "http://scrapy.org/",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com:443/page.html",
+        "http://scrapy.org/",
+        b"http://example.com:443/page.html",
+    ),
+    (
+        "ftp://example.com/urls.zip",
+        "http://scrapy.org/",
+        b"ftp://example.com/urls.zip",
+    ),
+    (
+        "ftp://example.com/urls.zip",
+        "https://scrapy.org/",
+        b"ftp://example.com/urls.zip",
+    ),
+    # test for user/password stripping
+    (
+        "http://user:password@example.com/page.html",
+        "https://not.example.com/",
+        b"http://example.com/page.html",
+    ),
+]
 
+SCENARII_SAME_ORIGIN: ScenarioTable = [
+    # Same origin (protocol, host, port): send referrer
+    (
+        "https://example.com/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "http://example.com/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "https://example.com:443/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/page.html",
+    ),
+    (
+        "http://example.com:80/page.html",
+        "http://example.com/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "http://example.com:80/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com:8888/page.html",
+        "http://example.com:8888/not-page.html",
+        b"http://example.com:8888/page.html",
+    ),
+    # Different host: do NOT send referrer
+    (
+        "https://example.com/page.html",
+        "https://not.example.com/otherpage.html",
+        None,
+    ),
+    ("http://example.com/page.html", "http://not.example.com/otherpage.html", None),
+    ("http://example.com/page.html", "http://www.example.com/otherpage.html", None),
+    # Different port: do NOT send referrer
+    (
+        "https://example.com:444/page.html",
+        "https://example.com/not-page.html",
+        None,
+    ),
+    ("http://example.com:81/page.html", "http://example.com/not-page.html", None),
+    ("http://example.com/page.html", "http://example.com:81/not-page.html", None),
+    # Different protocols: do NOT send referrer
+    ("https://example.com/page.html", "http://example.com/not-page.html", None),
+    ("https://example.com/page.html", "http://not.example.com/", None),
+    ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
+    ("ftp://example.com/urls.zip", "http://example.com/not-page.html", None),
+    ("ftps://example.com/urls.zip", "http://example.com/not-page.html", None),
+    # test for user/password stripping
+    (
+        "https://user:password@example.com/page.html",
+        "http://example.com/not-page.html",
+        None,
+    ),
+    (
+        "https://user:password@example.com/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/page.html",
+    ),
+]
 
-class MixinDefault:
-    """
-    Based on https://www.w3.org/TR/referrer-policy/#referrer-policy-no-referrer-when-downgrade
+SCENARII_ORIGIN: ScenarioTable = [
+    # TLS or non-TLS to TLS or non-TLS: referrer origin is sent (yes, even for downgrades)
+    (
+        "https://example.com/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/",
+    ),
+    (
+        "https://example.com/page.html",
+        "https://scrapy.org",
+        b"https://example.com/",
+    ),
+    ("https://example.com/page.html", "http://scrapy.org", b"https://example.com/"),
+    ("http://example.com/page.html", "http://scrapy.org", b"http://example.com/"),
+    # test for user/password stripping
+    (
+        "https://user:password@example.com/page.html",
+        "http://scrapy.org",
+        b"https://example.com/",
+    ),
+]
 
-    with some additional filtering of s3://
-    """
+SCENARII_STRICT_ORIGIN: ScenarioTable = [
+    # TLS or non-TLS to TLS or non-TLS: referrer origin is sent but not for downgrades
+    (
+        "https://example.com/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/",
+    ),
+    (
+        "https://example.com/page.html",
+        "https://scrapy.org",
+        b"https://example.com/",
+    ),
+    ("http://example.com/page.html", "http://scrapy.org", b"http://example.com/"),
+    # downgrade: send nothing
+    ("https://example.com/page.html", "http://scrapy.org", None),
+    # upgrade: send origin
+    ("http://example.com/page.html", "https://scrapy.org", b"http://example.com/"),
+    # test for user/password stripping
+    (
+        "https://user:password@example.com/page.html",
+        "https://scrapy.org",
+        b"https://example.com/",
+    ),
+    ("https://user:password@example.com/page.html", "http://scrapy.org", None),
+]
 
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        ("https://example.com/", "https://scrapy.org/", b"https://example.com/"),
-        ("http://example.com/", "http://scrapy.org/", b"http://example.com/"),
-        ("http://example.com/", "https://scrapy.org/", b"http://example.com/"),
-        ("https://example.com/", "http://scrapy.org/", None),
-        # no credentials leak
-        (
-            "http://user:password@example.com/",
-            "https://scrapy.org/",
-            b"http://example.com/",
-        ),
-        # no referrer leak for local schemes
-        ("file:///home/path/to/somefile.html", "https://scrapy.org/", None),
-        ("file:///home/path/to/somefile.html", "http://scrapy.org/", None),
-        # no referrer leak for s3 origins
-        ("s3://mybucket/path/to/data.csv", "https://scrapy.org/", None),
-        ("s3://mybucket/path/to/data.csv", "http://scrapy.org/", None),
-    ]
+SCENARII_ORIGIN_WHEN_CROSS_ORIGIN: ScenarioTable = [
+    # Same origin (protocol, host, port): send referrer
+    (
+        "https://example.com/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "http://example.com/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "https://example.com:443/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/page.html",
+    ),
+    (
+        "http://example.com:80/page.html",
+        "http://example.com/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "http://example.com:80/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com:8888/page.html",
+        "http://example.com:8888/not-page.html",
+        b"http://example.com:8888/page.html",
+    ),
+    # Different host: send origin as referrer
+    (
+        "https://example2.com/page.html",
+        "https://scrapy.org/otherpage.html",
+        b"https://example2.com/",
+    ),
+    (
+        "https://example2.com/page.html",
+        "https://not.example2.com/otherpage.html",
+        b"https://example2.com/",
+    ),
+    (
+        "http://example2.com/page.html",
+        "http://not.example2.com/otherpage.html",
+        b"http://example2.com/",
+    ),
+    # exact match required
+    (
+        "http://example2.com/page.html",
+        "http://www.example2.com/otherpage.html",
+        b"http://example2.com/",
+    ),
+    # Different port: send origin as referrer
+    (
+        "https://example3.com:444/page.html",
+        "https://example3.com/not-page.html",
+        b"https://example3.com:444/",
+    ),
+    (
+        "http://example3.com:81/page.html",
+        "http://example3.com/not-page.html",
+        b"http://example3.com:81/",
+    ),
+    # Different protocols: send origin as referrer
+    (
+        "https://example4.com/page.html",
+        "http://example4.com/not-page.html",
+        b"https://example4.com/",
+    ),
+    (
+        "https://example4.com/page.html",
+        "http://not.example4.com/",
+        b"https://example4.com/",
+    ),
+    (
+        "ftps://example4.com/urls.zip",
+        "https://example4.com/not-page.html",
+        b"ftps://example4.com/",
+    ),
+    (
+        "ftp://example4.com/urls.zip",
+        "http://example4.com/not-page.html",
+        b"ftp://example4.com/",
+    ),
+    (
+        "ftps://example4.com/urls.zip",
+        "http://example4.com/not-page.html",
+        b"ftps://example4.com/",
+    ),
+    # test for user/password stripping
+    (
+        "https://user:password@example5.com/page.html",
+        "https://example5.com/not-page.html",
+        b"https://example5.com/page.html",
+    ),
+    # TLS to non-TLS downgrade: send origin
+    (
+        "https://user:password@example5.com/page.html",
+        "http://example5.com/not-page.html",
+        b"https://example5.com/",
+    ),
+]
 
+SCENARII_STRICT_ORIGIN_WHEN_CROSS_ORIGIN: ScenarioTable = [
+    # Same origin (protocol, host, port): send referrer
+    (
+        "https://example.com/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "http://example.com/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "https://example.com:443/page.html",
+        "https://example.com/not-page.html",
+        b"https://example.com/page.html",
+    ),
+    (
+        "http://example.com:80/page.html",
+        "http://example.com/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com/page.html",
+        "http://example.com:80/not-page.html",
+        b"http://example.com/page.html",
+    ),
+    (
+        "http://example.com:8888/page.html",
+        "http://example.com:8888/not-page.html",
+        b"http://example.com:8888/page.html",
+    ),
+    # Different host: send origin as referrer
+    (
+        "https://example2.com/page.html",
+        "https://scrapy.org/otherpage.html",
+        b"https://example2.com/",
+    ),
+    (
+        "https://example2.com/page.html",
+        "https://not.example2.com/otherpage.html",
+        b"https://example2.com/",
+    ),
+    (
+        "http://example2.com/page.html",
+        "http://not.example2.com/otherpage.html",
+        b"http://example2.com/",
+    ),
+    # exact match required
+    (
+        "http://example2.com/page.html",
+        "http://www.example2.com/otherpage.html",
+        b"http://example2.com/",
+    ),
+    # Different port: send origin as referrer
+    (
+        "https://example3.com:444/page.html",
+        "https://example3.com/not-page.html",
+        b"https://example3.com:444/",
+    ),
+    (
+        "http://example3.com:81/page.html",
+        "http://example3.com/not-page.html",
+        b"http://example3.com:81/",
+    ),
+    # downgrade
+    ("https://example4.com/page.html", "http://example4.com/not-page.html", None),
+    ("https://example4.com/page.html", "http://not.example4.com/", None),
+    # non-TLS to non-TLS
+    (
+        "ftp://example4.com/urls.zip",
+        "http://example4.com/not-page.html",
+        b"ftp://example4.com/",
+    ),
+    # upgrade
+    (
+        "http://example4.com/page.html",
+        "https://example4.com/not-page.html",
+        b"http://example4.com/",
+    ),
+    (
+        "http://example4.com/page.html",
+        "https://not.example4.com/",
+        b"http://example4.com/",
+    ),
+    # Different protocols: send origin as referrer
+    (
+        "ftps://example4.com/urls.zip",
+        "https://example4.com/not-page.html",
+        b"ftps://example4.com/",
+    ),
+    (
+        "ftp://example4.com/urls.zip",
+        "http://example4.com/not-page.html",
+        b"ftp://example4.com/",
+    ),
+    # test for user/password stripping
+    (
+        "https://user:password@example5.com/page.html",
+        "https://example5.com/not-page.html",
+        b"https://example5.com/page.html",
+    ),
+    # TLS to non-TLS downgrade: send nothing
+    (
+        "https://user:password@example5.com/page.html",
+        "http://example5.com/not-page.html",
+        None,
+    ),
+]
 
-class MixinNoReferrer:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        ("https://example.com/page.html", "https://example.com/", None),
-        ("http://www.example.com/", "https://scrapy.org/", None),
-        ("http://www.example.com/", "http://scrapy.org/", None),
-        ("https://www.example.com/", "http://scrapy.org/", None),
-        ("file:///home/path/to/somefile.html", "http://scrapy.org/", None),
-    ]
+SCENARII_UNSAFE_URL: ScenarioTable = [
+    # TLS to TLS: send referrer
+    (
+        "https://example.com/sekrit.html",
+        "http://not.example.com/",
+        b"https://example.com/sekrit.html",
+    ),
+    (
+        "https://example1.com/page.html",
+        "https://not.example1.com/",
+        b"https://example1.com/page.html",
+    ),
+    (
+        "https://example1.com/page.html",
+        "https://scrapy.org/",
+        b"https://example1.com/page.html",
+    ),
+    (
+        "https://example1.com:443/page.html",
+        "https://scrapy.org/",
+        b"https://example1.com/page.html",
+    ),
+    (
+        "https://example1.com:444/page.html",
+        "https://scrapy.org/",
+        b"https://example1.com:444/page.html",
+    ),
+    (
+        "ftps://example1.com/urls.zip",
+        "https://scrapy.org/",
+        b"ftps://example1.com/urls.zip",
+    ),
+    # TLS to non-TLS: send referrer (yes, it's unsafe)
+    (
+        "https://example2.com/page.html",
+        "http://not.example2.com/",
+        b"https://example2.com/page.html",
+    ),
+    (
+        "https://example2.com/page.html",
+        "http://scrapy.org/",
+        b"https://example2.com/page.html",
+    ),
+    (
+        "ftps://example2.com/urls.zip",
+        "http://scrapy.org/",
+        b"ftps://example2.com/urls.zip",
+    ),
+    # non-TLS to TLS or non-TLS: send referrer (yes, it's unsafe)
+    (
+        "http://example3.com/page.html",
+        "https://not.example3.com/",
+        b"http://example3.com/page.html",
+    ),
+    (
+        "http://example3.com/page.html",
+        "https://scrapy.org/",
+        b"http://example3.com/page.html",
+    ),
+    (
+        "http://example3.com:8080/page.html",
+        "https://scrapy.org/",
+        b"http://example3.com:8080/page.html",
+    ),
+    (
+        "http://example3.com:80/page.html",
+        "http://not.example3.com/",
+        b"http://example3.com/page.html",
+    ),
+    (
+        "http://example3.com/page.html",
+        "http://scrapy.org/",
+        b"http://example3.com/page.html",
+    ),
+    (
+        "http://example3.com:443/page.html",
+        "http://scrapy.org/",
+        b"http://example3.com:443/page.html",
+    ),
+    (
+        "ftp://example3.com/urls.zip",
+        "http://scrapy.org/",
+        b"ftp://example3.com/urls.zip",
+    ),
+    (
+        "ftp://example3.com/urls.zip",
+        "https://scrapy.org/",
+        b"ftp://example3.com/urls.zip",
+    ),
+    # test for user/password stripping
+    (
+        "http://user:password@example4.com/page.html",
+        "https://not.example4.com/",
+        b"http://example4.com/page.html",
+    ),
+    (
+        "https://user:password@example4.com/page.html",
+        "http://scrapy.org/",
+        b"https://example4.com/page.html",
+    ),
+]
 
-
-class MixinNoReferrerWhenDowngrade:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        # TLS to TLS: send non-empty referrer
-        (
-            "https://example.com/page.html",
-            "https://not.example.com/",
-            b"https://example.com/page.html",
-        ),
-        (
-            "https://example.com/page.html",
-            "https://scrapy.org/",
-            b"https://example.com/page.html",
-        ),
-        (
-            "https://example.com:443/page.html",
-            "https://scrapy.org/",
-            b"https://example.com/page.html",
-        ),
-        (
-            "https://example.com:444/page.html",
-            "https://scrapy.org/",
-            b"https://example.com:444/page.html",
-        ),
-        (
-            "ftps://example.com/urls.zip",
-            "https://scrapy.org/",
-            b"ftps://example.com/urls.zip",
-        ),
-        # TLS to non-TLS: do not send referrer
-        ("https://example.com/page.html", "http://not.example.com/", None),
-        ("https://example.com/page.html", "http://scrapy.org/", None),
-        ("ftps://example.com/urls.zip", "http://scrapy.org/", None),
-        # non-TLS to TLS or non-TLS: send referrer
-        (
-            "http://example.com/page.html",
-            "https://not.example.com/",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "https://scrapy.org/",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com:8080/page.html",
-            "https://scrapy.org/",
-            b"http://example.com:8080/page.html",
-        ),
-        (
-            "http://example.com:80/page.html",
-            "http://not.example.com/",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "http://scrapy.org/",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com:443/page.html",
-            "http://scrapy.org/",
-            b"http://example.com:443/page.html",
-        ),
-        (
-            "ftp://example.com/urls.zip",
-            "http://scrapy.org/",
-            b"ftp://example.com/urls.zip",
-        ),
-        (
-            "ftp://example.com/urls.zip",
-            "https://scrapy.org/",
-            b"ftp://example.com/urls.zip",
-        ),
-        # test for user/password stripping
-        (
-            "http://user:password@example.com/page.html",
-            "https://not.example.com/",
-            b"http://example.com/page.html",
-        ),
-    ]
-
-
-class MixinSameOrigin:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        # Same origin (protocol, host, port): send referrer
-        (
-            "https://example.com/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "http://example.com/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "https://example.com:443/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/page.html",
-        ),
-        (
-            "http://example.com:80/page.html",
-            "http://example.com/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "http://example.com:80/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com:8888/page.html",
-            "http://example.com:8888/not-page.html",
-            b"http://example.com:8888/page.html",
-        ),
-        # Different host: do NOT send referrer
-        (
-            "https://example.com/page.html",
-            "https://not.example.com/otherpage.html",
-            None,
-        ),
-        ("http://example.com/page.html", "http://not.example.com/otherpage.html", None),
-        ("http://example.com/page.html", "http://www.example.com/otherpage.html", None),
-        # Different port: do NOT send referrer
-        (
-            "https://example.com:444/page.html",
-            "https://example.com/not-page.html",
-            None,
-        ),
-        ("http://example.com:81/page.html", "http://example.com/not-page.html", None),
-        ("http://example.com/page.html", "http://example.com:81/not-page.html", None),
-        # Different protocols: do NOT send referrer
-        ("https://example.com/page.html", "http://example.com/not-page.html", None),
-        ("https://example.com/page.html", "http://not.example.com/", None),
-        ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
-        ("ftp://example.com/urls.zip", "http://example.com/not-page.html", None),
-        ("ftps://example.com/urls.zip", "http://example.com/not-page.html", None),
-        # test for user/password stripping
-        (
-            "https://user:password@example.com/page.html",
-            "http://example.com/not-page.html",
-            None,
-        ),
-        (
-            "https://user:password@example.com/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/page.html",
-        ),
-    ]
-
-
-class MixinOrigin:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        # TLS or non-TLS to TLS or non-TLS: referrer origin is sent (yes, even for downgrades)
-        (
-            "https://example.com/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/",
-        ),
-        (
-            "https://example.com/page.html",
-            "https://scrapy.org",
-            b"https://example.com/",
-        ),
-        ("https://example.com/page.html", "http://scrapy.org", b"https://example.com/"),
-        ("http://example.com/page.html", "http://scrapy.org", b"http://example.com/"),
-        # test for user/password stripping
-        (
-            "https://user:password@example.com/page.html",
-            "http://scrapy.org",
-            b"https://example.com/",
-        ),
-    ]
-
-
-class MixinStrictOrigin:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        # TLS or non-TLS to TLS or non-TLS: referrer origin is sent but not for downgrades
-        (
-            "https://example.com/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/",
-        ),
-        (
-            "https://example.com/page.html",
-            "https://scrapy.org",
-            b"https://example.com/",
-        ),
-        ("http://example.com/page.html", "http://scrapy.org", b"http://example.com/"),
-        # downgrade: send nothing
-        ("https://example.com/page.html", "http://scrapy.org", None),
-        # upgrade: send origin
-        ("http://example.com/page.html", "https://scrapy.org", b"http://example.com/"),
-        # test for user/password stripping
-        (
-            "https://user:password@example.com/page.html",
-            "https://scrapy.org",
-            b"https://example.com/",
-        ),
-        ("https://user:password@example.com/page.html", "http://scrapy.org", None),
-    ]
-
-
-class MixinOriginWhenCrossOrigin:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        # Same origin (protocol, host, port): send referrer
-        (
-            "https://example.com/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "http://example.com/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "https://example.com:443/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/page.html",
-        ),
-        (
-            "http://example.com:80/page.html",
-            "http://example.com/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "http://example.com:80/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com:8888/page.html",
-            "http://example.com:8888/not-page.html",
-            b"http://example.com:8888/page.html",
-        ),
-        # Different host: send origin as referrer
-        (
-            "https://example2.com/page.html",
-            "https://scrapy.org/otherpage.html",
-            b"https://example2.com/",
-        ),
-        (
-            "https://example2.com/page.html",
-            "https://not.example2.com/otherpage.html",
-            b"https://example2.com/",
-        ),
-        (
-            "http://example2.com/page.html",
-            "http://not.example2.com/otherpage.html",
-            b"http://example2.com/",
-        ),
-        # exact match required
-        (
-            "http://example2.com/page.html",
-            "http://www.example2.com/otherpage.html",
-            b"http://example2.com/",
-        ),
-        # Different port: send origin as referrer
-        (
-            "https://example3.com:444/page.html",
-            "https://example3.com/not-page.html",
-            b"https://example3.com:444/",
-        ),
-        (
-            "http://example3.com:81/page.html",
-            "http://example3.com/not-page.html",
-            b"http://example3.com:81/",
-        ),
-        # Different protocols: send origin as referrer
-        (
-            "https://example4.com/page.html",
-            "http://example4.com/not-page.html",
-            b"https://example4.com/",
-        ),
-        (
-            "https://example4.com/page.html",
-            "http://not.example4.com/",
-            b"https://example4.com/",
-        ),
-        (
-            "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
-            b"ftps://example4.com/",
-        ),
-        (
-            "ftp://example4.com/urls.zip",
-            "http://example4.com/not-page.html",
-            b"ftp://example4.com/",
-        ),
-        (
-            "ftps://example4.com/urls.zip",
-            "http://example4.com/not-page.html",
-            b"ftps://example4.com/",
-        ),
-        # test for user/password stripping
-        (
-            "https://user:password@example5.com/page.html",
-            "https://example5.com/not-page.html",
-            b"https://example5.com/page.html",
-        ),
-        # TLS to non-TLS downgrade: send origin
-        (
-            "https://user:password@example5.com/page.html",
-            "http://example5.com/not-page.html",
-            b"https://example5.com/",
-        ),
-    ]
-
-
-class MixinStrictOriginWhenCrossOrigin:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        # Same origin (protocol, host, port): send referrer
-        (
-            "https://example.com/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "http://example.com/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "https://example.com:443/page.html",
-            "https://example.com/not-page.html",
-            b"https://example.com/page.html",
-        ),
-        (
-            "http://example.com:80/page.html",
-            "http://example.com/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com/page.html",
-            "http://example.com:80/not-page.html",
-            b"http://example.com/page.html",
-        ),
-        (
-            "http://example.com:8888/page.html",
-            "http://example.com:8888/not-page.html",
-            b"http://example.com:8888/page.html",
-        ),
-        # Different host: send origin as referrer
-        (
-            "https://example2.com/page.html",
-            "https://scrapy.org/otherpage.html",
-            b"https://example2.com/",
-        ),
-        (
-            "https://example2.com/page.html",
-            "https://not.example2.com/otherpage.html",
-            b"https://example2.com/",
-        ),
-        (
-            "http://example2.com/page.html",
-            "http://not.example2.com/otherpage.html",
-            b"http://example2.com/",
-        ),
-        # exact match required
-        (
-            "http://example2.com/page.html",
-            "http://www.example2.com/otherpage.html",
-            b"http://example2.com/",
-        ),
-        # Different port: send origin as referrer
-        (
-            "https://example3.com:444/page.html",
-            "https://example3.com/not-page.html",
-            b"https://example3.com:444/",
-        ),
-        (
-            "http://example3.com:81/page.html",
-            "http://example3.com/not-page.html",
-            b"http://example3.com:81/",
-        ),
-        # downgrade
-        ("https://example4.com/page.html", "http://example4.com/not-page.html", None),
-        ("https://example4.com/page.html", "http://not.example4.com/", None),
-        # non-TLS to non-TLS
-        (
-            "ftp://example4.com/urls.zip",
-            "http://example4.com/not-page.html",
-            b"ftp://example4.com/",
-        ),
-        # upgrade
-        (
-            "http://example4.com/page.html",
-            "https://example4.com/not-page.html",
-            b"http://example4.com/",
-        ),
-        (
-            "http://example4.com/page.html",
-            "https://not.example4.com/",
-            b"http://example4.com/",
-        ),
-        # Different protocols: send origin as referrer
-        (
-            "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
-            b"ftps://example4.com/",
-        ),
-        (
-            "ftp://example4.com/urls.zip",
-            "http://example4.com/not-page.html",
-            b"ftp://example4.com/",
-        ),
-        # test for user/password stripping
-        (
-            "https://user:password@example5.com/page.html",
-            "https://example5.com/not-page.html",
-            b"https://example5.com/page.html",
-        ),
-        # TLS to non-TLS downgrade: send nothing
-        (
-            "https://user:password@example5.com/page.html",
-            "http://example5.com/not-page.html",
-            None,
-        ),
-    ]
-
-
-class MixinUnsafeUrl:
-    scenarii: list[tuple[str, str, bytes | None]] = [
-        # TLS to TLS: send referrer
-        (
-            "https://example.com/sekrit.html",
-            "http://not.example.com/",
-            b"https://example.com/sekrit.html",
-        ),
-        (
-            "https://example1.com/page.html",
-            "https://not.example1.com/",
-            b"https://example1.com/page.html",
-        ),
-        (
-            "https://example1.com/page.html",
-            "https://scrapy.org/",
-            b"https://example1.com/page.html",
-        ),
-        (
-            "https://example1.com:443/page.html",
-            "https://scrapy.org/",
-            b"https://example1.com/page.html",
-        ),
-        (
-            "https://example1.com:444/page.html",
-            "https://scrapy.org/",
-            b"https://example1.com:444/page.html",
-        ),
-        (
-            "ftps://example1.com/urls.zip",
-            "https://scrapy.org/",
-            b"ftps://example1.com/urls.zip",
-        ),
-        # TLS to non-TLS: send referrer (yes, it's unsafe)
-        (
-            "https://example2.com/page.html",
-            "http://not.example2.com/",
-            b"https://example2.com/page.html",
-        ),
-        (
-            "https://example2.com/page.html",
-            "http://scrapy.org/",
-            b"https://example2.com/page.html",
-        ),
-        (
-            "ftps://example2.com/urls.zip",
-            "http://scrapy.org/",
-            b"ftps://example2.com/urls.zip",
-        ),
-        # non-TLS to TLS or non-TLS: send referrer (yes, it's unsafe)
-        (
-            "http://example3.com/page.html",
-            "https://not.example3.com/",
-            b"http://example3.com/page.html",
-        ),
-        (
-            "http://example3.com/page.html",
-            "https://scrapy.org/",
-            b"http://example3.com/page.html",
-        ),
-        (
-            "http://example3.com:8080/page.html",
-            "https://scrapy.org/",
-            b"http://example3.com:8080/page.html",
-        ),
-        (
-            "http://example3.com:80/page.html",
-            "http://not.example3.com/",
-            b"http://example3.com/page.html",
-        ),
-        (
-            "http://example3.com/page.html",
-            "http://scrapy.org/",
-            b"http://example3.com/page.html",
-        ),
-        (
-            "http://example3.com:443/page.html",
-            "http://scrapy.org/",
-            b"http://example3.com:443/page.html",
-        ),
-        (
-            "ftp://example3.com/urls.zip",
-            "http://scrapy.org/",
-            b"ftp://example3.com/urls.zip",
-        ),
-        (
-            "ftp://example3.com/urls.zip",
-            "https://scrapy.org/",
-            b"ftp://example3.com/urls.zip",
-        ),
-        # test for user/password stripping
-        (
-            "http://user:password@example4.com/page.html",
-            "https://not.example4.com/",
-            b"http://example4.com/page.html",
-        ),
-        (
-            "https://user:password@example4.com/page.html",
-            "http://scrapy.org/",
-            b"https://example4.com/page.html",
-        ),
-    ]
-
-
-class TestRefererMiddlewareDefault(MixinDefault, TestRefererMiddleware):
-    pass
-
-
-# --- Tests using settings to set policy using class path
-class TestSettingsNoReferrer(MixinNoReferrer, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerPolicy"}
+# Each policy, as (REFERRER_POLICY setting, Request.meta value, scenarios); the
+# Request.meta value doubles as the test id. A None setting means that the
+# policy is the default one, so the setting is left alone.
+POLICY_CASES: list[tuple[str | None, str, ScenarioTable]] = [
+    (None, POLICY_SCRAPY_DEFAULT, SCENARII_DEFAULT),
+    (
+        "scrapy.spidermiddlewares.referer.NoReferrerPolicy",
+        POLICY_NO_REFERRER,
+        SCENARII_NO_REFERRER,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy",
+        POLICY_NO_REFERRER_WHEN_DOWNGRADE,
+        SCENARII_NO_REFERRER_WHEN_DOWNGRADE,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.SameOriginPolicy",
+        POLICY_SAME_ORIGIN,
+        SCENARII_SAME_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.OriginPolicy",
+        POLICY_ORIGIN,
+        SCENARII_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.StrictOriginPolicy",
+        POLICY_STRICT_ORIGIN,
+        SCENARII_STRICT_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy",
+        POLICY_ORIGIN_WHEN_CROSS_ORIGIN,
+        SCENARII_ORIGIN_WHEN_CROSS_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy",
+        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+        SCENARII_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+    ),
+    (
+        "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy",
+        POLICY_UNSAFE_URL,
+        SCENARII_UNSAFE_URL,
+    ),
+]
 
 
-class TestSettingsNoReferrerWhenDowngrade(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
-    }
+def assert_scenarii(
+    scenarii: ScenarioTable,
+    *,
+    settings: dict[str, Any] | None = None,
+    req_meta: dict[str, Any] | None = None,
+    resp_headers: dict[str, str] | None = None,
+) -> None:
+    mw = RefererMiddleware(Settings(settings or {}))
+    for origin, target, referrer in scenarii:
+        response = Response(origin, headers=resp_headers or {})
+        request = Request(target, meta=req_meta or {})
+        out = list(mw.process_spider_output(response, [request]))
+        assert out[0].headers.get("Referer") == referrer, f"{origin} -> {target}"
 
 
-class TestSettingsSameOrigin(MixinSameOrigin, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
-
-
-class TestSettingsOrigin(MixinOrigin, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginPolicy"}
-
-
-class TestSettingsStrictOrigin(MixinStrictOrigin, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.StrictOriginPolicy"
-    }
-
-
-class TestSettingsOriginWhenCrossOrigin(
-    MixinOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-
-
-class TestSettingsStrictOriginWhenCrossOrigin(
-    MixinStrictOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy"
-    }
-
-
-class TestSettingsUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
+@pytest.mark.parametrize(
+    ("policy_path", "policy_name", "scenarii"),
+    [
+        pytest.param(policy_path, policy_name, scenarii, id=policy_name)
+        for policy_path, policy_name, scenarii in POLICY_CASES
+    ],
+)
+@pytest.mark.parametrize("channel", ["settings", "req_meta"])
+def test_policy(
+    channel: str,
+    policy_path: str | None,
+    policy_name: str,
+    scenarii: ScenarioTable,
+) -> None:
+    """Each policy, set either as a class path in the settings or as a policy
+    name in ``Request.meta``."""
+    settings = (
+        {"REFERRER_POLICY": policy_path}
+        if channel == "settings" and policy_path is not None
+        else {}
+    )
+    req_meta = {"referrer_policy": policy_name} if channel == "req_meta" else {}
+    assert_scenarii(scenarii, settings=settings, req_meta=req_meta)
 
 
 class CustomPythonOrgPolicy(ReferrerPolicy):
@@ -695,86 +688,107 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
         return None
 
 
-class TestSettingsCustomPolicy(TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": CustomPythonOrgPolicy}
-    scenarii = [
-        ("https://example.com/", "https://scrapy.org/", b"https://python.org/"),
-        ("http://example.com/", "http://scrapy.org/", b"http://python.org/"),
-        ("http://example.com/", "https://scrapy.org/", b"https://python.org/"),
-        ("https://example.com/", "http://scrapy.org/", b"http://python.org/"),
-        (
-            "file:///home/path/to/somefile.html",
-            "https://scrapy.org/",
-            b"https://python.org/",
+SCENARII_CUSTOM_POLICY: ScenarioTable = [
+    ("https://example.com/", "https://scrapy.org/", b"https://python.org/"),
+    ("http://example.com/", "http://scrapy.org/", b"http://python.org/"),
+    ("http://example.com/", "https://scrapy.org/", b"https://python.org/"),
+    ("https://example.com/", "http://scrapy.org/", b"http://python.org/"),
+    (
+        "file:///home/path/to/somefile.html",
+        "https://scrapy.org/",
+        b"https://python.org/",
+    ),
+    (
+        "file:///home/path/to/somefile.html",
+        "http://scrapy.org/",
+        b"http://python.org/",
+    ),
+]
+
+
+def test_custom_policy() -> None:
+    assert_scenarii(
+        SCENARII_CUSTOM_POLICY, settings={"REFERRER_POLICY": CustomPythonOrgPolicy}
+    )
+
+
+@pytest.mark.parametrize(
+    ("settings", "req_meta", "resp_headers", "scenarii"),
+    [
+        # Request.meta takes precedence over the setting.
+        pytest.param(
+            {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"},
+            {"referrer_policy": POLICY_UNSAFE_URL},
+            {},
+            SCENARII_UNSAFE_URL,
+            id="meta-over-same-origin",
         ),
-        (
-            "file:///home/path/to/somefile.html",
-            "http://scrapy.org/",
-            b"http://python.org/",
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
+            },
+            {"referrer_policy": POLICY_NO_REFERRER},
+            {},
+            SCENARII_NO_REFERRER,
+            id="meta-over-no-referrer-when-downgrade",
         ),
-    ]
-
-
-# --- Tests using Request meta dict to set policy
-class TestRequestMetaDefault(MixinDefault, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_SCRAPY_DEFAULT}
-
-
-class TestRequestMetaNoReferrer(MixinNoReferrer, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_NO_REFERRER}
-
-
-class TestRequestMetaNoReferrerWhenDowngrade(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    req_meta = {"referrer_policy": POLICY_NO_REFERRER_WHEN_DOWNGRADE}
-
-
-class TestRequestMetaSameOrigin(MixinSameOrigin, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_SAME_ORIGIN}
-
-
-class TestRequestMetaOrigin(MixinOrigin, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_ORIGIN}
-
-
-class TestRequestMetaSrictOrigin(MixinStrictOrigin, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_STRICT_ORIGIN}
-
-
-class TestRequestMetaOriginWhenCrossOrigin(
-    MixinOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    req_meta = {"referrer_policy": POLICY_ORIGIN_WHEN_CROSS_ORIGIN}
-
-
-class TestRequestMetaStrictOriginWhenCrossOrigin(
-    MixinStrictOriginWhenCrossOrigin, TestRefererMiddleware
-):
-    req_meta = {"referrer_policy": POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN}
-
-
-class TestRequestMetaUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
-    req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
-
-
-class TestRequestMetaPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
-    req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
-
-
-class TestRequestMetaPrecedence002(MixinNoReferrer, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
-    }
-    req_meta = {"referrer_policy": POLICY_NO_REFERRER}
-
-
-class TestRequestMetaPrecedence003(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-    req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
+            },
+            {"referrer_policy": POLICY_UNSAFE_URL},
+            {},
+            SCENARII_UNSAFE_URL,
+            id="meta-over-origin-when-cross-origin",
+        ),
+        # The response Referrer-Policy header takes precedence over the
+        # setting, whatever its case.
+        pytest.param(
+            {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"},
+            {},
+            {"Referrer-Policy": POLICY_UNSAFE_URL.upper()},
+            SCENARII_UNSAFE_URL,
+            id="header-uppercase",
+        ),
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
+            },
+            {},
+            {"Referrer-Policy": POLICY_NO_REFERRER.swapcase()},
+            SCENARII_NO_REFERRER,
+            id="header-swapcase",
+        ),
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
+            },
+            {},
+            {"Referrer-Policy": POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()},
+            SCENARII_NO_REFERRER_WHEN_DOWNGRADE,
+            id="header-titlecase",
+        ),
+        # The empty string means "no-referrer-when-downgrade".
+        pytest.param(
+            {
+                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
+            },
+            {},
+            {"Referrer-Policy": ""},
+            SCENARII_NO_REFERRER_WHEN_DOWNGRADE,
+            id="header-empty",
+        ),
+    ],
+)
+def test_policy_precedence(
+    settings: dict[str, Any],
+    req_meta: dict[str, Any],
+    resp_headers: dict[str, str],
+    scenarii: ScenarioTable,
+) -> None:
+    assert_scenarii(
+        scenarii, settings=settings, req_meta=req_meta, resp_headers=resp_headers
+    )
 
 
 class TestRequestMetaSettingFallback:
@@ -934,40 +948,6 @@ class TestSettingsPolicyByName:
         )
         with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
-
-
-class TestPolicyHeaderPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
-    resp_headers = {"Referrer-Policy": POLICY_UNSAFE_URL.upper()}
-
-
-class TestPolicyHeaderPrecedence002(MixinNoReferrer, TestRefererMiddleware):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
-    }
-    resp_headers = {"Referrer-Policy": POLICY_NO_REFERRER.swapcase()}
-
-
-class TestPolicyHeaderPrecedence003(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-    resp_headers = {"Referrer-Policy": POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
-
-
-class TestPolicyHeaderPrecedence004(
-    MixinNoReferrerWhenDowngrade, TestRefererMiddleware
-):
-    """
-    The empty string means "no-referrer-when-downgrade"
-    """
-
-    settings = {
-        "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-    }
-    resp_headers = {"Referrer-Policy": ""}
 
 
 class TestPolicyMethodResponseParamRename:

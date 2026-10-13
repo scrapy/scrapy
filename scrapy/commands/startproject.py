@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils._template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
     import argparse
@@ -135,7 +135,7 @@ class Command(ScrapyCommand):
         assert self.settings is not None
         return str(
             Path(
-                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),
+                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),  # pylint: disable=unsubscriptable-object
                 "project",
             )
         )

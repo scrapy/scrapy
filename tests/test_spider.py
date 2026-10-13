@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import CSVFeedSpider, Spider, XMLFeedSpider
 from tests import get_testdata
@@ -87,7 +88,11 @@ class TestXMLFeedSpider(TestSpiderBase):
             def parse_item(self, response, selector):
                 return {"id": selector.xpath("id/text()").get()}
 
-        items, _ = await crawl_items(_Spider, mockserver)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Defining parse_item\(\) on XMLFeedSpider subclasses",
+        ):
+            items, _ = await crawl_items(_Spider, mockserver)
         assert items == [{"id": "1"}]
 
     @coroutine_test

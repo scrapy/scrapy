@@ -35,7 +35,7 @@ reactor manually. You can do that using
 .. skip: next
 .. code-block:: python
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
 
 
 .. _asyncio-preinstalled-reactor:
@@ -137,7 +137,6 @@ example:
                 )
 
 .. autofunction:: scrapy.utils.asyncio.is_asyncio_available
-.. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
 
 
 .. _asyncio-without-reactor:
@@ -152,9 +151,7 @@ Using Scrapy without a Twisted reactor
 
 .. note:: As the Twisted download handlers cannot be used without a reactor,
     the default download handler in this mode is
-    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. You
-    will need to additionally install the :ref:`httpx <extras>` extra to use
-    it, unless you switch to some different handler.
+    :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`.
 
 It's possible to use Scrapy without installing a Twisted reactor at all, by
 setting the :setting:`TWISTED_REACTOR_ENABLED` setting to ``False``. In this
@@ -191,7 +188,7 @@ in future Scrapy versions. The following features are not available:
   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` (this
   is likely the biggest difference; Scrapy provides an HTTP(S) download handler
   that doesn't require a reactor and will be used instead of it:
-  :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`)
+  :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`)
 * :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`
 * :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
 * :ref:`topics-telnetconsole`
@@ -217,12 +214,12 @@ the defaults of some other settings:
 
 * :setting:`TELNETCONSOLE_ENABLED` is set to ``False``.
 * The ``"http"`` and ``"https"`` keys in :setting:`DOWNLOAD_HANDLERS_BASE` are
-  set to ``"scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler"``.
+  set to ``"scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler"``.
 * The ``"ftp"`` key in :setting:`DOWNLOAD_HANDLERS_BASE` is set to ``None``.
 
-Thus, :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` is
-used by default for making HTTP(S) requests. Please refer to its documentation
-for its differences and limitations compared to
+Thus, :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
+is used by default for making HTTP(S) requests. Please refer to its
+documentation for its differences and limitations compared to
 :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
 
 Additionally, :class:`~scrapy.crawler.AsyncCrawlerProcess` will install a
@@ -261,9 +258,6 @@ Here are some examples of APIs and patterns that need a replacement:
   :class:`~scrapy.crawler.CrawlerRunner`. You should use
   :class:`~scrapy.crawler.AsyncCrawlerProcess` or
   :class:`~scrapy.crawler.AsyncCrawlerRunner` respectively instead.
-* Checking whether ``asyncio`` support is available with
-  :func:`scrapy.utils.reactor.is_asyncio_reactor_installed`. You should use
-  :func:`scrapy.utils.asyncio.is_asyncio_available` instead.
 
 Scrapy provides unified helpers for some of these examples:
 

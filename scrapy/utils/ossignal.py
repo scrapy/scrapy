@@ -1,33 +1,21 @@
-from __future__ import annotations
+# pragma: no file cover
+import warnings
 
-import signal
-from collections.abc import Callable
-from types import FrameType
-from typing import Any, TypeAlias
-
-# copy of _HANDLER from typeshed/stdlib/signal.pyi
-SignalHandlerT: TypeAlias = (
-    Callable[[int, FrameType | None], Any] | int | signal.Handlers | None
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils._ossignals import (
+    SignalHandlerT,
+    install_shutdown_handlers,
+    signal_names,
 )
 
-signal_names: dict[int, str] = {member.value: member.name for member in signal.Signals}
+warnings.warn(
+    "The scrapy.utils.ossignal module is deprecated.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
-
-def install_shutdown_handlers(
-    function: SignalHandlerT, override_sigint: bool = True
-) -> None:
-    """Install the given function as a signal handler for all common shutdown
-    signals (such as SIGINT, SIGTERM, etc). If ``override_sigint`` is ``False`` the
-    SIGINT handler won't be installed if there is already a handler in place
-    (e.g. Pdb)
-    """
-    signal.signal(signal.SIGTERM, function)
-    if (
-        signal.getsignal(signal.SIGINT)  # pylint: disable=comparison-with-callable
-        == signal.default_int_handler
-        or override_sigint
-    ):
-        signal.signal(signal.SIGINT, function)
-    # Catch Ctrl-Break in windows
-    if hasattr(signal, "SIGBREAK"):
-        signal.signal(signal.SIGBREAK, function)
+__all__ = [
+    "SignalHandlerT",
+    "install_shutdown_handlers",
+    "signal_names",
+]

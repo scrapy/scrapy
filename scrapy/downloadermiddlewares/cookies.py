@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from tldextract import TLDExtract
 
@@ -17,9 +17,6 @@ from scrapy.utils.request import _decode_cookie, _to_verbose_cookies
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
     from http.cookiejar import Cookie
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
@@ -63,7 +60,8 @@ class CookiesMiddleware:
             cookie_domain = cookie_domain.removeprefix(".")
 
             hostname = urlparse_cached(request).hostname
-            assert hostname is not None
+            if hostname is None:
+                continue
             request_domain = hostname.lower()
 
             if cookie_domain and _is_public_domain(cookie_domain):

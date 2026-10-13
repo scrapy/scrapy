@@ -245,6 +245,19 @@ Disallow: /some/randome/page.html
         rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
 
     @coroutine_test
+    async def test_robotstxt_user_agent_none(self):
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        headers = {"User-Agent": None}
+        await self.assertNotIgnored(
+            Request("http://site.local/allowed", headers=headers), middleware
+        )
+        await self.assertIgnored(
+            Request("http://site.local/admin/main", headers=headers), middleware
+        )
+
+    @coroutine_test
     async def test_robotstxt_local_file(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_emptybody_crawler()
@@ -261,6 +274,17 @@ Disallow: /some/randome/page.html
 
         await middleware.process_request(Request("http://site.local/allowed"))
         assert middleware.process_request_2.called
+
+    @coroutine_test
+    async def test_robotstxt_download_handler(self) -> None:
+        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        await self.assertNotIgnored(
+            Request("http://site.local/allowed", meta={"download_handler": "named"}),
+            middleware,
+        )
+        robotsreq = self.crawler.engine.download_async.call_args_list[0][0][0]
+        assert robotsreq.meta["download_handler"] == "named"
+        assert robotsreq.meta["is_robotstxt_request"] is True
 
     async def assertNotIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware

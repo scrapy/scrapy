@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
 
 
 def test_sitemap():

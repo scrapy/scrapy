@@ -5,17 +5,28 @@ import logging
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from twisted.python.failure import Failure
 
 from scrapy import signals
-from scrapy.core.engine import ExecutionEngine, _Slot
+from scrapy.core.downloader import Downloader
+from scrapy.core.engine import EngineState, ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.exceptions import CloseSpider, IgnoreRequest
+from scrapy.exceptions import (
+    CloseSpider,
+    DontCloseSpider,
+    DownloadCancelledError,
+    IgnoreRequest,
+)
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.defer import _schedule_coro, deferred_from_coro
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -63,6 +74,11 @@ class ChangeCloseReasonSpider(MySpider):
         raise CloseSpider(reason="custom_reason")
 
 
+class ErrorCloseReasonSpider(ChangeCloseReasonSpider):
+    def spider_idle(self):
+        raise CloseSpider(reason="custom_reason", error=True)
+
+
 class TestEngine(TestEngineBase):
     @coroutine_test
     async def test_crawler(self, mockserver: MockServer) -> None:
@@ -104,11 +120,25 @@ class TestEngine(TestEngineBase):
         assert {
             "spider": run.crawler.spider,
             "reason": "custom_reason",
+            "error": False,
         } == run.signals_caught[signals.spider_closed]
 
     @coroutine_test
+    async def test_crawler_change_close_reason_and_error_on_idle(
+        self, mockserver: MockServer
+    ) -> None:
+        run = CrawlerRun(ErrorCloseReasonSpider)
+        await run.run(mockserver)
+        assert {
+            "spider": run.crawler.spider,
+            "reason": "custom_reason",
+            "error": True,
+        } == run.signals_caught[signals.spider_closed]
+        assert run.crawler.stats.get_value("finish_reason_error") is True
+
+    @coroutine_test
     async def test_close_downloader(self):
-        e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
+        e = ExecutionEngine(get_crawler(MySpider))
         await e.close_async()
 
     def test_close_without_downloader(self):
@@ -120,31 +150,88 @@ class TestEngine(TestEngineBase):
                 raise CustomException
 
         with pytest.raises(CustomException):
-            ExecutionEngine(
-                get_crawler(MySpider, {"DOWNLOADER": BadDownloader}), lambda _: None
-            )
+            ExecutionEngine(get_crawler(MySpider, {"DOWNLOADER": BadDownloader}))
 
     @inline_callbacks_test
     def test_start_already_running_exception(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        e = ExecutionEngine(crawler, lambda _: None)
+        e = ExecutionEngine(crawler)
         crawler.engine = e
         yield deferred_from_coro(e.open_spider_async())
         _schedule_coro(e.start_async())
-        with pytest.raises(RuntimeError, match="Engine already running"):
+        with pytest.raises(RuntimeError, match=r"in the (STARTING|RUNNING) state"):
             yield deferred_from_coro(e.start_async())
         yield deferred_from_coro(e.stop_async())
+
+    @coroutine_test
+    async def test_stop_async_force_mode_not_supported(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+
+        with pytest.raises(ValueError, match="force stop mode is not supported"):
+            await engine.stop_async(mode="force")
+
+    @coroutine_test
+    async def test_stop_async_not_running_raises(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+
+        with pytest.raises(RuntimeError, match="Spider not opened"):
+            await engine.stop_async()
+
+    @coroutine_test
+    async def test_stop_async_reentrant_fast_drops_downloads(self) -> None:
+        """A fast stop requested while the spider is already closing drops
+        the in-flight downloads, and returns without waiting for the close."""
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        engine._state = EngineState.SPIDER_CLOSING
+
+        with patch.object(
+            engine, "_fast_stop_downloader", new_callable=AsyncMock
+        ) as fast_stop:
+            await engine.stop_async(mode="fast")
+
+        fast_stop.assert_awaited_once()
+        assert engine._stop_mode == "fast"
+
+    @coroutine_test
+    async def test_stop_async_reentrant_graceful_is_noop(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        engine._state = EngineState.SPIDER_CLOSING
+
+        with patch.object(
+            engine, "_fast_stop_downloader", new_callable=AsyncMock
+        ) as fast_stop:
+            await engine.stop_async(mode="graceful")
+
+        fast_stop.assert_not_called()
+
+    @coroutine_test
+    async def test_handle_downloader_output_ignores_fast_cancelled_failures(
+        self,
+    ) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        engine.spider = Mock()
+        engine._stop_mode = "fast"
+
+        enqueue_scrape = Mock()
+        engine.scraper.enqueue_scrape = enqueue_scrape  # type: ignore[method-assign]
+
+        result = Failure(DownloadCancelledError("dropped during fast stop"))
+        await maybe_deferred_to_future(
+            engine._handle_downloader_output(result, Request("https://example.com"))
+        )
+
+        enqueue_scrape.assert_not_called()
 
     @pytest.mark.only_asyncio
     @coroutine_test
     async def test_start_already_running_exception_asyncio(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        e = ExecutionEngine(crawler, lambda _: None)
+        e = ExecutionEngine(crawler)
         crawler.engine = e
         await e.open_spider_async()
-        with pytest.raises(RuntimeError, match="Engine already running"):
+        with pytest.raises(RuntimeError, match=r"in the (STARTING|RUNNING) state"):
             await asyncio.gather(e.start_async(), e.start_async())
         await e.stop_async()
 
@@ -215,7 +302,7 @@ async def test_request_scheduled_signal():
             raise IgnoreRequest
 
     crawler = get_crawler(MySpider)
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     scheduler = build_from_crawler(TestScheduler, crawler)
 
     async def start() -> AsyncIterator[Any]:
@@ -281,3 +368,179 @@ class TestCloseSpiderOnStartup:
         crawler = get_crawler(DefaultSpider, {"ITEM_PIPELINES": {ClosingPipeline: 1}})
         yield crawler.crawl()
         assert crawler.stats.get_value("finish_reason") == "pipeline_reason"
+
+
+class TestMisuse:
+    """The engine raises on operations that its state does not allow."""
+
+    @coroutine_test
+    async def test_stop_not_running(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        try:
+            with pytest.raises(RuntimeError, match="Spider not opened"):
+                await engine.stop_async()
+        finally:
+            await engine.close_async()
+
+    def test_invalid_scheduler_class(self) -> None:
+        class NotAScheduler:
+            pass
+
+        with pytest.raises(
+            TypeError, match="does not fully implement the scheduler interface"
+        ):
+            ExecutionEngine(get_crawler(DefaultSpider, {"SCHEDULER": NotAScheduler}))
+
+    @coroutine_test
+    async def test_spider_is_idle_without_slot(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        try:
+            with pytest.raises(RuntimeError, match="Engine slot not assigned"):
+                engine.spider_is_idle()
+        finally:
+            await engine.close_async()
+
+    @coroutine_test
+    async def test_crawl_without_spider(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider))
+        try:
+            with pytest.raises(RuntimeError, match="No open spider to crawl"):
+                engine.crawl(Request("data:,"))
+        finally:
+            await engine.close_async()
+
+    @coroutine_test
+    async def test_open_spider_twice(self) -> None:
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        engine = crawler.engine = ExecutionEngine(crawler)
+        await engine.open_spider_async()
+        try:
+            with pytest.raises(RuntimeError, match="No free spider slot"):
+                await engine.open_spider_async()
+        finally:
+            await engine.close_async()
+
+
+class BrokenScheduler(BaseScheduler):
+    """A scheduler that cannot be built."""
+
+    @classmethod
+    def from_crawler(cls, crawler: Any) -> BrokenScheduler:
+        raise ValueError("broken scheduler")
+
+    def has_pending_requests(self) -> bool:
+        return False
+
+    def enqueue_request(self, request: Request) -> bool:
+        return True
+
+    def next_request(self) -> Request | None:
+        return None
+
+
+@coroutine_test
+async def test_scheduler_creation_error() -> None:
+    """An error while building the scheduler is reported directly, instead of
+    other errors such as "Engine slot not assigned"."""
+    crawler = get_crawler(DefaultSpider, {"SCHEDULER": BrokenScheduler})
+    with pytest.raises(ValueError, match="broken scheduler"):
+        await crawler.crawl_async()
+    assert crawler.engine is not None
+    assert crawler.engine.spider is None
+
+
+@coroutine_test
+async def test_start_without_spider() -> None:
+    engine = ExecutionEngine(get_crawler(DefaultSpider))
+    try:
+        with pytest.raises(RuntimeError, match="in the CREATED state"):
+            await engine.start_async()
+    finally:
+        await engine.close_async()
+
+
+@coroutine_test
+async def test_pause_unpause() -> None:
+    engine = ExecutionEngine(get_crawler(DefaultSpider))
+    try:
+        engine.pause()
+        assert engine.paused
+        engine.unpause()
+        assert not engine.paused
+    finally:
+        await engine.close_async()
+
+
+class TestSpiderIdle:
+    @coroutine_test
+    async def test_dont_close_spider(self) -> None:
+        """A ``DontCloseSpider`` handler keeps the spider open for one more loop."""
+        idle_calls = 0
+
+        def spider_idle() -> None:
+            nonlocal idle_calls
+            idle_calls += 1
+            if idle_calls == 1:
+                # Schedule a request so that the engine loops again soon
+                # instead of waiting for the slot heartbeat.
+                crawler.engine.crawl(Request("data:,"))
+                raise DontCloseSpider
+
+        crawler = get_crawler(DefaultSpider)
+        crawler.signals.connect(spider_idle, signals.spider_idle)
+        await crawler.crawl_async()
+        assert idle_calls == 2
+        assert crawler.stats.get_value("finish_reason") == "finished"
+
+    @coroutine_test
+    async def test_not_idle_anymore(self) -> None:
+        """A handler that schedules a request keeps the spider open."""
+        urls: list[str] = []
+
+        def spider_idle() -> None:
+            if not urls:
+                urls.append("data:,")
+                crawler.engine.crawl(Request(urls[0]))
+
+        crawler = get_crawler(DefaultSpider)
+        crawler.signals.connect(spider_idle, signals.spider_idle)
+        await crawler.crawl_async()
+        assert crawler.stats.get_value("downloader/request_count") == 1
+
+
+@coroutine_test
+async def test_download_wrong_type(caplog: pytest.LogCaptureFixture) -> None:
+    class WrongTypeDownloader(Downloader):
+        def fetch(self, request: Request) -> str:  # type: ignore[override]
+            return "not a response"
+
+    class WrongTypeSpider(Spider):
+        name = "wrong_type"
+
+        async def start(self):
+            yield Request("data:,")
+
+    crawler = get_crawler(WrongTypeSpider, {"DOWNLOADER": WrongTypeDownloader})
+    await crawler.crawl_async()
+    assert "expected Response or Request, got <class 'str'>" in caplog.text
+
+
+@coroutine_test
+async def test_enqueue_scrape_error(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def enqueue_scrape(self, result, request):
+        raise ValueError("enqueue error")
+
+    monkeypatch.setattr("scrapy.core.engine.Scraper.enqueue_scrape", enqueue_scrape)
+
+    class SimpleSpider(Spider):
+        name = "simple"
+
+        async def start(self):
+            yield Request("data:,")
+
+    crawler = get_crawler(SimpleSpider)
+    await crawler.crawl_async()
+    assert "Error while enqueuing scrape" in caplog.text

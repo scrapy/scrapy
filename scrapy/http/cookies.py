@@ -4,16 +4,13 @@ import re
 import time
 from http.cookiejar import Cookie, CookiePolicy, DefaultCookiePolicy
 from http.cookiejar import CookieJar as _CookieJar
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Self, cast
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request
     from scrapy.http import Response
@@ -154,14 +151,11 @@ class WrappedRequest:
         return urlparse_cached(self.request).scheme
 
     def is_unverifiable(self) -> bool:
-        """Unverifiable should indicate whether the request is unverifiable, as defined by RFC 2965.
-
-        It defaults to False. An unverifiable request is one whose URL the user did not have the
-        option to approve. For example, if the request is for an image in an
-        HTML document, and the user had no option to approve the automatic
-        fetching of the image, this should be true.
+        """Return ``False``, as Scrapy does not track whether the user had the
+        option to approve the URL of a request, which is what makes a request
+        unverifiable as defined by :rfc:`2965`.
         """
-        return cast("bool", self.request.meta.get("is_unverifiable", False))
+        return False
 
     @property
     def full_url(self) -> str:
@@ -210,7 +204,7 @@ class WrappedResponse:
     def info(self) -> Self:
         return self
 
-    def get_all(self, name: str, default: Any = None) -> list[str]:
+    def get_all(self, name: str, default: object = None) -> list[str]:
         return [
             to_unicode(v, errors="replace") for v in self.response.headers.getlist(name)
         ]

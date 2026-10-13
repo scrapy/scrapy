@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from twisted.web import http
 
@@ -10,9 +10,6 @@ from scrapy.utils.python import global_object_name, to_bytes
 from scrapy.utils.request import request_httprepr
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -26,8 +23,8 @@ def get_header_size(
     for key, value in headers.items():
         if isinstance(value, (list, tuple)):
             for v in value:
-                size += len(b": ") + len(key) + len(v)
-    return size + len(b"\r\n") * (len(headers.keys()) - 1)
+                size += len(b": ") + len(key) + len(v) + len(b"\r\n")
+    return size
 
 
 def get_status_size(response_status: int) -> int:
@@ -65,9 +62,8 @@ class DownloaderStats:
             len(response.body)
             + get_header_size(response.headers)
             + get_status_size(response.status)
-            + 4
+            + len(b"\r\n")  # the empty line after the headers
         )
-        # response.body + b"\r\n"+ response.header + b"\r\n" + response.status
         self.stats.inc_value("downloader/response_bytes", reslen)
         return response
 

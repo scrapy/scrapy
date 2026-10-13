@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, Self
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
@@ -22,9 +22,6 @@ from scrapy.utils.python import to_bytes, to_unicode
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http.request import CookiesT, VerboseCookie
 
@@ -32,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 _fingerprint_cache: WeakKeyDictionary[
-    Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
+    Request, dict[tuple[tuple[bytes, ...] | None, bool, bool, str | None], bytes]
 ] = WeakKeyDictionary()
 
 
@@ -81,8 +78,18 @@ def fingerprint(
         )
     verbatim_url = bool(request.meta.get("verbatim_url"))
     effective_keep_fragments = keep_fragments and not verbatim_url
+    # A handler ID matching the URL scheme is the one that would be used
+    # anyway, so it is left out to keep such fingerprints unchanged.
+    handler_id: str | None = request.meta.get("download_handler")
+    if handler_id is not None and handler_id == urlparse_cached(request).scheme:
+        handler_id = None
     cache = _fingerprint_cache.setdefault(request, {})
-    cache_key = (processed_include_headers, effective_keep_fragments, verbatim_url)
+    cache_key = (
+        processed_include_headers,
+        effective_keep_fragments,
+        verbatim_url,
+        handler_id,
+    )
     if cache_key not in cache:
         # To decode bytes reliably (JSON does not support bytes), regardless of
         # character encoding, we use bytes.hex()
@@ -104,6 +111,8 @@ def fingerprint(
             "body": (request.body or b"").hex(),
             "headers": headers,
         }
+        if handler_id is not None:
+            fingerprint_data["download_handler"] = handler_id
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
         cache[cache_key] = hashlib.sha1(  # noqa: S324
             fingerprint_json.encode()
@@ -118,13 +127,17 @@ class RequestFingerprinterProtocol(Protocol):
 class RequestFingerprinter:
     """Default fingerprinter.
 
+    .. versionchanged:: VERSION
+       :reqmeta:`download_handler` is taken into account.
+
     It takes into account a canonical version
     (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
     <scrapy.Request.url>` and the values of :attr:`request.method
     <scrapy.Request.method>` and :attr:`request.body
     <scrapy.Request.body>`, unless :reqmeta:`verbatim_url` is true for that
-    request. It then generates an `SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_
-    hash.
+    request. It also takes into account :reqmeta:`download_handler` when it
+    does not match the URL scheme. It then generates an `SHA1
+    <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
     """
 
     @classmethod
@@ -148,8 +161,8 @@ def request_httprepr(request: Request) -> bytes:
     path = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
     s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
     s += b"Host: " + to_bytes(parsed.hostname or b"") + b"\r\n"
-    if request.headers:
-        s += request.headers.to_string() + b"\r\n"
+    if headers := request.headers.to_string():
+        s += headers + b"\r\n"
     s += b"\r\n"
     s += request.body
     return s
@@ -175,16 +188,19 @@ def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Req
         kwargs["callback"] = _get_method(spider, d["callback"])
     if d.get("errback") and spider:
         kwargs["errback"] = _get_method(spider, d["errback"])
-    return request_cls(**kwargs)
+    request = request_cls(**kwargs)
+    if "id" in d:
+        request._id = d["id"]
+    return request
 
 
-def _get_method(obj: Any, name: Any) -> Any:
+def _get_method(obj: Any, name: object) -> Any:
     """Helper function for request_from_dict"""
     name = str(name)
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError(f"Method {name!r} not found in: {obj}") from None
+        raise ValueError(f"Method {name!r} not found in: {obj!r}") from None
 
 
 def _to_verbose_cookies(cookies: CookiesT) -> list[VerboseCookie]:
@@ -239,9 +255,18 @@ def request_to_curl(request: Request) -> str:
 
     data = f"--data-raw '{request.body.decode('utf-8')}'" if request.body else ""
 
-    headers = " ".join(
-        f"-H '{k.decode()}: {v[0].decode()}'" for k, v in request.headers.items()
-    )
+    header_args: list[str] = []
+    for name, values in request.headers.items():
+        str_name = to_unicode(name, errors="replace")
+        if not values:
+            # "Remove an internal header by giving a replacement without
+            # content on the right side of the colon, as in: -H "Host:"."
+            # (which is how Scrapy handles empty headers)
+            header_args.append(f"-H '{str_name}:'")
+        for value in values:
+            str_value = to_unicode(value, errors="replace")
+            header_args.append(f"-H '{str_name}: {str_value}'")
+    headers = " ".join(header_args)
 
     url = request.url
 

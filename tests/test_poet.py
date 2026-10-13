@@ -1,12 +1,14 @@
 """Tests that make sure parts needed for the scrapy-poet stack work."""
 
+from __future__ import annotations
+
 from typing import get_type_hints
 
 from scrapy import Spider
 from scrapy.spiders import CrawlSpider, CSVFeedSpider, SitemapSpider, XMLFeedSpider
 
 
-def test_callbacks():
+def test_callbacks() -> None:
     """Making sure annotations on all non-abstract callbacks can be resolved."""
 
     for cb in [

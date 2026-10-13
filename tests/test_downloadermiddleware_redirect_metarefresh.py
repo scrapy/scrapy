@@ -151,7 +151,7 @@ def test_warning_meta_refresh_middleware(caplog):
     )
     mw = build_from_crawler(MetaRefreshMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
-        mw._engine_started()
+        mw._spider_opened()
     assert (
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"

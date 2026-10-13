@@ -12,7 +12,7 @@ from scrapy.commands import ScrapyCommand
 from scrapy.commands.edit import _edit_file
 from scrapy.exceptions import UsageError
 from scrapy.spiderloader import get_spider_loader
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils._template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
     import argparse
@@ -120,7 +120,7 @@ class Command(ScrapyCommand):
                 module, name, url, opts.template, template_file
             )
             if opts.edit:
-                self.exitcode = _edit_file(self.settings["EDITOR"], spider_file)
+                self.exitcode = _edit_file(self.settings["EDITOR"], spider_file)  # pylint: disable=unsubscriptable-object
 
     def _generate_template_variables(
         self,
@@ -153,7 +153,7 @@ class Command(ScrapyCommand):
         assert self.settings is not None
         tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
-            spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
+            spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])  # pylint: disable=unsubscriptable-object
             assert spiders_module.__file__
             spiders_dir = Path(spiders_module.__file__).parent.resolve()
         else:
@@ -215,7 +215,7 @@ class Command(ScrapyCommand):
             return True
 
         # a file with the same name exists in the target directory
-        spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
+        spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])  # pylint: disable=unsubscriptable-object
         spiders_dir = Path(cast("str", spiders_module.__file__)).parent
         spiders_dir_abs = spiders_dir.resolve()
         path = spiders_dir_abs / (name + ".py")
@@ -230,7 +230,7 @@ class Command(ScrapyCommand):
         assert self.settings is not None
         return str(
             Path(
-                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),
+                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),  # pylint: disable=unsubscriptable-object
                 "spiders",
             )
         )

@@ -23,5 +23,5 @@ def main(reactor):
     yield runner.crawl(NoRequestsSpider)
 
 
-install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+install_reactor()
 react(main)

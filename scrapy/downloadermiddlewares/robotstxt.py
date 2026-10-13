@@ -7,7 +7,7 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 
 from twisted.internet.defer import Deferred
 
@@ -21,9 +21,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.robotstxt import RobotParser
@@ -44,7 +41,7 @@ class RobotsTxtMiddleware:
         self.crawler: Crawler = crawler
         self._stats: StatsCollector = crawler.stats
         self._parsers: dict[str, RobotParser | Deferred[RobotParser | None] | None] = {}
-        self._parserimpl: RobotParser = load_object(
+        self._parserimpl: type[RobotParser] = load_object(
             crawler.settings.get("ROBOTSTXT_PARSER")
         )
 
@@ -90,10 +87,16 @@ class RobotsTxtMiddleware:
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
             robotsurl = f"{url.scheme}://{url.netloc}/robots.txt"
+            meta: dict[str, Any] = {
+                "dont_obey_robotstxt": True,
+                "is_robotstxt_request": True,
+            }
+            if "download_handler" in request.meta:
+                meta["download_handler"] = request.meta["download_handler"]
             robotsreq = Request(
                 robotsurl,
                 priority=self.DOWNLOAD_PRIORITY,
-                meta={"dont_obey_robotstxt": True},
+                meta=meta,
                 callback=NO_CALLBACK,
             )
             try:
@@ -101,10 +104,8 @@ class RobotsTxtMiddleware:
                 await self._parse_robots(resp, netloc, request)
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
-                    logger.error(
-                        "Error downloading %(request)s: %(f_exception)s",
-                        {"request": request, "f_exception": e},
-                        exc_info=True,
+                    logger.exception(
+                        f"Error downloading {request}",
                         extra={"spider": self.crawler.spider},
                     )
                 self._robots_error(e, netloc)
