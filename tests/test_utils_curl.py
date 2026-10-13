@@ -25,6 +25,14 @@ class TestCurlToRequestKwargs:
         expected_result = {"method": "GET", "url": "http://example.org/"}
         self._test_command(curl_command, expected_result)
 
+    def test_get_url_with_escaped_space(self):
+        curl_command = r"curl http://example.org/a\ b"
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/a b",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_get_without_scheme(self):
         curl_command = "curl www.example.org"
         expected_result = {"method": "GET", "url": "http://www.example.org"}
