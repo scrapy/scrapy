@@ -3,6 +3,8 @@
 
 import logging
 import re
+import textwrap
+from pathlib import Path
 from typing import Any
 from unittest import mock
 
@@ -772,6 +774,46 @@ def test_default_settings_all():
         for name in vars(scrapy_default_settings)
         if name.isupper() and name not in deprecated
     )
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "DEFAULT_REQUEST_HEADERS",
+        "DOWNLOADER_MIDDLEWARES_BASE",
+        "DOWNLOAD_HANDLERS_BASE",
+        "EXTENSIONS_BASE",
+        "FEED_EXPORTERS_BASE",
+        "FEED_STORAGES_BASE",
+        "LOG_VERSIONS",
+        "RETRY_EXCEPTIONS",
+        "RETRY_HTTP_CODES",
+        "SPIDER_CONTRACTS_BASE",
+        "SPIDER_MIDDLEWARES_BASE",
+    ],
+)
+def test_documented_default(name: str) -> None:
+    # In the section of the setting, captures either the inline literal of
+    # "Default: ``...``" or the indented block of the code-block directive
+    # that follows "Default:".
+    pattern = re.compile(
+        rf"^\.\. setting:: {name}\n"
+        r"(?:(?!^\.\. setting::).)*?"
+        r"^Default:(?: ``([^`\n]+)``|\n\n\.\. code-block:: python\n\n"
+        r"((?: {4}[^\n]*\n|\n)+))",
+        re.DOTALL | re.MULTILINE,
+    )
+    docs_dir = Path(__file__).parents[2] / "docs"
+    matches = [
+        match
+        for path in docs_dir.glob("**/*.rst")
+        if (match := pattern.search(path.read_text(encoding="utf-8")))
+    ]
+    assert len(matches) == 1
+    inline, block = matches[0].groups()
+    # plain eval() because of OSError in RETRY_EXCEPTIONS
+    documented = eval(inline or textwrap.dedent(block), {})
+    assert documented == getattr(scrapy_default_settings, name)
 
 
 def test_deprecated_dns_resolver_setting():
