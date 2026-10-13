@@ -104,14 +104,13 @@ def test_from_headers() -> None:
 
 
 def test_from_args() -> None:
-    # TODO: add more tests that check precedence between the different arguments
     mappings: list[tuple[dict[str, Any], type[Response]]] = [
         ({"url": "http://www.example.com/data.csv"}, TextResponse),
         # headers takes precedence over url
         (
             {
                 "headers": Headers({"Content-Type": ["text/html; charset=utf-8"]}),
-                "url": "http://www.example.com/item/",
+                "url": "http://www.example.com/data.json",
             },
             HtmlResponse,
         ),
@@ -124,6 +123,16 @@ def test_from_args() -> None:
             },
             Response,
         ),
+        (
+            {"url": "http://example.com/data.json", "filename": "index.html"},
+            JsonResponse,
+        ),
+        (
+            {"url": "http://example.com/data.unknown", "filename": "index.html"},
+            HtmlResponse,
+        ),
+        ({"filename": "data.xml", "body": b"<html></html>"}, XmlResponse),
+        ({"filename": "data.unknown", "body": b"<html></html>"}, HtmlResponse),
     ]
     for source, cls in mappings:
         retcls = responsetypes.from_args(**source)
