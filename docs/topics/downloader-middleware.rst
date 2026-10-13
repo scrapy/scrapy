@@ -273,6 +273,42 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
+ChecksumMiddleware
+------------------
+
+.. autoclass:: scrapy.downloadermiddlewares.checksum.ChecksumMiddleware
+
+.. autoexception:: scrapy.exceptions.ChecksumError
+
+.. reqmeta:: expected_checksum
+
+expected_checksum
+~~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+A dict that maps :mod:`hashlib` algorithm names to the expected checksum of the
+response body, as :class:`bytes` or as a hexadecimal :class:`str`:
+
+.. invisible-code-block: python
+
+    from scrapy import Request
+
+.. code-block:: python
+
+    Request(
+        "https://example.com/product1.pdf",
+        meta={
+            "expected_checksum": {
+                "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            }
+        },
+    )
+
+A mismatch raises :exc:`~scrapy.exceptions.ChecksumError`, which
+:class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` retries if
+:setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` is ``True``.
+
 CookiesMiddleware
 -----------------
 
@@ -1128,6 +1164,7 @@ Default::
 
     [
         'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.ChecksumError',
         'scrapy.exceptions.DecompressionError',
         'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadFailedError',

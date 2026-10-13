@@ -344,6 +344,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
     "scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware": 560,
+    "scrapy.downloadermiddlewares.checksum.ChecksumMiddleware": 570,
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -548,6 +549,7 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
     "scrapy.exceptions.CannotResolveHostError",
+    "scrapy.exceptions.ChecksumError",
     "scrapy.exceptions.DecompressionError",
     "scrapy.exceptions.DownloadConnectionRefusedError",
     "scrapy.exceptions.DownloadFailedError",
