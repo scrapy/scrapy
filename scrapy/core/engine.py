@@ -174,6 +174,15 @@ class _Slot:
 
 
 class ExecutionEngine:
+    """The execution engine manages all the core :ref:`components
+    <topics-components>`, such as the :ref:`scheduler <topics-scheduler>`, the
+    downloader, or the :ref:`spider <topics-spiders>`, at run time.
+
+    Some components access the engine through :attr:`Crawler.engine
+    <scrapy.crawler.Crawler.engine>` to access or modify other components, or
+    use core functionality such as closing the running spider.
+    """
+
     _SLOT_HEARTBEAT_INTERVAL: float = 5.0
 
     def __init__(
@@ -852,17 +861,17 @@ class ExecutionEngine:
         mode: _StopMode = "graceful",
         error: bool = False,
     ) -> None:
-        """Close (cancel) spider and clear all its outstanding requests, and
-        stop the engine.
+        """Stop the crawl with the specified *reason* and clear all its
+        outstanding requests.
 
         .. versionadded:: 2.14
 
-        *reason* is the spider finish reason (see the :stat:`finish_reason`
-        stat). *error* is a flag that specifies whether the crawl should be
-        considered failed (see the :stat:`finish_reason_error` stat). If
-        *mode* is ``"graceful"``, this method will wait until the requests
-        that are already in the downloader are downloaded and processed; if
-        it's ``"fast"`` they will be dropped.
+        *reason* is an arbitrary string; see :stat:`finish_reason` for the
+        reasons that built-in components use. *error* is a flag that specifies
+        whether the crawl should be considered failed (see the
+        :stat:`finish_reason_error` stat). If *mode* is ``"graceful"``, this
+        method will wait until the requests that are already in the downloader
+        are downloaded and processed; if it's ``"fast"`` they will be dropped.
 
         If the spider was not opened before, this method raises
         :exc:`RuntimeError`.
