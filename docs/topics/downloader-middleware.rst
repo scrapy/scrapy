@@ -1124,21 +1124,23 @@ cache.
 RETRY_EXCEPTIONS
 ^^^^^^^^^^^^^^^^
 
-Default::
+Default:
+
+.. code-block:: python
 
     [
-        'scrapy.exceptions.CannotResolveHostError',
-        'scrapy.exceptions.DecompressionError',
-        'scrapy.exceptions.DownloadConnectionRefusedError',
-        'scrapy.exceptions.DownloadFailedError',
-        'scrapy.exceptions.DownloadTimeoutError',
-        'scrapy.exceptions.ResponseDataLossError',
-        'json.JSONDecodeError',
-        'twisted.internet.error.ConnectionDone',
-        'twisted.internet.error.ConnectError',
-        'twisted.internet.error.ConnectionLost',
+        "scrapy.exceptions.CannotResolveHostError",
+        "scrapy.exceptions.DecompressionError",
+        "scrapy.exceptions.DownloadConnectionRefusedError",
+        "scrapy.exceptions.DownloadFailedError",
+        "scrapy.exceptions.DownloadTimeoutError",
+        "scrapy.exceptions.ResponseDataLossError",
+        "json.JSONDecodeError",
+        "twisted.internet.error.ConnectionDone",
+        "twisted.internet.error.ConnectError",
+        "twisted.internet.error.ConnectionLost",
         OSError,
-        'scrapy.core.downloader.handlers.http11.TunnelError',
+        "scrapy.core.downloader.handlers.http11.TunnelError",
     ]
 
 List of exceptions to retry.

@@ -794,12 +794,12 @@ def test_default_settings_all():
 )
 def test_documented_default(name: str) -> None:
     # In the section of the setting, captures either the inline literal of
-    # "Default: ``...``" or the indented block that follows "Default::" or
-    # "Default:" and a code-block directive.
+    # "Default: ``...``" or the indented block of the code-block directive
+    # that follows "Default:".
     pattern = re.compile(
         rf"^\.\. setting:: {name}\n"
         r"(?:(?!^\.\. setting::).)*?"
-        r"^Default:(?: ``([^`\n]+)``|(?::|\n\n\.\. code-block:: python)\n\n"
+        r"^Default:(?: ``([^`\n]+)``|\n\n\.\. code-block:: python\n\n"
         r"((?: {4}[^\n]*\n|\n)+))",
         re.DOTALL | re.MULTILINE,
     )
