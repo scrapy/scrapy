@@ -525,6 +525,21 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
+    def test_custom_loop_closespider_timeout_no_item(self) -> None:
+        log = self.run_script("closespider_timeout_no_item.py")
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
+
+    @pytest.mark.requires_uvloop
+    def test_uvloop_closespider_timeout_no_item(self) -> None:
+        # uvloop has a different clock resolution
+        log = self.run_script("closespider_timeout_no_item.py", "uvloop.Loop")
+        assert "Using asyncio event loop: uvloop.Loop" in log
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
+
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
     """Common tests between CrawlerRunner and AsyncCrawlerRunner,
