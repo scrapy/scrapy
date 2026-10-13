@@ -7,6 +7,7 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import PIPE, Popen
 from tempfile import mkdtemp
+from threading import Thread
 from typing import TYPE_CHECKING, Self
 
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -29,6 +30,7 @@ class MockFTPServer:
     """
 
     proc: Popen[str]
+    _stderr_reader: Thread
     port: int
     path: Path
 
@@ -56,6 +58,9 @@ class MockFTPServer:
             raise RuntimeError(
                 "The FTP server failed to start or the output is unrecognized"
             )
+        # Keep the pipe from filling up, which would block the server.
+        self._stderr_reader = Thread(target=self.proc.stderr.read, daemon=True)
+        self._stderr_reader.start()
         return self
 
     def __exit__(
@@ -66,6 +71,7 @@ class MockFTPServer:
     ) -> None:
         rmtree(str(self.path))
         self.proc.kill()
+        self._stderr_reader.join()
         self.proc.communicate()
 
     def url(self, path: str) -> str:
