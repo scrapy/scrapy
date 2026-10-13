@@ -522,6 +522,7 @@ class ExecutionEngine:
             self.signals.send_catch_log(signals.scheduler_empty)
             return False
 
+        self._slot.add_request(request)
         d: Deferred[Response | Request] = self._download(request)
         d.addBoth(self._handle_downloader_output, request)
         d.addErrback(
@@ -648,12 +649,13 @@ class ExecutionEngine:
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         while True:
+            assert self._slot is not None
+            self._slot.add_request(request)
             try:
                 response_or_request = await maybe_deferred_to_future(
                     self._download(request)
                 )
             finally:
-                assert self._slot is not None
                 self._slot.remove_request(request)
             if not isinstance(response_or_request, Request):
                 return response_or_request
@@ -666,7 +668,6 @@ class ExecutionEngine:
         assert self._slot is not None  # typing
         assert self.spider is not None
 
-        self._slot.add_request(request)
         try:
             result: Response | Request
             if self._downloader_fetch_needs_spider:
