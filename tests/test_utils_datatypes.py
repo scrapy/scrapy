@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Iterator, Mapping, MutableMapping
+from collections.abc import Callable, Iterator, Mapping, MutableMapping
+from operator import methodcaller
 from typing import Any
 
 import pytest
@@ -194,14 +195,19 @@ class TestCaseInsensitiveDict:
         assert h1.get("header1") == h3.get("header1")
         assert h1.get("header1") == h3.get("HEADER1")
 
-    def test_copy_is_independent(self):
+    @pytest.mark.parametrize(
+        "copier", [copy.copy, methodcaller("copy")], ids=["copy.copy", "copy-method"]
+    )
+    def test_copy_is_independent(
+        self, copier: Callable[[CaseInsensitiveDict], CaseInsensitiveDict]
+    ) -> None:
         h1 = self.dict_class({"header1": "value1", "header2": "value2"})
-        for h2 in (copy.copy(h1), h1.copy()):
-            del h2["header1"]
-            h2["header3"] = "value3"
-            assert "header1" in h1
-            assert "header3" not in h1
-            assert dict(h1) == {"header1": "value1", "header2": "value2"}
+        h2 = copier(h1)
+        del h2["header1"]
+        h2["header3"] = "value3"
+        assert "header1" in h1
+        assert "header3" not in h1
+        assert dict(h1) == {"header1": "value1", "header2": "value2"}
 
     def test_repr(self):
         d1 = self.dict_class({"foo": "bar"})
@@ -215,14 +221,18 @@ class TestCaseInsensitiveDict:
         assert isinstance(iterkeys, Iterator)
         assert list(iterkeys) == ["AsDf", "FoO"]
 
-    def test_copy_keeps_values(self):
+    @pytest.mark.parametrize(
+        "copier", [copy.copy, methodcaller("copy")], ids=["copy.copy", "copy-method"]
+    )
+    def test_copy_keeps_values(
+        self, copier: Callable[[CaseInsensitiveDict], CaseInsensitiveDict]
+    ) -> None:
         class MyDict(self.dict_class):  # type: ignore[misc,name-defined]
             def _normvalue(self, value):
                 return value + 1
 
         d = MyDict({"key": 1})
-        for copied in (copy.copy(d), d.copy()):
-            assert copied["key"] == 2
+        assert copier(d)["key"] == 2
 
     def test_ior(self):
         d = self.dict_class({"header1": "value1"})

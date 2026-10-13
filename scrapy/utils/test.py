@@ -70,6 +70,7 @@ def get_crawler(
     # When needed, useful settings can be added here, e.g. ones that prevent
     # deprecation warnings.
     settings: dict[str, Any] = {
+        "FEED_MODE": "overwrite",
         "REMOTE_CONTROL_ENABLED": False,
         "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),
@@ -119,4 +120,4 @@ def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:  # pragma: no co
     from twisted.internet import reactor
 
     agent = Agent(reactor)
-    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))
+    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode()))

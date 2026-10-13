@@ -142,3 +142,22 @@ PARSERS: dict[str, Callable[[bytes], list[Any]]] = {
     "pickle": _parse_pickle,
     "marshal": _parse_marshal,
 }
+
+
+async def assert_exported(
+    mockserver: MockServer,
+    tmp_path: Path,
+    fmt: str,
+    items: Iterable[Any],
+    header: Iterable[str],
+    rows: list[dict[str, Any]],
+    settings: dict[str, Any] | None = None,
+) -> None:
+    """Check that exporting *items* as *fmt* with *settings* produces *rows*
+    and, for CSV, a *header* line."""
+    settings = {**(settings or {}), "FEEDS": {unique_path(tmp_path): {"format": fmt}}}
+    data = (await export_by_format(mockserver, items, settings))[fmt]
+    assert data is not None
+    if fmt == "csv":
+        assert csv_header(data) == list(header)
+    assert PARSERS[fmt](data) == rows

@@ -215,7 +215,7 @@ def parallel(
     callable: Callable[Concatenate[_T, _P], _T2],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[None]:
+) -> Deferred[None]:  # pragma: no cover
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
     """
@@ -224,6 +224,12 @@ def parallel(
         for elem in iterable:
             tasks.start()
             yield callable(elem, *args, **named)
+
+    warnings.warn(
+        "scrapy.utils.defer.parallel() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     tasks = _ParallelTasks(work(), count)
     tasks.start()
@@ -405,10 +411,15 @@ def iter_errback(
     errback: Callable[Concatenate[Failure, _P], Any],
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Iterable[_T]:
+) -> Iterable[_T]:  # pragma: no cover
     """Wrap an iterable calling an errback if an error is caught while
     iterating it.
     """
+    warnings.warn(
+        "scrapy.utils.defer.iter_errback() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     it = iter(iterable)
     while True:
         try:
@@ -426,8 +437,7 @@ async def aiter_errback(
     **kw: _P.kwargs,
 ) -> AsyncIterator[_T]:
     """Wrap an async iterable calling an errback if an error is caught while
-    iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
-    """
+    iterating it."""
     it = aiter(aiterable)
     while True:
         try:

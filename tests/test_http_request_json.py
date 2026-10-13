@@ -7,7 +7,6 @@ from unittest import mock
 import pytest
 
 from scrapy.http import JsonRequest
-from scrapy.utils.python import to_bytes
 from tests.utils.bases.http_request import TestRequestBase
 
 
@@ -31,11 +30,11 @@ class TestJsonRequest(TestRequestBase):
             "name": "value",
         }
         r3 = self.request_class(url="http://www.example.com/", data=data)
-        assert r3.body == to_bytes(json.dumps(data))
+        assert r3.body == json.dumps(data).encode()
 
         # empty data
         r4 = self.request_class(url="http://www.example.com/", data=[])
-        assert r4.body == to_bytes(json.dumps([]))
+        assert r4.body == json.dumps([]).encode()
 
     def test_data_method(self):
         # data is not passed
@@ -89,7 +88,7 @@ class TestJsonRequest(TestRequestBase):
                 "error", category=UserWarning, message="Both body and data passed"
             )
             r7 = self.request_class(url="http://www.example.com/", body=None, data=data)
-        assert r7.body == to_bytes(json.dumps(data))
+        assert r7.body == json.dumps(data).encode()
         assert r7.method == "POST"
 
     def test_body_data_none(self):
@@ -136,7 +135,7 @@ class TestJsonRequest(TestRequestBase):
         }
         r1 = self.request_class(url="http://www.example.com/", data=data1)
         r2 = r1.replace(data=data2)
-        assert r2.body == to_bytes(json.dumps(data2))
+        assert r2.body == json.dumps(data2).encode()
 
     def test_replace_sort_keys(self):
         """Test that replace provides sort_keys=True to json.dumps"""

@@ -374,8 +374,6 @@ URL canonicalization or taking the request method or body into account:
     from hashlib import sha1
     from weakref import WeakKeyDictionary
 
-    from scrapy.utils.python import to_bytes
-
 
     class RequestFingerprinter:
         cache = WeakKeyDictionary()
@@ -383,7 +381,7 @@ URL canonicalization or taking the request method or body into account:
         def fingerprint(self, request):
             if request not in self.cache:
                 fp = sha1()
-                fp.update(to_bytes(request.url))
+                fp.update(request.url.encode())
                 self.cache[request] = fp.digest()
             return self.cache[request]
 
@@ -412,7 +410,6 @@ the following request fingerprinter:
     from hashlib import sha1
     from weakref import WeakKeyDictionary
 
-    from scrapy.utils.python import to_bytes
     from w3lib.url import canonicalize_url
 
 
@@ -422,8 +419,8 @@ the following request fingerprinter:
         def fingerprint(self, request):
             if request not in self.cache:
                 fp = sha1()
-                fp.update(to_bytes(request.method))
-                fp.update(to_bytes(canonicalize_url(request.url)))
+                fp.update(request.method.encode())
+                fp.update(canonicalize_url(request.url).encode())
                 fp.update(request.body or b"")
                 self.cache[request] = fp.digest()
             return self.cache[request]
