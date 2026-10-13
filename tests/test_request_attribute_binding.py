@@ -32,7 +32,7 @@ class CatchExceptionOverrideRequestMiddleware:
     def process_exception(self, request, exception):
         return Response(
             url="http://localhost/",
-            body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
+            body=b"Caught " + exception.__class__.__name__.encode(),
             request=Request(OVERRIDDEN_URL),
         )
 
@@ -41,7 +41,7 @@ class CatchExceptionDoNotOverrideRequestMiddleware:
     def process_exception(self, request, exception):
         return Response(
             url="http://localhost/",
-            body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
+            body=b"Caught " + exception.__class__.__name__.encode(),
         )
 
 

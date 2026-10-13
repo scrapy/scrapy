@@ -8,7 +8,6 @@ from weakref import WeakKeyDictionary
 import pytest
 
 from scrapy.http import Request
-from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
     _fingerprint_cache,
     fingerprint,
@@ -342,7 +341,7 @@ class TestCustomRequestFingerprinter:
             def fingerprint(self, request: Request) -> bytes:
                 if request not in self.cache:
                     fp = sha1()
-                    fp.update(to_bytes(request.url))
+                    fp.update(request.url.encode())
                     self.cache[request] = fp.digest()
                 return self.cache[request]
 

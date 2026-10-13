@@ -11,7 +11,6 @@ from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_unicode
 from scrapy.utils.request import _decode_cookie, _to_verbose_cookies
 
 if TYPE_CHECKING:
@@ -108,10 +107,7 @@ class CookiesMiddleware:
 
     def _debug_cookie(self, request: Request) -> None:
         if self.debug:
-            cl = [
-                to_unicode(c, errors="replace")
-                for c in request.headers.getlist("Cookie")
-            ]
+            cl = [c.decode(errors="replace") for c in request.headers.getlist("Cookie")]
             if cl:
                 cookies = "\n".join(f"Cookie: {c}\n" for c in cl)
                 msg = f"Sending cookies to: {request}\n{cookies}"
@@ -120,7 +116,7 @@ class CookiesMiddleware:
     def _debug_set_cookie(self, response: Response) -> None:
         if self.debug:
             cl = [
-                to_unicode(c, errors="replace")
+                c.decode(errors="replace")
                 for c in response.headers.getlist("Set-Cookie")
             ]
             if cl:

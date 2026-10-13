@@ -119,4 +119,4 @@ def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:  # pragma: no co
     from twisted.internet import reactor
 
     agent = Agent(reactor)
-    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))
+    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode()))

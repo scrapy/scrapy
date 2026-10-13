@@ -61,5 +61,5 @@ class TestBytesReceivedEngine(TestEngineBase):
                 # Received bytes are not the complete response. The exact amount depends
                 # on the buffer size, which can vary, so we only check that the amount
                 # of received bytes is strictly less than the full response.
-                numbers = [str(x).encode("utf8") for x in range(2**18)]
+                numbers = [str(x).encode() for x in range(2**18)]
                 assert len(joined_data) < len(b"".join(numbers))

@@ -86,7 +86,7 @@ class Root(BaseResource):
             self, b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected")
         )
         put_child(self, b"redirected", Data(b"Redirected here", "text/plain"))
-        numbers = [str(x).encode("utf8") for x in range(2**18)]
+        numbers = [str(x).encode() for x in range(2**18)]
         put_child(self, b"numbers", Data(b"".join(numbers), "text/plain"))
         put_child(self, b"wait", ForeverTakingResource())
         put_child(self, b"hang-after-headers", ForeverTakingResource(write=True))

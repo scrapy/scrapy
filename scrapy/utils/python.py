@@ -166,7 +166,7 @@ def memoizemethod_noargs(
 
 
 _BINARYCHARS = {
-    i for i in range(32) if to_bytes(chr(i)) not in {b"\0", b"\t", b"\n", b"\r"}
+    i for i in range(32) if chr(i).encode() not in {b"\0", b"\t", b"\n", b"\r"}
 }
 
 

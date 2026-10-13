@@ -22,7 +22,6 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.utils.decorators import coroutine_test
 
@@ -146,7 +145,7 @@ class TestDefaults(TestManagerBase):
         async with self.get_mwman() as mwman:
             ret = await self._download(mwman, req, resp)
         assert isinstance(ret, Request), f"Not redirected: {ret!r}"
-        assert to_bytes(ret.url) == resp.headers["Location"], (
+        assert ret.url.encode() == resp.headers["Location"], (
             "Not redirected to location header"
         )
 

@@ -281,7 +281,7 @@ class TestEngine(TestEngineBase):
             p.communicate()
             pytest.fail("Command took too much time to complete")
 
-        stderr_str = stderr.decode("utf-8")
+        stderr_str = stderr.decode()
         assert "AttributeError" not in stderr_str, stderr_str
         assert "AssertionError" not in stderr_str, stderr_str
 

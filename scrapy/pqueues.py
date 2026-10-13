@@ -32,7 +32,7 @@ def _path_safe(text: str) -> str:
     pathable_slot = "".join([c if c.isalnum() or c in "-._" else "_" for c in text])
     # as we replace some letters we can get collision for different slots
     # add we add unique part
-    unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()  # noqa: S324
+    unique_slot = hashlib.md5(text.encode()).hexdigest()  # noqa: S324
     return f"{pathable_slot}-{unique_slot}"
 
 

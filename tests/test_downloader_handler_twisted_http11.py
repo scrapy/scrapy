@@ -91,7 +91,7 @@ def test_tunneling_cancelled_before_connected() -> None:
     reactor = MemoryReactorClock()
     endpoint = _TunnelingTCP4ClientEndpoint(
         reactor=cast("ReactorBase", reactor),
-        host="example.com",
+        host=b"example.com",
         port=443,
         proxyConf=("127.0.0.1", 8080, None),
         contextFactory=_load_context_factory_from_settings(get_crawler()),

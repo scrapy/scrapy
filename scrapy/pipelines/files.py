@@ -51,7 +51,6 @@ from scrapy.utils.boto import _get_max_pool_connections, is_botocore_available
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
@@ -745,7 +744,7 @@ class FilesPipeline(MediaPipeline):
         *,
         item: Any = None,
     ) -> str:
-        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
+        media_guid = hashlib.sha1(request.url.encode()).hexdigest()  # noqa: S324
 
         # clean it up and look at the path first
         parsed_url = urlparse_cached(request)
