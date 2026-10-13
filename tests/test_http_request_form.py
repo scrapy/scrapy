@@ -1008,20 +1008,21 @@ class TestFormRequest(TestRequestBase):
         with pytest.raises(ValueError, match="No <form> element found with"):
             self.request_class.from_response(response, formcss="input[name='abc']")
 
-    def test_from_response_valid_form_methods(self):
-        form_methods = [
-            [method, method] for method in self.request_class.valid_form_methods
-        ]
-        form_methods.append(["UNKNOWN", "GET"])
-
-        for method, expected in form_methods:
-            response = _buildresponse(
-                f'<form action="post.php" method="{method}">'
-                '<input type="hidden" name="one" value="1">'
-                "</form>"
-            )
-            r = self.request_class.from_response(response)
-            assert r.method == expected
+    @pytest.mark.parametrize(
+        ("method", "expected"),
+        [
+            *((method, method) for method in FormRequest.valid_form_methods),
+            ("UNKNOWN", "GET"),
+        ],
+    )
+    def test_from_response_valid_form_methods(self, method: str, expected: str) -> None:
+        response = _buildresponse(
+            f'<form action="post.php" method="{method}">'
+            '<input type="hidden" name="one" value="1">'
+            "</form>"
+        )
+        r = self.request_class.from_response(response)
+        assert r.method == expected
 
     def test_form_response_with_invalid_formdata_type_error(self):
         """Test that a ValueError is raised for non-iterable and non-dict formdata input"""

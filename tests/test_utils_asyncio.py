@@ -77,43 +77,43 @@ class TestParallelAsyncio:
                 await asyncio.sleep(random.random() / 20)
             yield i
 
+    @pytest.mark.parametrize("length", [20, 50, 100])
     @coroutine_test
-    async def test_simple(self):
-        for length in [20, 50, 100]:
-            parallel_count = [0]
-            max_parallel_count = [0]
-            results: list[int] = []
-            ait = self.get_async_iterable(length)
-            await _parallel_asyncio(
-                ait,
-                self.CONCURRENT_ITEMS,
-                self.callable_wrapped,
-                results,
-                parallel_count,
-                max_parallel_count,
-            )
-            assert list(range(length)) == sorted(results)
-            assert parallel_count[0] == 0
-            assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
+    async def test_simple(self, length: int) -> None:
+        parallel_count = [0]
+        max_parallel_count = [0]
+        results: list[int] = []
+        ait = self.get_async_iterable(length)
+        await _parallel_asyncio(
+            ait,
+            self.CONCURRENT_ITEMS,
+            self.callable_wrapped,
+            results,
+            parallel_count,
+            max_parallel_count,
+        )
+        assert list(range(length)) == sorted(results)
+        assert parallel_count[0] == 0
+        assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
+    @pytest.mark.parametrize("length", [20, 50, 100])
     @coroutine_test
-    async def test_delays(self):
-        for length in [20, 50, 100]:
-            parallel_count = [0]
-            max_parallel_count = [0]
-            results: list[int] = []
-            ait = self.get_async_iterable_with_delays(length)
-            await _parallel_asyncio(
-                ait,
-                self.CONCURRENT_ITEMS,
-                self.callable_wrapped,
-                results,
-                parallel_count,
-                max_parallel_count,
-            )
-            assert list(range(length)) == sorted(results)
-            assert parallel_count[0] == 0
-            assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
+    async def test_delays(self, length: int) -> None:
+        parallel_count = [0]
+        max_parallel_count = [0]
+        results: list[int] = []
+        ait = self.get_async_iterable_with_delays(length)
+        await _parallel_asyncio(
+            ait,
+            self.CONCURRENT_ITEMS,
+            self.callable_wrapped,
+            results,
+            parallel_count,
+            max_parallel_count,
+        )
+        assert list(range(length)) == sorted(results)
+        assert parallel_count[0] == 0
+        assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
     @coroutine_test
     async def test_count_higher_than_work(self):

@@ -42,6 +42,11 @@ class CustomFieldItem(Item):
     age = Field(serializer=custom_serializer)
 
 
+class FriendsItem(Item):
+    name = Field()
+    friends = Field()
+
+
 @dataclasses.dataclass
 class MyDataClass:
     name: str
@@ -332,46 +337,43 @@ class TestCsvItemExporter(TestBaseItemExporter):
             expected=b"age,name\r\n22,John\xc2\xa3\r\n",
         )
 
-    def test_header_export_single_field(self):
-        for item in [self.i, ItemAdapter(self.i).asdict()]:
-            self.assertExportResult(
-                item=item,
-                fields_to_export=["age"],
-                expected=b"age\r\n22\r\n",
-            )
+    @pytest.mark.parametrize("as_dict", [False, True], ids=["item", "dict"])
+    def test_header_export_single_field(self, as_dict: bool) -> None:
+        self.assertExportResult(
+            item=ItemAdapter(self.i).asdict() if as_dict else self.i,
+            fields_to_export=["age"],
+            expected=b"age\r\n22\r\n",
+        )
 
-    def test_header_export_two_items(self):
-        for item in [self.i, ItemAdapter(self.i).asdict()]:
-            output = BytesIO()
-            ie = CsvItemExporter(output)
-            ie.start_exporting()
-            ie.export_item(item)
-            ie.export_item(item)
-            ie.finish_exporting()
-            del ie  # See the first “del self.ie” in this file for context.
-            self.assertCsvEqual(
-                output.getvalue(), b"age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n"
-            )
+    @pytest.mark.parametrize("as_dict", [False, True], ids=["item", "dict"])
+    def test_header_export_two_items(self, as_dict: bool) -> None:
+        item = ItemAdapter(self.i).asdict() if as_dict else self.i
+        output = BytesIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(item)
+        ie.export_item(item)
+        ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
+        self.assertCsvEqual(
+            output.getvalue(), b"age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n"
+        )
 
-    def test_header_no_header_line(self):
-        for item in [self.i, ItemAdapter(self.i).asdict()]:
-            self.assertExportResult(
-                item=item,
-                include_headers_line=False,
-                expected=b"22,John\xc2\xa3\r\n",
-            )
+    @pytest.mark.parametrize("as_dict", [False, True], ids=["item", "dict"])
+    def test_header_no_header_line(self, as_dict: bool) -> None:
+        self.assertExportResult(
+            item=ItemAdapter(self.i).asdict() if as_dict else self.i,
+            include_headers_line=False,
+            expected=b"22,John\xc2\xa3\r\n",
+        )
 
-    def test_join_multivalue(self):
-        class TestItem2(Item):
-            name = Field()
-            friends = Field()
-
-        for cls in TestItem2, dict:
-            self.assertExportResult(
-                item=cls(name="John", friends=["Mary", "Paul"]),
-                include_headers_line=False,
-                expected='"Mary,Paul",John\r\n',
-            )
+    @pytest.mark.parametrize("cls", [FriendsItem, dict])
+    def test_join_multivalue(self, cls: type) -> None:
+        self.assertExportResult(
+            item=cls(name="John", friends=["Mary", "Paul"]),
+            include_headers_line=False,
+            expected='"Mary,Paul",John\r\n',
+        )
 
     def test_join_multivalue_not_strings(self):
         self.assertExportResult(

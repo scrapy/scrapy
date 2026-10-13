@@ -680,14 +680,14 @@ class TestHttps2ClientProtocol:
         data = json.loads(str(response.body, content_encoding))
         assert data == params
 
+    @pytest.mark.parametrize("status", [200, 404])
     @deferred_f_from_coro_f
     async def test_status_codes(
-        self, server_port: int, client: H2ClientProtocol
+        self, status: int, server_port: int, client: H2ClientProtocol
     ) -> None:
-        for status in [200, 404]:
-            request = Request(self.get_url(server_port, f"/status?n={status}"))
-            response = await make_request(client, request)
-            assert response.status == status
+        request = Request(self.get_url(server_port, f"/status?n={status}"))
+        response = await make_request(client, request)
+        assert response.status == status
 
     @pytest.mark.filterwarnings(
         r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"

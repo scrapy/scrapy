@@ -31,7 +31,8 @@ class TestSpider(TestSpiderBase):
 class TestXMLFeedSpider(TestSpiderBase):
     spider_class = XMLFeedSpider
 
-    def test_register_namespace(self):
+    @pytest.mark.parametrize("iterator", ["iternodes", "xml"])
+    def test_register_namespace(self, iterator: str) -> None:
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
         <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
                 xmlns:y="http://www.example.com/schemas/extras/1.0">
@@ -57,24 +58,23 @@ class TestXMLFeedSpider(TestSpiderBase):
                     "custom": selector.xpath("other/@b:custom").getall(),
                 }
 
-        for iterator in ("iternodes", "xml"):
-            spider = _XMLSpider("example", iterator=iterator)
-            output = list(spider._parse(response))
-            assert len(output) == 2, iterator
-            assert output == [
-                {
-                    "loc": ["http://www.example.com/Special-Offers.html"],
-                    "updated": ["2009-08-16"],
-                    "custom": ["fuu"],
-                    "other": ["bar"],
-                },
-                {
-                    "loc": [],
-                    "updated": ["2009-08-16"],
-                    "other": ["foo"],
-                    "custom": [],
-                },
-            ], iterator
+        spider = _XMLSpider("example", iterator=iterator)
+        output = list(spider._parse(response))
+        assert len(output) == 2
+        assert output == [
+            {
+                "loc": ["http://www.example.com/Special-Offers.html"],
+                "updated": ["2009-08-16"],
+                "custom": ["fuu"],
+                "other": ["bar"],
+            },
+            {
+                "loc": [],
+                "updated": ["2009-08-16"],
+                "other": ["foo"],
+                "custom": [],
+            },
+        ]
 
     @coroutine_test
     async def test_parse_node_uses_parse_item(self, mockserver: MockServer):

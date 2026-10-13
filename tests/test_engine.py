@@ -80,23 +80,22 @@ class ErrorCloseReasonSpider(ChangeCloseReasonSpider):
 
 
 class TestEngine(TestEngineBase):
+    @pytest.mark.parametrize(
+        "spider", [MySpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider]
+    )
     @coroutine_test
-    async def test_crawler(self, mockserver: MockServer) -> None:
-        for spider in (
-            MySpider,
-            DictItemsSpider,
-            AttrsItemsSpider,
-            DataClassItemsSpider,
-        ):
-            run = CrawlerRun(spider)
-            await run.run(mockserver)
-            self._assert_visited_urls(run)
-            self._assert_scheduled_requests(run, count=9)
-            self._assert_downloaded_responses(run, count=9)
-            self._assert_scraped_items(run)
-            self._assert_signals_caught(run)
-            self._assert_headers_received(run)
-            self._assert_bytes_received(run)
+    async def test_crawler(
+        self, spider: type[MySpider], mockserver: MockServer
+    ) -> None:
+        run = CrawlerRun(spider)
+        await run.run(mockserver)
+        self._assert_visited_urls(run)
+        self._assert_scheduled_requests(run, count=9)
+        self._assert_downloaded_responses(run, count=9)
+        self._assert_scraped_items(run)
+        self._assert_signals_caught(run)
+        self._assert_headers_received(run)
+        self._assert_bytes_received(run)
 
     @coroutine_test
     async def test_crawler_dupefilter(self, mockserver: MockServer) -> None:
