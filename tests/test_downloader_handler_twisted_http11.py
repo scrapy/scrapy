@@ -1,13 +1,14 @@
-"""Tests for scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler."""
-
 from __future__ import annotations
 
 import sys
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
+from twisted.internet.error import ConnectingCancelledError
 from twisted.internet.protocol import Factory, Protocol
+from twisted.internet.testing import MemoryReactorClock
+from twisted.python.failure import Failure
 
 try:
     import resource
@@ -15,8 +16,13 @@ except ImportError:
     resource = None  # type: ignore[assignment]
 
 from scrapy import Request, Spider
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers._base_http import _auto_connection_limit
-from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler, TunnelError
+from scrapy.core.downloader.handlers.http11 import (
+    HTTP11DownloadHandler,
+    TunnelError,
+    _TunnelingTCP4ClientEndpoint,
+)
 from scrapy.crawler import Crawler
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -47,6 +53,8 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
+    from twisted.internet.base import ReactorBase
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
@@ -66,6 +74,8 @@ class HTTP11DownloadHandlerMixin:
                 "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
             }
         }
+
+    handler_supports_custom_content_length = False
 
 
 def test_not_configured_without_reactor() -> None:
@@ -129,6 +139,35 @@ async def test_connection_limit_auto_without_file_descriptor_limit(
 async def test_keepalive_timeout() -> None:
     async with _get_dh({"CONNECTION_KEEPALIVE_TIMEOUT": 5}) as dh:
         assert dh._pool.cachedConnectionTimeout == 5
+
+
+def test_tunneling_cancelled_before_connected() -> None:
+    """Cancelling a tunneled download before the connection to the proxy is
+    established stops the connection attempt.
+
+    A download cannot reach this scenario, because the connection timeout of
+    the endpoint, which uses the same value as the download timeout, always
+    fires earlier than the cancellation. See also
+    ``test_download_with_proxy_stalled_connect``, which covers cancelling once
+    the connection to the proxy is established.
+    """
+    reactor = MemoryReactorClock()
+    endpoint = _TunnelingTCP4ClientEndpoint(
+        reactor=cast("ReactorBase", reactor),
+        host=b"example.com",
+        port=443,
+        proxyConf=("127.0.0.1", 8080, None),
+        contextFactory=_load_context_factory_from_settings(get_crawler()),
+        timeout=30,
+    )
+    results: list[Protocol | Failure] = []
+    endpoint.connect(Factory()).addBoth(results.append)
+
+    endpoint._tunnelReadyDeferred.cancel()
+
+    assert reactor.connectors[0].stoppedConnecting
+    assert isinstance(results[0], Failure)
+    assert isinstance(results[0].value, ConnectingCancelledError)
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):

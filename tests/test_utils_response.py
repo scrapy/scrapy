@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 import pytest
 
 from scrapy.http import HtmlResponse, Response, TextResponse
-from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
     get_base_url,
     get_meta_refresh,
@@ -31,7 +30,7 @@ def test_open_in_browser():
 
     def browser_open(burl: str) -> bool:
         bbody = _read_browser_output(burl)
-        assert b'<base href="' + to_bytes(url) + b'">' in bbody
+        assert b'<base href="' + url.encode() + b'">' in bbody
         return True
 
     response = HtmlResponse(url, body=body)
@@ -200,7 +199,7 @@ def test_inject_base_url(body: bytes) -> None:
 
     def check_base_url(burl):
         bbody = _read_browser_output(burl)
-        base_tag = b'<base href="' + to_bytes(url) + b'">'
+        base_tag = b'<base href="' + url.encode() + b'">'
         assert bbody.count(base_tag) == 1
         index = bbody.index(base_tag)
         # The base tag is not commented out.
@@ -302,7 +301,7 @@ def test_open_in_browser_injects_base_when_only_in_comment():
 
     def check(burl):
         bbody = _read_browser_output(burl)
-        assert b'<base href="' + to_bytes(url) + b'">' in bbody
+        assert b'<base href="' + url.encode() + b'">' in bbody
         return True
 
     response = HtmlResponse(url, body=body)
@@ -321,8 +320,8 @@ def test_open_in_browser_injects_base_before_head_contents():
 
     def check(burl):
         bbody = _read_browser_output(burl)
-        assert bbody.count(b'<base href="' + to_bytes(url) + b'">') == 1
-        base_pos = bbody.find(b'<base href="' + to_bytes(url) + b'">')
+        assert bbody.count(b'<base href="' + url.encode() + b'">') == 1
+        base_pos = bbody.find(b'<base href="' + url.encode() + b'">')
         title_pos = bbody.find(b"<title>Actual</title>")
         assert base_pos < title_pos
         return True

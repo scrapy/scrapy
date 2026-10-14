@@ -317,6 +317,28 @@ policy:
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
+To send custom headers with the uploaded files, subclass ``S3FilesStore``
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme to it
+with :setting:`MEDIA_STORAGES`:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import S3FilesStore
+
+
+    class CustomS3FilesStore(S3FilesStore):
+        HEADERS = {
+            "Cache-Control": "max-age=172800",
+            "X-Amz-Storage-Class": "STANDARD_IA",
+        }
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"s3": "myproject.storages.CustomS3FilesStore"}
+
+Supported headers are those that the installed botocore version models for
+the `PutObject`_ operation; any other header raises :exc:`TypeError`.
+
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
 `Zenko CloudServer`_. All you need to do is set the endpoint option in your
 Scrapy settings:
@@ -337,6 +359,7 @@ To reuse connections for as many files as you check or upload in parallel, set
 
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
+.. _PutObject: https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 
@@ -378,6 +401,63 @@ policy:
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
 .. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
+
+.. _media-pipeline-custom-storage:
+
+Custom storage
+--------------
+
+.. versionadded:: VERSION
+
+.. setting:: MEDIA_STORAGES
+
+The :setting:`MEDIA_STORAGES` setting maps URL schemes to storage classes, so
+that you can support additional schemes or replace a built-in storage:
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"myscheme": "myproject.storages.MyStorage"}
+    FILES_STORE = "myscheme://example.com/files/"
+
+.. setting:: MEDIA_STORAGES_BASE
+
+It is merged into :setting:`MEDIA_STORAGES_BASE`, which holds the built-in
+storages:
+
+.. code-block:: python
+
+    {
+        "": "scrapy.pipelines.files.FSFilesStore",
+        "file": "scrapy.pipelines.files.FSFilesStore",
+        "ftp": "scrapy.pipelines.files.FTPFilesStore",
+        "gs": "scrapy.pipelines.files.GCSFilesStore",
+        "s3": "scrapy.pipelines.files.S3FilesStore",
+    }
+
+A storage class receives the :setting:`FILES_STORE` or :setting:`IMAGES_STORE`
+value, and must define ``stat_file`` and ``persist_file``:
+
+.. code-block:: python
+
+    class MyStorage:
+        def __init__(self, uri, *, acl=None):
+            self.uri = uri
+            self.acl = acl
+
+        @classmethod
+        def from_crawler(cls, crawler, uri, *, get_setting_name):
+            return cls(uri, acl=crawler.settings[get_setting_name("ACL")])
+
+        def stat_file(self, path, info): ...
+
+        def persist_file(self, path, buf, info, meta=None, headers=None): ...
+
+*get_setting_name* adds the prefix of the pipeline being built to a setting
+name, so that a single storage class can be configured separately for files and
+for images: ``get_setting_name("ACL")`` returns ``"FILES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.files.FilesPipeline` and ``"IMAGES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.images.ImagesPipeline`, and takes :ref:`per-class
+setting names <media-pipeline-class-settings>` into account.
 
 Usage example
 =============
@@ -432,6 +512,8 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
+
+.. _media-pipeline-class-settings:
 
 If you have multiple image pipelines inheriting from :class:`ImagesPipeline`
 and you want to have different settings in different pipelines you can set
