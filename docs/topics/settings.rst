@@ -1698,9 +1698,10 @@ so that a crawl killed before it can stop cleanly resumes from its latest
 state. Higher values trade some of that safety for fewer writes, which matters
 in broad crawls, where the state grows with the number of active domains.
 
-Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`.
-For a killed crawl to resume, the scheduler queues must survive the kill too,
-which requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
+Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`
+and to the database of :class:`~scrapy.dupefilters.DiskDupeFilter`. For a
+killed crawl to resume, the scheduler queues must survive the kill too, which
+requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
 :setting:`SCHEDULER_START_DISK_QUEUE`.
 
 

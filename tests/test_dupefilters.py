@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import shutil
+import sqlite3
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -268,6 +269,30 @@ class TestDiskDupeFilter(DupeFilterTestMixin):
 
         dupefilter.close("finished")
         assert not tempdir.exists()
+
+    @pytest.mark.parametrize(
+        ("sync_every", "committed"),
+        [
+            (0, [0, 0, 0, 0]),
+            (1, [1, 1, 2, 3]),
+            (2, [0, 0, 2, 2]),
+        ],
+    )
+    def test_sync_every(
+        self, tmp_path: Path, sync_every: int, committed: list[int]
+    ) -> None:
+        dupefilter = self._get_dupefilter(
+            JOBDIR=str(tmp_path), JOBDIR_SYNC_EVERY=sync_every
+        )
+        # A second connection only sees committed rows.
+        reader = sqlite3.connect(tmp_path / "requests.seen.db")
+        urls = [f"https://example.com/{i}" for i in (1, 1, 2, 3)]
+        for url, expected in zip(urls, committed, strict=True):
+            dupefilter.request_seen(Request(url))
+            (count,) = reader.execute("SELECT COUNT(*) FROM seen").fetchone()
+            assert count == expected
+        reader.close()
+        dupefilter.close("finished")
 
 
 class TestBaseDupeFilter:
