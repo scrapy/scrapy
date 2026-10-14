@@ -113,7 +113,7 @@ class TestMailSender:
 
         msg = self.catched_msg["msg"]
         assert msg["subject"] == subject
-        assert msg.get_payload(decode=True).decode("utf-8") == body
+        assert msg.get_payload(decode=True).decode() == body
         assert msg.get_charset() == Charset("utf-8")
         assert msg.get("Content-Type") == 'text/plain; charset="utf-8"'
 
@@ -121,7 +121,7 @@ class TestMailSender:
         subject = "sübjèçt"
         body = "bödÿ-àéïöñß"
         attach = BytesIO()
-        attach.write(body.encode("utf-8"))
+        attach.write(body.encode())
         attach.seek(0)
         attachs = [("attachment", "text/plain", attach)]
 
@@ -149,15 +149,15 @@ class TestMailSender:
         assert len(payload) == 2
 
         text, attach = payload
-        assert text.get_payload(decode=True).decode("utf-8") == body
+        assert text.get_payload(decode=True).decode() == body
         assert text.get_charset() == Charset("utf-8")
-        assert attach.get_payload(decode=True).decode("utf-8") == body
+        assert attach.get_payload(decode=True).decode() == body
 
     def test_create_sender_factory_with_host(self):
         mailsender = MailSender(debug=False, smtphost="smtp.testhost.com")
 
         factory = mailsender._create_sender_factory(
-            to_addrs=["test@scrapy.org"], msg="test", d=defer.Deferred()
+            to_addrs=["test@scrapy.org"], msg=BytesIO(b"test"), d=defer.Deferred()
         )
 
         context = factory.buildProtocol("test@scrapy.org").context

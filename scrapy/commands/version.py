@@ -3,7 +3,7 @@ from typing import Any, ClassVar
 
 import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.versions import get_versions
+from scrapy.utils._versions import get_versions
 
 
 class Command(ScrapyCommand):

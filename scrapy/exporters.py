@@ -18,10 +18,11 @@ from xml.sax.xmlreader import AttributesImpl
 
 from itemadapter import ItemAdapter, is_item
 
-from scrapy.utils.python import is_listlike, to_bytes, to_unicode
+from scrapy.utils.python import is_listlike, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine
     from json import JSONEncoder
 
     from scrapy.item import Field
@@ -60,7 +61,15 @@ class BaseItemExporter(ABC):
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
     @abstractmethod
-    def export_item(self, item: Any) -> None:
+    def export_item(self, item: Any) -> Coroutine[Any, Any, None] | None:
+        """Exports the given item. This method must be implemented in
+        subclasses.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``). Scrapy
+           awaits its result when the exporter is used by the :ref:`feed
+           exports <topics-feed-exports>`.
+        """
         raise NotImplementedError
 
     def serialize_field(
@@ -89,11 +98,29 @@ class BaseItemExporter(ABC):
             return [self._serialize_value(v) for v in value]
         return value
 
-    def start_exporting(self) -> None:  # noqa: B027
-        pass
+    def start_exporting(self) -> Coroutine[Any, Any, None] | None:  # noqa: B027
+        """Signal the beginning of the exporting process. Some exporters may
+        use this to generate some required header (for example, the
+        :class:`XmlItemExporter`). You must call this method before exporting
+        any items.
 
-    def finish_exporting(self) -> None:  # noqa: B027
-        pass
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``). Scrapy
+           awaits its result when the exporter is used by the :ref:`feed
+           exports <topics-feed-exports>`.
+        """
+
+    def finish_exporting(self) -> Coroutine[Any, Any, None] | None:  # noqa: B027
+        """Signal the end of the exporting process. Some exporters may use this
+        to generate some required footer (for example, the
+        :class:`XmlItemExporter`). You must always call this method after you
+        have no more items to export.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``). Scrapy
+           awaits its result when the exporter is used by the :ref:`feed
+           exports <topics-feed-exports>`.
+        """
 
     @staticmethod
     def _get_populated_field_names(adapter: ItemAdapter) -> Iterable[str]:
@@ -164,7 +191,7 @@ class JsonLinesItemExporter(BaseItemExporter):
     def export_item(self, item: Any) -> None:
         itemdict = dict(self.get_serialized_fields(item))
         data = self.encoder.encode(itemdict) + "\n"
-        self.file.write(to_bytes(data, self.encoding))
+        self.file.write(data.encode(self.encoding or "utf-8"))
 
 
 class JsonItemExporter(BaseItemExporter):
@@ -203,7 +230,7 @@ class JsonItemExporter(BaseItemExporter):
 
     def export_item(self, item: Any) -> None:
         itemdict = dict(self.get_serialized_fields(item))
-        data = to_bytes(self.encoder.encode(itemdict), self.encoding)
+        data = self.encoder.encode(itemdict).encode(self.encoding or "utf-8")
         self._add_comma_after_first()
         self.file.write(data)
 
@@ -402,7 +429,7 @@ class PprintItemExporter(BaseItemExporter):
 
     def export_item(self, item: Any) -> None:
         itemdict = dict(self.get_serialized_fields(item))
-        self.file.write(to_bytes(pprint.pformat(itemdict) + "\n"))
+        self.file.write(pprint.pformat(itemdict).encode() + b"\n")
 
 
 class PythonItemExporter(BaseItemExporter):

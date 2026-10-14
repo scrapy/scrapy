@@ -12,12 +12,12 @@ if TYPE_CHECKING:
 
 @pytest.fixture(scope="session", autouse=True)
 def running_reactor() -> Generator[None]:
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
 
     from twisted.internet import reactor
 
     # Marks the reactor as running without blocking, so that crawls can be
-    # driven with reactor.iterate(), see tests.benchmarks.crawl().
+    # driven with loop.run_until_complete(), see tests.benchmarks.crawl().
     reactor.startRunning(installSignalHandlers=False)
 
     yield

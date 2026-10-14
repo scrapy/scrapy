@@ -3,12 +3,13 @@ from __future__ import annotations
 import numbers
 import os
 import sys
+import warnings
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
@@ -92,7 +93,9 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
     be able to locate the project module.
     """
     cfg = get_config()
-    if cfg.has_option("settings", project):
+    if "SCRAPY_SETTINGS_MODULE" not in os.environ and cfg.has_option(
+        "settings", project
+    ):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
     closest = closest_scrapy_cfg()
     if closest:
@@ -125,9 +128,30 @@ def get_sources(use_closest: bool = True) -> list[str]:
 
 
 def feed_complete_default_values_from_settings(
-    feed: dict[str, Any], settings: BaseSettings
+    feed: dict[str, Any], settings: BaseSettings, uri: str | None = None
 ) -> dict[str, Any]:
     out = feed.copy()
+    if "overwrite" in out:
+        warnings.warn(
+            "The overwrite feed option is deprecated, use the mode feed option"
+            " instead: mode='overwrite' instead of overwrite=True, and"
+            " mode='append' instead of overwrite=False.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        if out.get("mode") is not None:
+            raise ValueError(
+                "The overwrite and mode feed options are mutually exclusive,"
+                " please set only the mode feed option."
+            )
+        out["mode"] = "overwrite" if out.pop("overwrite") else "append"
+    out.setdefault("mode", settings["FEED_MODE"])
+    if out["mode"] in {"append", "overwrite"}:
+        # Kept for feed storages that were written before the mode feed option
+        # existed and hence only look for the overwrite feed option.
+        out["overwrite"] = out["mode"] == "overwrite"
+    if uri is not None:
+        out.setdefault("format", Path(uri).suffix.removeprefix("."))
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getdictorlist("FEED_EXPORT_FIELDS") or None)
@@ -188,9 +212,20 @@ def feed_process_params_from_cli(
         check_valid_format(feed_format)
         result[feed_uri] = {"format": feed_format}
         if overwrite:
-            result[feed_uri]["overwrite"] = True
+            # -O unambiguously means overwriting, so it ignores FEED_MODE. -o
+            # does not, because appending is not supported by every storage.
+            result[feed_uri]["mode"] = "overwrite"
 
     # FEEDS setting should take precedence over the matching CLI options
     result.update(settings.getdict("FEEDS"))
 
     return result
+
+
+def _job_dir(settings: BaseSettings) -> str | None:
+    path: str | None = settings["JOBDIR"]
+    if not path:
+        return None
+    if not Path(path).exists():
+        Path(path).mkdir(parents=True)
+    return path

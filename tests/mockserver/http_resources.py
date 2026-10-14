@@ -11,7 +11,7 @@ from twisted.web import resource, server
 from twisted.web.server import NOT_DONE_YET
 from twisted.web.util import Redirect, redirectTo
 
-from scrapy.utils.python import to_bytes, to_unicode
+from tests import get_testdata
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -33,6 +33,7 @@ def getarg(
     default: Any = None,
     type_: Callable[[bytes], Any] | None = None,
 ) -> Any:
+    assert request.args is not None
     if name in request.args:
         value = request.args[name][0]
         if type_ is not None:
@@ -100,7 +101,7 @@ class ClientIPResource(BaseResource):
         client_address = request.getClientAddress()
         if client_address is None or client_address.host is None:
             return b""
-        return to_bytes(client_address.host)
+        return cast("bytes", client_address.host.encode())
 
 
 class PayloadResource(BaseResource):
@@ -162,14 +163,36 @@ class Follow(LeafResource):
 
     def renderRequest(self, request: Request, nlist: Sequence[int]) -> None:
         s = """<html> <head></head> <body>"""
+        assert request.args is not None
         args = request.args.copy()
         for nl in nlist:
-            args[b"n"] = [to_bytes(str(nl))]
+            args[b"n"] = [str(nl).encode()]
             argstr = urlencode(args, doseq=True)
             s += f"<a href='/follow?{argstr}'>follow {nl}</a><br>"
         s += """</body>"""
-        request.write(to_bytes(s))
+        request.write(s.encode())
         request.finish()
+
+
+class Books(LeafResource):
+    """Serve a saved snapshot of two pages of https://books.toscrape.com/.
+
+    Any path directly under this resource, e.g. :file:`/books/1/`, gets the
+    saved listing page, and any path below it, which is where the relative
+    links of that page point, gets the saved book page. Listing paths are
+    interchangeable, so that a crawl can reach the same pair of pages under as
+    many distinct URLs as it needs.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._listing = get_testdata("books", "listing.html")
+        self._book = get_testdata("books", "book.html")
+
+    def render(self, request: Request) -> bytes:
+        assert request.postpath is not None
+        request.setHeader(b"Content-Type", b"text/html; charset=utf-8")
+        return self._book if b"catalogue" in request.postpath else self._listing
 
 
 class Delay(LeafResource):
@@ -183,7 +206,7 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request: Request, n: float) -> None:
-        request.write(to_bytes(f"Response delayed for {n:.3f} seconds\n"))
+        request.write(f"Response delayed for {n:.3f} seconds\n".encode())
         request.finish()
 
 
@@ -249,12 +272,14 @@ class Echo(LeafResource):
         assert request.content
         output = {
             "headers": {
-                to_unicode(k): [to_unicode(v) for v in vs]
+                k.decode(errors="surrogateescape"): [
+                    v.decode(errors="surrogateescape") for v in vs
+                ]
                 for k, vs in request.requestHeaders.getAllRawHeaders()
             },
-            "body": to_unicode(request.content.read()),
+            "body": request.content.read().decode(),
         }
-        return to_bytes(json.dumps(output))
+        return json.dumps(output).encode()
 
     render_POST = render_GET
 
@@ -420,14 +445,18 @@ class ResponseHeadersResource(BaseResource):
         assert request.content
         body = json.loads(request.content.read().decode())
         for header_name, header_value in body.items():
-            request.responseHeaders.setRawHeaders(header_name, [header_value])
-        return json.dumps(body).encode("utf-8")
+            # surrogateescape lets tests send bytes that are not valid UTF-8
+            request.responseHeaders.setRawHeaders(
+                header_name, [header_value.encode("utf-8", "surrogateescape")]
+            )
+        return json.dumps(body).encode()
 
 
 class Compress(BaseResource):
     """Compress the data sent in the request url params and set Content-Encoding header"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         data = request.args[b"data"][0]
 
         accept_encoding_header = request.getHeader(b"accept-encoding")
@@ -446,6 +475,7 @@ class SetCookie(BaseResource):
     """Return a response with a Set-Cookie header for each request url parameter"""
 
     def render(self, request: Request) -> bytes:
+        assert request.args is not None
         for cookie_name, cookie_values in request.args.items():
             for cookie_value in cookie_values:
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()

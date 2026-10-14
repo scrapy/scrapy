@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import pdb  # noqa: T100
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from twisted.python import failure
 
 import scrapy
 from scrapy.cmdline import _pop_command_name, execute
@@ -100,13 +100,16 @@ class TestCommandSettings:
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
 
     def test_pdb_uses_ipdb_if_installed(self, monkeypatch):
-        monkeypatch.setattr(failure, "startDebugMode", lambda: None)
         fake_ipdb: Any = argparse.Namespace(post_mortem=lambda tb: None)
         monkeypatch.setitem(sys.modules, "pdb", pdb)
         monkeypatch.setitem(sys.modules, "ipdb", fake_ipdb)
         opts, args = self.parser.parse_known_args(args=["--pdb", "spider.py"])
-        self.command.process_options(args, opts)
-        assert sys.modules["pdb"] is fake_ipdb
+        handlers = logging.root.handlers[:]
+        try:
+            self.command.process_options(args, opts)
+            assert sys.modules["pdb"] is fake_ipdb
+        finally:
+            logging.root.handlers[:] = handlers
 
     def test_help_formatter(self):
         formatter = ScrapyHelpFormatter(prog="scrapy")
@@ -184,31 +187,75 @@ class MySpider(scrapy.Spider):
         assert pidfile.read_text(encoding="utf-8").strip().isdigit()
 
     def test_pdb(self, spider_path: Path) -> None:
-        returncode, _, err = proc("runspider", str(spider_path), "--pdb")
+        returncode, out, err = proc("runspider", str(spider_path), "--pdb", input="")
         assert returncode == 0, err
         assert "It works!" in err
+        assert "(Pdb)" not in out
 
+    def test_pdb_on_logged_error(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import scrapy
 
-class TestSettingsCommand:
-    @pytest.mark.parametrize(
-        ("option", "setting", "expected"),
-        [
-            ("--get", "BOT_NAME", "scrapybot"),
-            ("--getbool", "COOKIES_ENABLED", "True"),
-            ("--getint", "CONCURRENT_REQUESTS", "16"),
-            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
-            ("--getlist", "SPIDER_MODULES", "[]"),
-        ],
-    )
-    def test_get(self, option: str, setting: str, expected: str) -> None:
-        returncode, out, err = proc("settings", option, setting)
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        raise ValueError("boom")
+        yield
+""",
+            encoding="utf-8",
+        )
+        _, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert "(Pdb)" in out, err
+
+    def test_pdb_on_logged_error_without_exception(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import logging
+import scrapy
+
+logger = logging.getLogger(__name__)
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        logger.error("boom")
+        return
+        yield
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("runspider", str(path), "--pdb", input="")
         assert returncode == 0, err
-        assert out.startswith(expected)
+        assert "(Pdb)" not in out
 
-    def test_no_option(self) -> None:
-        returncode, out, err = proc("settings")
+    def test_pdb_on_handled_failure(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import scrapy
+from scrapy.exceptions import IgnoreRequest
+
+class IgnoreEverything:
+    def process_request(self, request, spider):
+        raise IgnoreRequest
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+    custom_settings = {"DOWNLOADER_MIDDLEWARES": {IgnoreEverything: 500}}
+
+    async def start(self):
+        yield scrapy.Request("https://example.com")
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("runspider", str(path), "--pdb", input="")
         assert returncode == 0, err
-        assert not out
+        assert "(Pdb)" not in out
 
 
 class TestCommandCrawlerProcess(TestProjectBase):
@@ -285,26 +332,29 @@ class MySpider(scrapy.Spider):
         assert msg in err
         assert "no running event loop" in err
 
-    def test_project_settings(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_settings(self, spider: str, proj_path: Path) -> None:
         """The reactor is set via the project default settings (to the asyncio value).
 
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
-        for spider in ["sp", "aiosp"]:
-            self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
+        self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
 
-    def test_cmdline_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_cmdline_asyncio(self, spider: str, proj_path: Path) -> None:
         """The reactor is set via the command line to the asyncio value.
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
-        for spider in ["sp", "aiosp"]:
-            self._assert_spider_works(
-                self.ASYNC_MSG,
-                proj_path,
-                spider,
-                "-s",
-                f"TWISTED_REACTOR={_asyncio_reactor_path}",
-            )
+        self._assert_spider_works(
+            self.ASYNC_MSG,
+            proj_path,
+            spider,
+            "-s",
+            f"TWISTED_REACTOR={_asyncio_reactor_path}",
+        )
 
-    def test_project_settings_explicit_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_settings_explicit_asyncio(
+        self, spider: str, proj_path: Path
+    ) -> None:
         """The reactor explicitly is set via the project settings to the asyncio value.
 
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
@@ -313,8 +363,7 @@ class MySpider(scrapy.Spider):
             f"TWISTED_REACTOR = '{_asyncio_reactor_path}'\n",
         )
 
-        for spider in ["sp", "aiosp"]:
-            self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
+        self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
 
     def test_cmdline_empty(self, proj_path: Path) -> None:
         """The reactor is set via the command line to the empty value.
@@ -336,17 +385,17 @@ class MySpider(scrapy.Spider):
         self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
         self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
 
-    def test_spider_settings_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_spider_settings_asyncio(self, spider: str, proj_path: Path) -> None:
         """The reactor is set via the spider settings to the asyncio value.
 
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
-            )
-            self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
+        self._replace_custom_settings(
+            proj_path / self.project_name,
+            spider,
+            f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
+        )
+        self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
 
     def test_spider_settings_asyncio_cmdline_empty(self, proj_path: Path) -> None:
         """The reactor is set via the spider settings to the asyncio value
@@ -368,7 +417,10 @@ class MySpider(scrapy.Spider):
             self.NORMAL_MSG, proj_path, "aiosp", "-s", "TWISTED_REACTOR="
         )
 
-    def test_project_empty_spider_settings_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_empty_spider_settings_asyncio(
+        self, spider: str, proj_path: Path
+    ) -> None:
         """The reactor is set via the project settings to the empty value
         and via the spider settings to the asyncio value. CrawlerProcess is
         chosen based on the project settings, but the asyncio reactor is chosen
@@ -376,15 +428,17 @@ class MySpider(scrapy.Spider):
 
         CrawlerProcess, the asyncio reactor, both spiders work."""
         self._append_settings(proj_path / self.project_name, "TWISTED_REACTOR = None\n")
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
-            )
-            self._assert_spider_works(self.NORMAL_MSG, proj_path, spider)
+        self._replace_custom_settings(
+            proj_path / self.project_name,
+            spider,
+            f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
+        )
+        self._assert_spider_works(self.NORMAL_MSG, proj_path, spider)
 
-    def test_project_asyncio_spider_settings_select(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_asyncio_spider_settings_select(
+        self, spider: str, proj_path: Path
+    ) -> None:
         """The reactor is set via the project settings to the asyncio value
         and via the spider settings to the select value. AsyncCrawlerProcess
         is chosen based on the project settings, and the conflicting reactor
@@ -396,19 +450,18 @@ class MySpider(scrapy.Spider):
             proj_path / self.project_name,
             f"TWISTED_REACTOR = '{_asyncio_reactor_path}'\n",
         )
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                "{'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor'}",
-            )
-            _, _, err = proc(self.name, spider, cwd=proj_path)
-            assert self.ASYNC_MSG in err
-            assert (
-                "The installed reactor (twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
-                " does not match the requested one"
-                " (twisted.internet.selectreactor.SelectReactor)"
-            ) in err
+        self._replace_custom_settings(
+            proj_path / self.project_name,
+            spider,
+            "{'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor'}",
+        )
+        _, _, err = proc(self.name, spider, cwd=proj_path)
+        assert self.ASYNC_MSG in err
+        assert (
+            "The installed reactor (twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
+            " does not match the requested one"
+            " (twisted.internet.selectreactor.SelectReactor)"
+        ) in err
 
     def test_project_asyncio_spider_settings_select_forced(
         self, proj_path: Path
@@ -431,6 +484,48 @@ class MySpider(scrapy.Spider):
 
         self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
         self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
+
+
+class TestLogInstallRootHandler(TestProjectBase):
+    """LOG_INSTALL_ROOT_HANDLER=False must let a user-configured root handler
+    be the only one in effect, instead of Scrapy adding its own alongside it."""
+
+    @pytest.fixture(autouse=True)
+    def create_files(self, proj_path: Path) -> None:
+        proj_mod_path = proj_path / self.project_name
+        (proj_mod_path / "spiders" / "sp.py").write_text("""
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'sp'
+
+    async def start(self):
+        self.logger.info('It works!')
+        return
+        yield
+""")
+        self._append_settings(
+            proj_mod_path,
+            "\nimport logging\n"
+            "logging.basicConfig(level=logging.INFO, format='CUSTOM: %(message)s')\n",
+        )
+
+    def test_default(self, proj_path: Path) -> None:
+        """Scrapy installs its own root handler in addition to the
+        user-configured one, so the message is logged twice, once in each
+        format."""
+        _, _, err = proc("crawl", "sp", cwd=proj_path)
+        assert "CUSTOM: It works!" in err
+        assert "[sp] INFO: It works!" in err
+
+    def test_disabled(self, proj_path: Path) -> None:
+        """Scrapy leaves the user-configured root handler alone, so the
+        message is only logged once, in the user's format."""
+        _, _, err = proc(
+            "crawl", "sp", "-s", "LOG_INSTALL_ROOT_HANDLER=False", cwd=proj_path
+        )
+        assert "CUSTOM: It works!" in err
+        assert "[sp] INFO: It works!" not in err
 
 
 class TestMiscCommands(TestProjectBase):
@@ -662,6 +757,100 @@ class TestExecute:
         assert capsys.readouterr().out.strip() == "scrapybot"
 
 
+class TestSettingsCommand(TestProjectBase):
+    @pytest.fixture(autouse=True)
+    def create_files(self, proj_path: Path) -> None:
+        proj_mod_path = proj_path / self.project_name
+        (proj_mod_path / "addons.py").write_text("""
+class MyAddon:
+    def update_settings(self, settings):
+        settings.set("FROM_ADDON", "addon", priority="addon")
+        settings.set("SPIDER_WINS", "addon", priority="addon")
+        settings.set("SEEN_BY_ADDON", settings.get("FROM_SPIDER"), priority="addon")
+
+    @classmethod
+    def update_pre_crawler_settings(cls, settings):
+        settings.set("FROM_ADDON_PRE_CRAWLER", "addon", priority="addon")
+""")
+        (proj_mod_path / "spiders" / "sp.py").write_text("""
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = "sp"
+    custom_settings = {
+        "FROM_SPIDER": "spider",
+        "SPIDER_WINS": "spider",
+    }
+""")
+        self._append_settings(
+            proj_mod_path,
+            f'ADDONS = {{"{self.project_name}.addons.MyAddon": 100}}\n',
+        )
+
+    @staticmethod
+    def _get(proj_path: Path, setting: str, *args: str) -> str:
+        returncode, out, err = proc("settings", "--get", setting, *args, cwd=proj_path)
+        assert returncode == 0, err
+        return out.strip()
+
+    def test_project_setting(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "BOT_NAME") == self.project_name
+
+    def test_addon(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_ADDON") == "addon"
+
+    def test_addon_pre_crawler(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_ADDON_PRE_CRAWLER") == "addon"
+
+    def test_cmdline_beats_addon(self, proj_path: Path) -> None:
+        assert (
+            self._get(proj_path, "FROM_ADDON", "-s", "FROM_ADDON=cmdline") == "cmdline"
+        )
+
+    def test_no_spider(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_SPIDER") == "None"
+        assert self._get(proj_path, "SPIDER_WINS") == "addon"
+
+    def test_spider(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "FROM_SPIDER", "--spider", "sp") == "spider"
+        assert self._get(proj_path, "FROM_ADDON", "--spider", "sp") == "addon"
+
+    def test_spider_beats_addon(self, proj_path: Path) -> None:
+        assert self._get(proj_path, "SPIDER_WINS", "--spider", "sp") == "spider"
+
+    def test_addons_see_spider_settings(self, proj_path: Path) -> None:
+        """Add-ons are loaded after spider settings are applied, as in a crawl."""
+        assert self._get(proj_path, "SEEN_BY_ADDON") == "None"
+        assert self._get(proj_path, "SEEN_BY_ADDON", "--spider", "sp") == "spider"
+
+    def test_unknown_spider(self, proj_path: Path) -> None:
+        returncode, _, err = proc(
+            "settings", "--get", "FROM_SPIDER", "--spider", "nope", cwd=proj_path
+        )
+        assert returncode == 2
+        assert "Unable to find spider: nope" in err
+
+    @pytest.mark.parametrize(
+        ("option", "setting", "expected"),
+        [
+            ("--get", "BOT_NAME", "scrapybot"),
+            ("--getbool", "COOKIES_ENABLED", "True"),
+            ("--getint", "CONCURRENT_REQUESTS", "16"),
+            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
+            ("--getlist", "SPIDER_MODULES", "[]"),
+        ],
+    )
+    def test_get_standalone(self, option: str, setting: str, expected: str) -> None:
+        returncode, out, err = proc("settings", option, setting)
+        assert returncode == 0, err
+        assert out.startswith(expected)
+
+    def test_no_option(self) -> None:
+        returncode, out, err = proc("settings")
+        assert returncode == 0, err
+        assert not out
+
+
 class TestBenchCommand:
     @pytest.mark.parametrize("use_reactor", [True, False])
     def test_run(self, use_reactor: bool) -> None:
@@ -754,6 +943,7 @@ class TestHelpMessage(TestProjectBase):
             "runspider",
             "version",
             "genspider",
+            "genrequest",
             "check",
             "bench",
         ],

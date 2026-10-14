@@ -57,6 +57,31 @@ class TestGenspiderCommand(TestProjectBase):
         modify_time_after = spfile.stat().st_mtime
         assert modify_time_after == modify_time_before
 
+    @pytest.mark.parametrize("suffix", ["", ".tmpl"])
+    def test_custom_template_path(self, suffix: str, proj_path: Path) -> None:
+        template = proj_path / "custom.tmpl"
+        template.write_text(
+            'import scrapy\n\n\nclass $classname(scrapy.Spider):\n    name = "$name"\n',
+            encoding="utf-8",
+        )
+        spname = "test_spider"
+        spfile = proj_path / self.project_name / "spiders" / f"{spname}.py"
+        assert (
+            call(
+                "genspider",
+                "-t",
+                str(template)[: -len(".tmpl")] if suffix == "" else str(template),
+                spname,
+                "test.com",
+                cwd=proj_path,
+            )
+            == 0
+        )
+        assert spfile.exists()
+        assert "class TestSpiderSpider(scrapy.Spider):" in spfile.read_text(
+            encoding="utf-8"
+        )
+
     def test_list(self, proj_path: Path) -> None:
         assert call("genspider", "--list", cwd=proj_path) == 0
 

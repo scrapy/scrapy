@@ -13,6 +13,7 @@ from .http_resources import (
     ArbitraryLengthPayloadResource,
     BadHeader,
     BaseResource,
+    Books,
     BrokenChunkedResource,
     BrokenDownloadResource,
     ChunkedResource,
@@ -55,6 +56,7 @@ class Root(BaseResource):
         super().__init__()
         put_child(self, b"status", Status())
         put_child(self, b"follow", Follow())
+        put_child(self, b"books", Books())
         put_child(self, b"delay", Delay())
         put_child(self, b"partial", Partial())
         put_child(self, b"drop", Drop())
@@ -79,12 +81,15 @@ class Root(BaseResource):
             b"enc-gb18030",
             Data(b"<p>gb18030 encoding</p>", "text/html; charset=gb18030"),
         )
+        put_child(
+            self, b"robots.txt", Data(b"User-agent: *\nDisallow: /deny\n", "text/plain")
+        )
         put_child(self, b"redirect", Redirect(b"/redirected"))
         put_child(
             self, b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected")
         )
         put_child(self, b"redirected", Data(b"Redirected here", "text/plain"))
-        numbers = [str(x).encode("utf8") for x in range(2**18)]
+        numbers = [str(x).encode() for x in range(2**18)]
         put_child(self, b"numbers", Data(b"".join(numbers), "text/plain"))
         put_child(self, b"wait", ForeverTakingResource())
         put_child(self, b"hang-after-headers", ForeverTakingResource(write=True))

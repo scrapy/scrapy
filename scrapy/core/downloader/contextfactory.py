@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
+from formerly import deprecated_class
 from OpenSSL import SSL
 from twisted.internet.ssl import (
     AcceptableCiphers,
@@ -22,20 +23,16 @@ from scrapy.core.downloader.tls import (
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
-from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.ssl import (
+from scrapy.utils._ssl import (
     _get_cert_options_version_kwargs,
     _get_keylog_filename,
     _get_tls_version_limits,
     _set_keylog_callback,
 )
+from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
@@ -177,11 +174,12 @@ def _get_creator_context(creator: Any) -> SSL.Context:
     return cast("SSL.Context", creator._ctx)
 
 
-ScrapyClientContextFactory = create_deprecated_class(
+ScrapyClientContextFactory = deprecated_class(
     "ScrapyClientContextFactory",
     _ScrapyClientContextFactory,
-    subclass_warn_message="{old} is deprecated.",
-    instance_warn_message="{cls} is deprecated.",
+    category=ScrapyDeprecationWarning,
+    subclass_message="{old} is deprecated.",
+    instance_message="{cls} is deprecated.",
 )
 
 
@@ -264,11 +262,12 @@ class _AcceptableProtocolsContextFactory:
         return options
 
 
-AcceptableProtocolsContextFactory = create_deprecated_class(
+AcceptableProtocolsContextFactory = deprecated_class(
     "AcceptableProtocolsContextFactory",
     _AcceptableProtocolsContextFactory,
-    subclass_warn_message="{old} is deprecated.",
-    instance_warn_message="{cls} is deprecated.",
+    category=ScrapyDeprecationWarning,
+    subclass_message="{old} is deprecated.",
+    instance_message="{cls} is deprecated.",
 )
 
 

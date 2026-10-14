@@ -1,8 +1,9 @@
-import tempfile
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
-import queuelib
 
 from scrapy.core.downloader import Downloader
 from scrapy.http.request import Request
@@ -13,49 +14,48 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.utils.downloader import MockDownloader
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from pathlib import Path
+
+    from scrapy.crawler import Crawler
+
+
+def _pop(queue: ScrapyPriorityQueue | DownloaderAwarePriorityQueue) -> Request:
+    request = queue.pop()
+    assert request is not None
+    return request
+
+
+def _peek(queue: ScrapyPriorityQueue | DownloaderAwarePriorityQueue) -> Request:
+    request = queue.peek()
+    assert request is not None
+    return request
+
 
 class TestPriorityQueue:
-    def setup_method(self):
-        self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("foo")
+    @pytest.fixture
+    def crawler(self) -> Crawler:
+        return get_crawler(Spider)
 
-    def test_queue_push_pop_one(self):
-        temp_dir = tempfile.mkdtemp()
+    def test_queue_push_pop_one(self, crawler: Crawler, tmp_path: Path) -> None:
         queue = build_from_crawler(
-            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
+            ScrapyPriorityQueue, crawler, FifoMemoryQueue, str(tmp_path)
         )
         assert queue.pop() is None
         assert len(queue) == 0
         req1 = Request("https://example.org/1", priority=1)
         queue.push(req1)
         assert len(queue) == 1
-        dequeued = queue.pop()
+        dequeued = _pop(queue)
         assert len(queue) == 0
         assert dequeued.url == req1.url
         assert dequeued.priority == req1.priority
         assert not queue.close()
 
-    def test_no_peek_raises(self):
-        if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
-        temp_dir = tempfile.mkdtemp()
+    def test_peek(self, crawler: Crawler, tmp_path: Path) -> None:
         queue = build_from_crawler(
-            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
-        )
-        queue.push(Request("https://example.org"))
-        with pytest.raises(
-            NotImplementedError,
-            match="The underlying queue class does not implement 'peek'",
-        ):
-            queue.peek()
-        queue.close()
-
-    def test_peek(self):
-        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
-        temp_dir = tempfile.mkdtemp()
-        queue = build_from_crawler(
-            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
+            ScrapyPriorityQueue, crawler, FifoMemoryQueue, str(tmp_path)
         )
         assert len(queue) == 0
         assert queue.peek() is None
@@ -66,23 +66,24 @@ class TestPriorityQueue:
         queue.push(req2)
         queue.push(req3)
         assert len(queue) == 3
-        assert queue.peek().url == req1.url
-        assert queue.pop().url == req1.url
+        assert _peek(queue).url == req1.url
+        assert _pop(queue).url == req1.url
         assert len(queue) == 2
-        assert queue.peek().url == req2.url
-        assert queue.pop().url == req2.url
+        assert _peek(queue).url == req2.url
+        assert _pop(queue).url == req2.url
         assert len(queue) == 1
-        assert queue.peek().url == req3.url
-        assert queue.pop().url == req3.url
+        assert _peek(queue).url == req3.url
+        assert _pop(queue).url == req3.url
         assert not queue.close()
 
-    def test_init_prios_with_start_queue(self):
-        temp_dir = tempfile.mkdtemp()
+    def test_init_prios_with_start_queue(
+        self, crawler: Crawler, tmp_path: Path
+    ) -> None:
         queue = build_from_crawler(
             ScrapyPriorityQueue,
-            self.crawler,
+            crawler,
             PickleFifoDiskQueue,
-            temp_dir,
+            str(tmp_path),
             start_queue_cls=PickleFifoDiskQueue,
         )
         req = Request("https://example.org/", meta={"is_start_request": True})
@@ -91,20 +92,19 @@ class TestPriorityQueue:
 
         queue2 = build_from_crawler(
             ScrapyPriorityQueue,
-            self.crawler,
+            crawler,
             PickleFifoDiskQueue,
-            temp_dir,
+            str(tmp_path),
             startprios,
             start_queue_cls=PickleFifoDiskQueue,
         )
         assert len(queue2) == 1
-        assert queue2.pop().url == req.url
+        assert _pop(queue2).url == req.url
         queue2.close()
 
-    def test_queue_push_pop_priorities(self):
-        temp_dir = tempfile.mkdtemp()
+    def test_queue_push_pop_priorities(self, crawler: Crawler, tmp_path: Path) -> None:
         queue = build_from_crawler(
-            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3]
+            ScrapyPriorityQueue, crawler, FifoMemoryQueue, str(tmp_path), [-1, -2, -3]
         )
         assert queue.pop() is None
         assert len(queue) == 0
@@ -115,77 +115,97 @@ class TestPriorityQueue:
         queue.push(req2)
         queue.push(req3)
         assert len(queue) == 3
-        dequeued = queue.pop()
+        dequeued = _pop(queue)
         assert len(queue) == 2
         assert dequeued.url == req3.url
         assert dequeued.priority == req3.priority
         assert set(queue.close()) == {-1, -2}
 
+    def test_next_priority_empty_startprios(self, crawler: Crawler) -> None:
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, crawler, FifoMemoryQueue, "", [-1]
+        )
+        assert queue.next_priority() is None
+
+    def test_next_priority_with_start_queue(self, crawler: Crawler) -> None:
+        queue = build_from_crawler(
+            ScrapyPriorityQueue,
+            crawler,
+            FifoMemoryQueue,
+            "",
+            start_queue_cls=FifoMemoryQueue,
+        )
+        queue.push(Request("https://example.org/1", meta={"is_start_request": True}))
+        queue.push(Request("https://example.org/2", priority=1))
+        assert queue.next_priority() == -1
+        queue.pop()
+        assert queue.next_priority() == 0
+        queue.pop()
+        assert queue.next_priority() is None
+
 
 class TestDownloaderAwarePriorityQueue:
-    def setup_method(self):
+    @pytest.fixture
+    def downloader(self) -> MockDownloader:
+        return MockDownloader()
+
+    @pytest.fixture
+    def queue(
+        self, downloader: MockDownloader
+    ) -> Generator[DownloaderAwarePriorityQueue]:
         crawler = get_crawler(Spider)
-        crawler.engine = Mock(downloader=MockDownloader())
-        self.queue = build_from_crawler(
+        crawler.engine = Mock(downloader=downloader)
+        queue = build_from_crawler(
             DownloaderAwarePriorityQueue,
             crawler,
             downstream_queue_cls=FifoMemoryQueue,
             key="foo/bar",
         )
+        try:
+            yield queue
+        finally:
+            queue.close()
 
-    def teardown_method(self):
-        self.queue.close()
-
-    def test_push_pop(self):
-        assert len(self.queue) == 0
-        assert self.queue.pop() is None
+    def test_push_pop(self, queue: DownloaderAwarePriorityQueue) -> None:
+        assert len(queue) == 0
+        assert queue.pop() is None
         req1 = Request("http://www.example.com/1")
         req2 = Request("http://www.example.com/2")
         req3 = Request("http://www.example.com/3")
-        self.queue.push(req1)
-        self.queue.push(req2)
-        self.queue.push(req3)
-        assert len(self.queue) == 3
-        assert self.queue.pop().url == req1.url
-        assert len(self.queue) == 2
-        assert self.queue.pop().url == req2.url
-        assert len(self.queue) == 1
-        assert self.queue.pop().url == req3.url
-        assert len(self.queue) == 0
-        assert self.queue.pop() is None
+        queue.push(req1)
+        queue.push(req2)
+        queue.push(req3)
+        assert len(queue) == 3
+        assert _pop(queue).url == req1.url
+        assert len(queue) == 2
+        assert _pop(queue).url == req2.url
+        assert len(queue) == 1
+        assert _pop(queue).url == req3.url
+        assert len(queue) == 0
+        assert queue.pop() is None
 
-    def test_no_peek_raises(self):
-        if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
-        self.queue.push(Request("https://example.org"))
-        with pytest.raises(
-            NotImplementedError,
-            match="The underlying queue class does not implement 'peek'",
-        ):
-            self.queue.peek()
-
-    def test_peek(self):
-        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
-        assert len(self.queue) == 0
+    def test_peek(self, queue: DownloaderAwarePriorityQueue) -> None:
+        assert len(queue) == 0
         req1 = Request("https://example.org/1")
         req2 = Request("https://example.org/2")
         req3 = Request("https://example.org/3")
-        self.queue.push(req1)
-        self.queue.push(req2)
-        self.queue.push(req3)
-        assert len(self.queue) == 3
-        assert self.queue.peek().url == req1.url
-        assert self.queue.pop().url == req1.url
-        assert len(self.queue) == 2
-        assert self.queue.peek().url == req2.url
-        assert self.queue.pop().url == req2.url
-        assert len(self.queue) == 1
-        assert self.queue.peek().url == req3.url
-        assert self.queue.pop().url == req3.url
-        assert self.queue.peek() is None
+        queue.push(req1)
+        queue.push(req2)
+        queue.push(req3)
+        assert len(queue) == 3
+        assert _peek(queue).url == req1.url
+        assert _pop(queue).url == req1.url
+        assert len(queue) == 2
+        assert _peek(queue).url == req2.url
+        assert _pop(queue).url == req2.url
+        assert len(queue) == 1
+        assert _peek(queue).url == req3.url
+        assert _pop(queue).url == req3.url
+        assert queue.peek() is None
 
-    def test_tie_breaking_rotates_slots(self):
+    def test_tie_breaking_rotates_slots(
+        self, queue: DownloaderAwarePriorityQueue
+    ) -> None:
         # No active downloads are tracked in the downloader, so every slot has
         # the same score and tie-breaking must not starve a slot.
         req_a1 = Request("https://example.org/a1")
@@ -198,18 +218,20 @@ class TestDownloaderAwarePriorityQueue:
         req_b2.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
 
         for request in (req_a1, req_b1, req_a2, req_b2):
-            self.queue.push(request)
+            queue.push(request)
 
         slots = [
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-a", "slot-b"]
 
-    def test_tie_breaking_keeps_rotation_after_selected_slot_is_deleted(self):
+    def test_tie_breaking_keeps_rotation_after_selected_slot_is_deleted(
+        self, queue: DownloaderAwarePriorityQueue
+    ) -> None:
         # If the selected slot becomes empty, rotation should continue from
         # that slot marker to avoid restarting from the smallest slot.
         req_a1 = Request("https://example.org/a1")
@@ -222,20 +244,20 @@ class TestDownloaderAwarePriorityQueue:
         req_c1.meta[Downloader.DOWNLOAD_SLOT] = "slot-c"
 
         for request in (req_a1, req_a2, req_b1, req_c1):
-            self.queue.push(request)
+            queue.push(request)
 
         slots = [
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
+            _pop(queue).meta[Downloader.DOWNLOAD_SLOT],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-c", "slot-a"]
 
-    def test_pop_prefers_slot_with_fewer_active_downloads(self):
-        downloader = self.queue._downloader_interface.downloader
-
+    def test_pop_prefers_slot_with_fewer_active_downloads(
+        self, downloader: MockDownloader, queue: DownloaderAwarePriorityQueue
+    ) -> None:
         req_a = Request("https://example.org/a")
         req_a.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
         req_b = Request("https://example.org/b")
@@ -244,24 +266,24 @@ class TestDownloaderAwarePriorityQueue:
         req_c.meta[Downloader.DOWNLOAD_SLOT] = "slot-c"
 
         for req in (req_a, req_b, req_c):
-            self.queue.push(req)
+            queue.push(req)
 
         downloader.increment("slot-a")
         downloader.increment("slot-c")
 
-        popped = self.queue.pop()
+        popped = _pop(queue)
         assert popped.url == req_b.url
 
-    def test_contains(self):
+    def test_contains(self, queue: DownloaderAwarePriorityQueue) -> None:
         req = Request("https://example.org/")
         req.meta[Downloader.DOWNLOAD_SLOT] = "example-slot"
-        assert "example-slot" not in self.queue
-        self.queue.push(req)
-        assert "example-slot" in self.queue
-        assert "other-slot" not in self.queue
+        assert "example-slot" not in queue
+        queue.push(req)
+        assert "example-slot" in queue
+        assert "other-slot" not in queue
 
 
-def test_slot_directory_removed_when_slot_drains(tmp_path):
+def test_slot_directory_removed_when_slot_drains(tmp_path: Path) -> None:
     crawler = get_crawler(Spider)
     crawler.spider = crawler._create_spider("foo")
     crawler.engine = Mock(downloader=MockDownloader())
@@ -277,7 +299,7 @@ def test_slot_directory_removed_when_slot_drains(tmp_path):
     queue.push(request)
     assert slot_dir.is_dir()
 
-    assert queue.pop().url == request.url
+    assert _pop(queue).url == request.url
     assert not slot_dir.exists()
 
     queue.push(request)
@@ -299,12 +321,12 @@ def test_slot_directory_removed_when_slot_drains(tmp_path):
         ([{"start": True}, {}], [2, 1]),
     ],
 )
-def test_pop_order(input_, output):
-    def make_url(index):
+def test_pop_order(input_: list[dict[str, Any]], output: list[int]) -> None:
+    def make_url(index: int) -> str:
         return f"https://toscrape.com/{index}"
 
-    def make_request(index, data):
-        meta = {}
+    def make_request(index: int, data: dict[str, Any]) -> Request:
+        meta: dict[str, Any] = {}
         if data.get("start", False):
             meta["is_start_request"] = True
         return Request(
@@ -332,7 +354,7 @@ def test_pop_order(input_, output):
         queue.push(request)
 
     actual_output_urls = []
-    while request := queue.pop():
-        actual_output_urls.append(request.url)
+    while popped := queue.pop():
+        actual_output_urls.append(popped.url)
 
     assert actual_output_urls == expected_output_urls

@@ -7,7 +7,7 @@ import pytest
 from w3lib.encoding import html_to_unicode
 
 from scrapy.http import Response
-from scrapy.utils.gz import gunzip, gzip_magic_number
+from scrapy.utils._compression import gunzip, gzip_magic_number
 from tests import tests_datadir
 
 SAMPLEDIR = Path(tests_datadir, "compressed")
