@@ -10,6 +10,7 @@ import pytest
 from twisted.internet.defer import Deferred, succeed
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import (
     CloseSpider,
     DecompressionError,
@@ -21,7 +22,6 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.utils.decorators import coroutine_test
 
@@ -67,7 +67,7 @@ class TestManagerBase:
         crawler = get_crawler(Spider, self.settings_dict)
         crawler.spider = crawler._create_spider("foo")
         mwman = build_from_crawler(DownloaderMiddlewareManager, crawler)
-        crawler.engine = crawler._create_engine()
+        crawler.engine = ExecutionEngine(crawler)
         await crawler.engine.open_spider_async()
         try:
             yield mwman
@@ -145,7 +145,7 @@ class TestDefaults(TestManagerBase):
         async with self.get_mwman() as mwman:
             ret = await self._download(mwman, req, resp)
         assert isinstance(ret, Request), f"Not redirected: {ret!r}"
-        assert to_bytes(ret.url) == resp.headers["Location"], (
+        assert ret.url.encode() == resp.headers["Location"], (
             "Not redirected to location header"
         )
 

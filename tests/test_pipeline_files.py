@@ -6,7 +6,7 @@ import random
 import re
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
@@ -940,6 +940,40 @@ class TestS3FilesStore:
 
             stub.assert_no_pending_responses()
 
+    @inline_callbacks_test
+    def test_persist_acl_header(self, monkeypatch):
+        """A header overrides the matching put_object argument."""
+        bucket = "mybucket"
+        key = "export.csv"
+        buffer = mock.MagicMock()
+
+        store = S3FilesStore(f"s3://{bucket}/{key}")
+        monkeypatch.setattr(store, "_use_async", lambda: False)
+        from botocore.stub import Stubber  # noqa: PLC0415
+
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                "put_object",
+                expected_params={
+                    "ACL": "public-read",
+                    "Body": buffer,
+                    "Bucket": bucket,
+                    "CacheControl": S3FilesStore.HEADERS["Cache-Control"],
+                    "Key": key,
+                    "Metadata": {},
+                },
+                service_response={},
+            )
+
+            yield store.persist_file(
+                "",
+                buffer,
+                info=DUMMY_SPIDER_INFO,
+                headers={"x-amz-acl": "public-read"},
+            )
+
+            stub.assert_no_pending_responses()
+
     def test_missing_botocore(self):
         with (
             mock.patch(
@@ -964,6 +998,12 @@ class TestS3FilesStore:
             TypeError, match='Header "X-Custom" is not supported by botocore'
         ):
             store._headers_to_botocore_kwargs({"X-Custom": "value"})
+
+    def test_headers_to_botocore_kwargs(self):
+        store = S3FilesStore("s3://mybucket/key")
+        assert store._headers_to_botocore_kwargs(
+            {"cache-control": "max-age=1", "X-AMZ-TAGGING": "a=b"}
+        ) == {"CacheControl": "max-age=1", "Tagging": "a=b"}
 
     @inline_callbacks_test
     def test_stat(self, monkeypatch):
@@ -1117,7 +1157,7 @@ class TestS3FilesStoreAsync:
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
         checksum = "3187896a9657a28163abb31667df64c8"
-        last_modified = datetime(2019, 12, 1, tzinfo=timezone.utc)
+        last_modified = datetime(2019, 12, 1, tzinfo=UTC)
 
         store = S3FilesStore(uri)
         client = await store._get_aio_client()

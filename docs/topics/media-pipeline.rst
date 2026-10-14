@@ -317,6 +317,28 @@ policy:
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
+To send custom headers with the uploaded files, subclass ``S3FilesStore``
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme of
+your pipeline to it:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline, S3FilesStore
+
+
+    class CustomS3FilesStore(S3FilesStore):
+        HEADERS = {
+            "Cache-Control": "max-age=172800",
+            "X-Amz-Storage-Class": "STANDARD_IA",
+        }
+
+
+    class CustomFilesPipeline(FilesPipeline):
+        STORE_SCHEMES = FilesPipeline.STORE_SCHEMES | {"s3": CustomS3FilesStore}
+
+Supported headers are those that the installed botocore version models for
+the `PutObject`_ operation; any other header raises :exc:`TypeError`.
+
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
 `Zenko CloudServer`_. All you need to do is set the endpoint option in your
 Scrapy settings:
@@ -335,17 +357,9 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
 To reuse connections for as many files as you check or upload in parallel, set
 :setting:`AWS_MAX_POOL_CONNECTIONS` accordingly.
 
-.. versionchanged:: VERSION
-    When :ref:`asyncio support is available <using-asyncio>` and aiobotocore_ is
-    installed (it is part of the :ref:`s3 <extras>` extra), files are stat'ed and
-    uploaded using genuinely-asynchronous I/O. Otherwise, the blocking botocore_
-    client is run in a separate thread.
-
-.. _aiobotocore: https://github.com/aio-libs/aiobotocore
-.. _botocore: https://github.com/boto/botocore
-
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
+.. _PutObject: https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 

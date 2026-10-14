@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -20,9 +20,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
@@ -169,7 +166,7 @@ class Spider(object_ref):
 
     @classmethod
     def handles_request(cls, request: Request) -> bool:
-        return url_is_from_spider(request.url, cls)
+        return url_is_from_spider(request, cls)
 
     @staticmethod
     def close(spider: Spider, reason: str) -> Deferred[None] | None:

@@ -8,6 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import json
+import weakref
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
@@ -24,7 +25,7 @@ from w3lib.encoding import (
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.response import Response
-from scrapy.utils.python import memoizemethod_noargs, to_unicode
+from scrapy.utils.python import memoizemethod_noargs
 from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
@@ -128,16 +129,13 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _headers_encoding(self) -> str | None:
         content_type = self.headers.get(b"Content-Type") or b""
-        return http_content_type_encoding(to_unicode(content_type, encoding="latin-1"))
+        return http_content_type_encoding(content_type.decode("latin-1"))
 
     def _body_inferred_encoding(self) -> str:
+        content_type = self.headers.get(b"Content-Type") or b""
         if self._cached_benc is None:
-            content_type = to_unicode(
-                cast("bytes", self.headers.get(b"Content-Type", b"")),
-                encoding="latin-1",
-            )
             benc, ubody = html_to_unicode(
-                content_type,
+                content_type.decode("latin-1"),
                 self.body,
                 auto_detect_fun=self._auto_detect_fun,
                 default_encoding=self._DEFAULT_ENCODING,
@@ -170,7 +168,11 @@ class TextResponse(Response):
             # circular import
             from scrapy.selector import Selector  # noqa: PLC0415
 
-            self._cached_selector = Selector(self)
+            selector = Selector(self)
+            # The weak reference lets the response be freed as soon as nothing
+            # else refers to it.
+            selector._response = weakref.ref(self)
+            self._cached_selector = selector
         return self._cached_selector
 
     def jmespath(self, query: str, **kwargs: Any) -> SelectorList:

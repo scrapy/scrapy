@@ -211,6 +211,7 @@ def pytest_runtest_setup(item):
         "boto3",
         "aiobotocore",
         "aioboto3",
+        "psutil",
     ]
 
     for module in optional_deps:
