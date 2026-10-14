@@ -1,10 +1,14 @@
+import contextvars
 import xmlrpc.client
+from collections.abc import Coroutine, Generator
 from typing import Any
 
 import pytest
 
 from scrapy import Request
 from scrapy.http import XmlRpcRequest
+from scrapy.http.request import _active_crawler, _active_crawler_scope
+from scrapy.utils.test import get_crawler
 from tests.utils.bases.http_request import TestRequestBase
 
 
@@ -40,3 +44,26 @@ class TestXmlRpcRequest(TestRequestBase):
 
     def test_latin1(self):
         self._test_request(params=("pas£",), encoding="latin1")
+
+
+class _Suspend:
+    def __await__(self) -> Generator[None]:
+        yield
+
+
+def test_active_crawler_scope_closed_elsewhere():
+    crawler = get_crawler()
+
+    async def inner() -> None:
+        with _active_crawler_scope(crawler):
+            await _Suspend()
+
+    def outer() -> Coroutine[Any, Any, None]:
+        with _active_crawler_scope(crawler):
+            coro = inner()
+            coro.send(None)
+        return coro
+
+    coro = contextvars.copy_context().run(outer)
+    coro.close()
+    assert _active_crawler.get() is None
