@@ -5,6 +5,7 @@ import mimetypes
 import random
 import re
 import time
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
@@ -889,15 +890,44 @@ class TestMediaStorages:
                 "MEDIA_STORAGES": {"file": "tests.test_pipeline_files.SimpleStore"},
             },
         )
-        assert isinstance(build_from_crawler(FilesPipeline, crawler).store, SimpleStore)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            pipeline = build_from_crawler(FilesPipeline, crawler)
+        assert isinstance(pipeline.store, SimpleStore)
 
-    def test_store_schemes_deprecated(self, tmp_path: Path) -> None:
-        class DeprecatedPipeline(FilesPipeline):
-            STORE_SCHEMES = {**FilesPipeline.STORE_SCHEMES, "file": SimpleStore}  # type: ignore[dict-item]
+    def test_store_schemes_read_deprecated(self) -> None:
+        with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
+            assert FilesPipeline.STORE_SCHEMES["s3"] is S3FilesStore
+
+    def test_store_schemes_extended_deprecated(self, tmp_path: Path) -> None:
+        with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
+
+            class DeprecatedPipeline(FilesPipeline):
+                STORE_SCHEMES = {**FilesPipeline.STORE_SCHEMES, "file": SimpleStore}  # type: ignore[dict-item]
 
         crawler = get_crawler(None, {"FILES_STORE": str(tmp_path)})
         with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
             store = build_from_crawler(DeprecatedPipeline, crawler).store
+        assert isinstance(store, SimpleStore)
+
+    def test_store_schemes_replaced_deprecated(self, tmp_path: Path) -> None:
+        class DeprecatedPipeline(FilesPipeline):
+            STORE_SCHEMES = {"file": SimpleStore}  # type: ignore[dict-item]
+
+        crawler = get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
+            store = build_from_crawler(DeprecatedPipeline, crawler).store
+        assert isinstance(store, SimpleStore)
+
+    def test_store_schemes_mutated_deprecated(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
+            schemes = FilesPipeline.STORE_SCHEMES
+        monkeypatch.setitem(schemes, "file", SimpleStore)
+        crawler = get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
+            store = build_from_crawler(FilesPipeline, crawler).store
         assert isinstance(store, SimpleStore)
 
 

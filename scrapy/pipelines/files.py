@@ -470,6 +470,45 @@ class FTPFilesStore:
         return deferred_from_coro(run_in_thread(self._stat_file, path))
 
 
+_STORE_SCHEMES_DEPRECATION = (
+    "FilesPipeline.STORE_SCHEMES is deprecated, use the MEDIA_STORAGES setting instead."
+)
+_BUILTIN_STORE_SCHEMES: dict[str, type[FilesStoreProtocol]] = {
+    "": FSFilesStore,
+    "file": FSFilesStore,
+    "s3": S3FilesStore,
+    "gs": GCSFilesStore,
+    "ftp": FTPFilesStore,
+}
+
+
+class _DeprecatedStoreSchemes:
+    def __init__(self) -> None:
+        self.value: dict[str, type[FilesStoreProtocol]] = dict(_BUILTIN_STORE_SCHEMES)
+
+    def __get__(
+        self, instance: Any, owner: type
+    ) -> dict[str, type[FilesStoreProtocol]]:
+        warnings.warn(
+            _STORE_SCHEMES_DEPRECATION,
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.value
+
+
+def _store_scheme_overrides(cls: type) -> dict[str, type[FilesStoreProtocol]]:
+    base = next(base for base in cls.__mro__ if "STORE_SCHEMES" in vars(base))
+    schemes = vars(base)["STORE_SCHEMES"]
+    if isinstance(schemes, _DeprecatedStoreSchemes):
+        schemes = schemes.value
+    return {
+        scheme: store
+        for scheme, store in schemes.items()
+        if _BUILTIN_STORE_SCHEMES.get(scheme) is not store
+    }
+
+
 class FilesPipeline(MediaPipeline):
     """Pipeline that implements file downloading.
 
@@ -491,7 +530,10 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME: str = "file"
     EXPIRES: int = 90
-    STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]] = {}
+    if TYPE_CHECKING:
+        STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]]
+    else:
+        STORE_SCHEMES = _DeprecatedStoreSchemes()
     DEFAULT_FILES_URLS_FIELD: str = "file_urls"
     DEFAULT_FILES_RESULT_FIELD: str = "files"
 
@@ -528,14 +570,13 @@ class FilesPipeline(MediaPipeline):
         self._storages: dict[str, Any] = without_none_values(
             settings.getwithbase("MEDIA_STORAGES")
         )
-        if self.STORE_SCHEMES:
+        if overrides := _store_scheme_overrides(type(self)):
             warnings.warn(
-                f"{type(self).__name__} defines STORE_SCHEMES, which is"
-                " deprecated. Use the MEDIA_STORAGES setting instead.",
+                _STORE_SCHEMES_DEPRECATION,
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            self._storages.update(self.STORE_SCHEMES)
+            self._storages.update(overrides)
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
             self._key_for_pipe, base_class_name=cls_name, settings=settings

@@ -318,12 +318,12 @@ policy:
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 To send custom headers with the uploaded files, subclass ``S3FilesStore``
-with a different ``HEADERS`` class attribute, and point the ``s3`` scheme of
-your pipeline to it:
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme to it
+with :setting:`MEDIA_STORAGES`:
 
 .. code-block:: python
 
-    from scrapy.pipelines.files import FilesPipeline, S3FilesStore
+    from scrapy.pipelines.files import S3FilesStore
 
 
     class CustomS3FilesStore(S3FilesStore):
@@ -332,9 +332,9 @@ your pipeline to it:
             "X-Amz-Storage-Class": "STANDARD_IA",
         }
 
+.. code-block:: python
 
-    class CustomFilesPipeline(FilesPipeline):
-        STORE_SCHEMES = FilesPipeline.STORE_SCHEMES | {"s3": CustomS3FilesStore}
+    MEDIA_STORAGES = {"s3": "myproject.storages.CustomS3FilesStore"}
 
 Supported headers are those that the installed botocore version models for
 the `PutObject`_ operation; any other header raises :exc:`TypeError`.
