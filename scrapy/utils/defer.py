@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import sys
 import warnings
 from asyncio import Future
@@ -18,6 +19,7 @@ from typing import (
     Concatenate,
     Generic,
     ParamSpec,
+    Protocol,
     TypeVar,
     cast,
     overload,
@@ -36,6 +38,18 @@ if TYPE_CHECKING:
 
     from twisted.python.failure import Failure
 
+    from scrapy.http.request import Request
+
+    class FailureWithRequest(Protocol):
+        """A :class:`~twisted.python.failure.Failure` that has had a
+        *request* attribute attached, identifying the request whose
+        processing raised it.
+        """
+
+        request: Request
+
+
+logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
@@ -201,8 +215,20 @@ class _ParallelTasks:
         self._running += 1
         self._coop.coiterate(self._work).addBoth(self._task_done)
 
-    def _task_done(self, _: Any) -> None:
+    def _task_done(self, result: Any) -> None:
         self._running -= 1
+        if isinstance(result, failure.Failure):
+            # circular import
+            from scrapy.utils.log import failure_to_exc_info  # noqa: PLC0415
+
+            logger.error(
+                "Error processing an item",
+                exc_info=failure_to_exc_info(result),
+            )
+            # A failed task stops consuming work, which may not be exhausted
+            # yet, so another one takes over.
+            self.start()
+            return
         # Only a running task can start another one, so once none is left no
         # more work can come.
         if not self._running:
@@ -215,7 +241,7 @@ def parallel(
     callable: Callable[Concatenate[_T, _P], _T2],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[None]:
+) -> Deferred[None]:  # pragma: no cover
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
     """
@@ -224,6 +250,12 @@ def parallel(
         for elem in iterable:
             tasks.start()
             yield callable(elem, *args, **named)
+
+    warnings.warn(
+        "scrapy.utils.defer.parallel() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     tasks = _ParallelTasks(work(), count)
     tasks.start()
@@ -405,10 +437,15 @@ def iter_errback(
     errback: Callable[Concatenate[Failure, _P], Any],
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Iterable[_T]:
+) -> Iterable[_T]:  # pragma: no cover
     """Wrap an iterable calling an errback if an error is caught while
     iterating it.
     """
+    warnings.warn(
+        "scrapy.utils.defer.iter_errback() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     it = iter(iterable)
     while True:
         try:
@@ -426,8 +463,7 @@ async def aiter_errback(
     **kw: _P.kwargs,
 ) -> AsyncIterator[_T]:
     """Wrap an async iterable calling an errback if an error is caught while
-    iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
-    """
+    iterating it."""
     it = aiter(aiterable)
     while True:
         try:

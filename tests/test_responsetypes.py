@@ -1,5 +1,7 @@
 from typing import Any
 
+import pytest
+
 from scrapy.http import (
     Headers,
     HtmlResponse,
@@ -11,44 +13,58 @@ from scrapy.http import (
 from scrapy.responsetypes import responsetypes
 
 
-def test_from_filename() -> None:
-    mappings = [
+@pytest.mark.parametrize(
+    ("source", "cls"),
+    [
         ("data.bin", Response),
         ("file.txt", TextResponse),
         ("file.xml.gz", Response),
         ("file.xml", XmlResponse),
         ("file.html", HtmlResponse),
         ("file.unknownext", Response),
-    ]
-    for source, cls in mappings:
-        retcls = responsetypes.from_filename(source)
-        assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+    ],
+)
+def test_from_filename(source: str, cls: type[Response]) -> None:
+    assert responsetypes.from_filename(source) is cls
 
 
-def test_from_content_disposition() -> None:
-    mappings = [
-        (b'attachment; filename="data.xml"', XmlResponse),
-        (b"attachment; filename=data.xml", XmlResponse),
-        ("attachment;filename=data£.tar.gz".encode(), Response),
-        ("attachment;filename=dataµ.tar.gz".encode("latin-1"), Response),
-        ("attachment;filename=data高.doc".encode("gbk"), Response),
-        ("attachment;filename=دورهdata.html".encode("cp720"), HtmlResponse),
-        (
+@pytest.mark.parametrize(
+    ("source", "cls"),
+    [
+        pytest.param(b'attachment; filename="data.xml"', XmlResponse, id="quoted"),
+        pytest.param(b"attachment; filename=data.xml", XmlResponse, id="unquoted"),
+        pytest.param("attachment;filename=data£.tar.gz".encode(), Response, id="utf-8"),
+        pytest.param(
+            "attachment;filename=dataµ.tar.gz".encode("latin-1"),
+            Response,
+            id="latin-1",
+        ),
+        pytest.param(
+            "attachment;filename=data高.doc".encode("gbk"), Response, id="gbk"
+        ),
+        pytest.param(
+            "attachment;filename=دورهdata.html".encode("cp720"),
+            HtmlResponse,
+            id="cp720",
+        ),
+        pytest.param(
             "attachment;filename=日本語版Wikipedia.xml".encode("iso2022_jp"),
             XmlResponse,
+            id="iso2022_jp",
         ),
-    ]
-    for source, cls in mappings:
-        retcls = responsetypes.from_content_disposition(source)
-        assert retcls is cls, f"{source!r} ==> {retcls} != {cls}"
+    ],
+)
+def test_from_content_disposition(source: bytes, cls: type[Response]) -> None:
+    assert responsetypes.from_content_disposition(source) is cls
 
 
 def test_from_content_disposition_no_filename() -> None:
     assert responsetypes.from_content_disposition(b"attachment") is Response
 
 
-def test_from_content_type() -> None:
-    mappings: list[tuple[str | bytes, type[Response]]] = [
+@pytest.mark.parametrize(
+    ("source", "cls"),
+    [
         ("text/html; charset=UTF-8", HtmlResponse),
         ("text/xml; charset=UTF-8", XmlResponse),
         ("application/xhtml+xml; charset=UTF-8", HtmlResponse),
@@ -59,63 +75,74 @@ def test_from_content_type() -> None:
         ("application/x-json; encoding=UTF8;charset=UTF-8", JsonResponse),
         ("application/json-amazonui-streaming;charset=UTF-8", JsonResponse),
         (b"application/x-download; filename=\x80dummy.txt", Response),
-    ]
-    for source, cls in mappings:
-        retcls = responsetypes.from_content_type(source)
-        assert retcls is cls, f"{source!r} ==> {retcls} != {cls}"
+    ],
+)
+def test_from_content_type(source: str | bytes, cls: type[Response]) -> None:
+    assert responsetypes.from_content_type(source) is cls
 
 
-def test_from_body() -> None:
-    mappings = [
+@pytest.mark.parametrize(
+    ("source", "cls"),
+    [
         (b"\x03\x02\xdf\xdd\x23", Response),
         (b"Some plain text\ndata with tabs\t and null bytes\0", TextResponse),
         (b"<html><head><title>Hello</title></head>", HtmlResponse),
         # https://codersblock.com/blog/the-smallest-valid-html5-page/
         (b"<!DOCTYPE html>\n<title>.</title>", HtmlResponse),
         (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
-    ]
-    for source, cls in mappings:
-        retcls = responsetypes.from_body(source)
-        assert retcls is cls, f"{source!r} ==> {retcls} != {cls}"
+    ],
+)
+def test_from_body(source: bytes, cls: type[Response]) -> None:
+    assert responsetypes.from_body(source) is cls
 
 
-def test_from_headers() -> None:
-    mappings = [
-        ({"Content-Type": ["text/html; charset=utf-8"]}, HtmlResponse),
-        (
+@pytest.mark.parametrize(
+    ("source", "cls"),
+    [
+        pytest.param(
+            {"Content-Type": ["text/html; charset=utf-8"]},
+            HtmlResponse,
+            id="content-type",
+        ),
+        pytest.param(
             {
                 "Content-Type": ["text/html; charset=utf-8"],
                 "Content-Encoding": ["gzip"],
             },
             Response,
+            id="content-encoding",
         ),
-        (
+        pytest.param(
             {
                 "Content-Type": ["application/octet-stream"],
                 "Content-Disposition": ["attachment; filename=data.txt"],
             },
             TextResponse,
+            id="content-disposition",
         ),
-    ]
-    for source, cls in mappings:
-        source = Headers(source)
-        retcls = responsetypes.from_headers(source)
-        assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+    ],
+)
+def test_from_headers(source: dict[str, list[str]], cls: type[Response]) -> None:
+    assert responsetypes.from_headers(Headers(source)) is cls
 
 
-def test_from_args() -> None:
-    # TODO: add more tests that check precedence between the different arguments
-    mappings: list[tuple[dict[str, Any], type[Response]]] = [
-        ({"url": "http://www.example.com/data.csv"}, TextResponse),
+# TODO: add more tests that check precedence between the different arguments
+@pytest.mark.parametrize(
+    ("source", "cls"),
+    [
+        pytest.param(
+            {"url": "http://www.example.com/data.csv"}, TextResponse, id="url"
+        ),
         # headers takes precedence over url
-        (
+        pytest.param(
             {
                 "headers": Headers({"Content-Type": ["text/html; charset=utf-8"]}),
                 "url": "http://www.example.com/item/",
             },
             HtmlResponse,
+            id="content-type-and-url",
         ),
-        (
+        pytest.param(
             {
                 "headers": Headers(
                     {"Content-Disposition": ['attachment; filename="data.xml.gz"']}
@@ -123,11 +150,12 @@ def test_from_args() -> None:
                 "url": "http://www.example.com/page/",
             },
             Response,
+            id="content-disposition-and-url",
         ),
-    ]
-    for source, cls in mappings:
-        retcls = responsetypes.from_args(**source)
-        assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+    ],
+)
+def test_from_args(source: dict[str, Any], cls: type[Response]) -> None:
+    assert responsetypes.from_args(**source) is cls
 
 
 def test_custom_mime_types_loaded() -> None:

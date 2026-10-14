@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import JsonResponse
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request
     from scrapy.crawler import Crawler
     from scrapy.http import Response

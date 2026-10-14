@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import io
 import random
 import sys
@@ -8,7 +9,6 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from types import SimpleNamespace
 from typing import Any
 
 import attr
@@ -18,7 +18,7 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.pipelines.files import GCSFilesStore, S3FilesStore
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
@@ -49,7 +49,7 @@ class TestImagesPipeline:
 
     def test_missing_pillow(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setitem(sys.modules, "PIL", None)
-        with pytest.raises(NotConfigured, match="requires installing Pillow"):
+        with pytest.raises(NotConfigured, match=r"requires the Scrapy\[images\] extra"):
             ImagesPipeline(self.tempdir, crawler=get_crawler())
 
     def test_file_path(self):
@@ -251,7 +251,7 @@ class TestImagesPipeline:
         )
 
         buf.seek(0)
-        assert checksum == _md5sum(buf)
+        assert checksum == hashlib.file_digest(buf, "md5").hexdigest()
         name = "3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert Path(self.tempdir, "full", name).read_bytes() == buf.getvalue()
         assert Path(self.tempdir, "thumbs", "small", name).exists()
@@ -369,26 +369,6 @@ class TestImagesPipeline:
         )
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (128, 128, 128))]
-
-    def test_convert_image_legacy_resampling_filter(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Pillow older than 9.1.0 has Image.ANTIALIAS instead of
-        Image.Resampling.LANCZOS."""
-        # Image.LANCZOS is the only spelling that exists in every supported
-        # Pillow version, but Pillow defines it dynamically, hence the ignore.
-        monkeypatch.setattr(
-            self.pipeline,
-            "_Image",
-            SimpleNamespace(ANTIALIAS=Image.LANCZOS),  # type: ignore[attr-defined]
-        )
-        im, buf = _create_image("JPEG", "RGB", (100, 100), (0, 127, 255))
-
-        thumbnail, _ = self.pipeline.convert_image(
-            im, size=(10, 25), image_format="JPEG", response_body=buf
-        )
-
-        assert thumbnail.size == (10, 10)
 
     @pytest.mark.parametrize(
         "bad_type",
