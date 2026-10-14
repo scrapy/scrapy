@@ -270,9 +270,10 @@ def _fake_ftp(
                     w.write(data)
                 if retr_reply is None:
                     await reader.read()
-                    break
                 w.close()
                 data_server.close()
+                if retr_reply is None:
+                    break
                 writer.write(retr_reply)
             await writer.drain()
         writer.close()
@@ -290,6 +291,7 @@ async def _serve(
         yield f"ftp://127.0.0.1:{port}/file.txt"
     finally:
         server.close()
+        await server.wait_closed()
 
 
 @coroutine_test
