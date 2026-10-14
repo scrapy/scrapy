@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from email.utils import formatdate
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Self, cast
 from weakref import finalize
 
 from twisted.internet.defer import Deferred
@@ -21,9 +21,6 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http.request import Request
     from scrapy.http.response import Response
@@ -153,9 +150,11 @@ class HttpCacheMiddleware:
         self._downloading[fingerprint] = waiters
         request.meta["_httpcache_downloading"] = fingerprint
         # Some outcomes reach neither process_response() nor
-        # process_exception(), e.g. a middleware with a higher priority raising
-        # from process_response(). Waking waiters up once the request object is
-        # gone keeps them from blocking forever in those cases.
+        # process_exception(), e.g. a middleware with a higher priority
+        # returning a request from process_response(), or raising from it while
+        # DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS is False. Waking waiters up
+        # once the request object is gone keeps them from blocking forever in
+        # those cases.
         finalize(request, self._wake, fingerprint, waiters)
 
     def _wake(

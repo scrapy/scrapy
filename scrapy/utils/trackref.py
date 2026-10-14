@@ -17,14 +17,11 @@ from __future__ import annotations
 from operator import itemgetter
 from time import monotonic_ns
 from types import NoneType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from weakref import WeakKeyDictionary
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 live_refs: WeakKeyDictionary[type, WeakKeyDictionary[object, float]] = (
@@ -48,8 +45,9 @@ class object_ref:
         return obj
 
 
-# using Any as it's hard to type type(None)
-def format_live_refs(ignore: Any = NoneType) -> str:
+def format_live_refs(
+    ignore: type[Any] | tuple[type[Any], ...] = NoneType,
+) -> str:
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
     now_ns = monotonic_ns()
@@ -63,14 +61,16 @@ def format_live_refs(ignore: Any = NoneType) -> str:
     return s
 
 
-def print_live_refs(*a: Any, **kw: Any) -> None:
+def print_live_refs(
+    ignore: type[Any] | tuple[type[Any], ...] = NoneType,
+) -> None:
     """Print a report of live references, grouped by class name.
 
     :param ignore: if given, all objects from the specified class (or tuple of
         classes) will be ignored.
     :type ignore: type or tuple
     """
-    print(format_live_refs(*a, **kw))
+    print(format_live_refs(ignore))
 
 
 def get_oldest(class_name: str) -> Any:

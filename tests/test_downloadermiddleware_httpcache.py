@@ -447,6 +447,19 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             assert "cached" in res5.flags
 
     @coroutine_test
+    async def test_request_cache_control_none(self):
+        res0 = Response(
+            self.request.url, status=200, headers={"Expires": self.tomorrow}
+        )
+        req0 = Request("http://example.com", headers={"Cache-Control": None})
+        with self._middleware() as mw:
+            res1 = await self._process_requestresponse(mw, req0, res0)
+            assert "cached" not in res1.flags
+            res2 = await mw.process_request(req0)
+            assert isinstance(res2, Response)
+            assert "cached" in res2.flags
+
+    @coroutine_test
     async def test_response_cacheability(self):
         responses = [
             # 304 is not cacheable no matter what servers sends
@@ -1084,7 +1097,8 @@ class TestConcurrentDownloads(TestBase):
         # A middleware with a higher priority raising from process_response()
         # also keeps HttpCacheMiddleware.process_response() from running, but
         # here the resulting failure keeps the first request object alive, so
-        # waiters block until the spider is closed.
+        # waiters block until the spider is closed, unless
+        # DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS is True.
         with self._manager(_RaiseOnResponse) as (manager, crawler):
             download = _Downloads()
             request, first, second = await self._start(manager, download, crawler)
@@ -1102,6 +1116,23 @@ class TestConcurrentDownloads(TestBase):
             with pytest.raises(ValueError, match="Late middleware failure"):
                 await maybe_deferred_to_future(second)
             assert download.urls == [self.url] * 2
+
+    @coroutine_test
+    async def test_response_error_in_a_later_middleware_reaching_process_exception(
+        self,
+    ):
+        with self._manager(
+            _RaiseOnResponse, DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS=True
+        ) as (manager, crawler):
+            download = _Downloads()
+            _request, first, second = await self._start(manager, download, crawler)
+            download.release()
+
+            for result in (first, second):
+                with pytest.raises(ValueError, match="Late middleware failure"):
+                    await maybe_deferred_to_future(result)
+            assert download.urls == [self.url] * 2
+            assert not self._middleware_of(manager, HttpCacheMiddleware)._downloading
 
     @coroutine_test
     async def test_cancelled_waiter(self):
