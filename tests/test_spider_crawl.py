@@ -239,6 +239,51 @@ class TestCrawlSpider(TestSpiderBase):
             "HtmlResponse",
         ]
 
+    def test_rule_name_in_request_meta(self):
+        response = HtmlResponse(
+            "http://example.org/somepage/index.html", body=self.test_body
+        )
+
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
+            name = "test"
+            allowed_domains = ["example.org"]
+            rules = (Rule(LinkExtractor(allow=r"item"), name="items"),)
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        assert [r.meta["rule_name"] for r in output] == ["items"]
+
+    def test_from_rules(self):
+        response = HtmlResponse(
+            "http://example.org/somepage/index.html", body=self.test_body
+        )
+
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
+            name = "test"
+            allowed_domains = ["example.org"]
+            rules = (
+                Rule(LinkExtractor(allow=r"item"), name="items"),
+                Rule(LinkExtractor(allow=r"about"), from_rules="items"),
+            )
+
+        spider = _CrawlSpider()
+
+        output = list(spider._requests_to_follow(response))
+        assert [r.url for r in output] == [
+            "http://example.org/somepage/item/12.html",
+        ]
+
+        response_from_items = HtmlResponse(
+            response.url,
+            body=self.test_body,
+            request=Request(response.url, meta={"rule_name": "items"}),
+        )
+        output = list(spider._requests_to_follow(response_from_items))
+        assert [r.url for r in output] == [
+            "http://example.org/somepage/item/12.html",
+            "http://example.org/about.html",
+        ]
+
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_follow_links_attribute_population(self):
         crawler = get_crawler()

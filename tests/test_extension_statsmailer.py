@@ -1,9 +1,10 @@
 import warnings
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
-from scrapy import signals
+from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
@@ -28,11 +29,11 @@ with warnings.catch_warnings():
 @pytest.fixture
 def dummy_stats():
     class DummyStats(StatsCollector):
-        def __init__(self):
+        def __init__(self) -> None:
             # pylint: disable=super-init-not-called
             self._stats = {"global_item_scraped_count": 42}
 
-        def get_stats(self):
+        def get_stats(self, spider: Spider | None = None) -> dict[str, Any]:
             return {"item_scraped_count": 10, **self._stats}
 
     return DummyStats()
@@ -54,7 +55,7 @@ def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeyp
     crawler.signals = SignalManager(crawler)
 
     mailer = MagicMock(spec=MailSender)
-    monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
+    monkeypatch.setattr(MailSender, "from_crawler", lambda _: mailer)
 
     ext = build_from_crawler(statsmailer.StatsMailer, crawler)
 
@@ -70,7 +71,7 @@ def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
     crawler.signals = SignalManager(crawler)
 
     mailer = MagicMock(spec=MailSender)
-    monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
+    monkeypatch.setattr(MailSender, "from_crawler", lambda _: mailer)
 
     build_from_crawler(statsmailer.StatsMailer, crawler)
 

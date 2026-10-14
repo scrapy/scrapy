@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import pickle
 import re
+from typing import Any
 
-from scrapy.http import HtmlResponse, XmlResponse
+import pytest
+from w3lib.url import canonicalize_url
+
+from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.link import Link
 from scrapy.linkextractors import lxmlhtml
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
@@ -345,6 +349,22 @@ class TestLxmlLinkExtractor:
             Link(url="http://example.org/photo.jpg"),
         ]
 
+    @pytest.mark.parametrize(
+        ("path", "denied"),
+        [
+            ("/file.tar.gz", True),
+            ("/FILE.TAR.GZ", True),
+            ("/file.gz", False),
+            ("/file.tar.gz/page", False),
+            ("/file", False),
+        ],
+    )
+    def test_ignored_multi_part_extension(self, path: str, denied: bool) -> None:
+        html = f'<a href="{path}">x</a>'.encode()
+        response = HtmlResponse("http://example.org/", body=html)
+        lx = LxmlLinkExtractor(deny_extensions=["tar.gz"])
+        assert (not lx.extract_links(response)) is denied
+
     def test_process_value(self):
         """Test restrict_xpaths with encodings"""
         html = b"""
@@ -499,7 +519,7 @@ class TestLxmlLinkExtractor:
         """
         response = HtmlResponse("http://example.com/index.html", body=html)
 
-        def urls(**kwargs):
+        def urls(**kwargs: Any) -> list[str]:
             lx = LxmlLinkExtractor(**kwargs)
             return [link.url for link in lx.extract_links(response)]
 
@@ -570,7 +590,9 @@ class TestLxmlLinkExtractor:
 </html>
         """
 
-        response = HtmlResponse("http://example.com/index.xhtml", body=xhtml)
+        response: TextResponse = HtmlResponse(
+            "http://example.com/index.xhtml", body=xhtml
+        )
 
         lx = LxmlLinkExtractor()
         assert lx.extract_links(response) == [
@@ -679,6 +701,33 @@ class TestLxmlLinkExtractor:
             ),
         ]
 
+    def test_schemes(self):
+        body = b"""
+        <html><body>
+        <a href="page.html">Page</a>
+        <a href="data:text/plain,Data">Data</a>
+        <a href="mailto:someone@example.com">Mail</a>
+        </body></html>"""
+        response = HtmlResponse("http://www.example.com/index.html", body=body)
+
+        lx = LxmlLinkExtractor()
+        assert lx.extract_links(response) == [
+            Link(url="http://www.example.com/page.html", text="Page"),
+            Link(url="data:text/plain,Data", text="Data"),
+        ]
+
+        lx = LxmlLinkExtractor(schemes="mailto")
+        assert lx.extract_links(response) == [
+            Link(url="mailto:someone@example.com", text="Mail"),
+        ]
+
+        lx = LxmlLinkExtractor(schemes=())
+        assert lx.extract_links(response) == [
+            Link(url="http://www.example.com/page.html", text="Page"),
+            Link(url="data:text/plain,Data", text="Data"),
+            Link(url="mailto:someone@example.com", text="Mail"),
+        ]
+
     def test_pickle_extractor(self):
         lx = LxmlLinkExtractor()
         assert isinstance(pickle.loads(pickle.dumps(lx)), LxmlLinkExtractor)
@@ -782,7 +831,6 @@ class TestLxmlLinkExtractor:
         ]
 
     def test_canonicalize_once_per_link(self, monkeypatch):
-        canonicalize_url = lxmlhtml.canonicalize_url
         calls = []
 
         def counting_canonicalize_url(url, *args, **kwargs):

@@ -4,7 +4,7 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -35,8 +35,8 @@ from zope.interface import implementer
 from scrapy.core._http2.stream import Stream, StreamCloseReason
 from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
+from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
-from scrapy.utils.ssl import _log_ssl_conn_debug_info
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
@@ -108,7 +108,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._conn_lost_deferred: Deferred[None] = conn_lost_deferred
         self._tls_verbose_logging: bool = tls_verbose_logging
 
-        config = H2Configuration(client_side=True, header_encoding="utf-8")
+        config = H2Configuration(client_side=True)
         self.conn = H2Connection(config=config)
 
         # ID of the next request stream
@@ -421,7 +421,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         except KeyError:
             pass  # We ignore server-initiated events
         else:
-            stream.receive_headers(cast("list[tuple[str, str]]", event.headers))
+            stream.receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata["settings_acknowledged"] = True

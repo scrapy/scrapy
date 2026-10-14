@@ -8,8 +8,10 @@ import pytest
 from twisted.internet.error import CannotListenError
 from twisted.internet.protocol import ServerFactory
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
+    _is_asyncio_reactor_installed,
     install_reactor,
     is_asyncio_reactor_installed,
     listen_tcp,
@@ -28,14 +30,21 @@ if TYPE_CHECKING:
 class TestAsyncio:
     @pytest.mark.requires_reactor  # needs a reactor
     def test_is_asyncio_reactor_installed(self, reactor_pytest: str) -> None:
-        # the result should depend only on the pytest --reactor argument
-        assert is_asyncio_reactor_installed() == (reactor_pytest == "asyncio")
+        assert _is_asyncio_reactor_installed() == (reactor_pytest == "asyncio")
+
+    @pytest.mark.requires_reactor  # needs a reactor
+    def test_is_asyncio_reactor_installed_deprecated(self, reactor_pytest: str) -> None:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"is_asyncio_reactor_installed\(\) is deprecated",
+        ):
+            assert is_asyncio_reactor_installed() == (reactor_pytest == "asyncio")
 
     @pytest.mark.requires_reactor  # installs a reactor
     @pytest.mark.only_asyncio
     @coroutine_test
     async def test_set_asyncio_event_loop(self):
-        install_reactor(_asyncio_reactor_path)
+        install_reactor()
         assert set_asyncio_event_loop(None) is asyncio.get_running_loop()
 
 

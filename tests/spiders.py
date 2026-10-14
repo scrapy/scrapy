@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
 
     from twisted.python.failure import Failure
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http import Headers, Response
@@ -351,10 +350,10 @@ class MaxItemsAndRequestsSpider(FollowAllSpider):
         super().__init__(*args, **kwargs)
         self.max_items = max_items
         self.max_requests = max_requests
-
-    def parse(self, response: Response) -> Iterator[Any]:
         self.items_scraped = 0
         self.pages_crawled = 1  # account for the start url
+
+    def parse(self, response: Response) -> Iterator[Any]:
         for request in super().parse(response):
             if self.pages_crawled < self.max_requests:
                 yield request
@@ -534,6 +533,26 @@ class CrawlSpiderWithAsyncGeneratorCallback(CrawlSpiderWithParseMethod):
             self.parse_async_gen,
             cb_kwargs={"foo": "bar"},
         )
+
+
+class CrawlSpiderWithCallbackException(CrawlSpiderWithParseMethod):
+    name = "crawl_spider_with_callback_exception"
+
+    async def start(self) -> AsyncIterator[Any]:
+        test_body = b"""
+        <html>
+            <head><title>Page title</title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- still followed -->
+            </body>
+        </html>
+        """
+        assert self.mockserver
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
+
+    def parse_start_url(self, response: Response, **kwargs: Any) -> None:
+        raise ValueError("callback exception")
 
 
 class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):

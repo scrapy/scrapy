@@ -7,16 +7,13 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -42,7 +39,7 @@ class DepthMiddleware(BaseSpiderMiddleware):
     depth_reset
     -----------
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.18.0
 
     :attr:`~scrapy.Request.meta` key that, set to ``True``, gives a request
     depth 0 instead of the depth of its source response plus 1, e.g. to keep

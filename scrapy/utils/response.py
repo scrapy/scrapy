@@ -5,6 +5,7 @@ scrapy.http.Response objects
 
 from __future__ import annotations
 
+import mimetypes
 import os
 import re
 import tempfile
@@ -15,7 +16,8 @@ from weakref import WeakKeyDictionary
 from twisted.web import http
 from w3lib import html
 
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.http.headers import Headers
+from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -53,18 +55,42 @@ def get_meta_refresh(
     return _metaref_cache[response]
 
 
+def response_from_dict(d: dict[str, Any]) -> Response:
+    """Return a response built from the *d* dict, as returned by
+    :meth:`Response.to_dict() <scrapy.http.Response.to_dict>`.
+
+    .. versionadded:: 2.19.0
+
+    If *d* does not indicate a response class, e.g. because it comes from a
+    plain :class:`~scrapy.http.Response` object or predates :meth:`~scrapy.http.Response.to_dict`,
+    the class is guessed with :attr:`~scrapy.responsetypes.responsetypes`.
+    """
+    # Imported here to avoid a circular import.
+    from scrapy.responsetypes import responsetypes  # noqa: PLC0415
+
+    d = {**d, "headers": Headers(d.get("headers") or {})}
+    response_cls: type[Response] = (
+        load_object(d["_class"])
+        if "_class" in d
+        else responsetypes.from_args(
+            headers=d["headers"], url=d["url"], body=d.get("body")
+        )
+    )
+    return response_cls.from_dict(d)
+
+
 def response_status_message(status: bytes | float | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
-    message = http.RESPONSES.get(status_int, "Unknown Status")
-    return f"{status_int} {to_unicode(message)}"
+    message = http.RESPONSES.get(status_int, b"Unknown Status").decode()
+    return f"{status_int} {message}"
 
 
 _DOCTYPE_RE = re.compile(rb"\s*<!doctype[^<>]*>", re.IGNORECASE)
 
 
 def open_in_browser(
-    response: TextResponse,
+    response: Response,
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
     """Open *response* in a local web browser, adjusting the `base tag`_ for
@@ -99,13 +125,17 @@ def open_in_browser(
         # any base tag of the response, and matches it when there is one.
         doctype = _DOCTYPE_RE.match(body)
         index = doctype.end() if doctype else 0
-        base_tag = to_bytes(f'<base href="{get_base_url(response)}">')
+        base_tag = f'<base href="{get_base_url(response)}">'.encode()
         body = body[:index] + base_tag + body[index:]
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
-        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
+        content_type = (response.headers.get(b"Content-Type") or b"").decode("latin-1")
+        mimetype = content_type.split(";")[0].strip().lower()
+        ext = mimetypes.guess_extension(mimetype) or ""
+        if not ext:
+            raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

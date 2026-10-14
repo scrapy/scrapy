@@ -17,7 +17,7 @@ from scrapy.pipelines.media import (
     MediaPipeline,
     _MediaRequestFiltered,
 )
-from scrapy.utils.defer import _defer_sleep_async
+from scrapy.utils.defer import _process_pending_io
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.signal import disconnect_all
@@ -443,7 +443,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         rsp1 = Response("http://url")
 
         async def rsp1_func():
-            await _defer_sleep_async()
+            await _process_pending_io()
             _check_downloading(rsp1)
 
         async def rsp2_func():
@@ -454,6 +454,32 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         item = {"requests": [req1, req2]}
         new_item = await self.pipe.process_item(item)
         assert new_item["results"] == [(True, {}), (True, {})]
+
+    @pytest.mark.parametrize(
+        ("size", "prefixed", "cached_urls"),
+        [
+            (2, False, ["http://url1", "http://url3"]),
+            (2, True, ["http://url1", "http://url3"]),
+            (0, False, []),
+            (-1, False, ["http://url2", "http://url1", "http://url3"]),
+        ],
+    )
+    @coroutine_test
+    async def test_cache_size(self, size: int, prefixed: bool, cached_urls: list[str]):
+        key = "MEDIA_CACHE_SIZE"
+        if prefixed:
+            key = f"{self.pipeline_class.__name__.upper()}_{key}"
+        crawler = get_crawler(DefaultSpider, {key: size})
+        crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=mocked_download_func)
+        pipe = build_from_crawler(self.pipeline_class, crawler)
+        pipe.open_spider()
+        for url in ["http://url1", "http://url2", "http://url1", "http://url3"]:
+            req = Request(url, meta={"response": Response(url)})
+            await pipe.process_item({"requests": req})
+        assert list(pipe.spiderinfo.downloaded) == [
+            self.fingerprint(Request(url)) for url in cached_urls
+        ]
 
     @coroutine_test
     async def test_use_media_to_download_result(self):
