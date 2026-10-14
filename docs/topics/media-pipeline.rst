@@ -318,12 +318,12 @@ policy:
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 To send custom headers with the uploaded files, subclass ``S3FilesStore``
-with a different ``HEADERS`` class attribute, and point the ``s3`` scheme of
-your pipeline to it:
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme to it
+with :setting:`MEDIA_STORAGES`:
 
 .. code-block:: python
 
-    from scrapy.pipelines.files import FilesPipeline, S3FilesStore
+    from scrapy.pipelines.files import S3FilesStore
 
 
     class CustomS3FilesStore(S3FilesStore):
@@ -332,9 +332,9 @@ your pipeline to it:
             "X-Amz-Storage-Class": "STANDARD_IA",
         }
 
+.. code-block:: python
 
-    class CustomFilesPipeline(FilesPipeline):
-        STORE_SCHEMES = FilesPipeline.STORE_SCHEMES | {"s3": CustomS3FilesStore}
+    MEDIA_STORAGES = {"s3": "myproject.storages.CustomS3FilesStore"}
 
 Supported headers are those that the installed botocore version models for
 the `PutObject`_ operation; any other header raises :exc:`TypeError`.
@@ -402,6 +402,63 @@ For more information, see `Predefined ACLs`_ in the Google Cloud Platform Develo
 
 .. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
+.. _media-pipeline-custom-storage:
+
+Custom storage
+--------------
+
+.. versionadded:: VERSION
+
+.. setting:: MEDIA_STORAGES
+
+The :setting:`MEDIA_STORAGES` setting maps URL schemes to storage classes, so
+that you can support additional schemes or replace a built-in storage:
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"myscheme": "myproject.storages.MyStorage"}
+    FILES_STORE = "myscheme://example.com/files/"
+
+.. setting:: MEDIA_STORAGES_BASE
+
+It is merged into :setting:`MEDIA_STORAGES_BASE`, which holds the built-in
+storages:
+
+.. code-block:: python
+
+    {
+        "": "scrapy.pipelines.files.FSFilesStore",
+        "file": "scrapy.pipelines.files.FSFilesStore",
+        "ftp": "scrapy.pipelines.files.FTPFilesStore",
+        "gs": "scrapy.pipelines.files.GCSFilesStore",
+        "s3": "scrapy.pipelines.files.S3FilesStore",
+    }
+
+A storage class receives the :setting:`FILES_STORE` or :setting:`IMAGES_STORE`
+value, and must define ``stat_file`` and ``persist_file``:
+
+.. code-block:: python
+
+    class MyStorage:
+        def __init__(self, uri, *, acl=None):
+            self.uri = uri
+            self.acl = acl
+
+        @classmethod
+        def from_crawler(cls, crawler, uri, *, get_setting_name):
+            return cls(uri, acl=crawler.settings[get_setting_name("ACL")])
+
+        def stat_file(self, path, info): ...
+
+        def persist_file(self, path, buf, info, meta=None, headers=None): ...
+
+*get_setting_name* adds the prefix of the pipeline being built to a setting
+name, so that a single storage class can be configured separately for files and
+for images: ``get_setting_name("ACL")`` returns ``"FILES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.files.FilesPipeline` and ``"IMAGES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.images.ImagesPipeline`, and takes :ref:`per-class
+setting names <media-pipeline-class-settings>` into account.
+
 Usage example
 =============
 
@@ -456,6 +513,8 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
 
+.. _media-pipeline-class-settings:
+
 If you have multiple image pipelines inheriting from :class:`ImagesPipeline`
 and you want to have different settings in different pipelines you can set
 setting keys preceded with uppercase name of your pipeline class. E.g. if your
@@ -508,10 +567,10 @@ which is then compared to the set expiration time to determine if the file is ex
 Checksum algorithm
 ------------------
 
+.. versionadded:: VERSION
+
 .. setting:: FILES_CHECKSUM_ALGORITHM
 .. setting:: IMAGES_CHECKSUM_ALGORITHM
-
-.. versionadded:: VERSION
 
 Checksums are `MD5 hashes <MD5 hash_>`_ by default. To use a different
 algorithm, set :setting:`FILES_CHECKSUM_ALGORITHM` (or
@@ -525,6 +584,10 @@ name of any algorithm supported by :func:`hashlib.new`:
 Amazon S3 and Google Cloud Storage cannot calculate checksums of stored files
 on demand, and only report MD5 hashes, so with a different algorithm files that
 are not downloaded again, because they have not expired yet, get no checksum.
+
+A :ref:`custom storage <media-pipeline-custom-storage>` that calculates
+checksums in ``stat_file`` must use the algorithm that the pipeline sets as its
+``checksum_algorithm`` attribute.
 
 .. _topics-images-thumbnails:
 
