@@ -407,19 +407,32 @@ For more information, see `Predefined ACLs`_ in the Google Cloud Platform Develo
 Custom storage
 --------------
 
-.. setting:: MEDIA_STORAGES
-
 .. versionadded:: VERSION
 
-The ``MEDIA_STORAGES`` setting maps URL schemes to storage classes, so that you
-can support additional schemes or replace a built-in storage:
+.. setting:: MEDIA_STORAGES
+
+The :setting:`MEDIA_STORAGES` setting maps URL schemes to storage classes, so
+that you can support additional schemes or replace a built-in storage:
 
 .. code-block:: python
 
     MEDIA_STORAGES = {"myscheme": "myproject.storages.MyStorage"}
     FILES_STORE = "myscheme://example.com/files/"
 
-It is merged into ``MEDIA_STORAGES_BASE``, which holds the built-in storages.
+.. setting:: MEDIA_STORAGES_BASE
+
+It is merged into :setting:`MEDIA_STORAGES_BASE`, which holds the built-in
+storages:
+
+.. code-block:: python
+
+    {
+        "": "scrapy.pipelines.files.FSFilesStore",
+        "file": "scrapy.pipelines.files.FSFilesStore",
+        "ftp": "scrapy.pipelines.files.FTPFilesStore",
+        "gs": "scrapy.pipelines.files.GCSFilesStore",
+        "s3": "scrapy.pipelines.files.S3FilesStore",
+    }
 
 A storage class receives the :setting:`FILES_STORE` or :setting:`IMAGES_STORE`
 value, and must define ``stat_file`` and ``persist_file``:
