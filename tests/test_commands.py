@@ -332,26 +332,29 @@ class MySpider(scrapy.Spider):
         assert msg in err
         assert "no running event loop" in err
 
-    def test_project_settings(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_settings(self, spider: str, proj_path: Path) -> None:
         """The reactor is set via the project default settings (to the asyncio value).
 
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
-        for spider in ["sp", "aiosp"]:
-            self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
+        self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
 
-    def test_cmdline_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_cmdline_asyncio(self, spider: str, proj_path: Path) -> None:
         """The reactor is set via the command line to the asyncio value.
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
-        for spider in ["sp", "aiosp"]:
-            self._assert_spider_works(
-                self.ASYNC_MSG,
-                proj_path,
-                spider,
-                "-s",
-                f"TWISTED_REACTOR={_asyncio_reactor_path}",
-            )
+        self._assert_spider_works(
+            self.ASYNC_MSG,
+            proj_path,
+            spider,
+            "-s",
+            f"TWISTED_REACTOR={_asyncio_reactor_path}",
+        )
 
-    def test_project_settings_explicit_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_settings_explicit_asyncio(
+        self, spider: str, proj_path: Path
+    ) -> None:
         """The reactor explicitly is set via the project settings to the asyncio value.
 
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
@@ -360,8 +363,7 @@ class MySpider(scrapy.Spider):
             f"TWISTED_REACTOR = '{_asyncio_reactor_path}'\n",
         )
 
-        for spider in ["sp", "aiosp"]:
-            self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
+        self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
 
     def test_cmdline_empty(self, proj_path: Path) -> None:
         """The reactor is set via the command line to the empty value.
@@ -383,17 +385,17 @@ class MySpider(scrapy.Spider):
         self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
         self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
 
-    def test_spider_settings_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_spider_settings_asyncio(self, spider: str, proj_path: Path) -> None:
         """The reactor is set via the spider settings to the asyncio value.
 
         AsyncCrawlerProcess, the asyncio reactor, both spiders work."""
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
-            )
-            self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
+        self._replace_custom_settings(
+            proj_path / self.project_name,
+            spider,
+            f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
+        )
+        self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
 
     def test_spider_settings_asyncio_cmdline_empty(self, proj_path: Path) -> None:
         """The reactor is set via the spider settings to the asyncio value
@@ -415,7 +417,10 @@ class MySpider(scrapy.Spider):
             self.NORMAL_MSG, proj_path, "aiosp", "-s", "TWISTED_REACTOR="
         )
 
-    def test_project_empty_spider_settings_asyncio(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_empty_spider_settings_asyncio(
+        self, spider: str, proj_path: Path
+    ) -> None:
         """The reactor is set via the project settings to the empty value
         and via the spider settings to the asyncio value. CrawlerProcess is
         chosen based on the project settings, but the asyncio reactor is chosen
@@ -423,15 +428,17 @@ class MySpider(scrapy.Spider):
 
         CrawlerProcess, the asyncio reactor, both spiders work."""
         self._append_settings(proj_path / self.project_name, "TWISTED_REACTOR = None\n")
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
-            )
-            self._assert_spider_works(self.NORMAL_MSG, proj_path, spider)
+        self._replace_custom_settings(
+            proj_path / self.project_name,
+            spider,
+            f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
+        )
+        self._assert_spider_works(self.NORMAL_MSG, proj_path, spider)
 
-    def test_project_asyncio_spider_settings_select(self, proj_path: Path) -> None:
+    @pytest.mark.parametrize("spider", ["sp", "aiosp"])
+    def test_project_asyncio_spider_settings_select(
+        self, spider: str, proj_path: Path
+    ) -> None:
         """The reactor is set via the project settings to the asyncio value
         and via the spider settings to the select value. AsyncCrawlerProcess
         is chosen based on the project settings, and the conflicting reactor
@@ -443,19 +450,18 @@ class MySpider(scrapy.Spider):
             proj_path / self.project_name,
             f"TWISTED_REACTOR = '{_asyncio_reactor_path}'\n",
         )
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                "{'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor'}",
-            )
-            _, _, err = proc(self.name, spider, cwd=proj_path)
-            assert self.ASYNC_MSG in err
-            assert (
-                "The installed reactor (twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
-                " does not match the requested one"
-                " (twisted.internet.selectreactor.SelectReactor)"
-            ) in err
+        self._replace_custom_settings(
+            proj_path / self.project_name,
+            spider,
+            "{'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor'}",
+        )
+        _, _, err = proc(self.name, spider, cwd=proj_path)
+        assert self.ASYNC_MSG in err
+        assert (
+            "The installed reactor (twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
+            " does not match the requested one"
+            " (twisted.internet.selectreactor.SelectReactor)"
+        ) in err
 
     def test_project_asyncio_spider_settings_select_forced(
         self, proj_path: Path

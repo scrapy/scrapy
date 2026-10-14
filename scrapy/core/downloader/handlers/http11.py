@@ -10,7 +10,7 @@ from functools import partial
 from io import BytesIO
 from time import monotonic
 from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urldefrag
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
@@ -52,6 +52,7 @@ from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
+    get_warnsize,
     get_warnsize_msg,
     make_response,
     normalize_bind_address,
@@ -61,7 +62,6 @@ from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
@@ -188,7 +188,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     def __init__(
         self,
         reactor: ReactorBase,
-        host: str,
+        host: bytes,
         port: int,
         proxyConf: tuple[str, int, bytes | None],
         contextFactory: IPolicyForHTTPS,
@@ -200,7 +200,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         self._tunnelReadyDeferred: Deferred[Protocol] = Deferred(self._cancelTunnel)
         self._connectDeferred: Deferred[Protocol] | None = None
         self._protocol: Protocol | None = None
-        self._tunneledHost: str = host
+        self._tunneledHost: bytes = host
         self._tunneledPort: int = port
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectBuffer: bytearray = bytearray()
@@ -286,20 +286,17 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
 
 def _tunnel_request_data(
-    host: str, port: int, proxy_auth_header: bytes | None = None
+    host: bytes, port: int, proxy_auth_header: bytes | None = None
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
 
-    >>> from scrapy.utils.python import to_unicode as s
-    >>> s(_tunnel_request_data("example.com", 8080))
+    >>> _tunnel_request_data(b"example.com", 8080).decode()
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
-    >>> s(_tunnel_request_data("example.com", 8080, b"123"))
+    >>> _tunnel_request_data(b"example.com", 8080, b"123").decode()
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
-    >>> s(_tunnel_request_data(b"example.com", "8090"))
-    'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
     """
-    host_value = to_bytes(host, encoding="ascii") + b":" + to_bytes(str(port))
+    host_value = host + b":" + str(port).encode()
     tunnel_req = b"CONNECT " + host_value + b" HTTP/1.1\r\n"
     tunnel_req += b"Host: " + host_value + b"\r\n"
     if proxy_auth_header:
@@ -472,7 +469,7 @@ class _ScrapyAgent:
         proxy = request.meta.get("proxy")
         if proxy:
             proxy = _add_http_if_no_scheme(proxy)
-            proxy_parsed = urlparse(proxy)
+            proxy_parsed = urlparse_cached(proxy)
             proxy_host = proxy_parsed.hostname
             proxy_port = proxy_parsed.port
             if not proxy_port:
@@ -495,7 +492,7 @@ class _ScrapyAgent:
                 )
             return _ScrapyProxyAgent(
                 reactor=reactor,
-                proxyURI=to_bytes(proxy, encoding="ascii"),
+                proxyURI=proxy.encode("ascii"),
                 contextFactory=self._contextFactory,
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
@@ -518,7 +515,7 @@ class _ScrapyAgent:
 
         # request details
         url = urldefrag(request.url)[0]
-        method = to_bytes(request.method)
+        method = request.method.encode()
         headers = TxHeaders(request.headers)
         if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
@@ -526,7 +523,7 @@ class _ScrapyAgent:
         start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
-            to_bytes(url, encoding="ascii"),
+            url.encode("ascii"),
             headers,
             cast("IBodyProducer", bodyproducer),
         )
@@ -589,7 +586,7 @@ class _ScrapyAgent:
             }
 
         maxsize = request.meta.get("download_maxsize", self._maxsize)
-        warnsize = request.meta.get("download_warnsize", self._warnsize)
+        warnsize = get_warnsize(request.meta, self._warnsize)
         expected_size = (
             cast("int", txresponse.length)
             if txresponse.length != UNKNOWN_LENGTH
@@ -642,7 +639,7 @@ class _ScrapyAgent:
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
         version = result["txresponse"].version
-        protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
+        protocol = f"{version[0].decode()}/{version[1]}.{version[2]}"
         return make_response(
             url=url,
             status=int(result["txresponse"].code),

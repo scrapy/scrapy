@@ -57,12 +57,27 @@ Backward-incompatible changes
       called while the spider is being opened, now closes the spider as soon
       as it is open, instead of being ignored.
 
-    (TBD)
+    - A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the spider
+      is opening now closes the spider as soon as it is open, instead of being
+      re-raised by
+      :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async`.
+
+    (:gh:`6916`, :gh:`8217`, :gh:`8272`)
 
 -   Setting the :attr:`ExecutionEngine.running
     <scrapy.core.engine.ExecutionEngine.running>` attribute no longer has any
     effect.
     (:gh:`8181`)
+
+-   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now
+    enforces :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE`, also
+    when using :reqmeta:`ftp_local_filename`, so downloads bigger than 1 GiB
+    now fail by default. To download bigger files, raise the limit to a size
+    that fits them, with :setting:`DOWNLOAD_MAXSIZE` or with the
+    :reqmeta:`download_maxsize` request meta key for specific requests. You can
+    also set the limit to ``0`` to lift it altogether.
+
+    (:gh:`8213`)
 
 .. _release-2.19.0:
 

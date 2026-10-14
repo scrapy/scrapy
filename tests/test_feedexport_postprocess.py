@@ -6,14 +6,15 @@ import lzma
 import marshal
 import pickle
 import sys
+import tempfile
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import IO, TYPE_CHECKING
 
 import pytest
 
 from scrapy.extensions.postprocessing import PostProcessingManager
 from tests.utils.decorators import coroutine_test
-from tests.utils.feedexport import export_by_path
+from tests.utils.feedexport import export_by_format, export_by_path, unique_path
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -526,3 +527,67 @@ class TestFeedPostProcessedExports:
             assert data[path] == expected
         assert pickle.loads(data[tmp_path / "pickle"]) == self.items[0]
         assert marshal.loads(data[tmp_path / "marshal"]) == self.items[0]
+
+
+@coroutine_test
+async def test_storage_file_no_postprocessing(
+    mockserver: MockServer, tmp_path: Path
+) -> None:
+    class Storage:
+        open_file: IO[bytes]
+        store_file: IO[bytes]
+
+        def __init__(self, uri, *, feed_options=None):
+            pass
+
+        def open(self, spider):
+            Storage.open_file = tempfile.NamedTemporaryFile(prefix="feed-")
+            return Storage.open_file
+
+        def store(self, file):
+            Storage.store_file = file
+            file.close()
+
+    settings = {
+        "FEEDS": {unique_path(tmp_path): {"format": "jsonlines"}},
+        "FEED_STORAGES": {"file": Storage},
+    }
+    await export_by_format(mockserver, [], settings)
+    assert Storage.open_file is Storage.store_file
+
+
+@coroutine_test
+async def test_storage_file_postprocessing(
+    mockserver: MockServer, tmp_path: Path
+) -> None:
+    class Storage:
+        open_file: IO[bytes]
+        store_file: IO[bytes]
+        file_was_closed: bool
+
+        def __init__(self, uri, *, feed_options=None):
+            pass
+
+        def open(self, spider):
+            Storage.open_file = tempfile.NamedTemporaryFile(prefix="feed-")
+            return Storage.open_file
+
+        def store(self, file):
+            Storage.store_file = file
+            Storage.file_was_closed = file.closed
+            file.close()
+
+    settings = {
+        "FEEDS": {
+            unique_path(tmp_path): {
+                "format": "jsonlines",
+                "postprocessing": [
+                    "scrapy.extensions.postprocessing.GzipPlugin",
+                ],
+            },
+        },
+        "FEED_STORAGES": {"file": Storage},
+    }
+    await export_by_format(mockserver, [], settings)
+    assert Storage.open_file is Storage.store_file
+    assert not Storage.file_was_closed

@@ -12,7 +12,6 @@ from urllib.request import (  # type: ignore[attr-defined]
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from scrapy import Request, Spider
@@ -40,8 +39,8 @@ class HttpProxyMiddleware:
         return cls(auth_encoding)
 
     def _basic_auth_header(self, username: str, password: str) -> bytes:
-        user_pass = to_bytes(
-            f"{unquote(username)}:{unquote(password)}", encoding=self.auth_encoding
+        user_pass = f"{unquote(username)}:{unquote(password)}".encode(
+            self.auth_encoding or "utf-8"
         )
         return base64.b64encode(user_pass)
 

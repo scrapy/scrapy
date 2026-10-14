@@ -2,21 +2,29 @@
 
 from __future__ import annotations
 
-from typing import get_type_hints
+from typing import TYPE_CHECKING, Any, get_type_hints
+
+import pytest
 
 from scrapy import Spider
 from scrapy.spiders import CrawlSpider, CSVFeedSpider, SitemapSpider, XMLFeedSpider
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def test_callbacks() -> None:
-    """Making sure annotations on all non-abstract callbacks can be resolved."""
 
-    for cb in [
+@pytest.mark.parametrize(
+    "cb",
+    [
         Spider._parse,
         CrawlSpider._parse,
         CrawlSpider._callback,
         XMLFeedSpider._parse,
         CSVFeedSpider._parse,
         SitemapSpider._parse_sitemap,
-    ]:
-        get_type_hints(cb)
+    ],
+    ids=lambda cb: cb.__qualname__,
+)
+def test_callbacks(cb: Callable[..., Any]) -> None:
+    """Making sure annotations on all non-abstract callbacks can be resolved."""
+    get_type_hints(cb)
