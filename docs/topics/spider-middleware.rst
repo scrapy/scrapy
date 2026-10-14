@@ -6,11 +6,11 @@
 Spider Middleware
 =================
 
-The spider middleware is a framework of hooks into Scrapy's spider processing
-mechanism where you can plug custom functionality to process the responses that
-are sent to :ref:`topics-spiders` for processing and to process the requests
-and items that come out of a spider's callback. See :ref:`concepts` for a
-rundown of other alternatives.
+Spider middleware is a framework of hooks into Scrapy's spider processing
+mechanism where you can plug in custom functionality to process the responses
+that are sent to :ref:`topics-spiders` for processing, and to process the
+requests and items that come out of a spider's callback. See :ref:`concepts`
+for a rundown of other alternatives.
 
 .. _topics-spider-middleware-setting:
 
@@ -19,7 +19,7 @@ Activating a spider middleware
 
 To activate a spider middleware component, add it to the
 :setting:`SPIDER_MIDDLEWARES` setting, which is a dict whose keys are the
-middleware class path and their values are the middleware orders.
+middleware class paths and whose values are the middleware orders.
 
 Here's an example:
 
@@ -45,10 +45,10 @@ you want to insert the middleware. The order does matter because each
 middleware performs a different action and your middleware could depend on some
 previous (or subsequent) middleware being applied.
 
-If you want to disable a builtin middleware (the ones defined in
-:setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
-in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
-value.  For example, if you want to disable the referer middleware:
+If you want to disable a built-in middleware (the ones defined in
+:setting:`SPIDER_MIDDLEWARES_BASE` and enabled by default) you must define it
+in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as
+its value. For example, if you want to disable the referer middleware:
 
 .. code-block:: python
 
@@ -122,6 +122,11 @@ one or more of these methods:
         This method is an :term:`asynchronous generator` called with the
         results from the spider after the spider has processed the response.
 
+        .. versionchanged:: VERSION
+           It is also called with the output of a request :ref:`errback
+           <errbacks>`, with *response* set to ``None``, when the errback runs
+           because a download failed.
+
         *result* is lazy: a generator callback runs as *result* is iterated, so
         code that runs before that iteration runs before the callback body.
 
@@ -132,8 +137,9 @@ one or more of these methods:
         .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
-          spider
-        :type response: :class:`~scrapy.http.Response` object
+          spider, or ``None`` if the output comes from an errback called
+          because a download failed
+        :type response: :class:`~scrapy.http.Response` object or ``None``
 
         :param result: the results from the spider
         :type result: an :term:`asynchronous iterable` of
@@ -149,9 +155,14 @@ one or more of these methods:
 
     .. method:: process_spider_exception(response, exception)
 
-        This method is called when a spider callback or a
-        :meth:`process_spider_output` method (from a previous spider
-        middleware) raises an exception.
+        This method is called when a spider callback, a request :ref:`errback
+        <errbacks>` or a :meth:`process_spider_output` method (from a previous
+        spider middleware) raises an exception.
+
+        .. versionchanged:: VERSION
+           It is also called for exceptions raised while iterating the output
+           of an errback that runs because a download failed, with *response*
+           set to ``None``.
 
         :meth:`process_spider_exception` should return either ``None`` or an
         iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>`
@@ -167,8 +178,8 @@ one or more of these methods:
         :meth:`process_spider_exception` will be called.
 
         :param response: the response being processed when the exception was
-          raised
-        :type response: :class:`~scrapy.http.Response` object
+          raised, or ``None`` if there was no response
+        :type response: :class:`~scrapy.http.Response` object or ``None``
 
         :param exception: the exception raised
         :type exception: :exc:`Exception` object
@@ -468,6 +479,12 @@ StartSpiderMiddleware
 ---------------------
 
 .. autoclass:: scrapy.spidermiddlewares.start.StartSpiderMiddleware
+
+
+StickyMetaParamsMiddleware
+--------------------------
+
+.. autoclass:: scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware
 
 
 UrlLengthMiddleware

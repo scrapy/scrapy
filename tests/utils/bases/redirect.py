@@ -11,6 +11,29 @@ from scrapy.http import Request, Response
 from scrapy.utils.misc import build_from_crawler, set_environ
 from scrapy.utils.test import get_crawler
 
+PROXY_A = "https://a:@a.example"
+PROXY_B = "https://b:@b.example"
+
+# Proxy ID → (expected Proxy-Authorization header, expected proxy URL).
+PROXIES = {
+    "a": (b"Basic YTo=", "https://a.example"),
+    "b": (b"Basic Yjo=", "https://b.example"),
+}
+
+
+def assert_proxy(request: Request, expected: str | None) -> None:
+    """Check that *request* uses the proxy with the *expected* ID, or no proxy
+    at all if *expected* is ``None``."""
+    if expected is None:
+        assert "Proxy-Authorization" not in request.headers
+        assert "_auth_proxy" not in request.meta
+        assert "proxy" not in request.meta
+        return
+    auth, url = PROXIES[expected]
+    assert request.headers["Proxy-Authorization"] == auth
+    assert request.meta["_auth_proxy"] == url
+    assert request.meta["proxy"] == url
+
 
 class TestRedirectBase(ABC):
     mwcls: type[Any]
@@ -180,7 +203,7 @@ class TestRedirectBase(ABC):
         assert {
             **safe_headers,
             **cookie_header,
-        } == different_port_redirect_request.headers.to_unicode_dict()
+        } == dict(different_port_redirect_request.headers.to_tuple_list())
 
         # A domain change drops both the Authorization and the Cookie header.
         external_response = self.get_response(original_request, "https://example.org/a")
@@ -188,7 +211,7 @@ class TestRedirectBase(ABC):
             original_request, external_response
         )
         assert isinstance(external_redirect_request, Request)
-        assert safe_headers == external_redirect_request.headers.to_unicode_dict()
+        assert safe_headers == dict(external_redirect_request.headers.to_tuple_list())
 
         # A scheme upgrade (http → https) drops the Authorization header
         # because the origin changes, but keeps the Cookie header because the
@@ -201,7 +224,7 @@ class TestRedirectBase(ABC):
         assert {
             **safe_headers,
             **cookie_header,
-        } == upgrade_redirect_request.headers.to_unicode_dict()
+        } == dict(upgrade_redirect_request.headers.to_tuple_list())
 
         # A scheme downgrade (https → http) drops the Authorization header
         # because the origin changes, and the Cookie header because its value
@@ -217,772 +240,209 @@ class TestRedirectBase(ABC):
             original_request, downgrade_response
         )
         assert isinstance(downgrade_redirect_request, Request)
-        assert safe_headers == downgrade_redirect_request.headers.to_unicode_dict()
+        assert safe_headers == dict(downgrade_redirect_request.headers.to_tuple_list())
 
-    def test_meta_proxy_http_absolute(self):
+    def _check_proxy_scenario(
+        self,
+        *,
+        env: dict[str, str],
+        meta: dict[str, Any],
+        url: str,
+        location1: str,
+        location2: str,
+        expected: tuple[str | None, ...],
+    ) -> None:
+        """Send a request through 2 redirects and check its proxy state at 5
+        points: after the first HttpProxyMiddleware.process_request() call and,
+        for each redirect, after the redirect middleware builds the redirected
+        request and after HttpProxyMiddleware.process_request() runs on it.
+
+        Each item of *expected* is a key of PROXIES, or ``None`` for no proxy.
+        """
         crawler = get_crawler()
         redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        meta = {"proxy": "https://a:@a.example"}
-        request1 = Request("http://example.com", meta=meta)
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "http://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "http://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_meta_proxy_http_relative(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        meta = {"proxy": "https://a:@a.example"}
-        request1 = Request("http://example.com", meta=meta)
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "/a")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "/a")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_meta_proxy_https_absolute(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        meta = {"proxy": "https://a:@a.example"}
-        request1 = Request("https://example.com", meta=meta)
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "https://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "https://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_meta_proxy_https_relative(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        meta = {"proxy": "https://a:@a.example"}
-        request1 = Request("https://example.com", meta=meta)
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "/a")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "/a")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_meta_proxy_http_to_https(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        meta = {"proxy": "https://a:@a.example"}
-        request1 = Request("http://example.com", meta=meta)
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "https://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "http://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_meta_proxy_https_to_http(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        meta = {"proxy": "https://a:@a.example"}
-        request1 = Request("https://example.com", meta=meta)
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "http://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "https://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_system_proxy_http_absolute(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "http_proxy": "https://a:@a.example",
-        }
         with set_environ(**env):
             proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
-        request1 = Request("http://example.com")
+        request1 = Request(url, meta=meta)
         proxy_mw.process_request(request1)
+        assert_proxy(request1, expected[0])
 
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "http://example.com")
+        response1 = self.get_response(request1, location1)
         request2 = redirect_mw.process_response(request1, response1)
-
         assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
+        assert_proxy(request2, expected[1])
         proxy_mw.process_request(request2)
+        assert_proxy(request2, expected[2])
 
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "http://example.com")
+        response2 = self.get_response(request2, location2)
         request3 = redirect_mw.process_response(request2, response2)
-
         assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
+        assert_proxy(request3, expected[3])
         proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_system_proxy_http_relative(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "http_proxy": "https://a:@a.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("http://example.com")
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "/a")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "/a")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_system_proxy_https_absolute(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "https_proxy": "https://a:@a.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("https://example.com")
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "https://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "https://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_system_proxy_https_relative(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "https_proxy": "https://a:@a.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("https://example.com")
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "/a")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "/a")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_system_proxy_proxied_http_to_proxied_https(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "http_proxy": "https://a:@a.example",
-            "https_proxy": "https://b:@b.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("http://example.com")
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "https://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic Yjo="
-        assert request2.meta["_auth_proxy"] == "https://b.example"
-        assert request2.meta["proxy"] == "https://b.example"
-
-        response2 = self.get_response(request2, "http://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_system_proxy_proxied_http_to_unproxied_https(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "http_proxy": "https://a:@a.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("http://example.com")
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request1.meta["_auth_proxy"] == "https://a.example"
-        assert request1.meta["proxy"] == "https://a.example"
-
-        response1 = self.get_response(request1, "https://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        response2 = self.get_response(request2, "http://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request3.meta["_auth_proxy"] == "https://a.example"
-        assert request3.meta["proxy"] == "https://a.example"
-
-    def test_system_proxy_unproxied_http_to_proxied_https(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "https_proxy": "https://b:@b.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("http://example.com")
-        proxy_mw.process_request(request1)
-
-        assert "Proxy-Authorization" not in request1.headers
-        assert "_auth_proxy" not in request1.meta
-        assert "proxy" not in request1.meta
-
-        response1 = self.get_response(request1, "https://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic Yjo="
-        assert request2.meta["_auth_proxy"] == "https://b.example"
-        assert request2.meta["proxy"] == "https://b.example"
-
-        response2 = self.get_response(request2, "http://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-    def test_system_proxy_unproxied_http_to_unproxied_https(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("http://example.com")
-        proxy_mw.process_request(request1)
-
-        assert "Proxy-Authorization" not in request1.headers
-        assert "_auth_proxy" not in request1.meta
-        assert "proxy" not in request1.meta
-
-        response1 = self.get_response(request1, "https://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        response2 = self.get_response(request2, "http://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-    def test_system_proxy_proxied_https_to_proxied_http(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "http_proxy": "https://a:@a.example",
-            "https_proxy": "https://b:@b.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("https://example.com")
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic Yjo="
-        assert request1.meta["_auth_proxy"] == "https://b.example"
-        assert request1.meta["proxy"] == "https://b.example"
-
-        response1 = self.get_response(request1, "http://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "https://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic Yjo="
-        assert request3.meta["_auth_proxy"] == "https://b.example"
-        assert request3.meta["proxy"] == "https://b.example"
-
-    def test_system_proxy_proxied_https_to_unproxied_http(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "https_proxy": "https://b:@b.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("https://example.com")
-        proxy_mw.process_request(request1)
-
-        assert request1.headers["Proxy-Authorization"] == b"Basic Yjo="
-        assert request1.meta["_auth_proxy"] == "https://b.example"
-        assert request1.meta["proxy"] == "https://b.example"
-
-        response1 = self.get_response(request1, "http://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        response2 = self.get_response(request2, "https://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert request3.headers["Proxy-Authorization"] == b"Basic Yjo="
-        assert request3.meta["_auth_proxy"] == "https://b.example"
-        assert request3.meta["proxy"] == "https://b.example"
-
-    def test_system_proxy_unproxied_https_to_proxied_http(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        env = {
-            "http_proxy": "https://a:@a.example",
-        }
-        with set_environ(**env):
-            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("https://example.com")
-        proxy_mw.process_request(request1)
-
-        assert "Proxy-Authorization" not in request1.headers
-        assert "_auth_proxy" not in request1.meta
-        assert "proxy" not in request1.meta
-
-        response1 = self.get_response(request1, "http://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
-        assert request2.meta["_auth_proxy"] == "https://a.example"
-        assert request2.meta["proxy"] == "https://a.example"
-
-        response2 = self.get_response(request2, "https://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-    def test_system_proxy_unproxied_https_to_unproxied_http(self):
-        crawler = get_crawler()
-        redirect_mw = build_from_crawler(self.mwcls, crawler)
-        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
-
-        request1 = Request("https://example.com")
-        proxy_mw.process_request(request1)
-
-        assert "Proxy-Authorization" not in request1.headers
-        assert "_auth_proxy" not in request1.meta
-        assert "proxy" not in request1.meta
-
-        response1 = self.get_response(request1, "http://example.com")
-        request2 = redirect_mw.process_response(request1, response1)
-
-        assert isinstance(request2, Request)
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        proxy_mw.process_request(request2)
-
-        assert "Proxy-Authorization" not in request2.headers
-        assert "_auth_proxy" not in request2.meta
-        assert "proxy" not in request2.meta
-
-        response2 = self.get_response(request2, "https://example.com")
-        request3 = redirect_mw.process_response(request2, response2)
-
-        assert isinstance(request3, Request)
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
-
-        proxy_mw.process_request(request3)
-
-        assert "Proxy-Authorization" not in request3.headers
-        assert "_auth_proxy" not in request3.meta
-        assert "proxy" not in request3.meta
+        assert_proxy(request3, expected[4])
+
+    # A proxy set through Request.meta is kept on redirects, even on
+    # cross-scheme ones.
+    @pytest.mark.parametrize(
+        ("url", "location1", "location2"),
+        [
+            pytest.param(
+                "http://example.com",
+                "http://example.com",
+                "http://example.com",
+                id="http-absolute",
+            ),
+            pytest.param("http://example.com", "/a", "/a", id="http-relative"),
+            pytest.param(
+                "https://example.com",
+                "https://example.com",
+                "https://example.com",
+                id="https-absolute",
+            ),
+            pytest.param("https://example.com", "/a", "/a", id="https-relative"),
+            pytest.param(
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                id="http-to-https",
+            ),
+            pytest.param(
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                id="https-to-http",
+            ),
+        ],
+    )
+    def test_meta_proxy(self, url: str, location1: str, location2: str) -> None:
+        self._check_proxy_scenario(
+            env={},
+            meta={"proxy": PROXY_A},
+            url=url,
+            location1=location1,
+            location2=location2,
+            expected=("a", "a", "a", "a", "a"),
+        )
+
+    # A proxy set from the environment is scheme-specific, so a cross-scheme
+    # redirect drops it and HttpProxyMiddleware then sets the proxy of the new
+    # scheme, if any. Cross-scheme scenarios use proxy a for http and proxy b
+    # for https.
+    @pytest.mark.parametrize(
+        ("env", "url", "location1", "location2", "expected"),
+        [
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "http://example.com",
+                "http://example.com",
+                "http://example.com",
+                ("a", "a", "a", "a", "a"),
+                id="http-absolute",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "http://example.com",
+                "/a",
+                "/a",
+                ("a", "a", "a", "a", "a"),
+                id="http-relative",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_A},
+                "https://example.com",
+                "https://example.com",
+                "https://example.com",
+                ("a", "a", "a", "a", "a"),
+                id="https-absolute",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_A},
+                "https://example.com",
+                "/a",
+                "/a",
+                ("a", "a", "a", "a", "a"),
+                id="https-relative",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A, "https_proxy": PROXY_B},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                ("a", None, "b", None, "a"),
+                id="proxied-http-to-proxied-https",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                ("a", None, None, None, "a"),
+                id="proxied-http-to-unproxied-https",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_B},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                (None, None, "b", None, None),
+                id="unproxied-http-to-proxied-https",
+            ),
+            pytest.param(
+                {},
+                "http://example.com",
+                "https://example.com",
+                "http://example.com",
+                (None, None, None, None, None),
+                id="unproxied-http-to-unproxied-https",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A, "https_proxy": PROXY_B},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                ("b", None, "a", None, "b"),
+                id="proxied-https-to-proxied-http",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_B},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                ("b", None, None, None, "b"),
+                id="proxied-https-to-unproxied-http",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                (None, None, "a", None, None),
+                id="unproxied-https-to-proxied-http",
+            ),
+            pytest.param(
+                {},
+                "https://example.com",
+                "http://example.com",
+                "https://example.com",
+                (None, None, None, None, None),
+                id="unproxied-https-to-unproxied-http",
+            ),
+        ],
+    )
+    def test_system_proxy(
+        self,
+        env: dict[str, str],
+        url: str,
+        location1: str,
+        location2: str,
+        expected: tuple[str | None, ...],
+    ) -> None:
+        self._check_proxy_scenario(
+            env=env,
+            meta={},
+            url=url,
+            location1=location1,
+            location2=location2,
+            expected=expected,
+        )

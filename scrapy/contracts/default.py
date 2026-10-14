@@ -19,7 +19,8 @@ class UrlContract(Contract):
     conditions of a callback.
 
     This contract is mandatory: callbacks lacking it are ignored when running
-    the checks.
+    the checks. A callback docstring may repeat it, once per batch, to check
+    the callback against more than one sample URL; see :ref:`topics-contracts`.
 
     .. code-block:: none
 
@@ -27,6 +28,7 @@ class UrlContract(Contract):
     """
 
     name = "url"
+    generates_request = True
 
     def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
         args["url"] = self.args[0]

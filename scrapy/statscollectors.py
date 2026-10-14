@@ -6,11 +6,14 @@ from __future__ import annotations
 
 import logging
 import pprint
+from collections.abc import MutableMapping
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from scrapy import Spider
     from scrapy.crawler import Crawler
 
@@ -20,41 +23,33 @@ logger = logging.getLogger(__name__)
 
 StatsT: TypeAlias = dict[str, Any]
 
+_MISSING = object()
+_SPIDER_ARG_METHODS = (
+    "get_value",
+    "get_stats",
+    "set_value",
+    "set_stats",
+    "inc_value",
+    "max_value",
+    "min_value",
+    "clear_stats",
+    "open_spider",
+    "close_spider",
+)
 
-class StatsCollector:
+
+class StatsCollector(MutableMapping[str, Any]):
     """The base stats collector that other stats collectors are based on."""
+
+    __eq__ = object.__eq__
+    __hash__ = object.__hash__
 
     def __init__(self, crawler: Crawler):
         self._dump: bool = crawler.settings.getbool("STATS_DUMP")
         self._stats: StatsT = {}
         self._crawler: Crawler = crawler
-
-    def __getattribute__(self, name: str) -> Any:
-        cached_name = f"_cached_{name}"
-        try:
-            return super().__getattribute__(cached_name)
-        except AttributeError:
-            pass
-
-        original_attr = super().__getattribute__(name)
-
-        if name in {
-            "get_value",
-            "get_stats",
-            "set_value",
-            "set_stats",
-            "inc_value",
-            "max_value",
-            "min_value",
-            "clear_stats",
-            "open_spider",
-            "close_spider",
-        } and callable(original_attr):
-            wrapped = _warn_spider_arg(original_attr)
-            setattr(self, cached_name, wrapped)
-            return wrapped
-
-        return original_attr
+        for name in _SPIDER_ARG_METHODS:
+            setattr(self, name, _warn_spider_arg(getattr(self, name)))
 
     def get_value(
         self, key: str, default: Any = None, spider: Spider | None = None
@@ -115,6 +110,28 @@ class StatsCollector:
 
     def __str__(self) -> str:
         return pprint.pformat(self._stats)
+
+    # Components use ``if stats:`` to tell a stats collector from None.
+    def __bool__(self) -> bool:
+        return True
+
+    def __getitem__(self, key: str) -> Any:
+        value = self.get_value(key, _MISSING)
+        if value is _MISSING:
+            raise KeyError(key)
+        return value
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.set_value(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        del self._stats[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.get_stats())
+
+    def __len__(self) -> int:
+        return len(self.get_stats())
 
 
 class MemoryStatsCollector(StatsCollector):
