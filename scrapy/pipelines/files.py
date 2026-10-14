@@ -165,20 +165,25 @@ class S3FilesStore:
     def from_crawler(
         cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
     ) -> Self:
+        return cls(uri, **cls._get_config(crawler, get_setting_name))
+
+    @staticmethod
+    def _get_config(
+        crawler: Crawler, get_setting_name: Callable[[str], str]
+    ) -> dict[str, Any]:
         settings = crawler.settings
-        return cls(
-            uri,
-            AWS_ACCESS_KEY_ID=settings["AWS_ACCESS_KEY_ID"],
-            AWS_SECRET_ACCESS_KEY=settings["AWS_SECRET_ACCESS_KEY"],
-            AWS_SESSION_TOKEN=settings["AWS_SESSION_TOKEN"],
-            AWS_ENDPOINT_URL=settings["AWS_ENDPOINT_URL"],
-            AWS_REGION_NAME=settings["AWS_REGION_NAME"],
-            AWS_USE_SSL=settings["AWS_USE_SSL"],
-            AWS_VERIFY=settings["AWS_VERIFY"],
-            AWS_MAX_POOL_CONNECTIONS=_get_max_pool_connections(settings),
-            POLICY=settings[get_setting_name("S3_ACL")],
-            UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
-        )
+        return {
+            "AWS_ACCESS_KEY_ID": settings["AWS_ACCESS_KEY_ID"],
+            "AWS_SECRET_ACCESS_KEY": settings["AWS_SECRET_ACCESS_KEY"],
+            "AWS_SESSION_TOKEN": settings["AWS_SESSION_TOKEN"],
+            "AWS_ENDPOINT_URL": settings["AWS_ENDPOINT_URL"],
+            "AWS_REGION_NAME": settings["AWS_REGION_NAME"],
+            "AWS_USE_SSL": settings["AWS_USE_SSL"],
+            "AWS_VERIFY": settings["AWS_VERIFY"],
+            "AWS_MAX_POOL_CONNECTIONS": _get_max_pool_connections(settings),
+            "POLICY": settings[get_setting_name("S3_ACL")],
+            "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
+        }
 
     def __init__(self, uri: str, **config: Any):
         self.__dict__.update(config)
@@ -302,13 +307,18 @@ class GCSFilesStore:
     def from_crawler(
         cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
     ) -> Self:
+        return cls(uri, **cls._get_config(crawler, get_setting_name))
+
+    @staticmethod
+    def _get_config(
+        crawler: Crawler, get_setting_name: Callable[[str], str]
+    ) -> dict[str, Any]:
         settings = crawler.settings
-        return cls(
-            uri,
-            GCS_PROJECT_ID=settings["GCS_PROJECT_ID"],
-            POLICY=settings[get_setting_name("GCS_ACL")] or None,
-            UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
-        )
+        return {
+            "GCS_PROJECT_ID": settings["GCS_PROJECT_ID"],
+            "POLICY": settings[get_setting_name("GCS_ACL")] or None,
+            "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
+        }
 
     def __init__(self, uri: str, **config: Any):
         self.__dict__.update(config)
@@ -394,14 +404,19 @@ class FTPFilesStore:
     def from_crawler(
         cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
     ) -> Self:
+        return cls(uri, **cls._get_config(crawler, get_setting_name))
+
+    @staticmethod
+    def _get_config(
+        crawler: Crawler, get_setting_name: Callable[[str], str]
+    ) -> dict[str, Any]:
         settings = crawler.settings
-        return cls(
-            uri,
-            FTP_USERNAME=settings["FTP_USER"],
-            FTP_PASSWORD=settings["FTP_PASSWORD"],
-            USE_ACTIVE_MODE=settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
-            UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
-        )
+        return {
+            "FTP_USERNAME": settings["FTP_USER"],
+            "FTP_PASSWORD": settings["FTP_PASSWORD"],
+            "USE_ACTIVE_MODE": settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
+            "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
+        }
 
     def __init__(self, uri: str, **config: Any):
         self.__dict__.update(config)
@@ -497,16 +512,25 @@ class _DeprecatedStoreSchemes:
         return self.value
 
 
-def _store_scheme_overrides(cls: type) -> dict[str, type[FilesStoreProtocol]]:
+def _store_scheme_overrides(
+    cls: type,
+) -> dict[str, type[FilesStoreProtocol] | None]:
+    """Return the schemes that the ``STORE_SCHEMES`` attribute of *cls* adds
+    or replaces, and the built-in schemes that it removes, mapped to
+    ``None``.
+    """
     base = next(base for base in cls.__mro__ if "STORE_SCHEMES" in vars(base))
     schemes = vars(base)["STORE_SCHEMES"]
     if isinstance(schemes, _DeprecatedStoreSchemes):
         schemes = schemes.value
-    return {
+    overrides: dict[str, type[FilesStoreProtocol] | None] = {
         scheme: store
         for scheme, store in schemes.items()
         if _BUILTIN_STORE_SCHEMES.get(scheme) is not store
     }
+    for scheme in _BUILTIN_STORE_SCHEMES.keys() - schemes.keys():
+        overrides[scheme] = None
+    return overrides
 
 
 class FilesPipeline(MediaPipeline):
@@ -567,16 +591,17 @@ class FilesPipeline(MediaPipeline):
 
         settings = crawler.settings
         cls_name = "FilesPipeline"
-        self._storages: dict[str, Any] = without_none_values(
-            settings.getwithbase("MEDIA_STORAGES")
-        )
-        if overrides := _store_scheme_overrides(type(self)):
+        storages = dict(settings.getwithbase("MEDIA_STORAGES"))
+        overrides = _store_scheme_overrides(type(self))
+        if overrides:
             warnings.warn(
                 _STORE_SCHEMES_DEPRECATION,
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            self._storages.update(overrides)
+            storages.update(overrides)
+        self._storages: dict[str, Any] = without_none_values(storages)
+        self._legacy_schemes: set[str] = set(overrides)
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
             self._key_for_pipe, base_class_name=cls_name, settings=settings
@@ -606,6 +631,16 @@ class FilesPipeline(MediaPipeline):
         # to support win32 paths like: C:\\some\dir
         scheme = "file" if Path(uri).is_absolute() else urlparse(uri).scheme
         store_cls = load_object(self._storages[scheme])
+        if scheme in self._legacy_schemes:
+            # Storages from STORE_SCHEMES get the configuration of the
+            # built-in storage of their scheme as class attributes, and are
+            # built with the URI alone.
+            builtin = _BUILTIN_STORE_SCHEMES.get(scheme)
+            if get_config := getattr(builtin, "_get_config", None):
+                config = get_config(self.crawler, self._get_store_setting_name)
+                for name, value in config.items():
+                    setattr(store_cls, name, value)
+            return cast("FilesStoreProtocol", store_cls(uri))
         if hasattr(store_cls, "from_crawler"):
             return cast(
                 "FilesStoreProtocol",

@@ -930,6 +930,39 @@ class TestMediaStorages:
             store = build_from_crawler(FilesPipeline, crawler).store
         assert isinstance(store, SimpleStore)
 
+    def test_store_schemes_subclass_with_uri_only_init(self) -> None:
+        class LegacyFTPFilesStore(FTPFilesStore):
+            def __init__(self, uri: str) -> None:  # pylint: disable=useless-parent-delegation
+                super().__init__(uri)
+
+        class DeprecatedPipeline(FilesPipeline):
+            STORE_SCHEMES = {"ftp": LegacyFTPFilesStore}
+
+        crawler = get_crawler(
+            None,
+            {
+                "FILES_STORE": "ftp://example.com:21/files",
+                "FTP_USER": "user",
+                "FTP_PASSWORD": "password",
+            },
+        )
+        with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
+            store = build_from_crawler(DeprecatedPipeline, crawler).store
+        assert isinstance(store, LegacyFTPFilesStore)
+        assert store.username == "user"
+        assert store.password == "password"
+
+    def test_store_schemes_removed(self) -> None:
+        class DeprecatedPipeline(FilesPipeline):
+            STORE_SCHEMES = {"file": FSFilesStore}
+
+        crawler = get_crawler(None, {"FILES_STORE": "ftp://example.com:21/files"})
+        with (
+            pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"),
+            pytest.raises(KeyError, match="ftp"),
+        ):
+            build_from_crawler(DeprecatedPipeline, crawler)
+
 
 class TestFSFilesStore:
     def test_constructor_with_pathlike_object(self, tmp_path: Path) -> None:
