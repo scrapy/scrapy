@@ -20,17 +20,18 @@ RESPONSE_URL = "https://www.example.com/catalogue/page-1.html"
 
 # Links that each scenario returns for the benchmark page. They are fewer than
 # the anchors of the page because links to images, to other non-crawlable files
-# and to non-HTTP schemes are rejected, and, except in the scenario that keeps
-# duplicates, because the links that the navigation repeats are collapsed.
-LINKS = 63
-DUPLICATE_LINKS = 88
-CANONICAL_LINKS = 60
+# and to schemes that Scrapy cannot download are rejected, and, except in the
+# scenario that keeps duplicates, because the links that the navigation repeats
+# are collapsed.
+LINKS = 64
+DUPLICATE_LINKS = 89
+CANONICAL_LINKS = 61
 FILTERED_LINKS = 45
 
 # Requests built from LINKS links that point to a different resource.
 # Canonicalization maps the rest to one that another link already covers, e.g.
 # two fragments of a page, or two spellings of one percent-escape.
-FINGERPRINTS = 60
+FINGERPRINTS = 61
 
 
 def _read_corpus() -> tuple[list[str], list[str]]:

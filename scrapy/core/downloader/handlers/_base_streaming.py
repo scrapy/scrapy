@@ -5,7 +5,16 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from contextlib import closing
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, NoReturn, TypedDict, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Generic,
+    NoReturn,
+    NotRequired,
+    TypedDict,
+    TypeVar,
+)
 from urllib.parse import quote, urlsplit
 
 from scrapy import Request, signals
@@ -19,12 +28,13 @@ from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
+    get_warnsize,
     get_warnsize_msg,
     make_response,
     normalize_bind_address,
 )
 from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.url import add_http_if_no_scheme
+from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -34,9 +44,6 @@ if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
     from _typeshed import SizedBuffer
-
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
     from scrapy.http import Headers, Response
@@ -135,6 +142,16 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
     def _log_tls_info(self, response: _ResponseT, request: Request) -> None:
         """Log TLS connection details, if possible."""
 
+    def _open_body_buffer(self, response: _ResponseT, request: Request) -> _BodySink:
+        """Return the sink to write the response body into."""
+        return _BodySink(request.meta.get("body_file"))
+
+    def _get_body(
+        self, buffer: _BodySink, response: _ResponseT, request: Request
+    ) -> bytes:
+        """Return the response body given the *buffer* it was written into."""
+        return buffer.getvalue()
+
     async def download_request(self, request: Request) -> Response:
         if not self.supports_proxies and request.meta.get("proxy"):
             raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
@@ -155,7 +172,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
 
     async def _read_response(self, response: _ResponseT, request: Request) -> Response:
         maxsize: int = request.meta.get("download_maxsize", self._default_maxsize)
-        warnsize: int = request.meta.get("download_warnsize", self._default_warnsize)
+        warnsize = get_warnsize(request.meta, self._default_warnsize)
 
         headers = self._extract_headers(response)
         content_length = headers.get("Content-Length")
@@ -189,8 +206,8 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
                 stop_download=stop_download,
             )
 
-        bytes_received = 0
-        with closing(_BodySink(request)) as response_body:
+        with closing(self._open_body_buffer(response, request)) as response_body:
+            bytes_received = 0
             try:
                 async for chunk in self._iter_body_chunks(response):
                     response_body.write(chunk)
@@ -201,7 +218,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
                     ):
                         return make_response(
                             **make_response_base_args,
-                            body=response_body.getvalue(),
+                            body=self._get_body(response_body, response, request),
                             stop_download=stop_download,
                         )
 
@@ -227,7 +244,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
                 if not fail_on_dataloss:
                     return make_response(
                         **make_response_base_args,
-                        body=response_body.getvalue(),
+                        body=self._get_body(response_body, response, request),
                         flags=["dataloss"],
                     )
                 if not self._fail_on_dataloss_warned:
@@ -237,7 +254,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
 
             return make_response(
                 **make_response_base_args,
-                body=response_body.getvalue(),
+                body=self._get_body(response_body, response, request),
             )
 
     @staticmethod
@@ -249,6 +266,28 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         headers = request.headers.copy()
         headers.pop(b"Proxy-Authorization", None)
         return headers
+
+    def _utf8_request_headers(self, request: Request) -> list[tuple[str, str]]:
+        """Get a prepared copy of the request headers as ``(name, value)`` str
+        pairs, for libraries that can only send UTF-8.
+
+        Bytes that are not valid UTF-8 are replaced with U+FFFD, with a
+        warning.
+        """
+        pairs: list[tuple[str, str]] = []
+        for name, values in self._request_headers(request).items():
+            for value in values:
+                try:
+                    pairs.append((name.decode(), value.decode()))
+                except UnicodeDecodeError:
+                    str_name = name.decode(errors="replace")
+                    logger.warning(
+                        f"The {str_name} header of {request} is not valid UTF-8,"
+                        f" which {type(self).__name__} cannot send. Sending it"
+                        f" with U+FFFD in place of the invalid bytes."
+                    )
+                    pairs.append((str_name, value.decode(errors="replace")))
+        return pairs
 
     def _get_bind_address_host(self) -> str | None:
         """Return the host portion of the bind address.
@@ -287,7 +326,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         proxy: str | None = request.meta.get("proxy")
         if not proxy:
             return None, None
-        proxy = add_http_if_no_scheme(proxy)
+        proxy = _add_http_if_no_scheme(proxy)
         auth_header: bytes | None = request.headers.get(b"Proxy-Authorization")
         return proxy, auth_header.decode("ascii") if auth_header else None
 

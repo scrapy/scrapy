@@ -56,13 +56,12 @@ class NullCookieJar(CookieJar):  # pragma: no cover
 class _BodySink:
     """Destination of the bytes of a response body while it is downloaded.
 
-    The bytes are kept in memory, unless the ``body_file`` request meta key is
-    set, in which case they are written to that file and the response ends up
-    with an empty body.
+    The bytes are kept in memory, unless *body_file* is set, as in the
+    ``body_file`` request meta key, in which case they are written to that file
+    and the response ends up with an empty body.
     """
 
-    def __init__(self, request: Request):
-        body_file = request.meta.get("body_file")
+    def __init__(self, body_file: str | os.PathLike[str] | BufferedIOBase | None):
         self.to_file: bool = body_file is not None
         self._buffer: BufferedIOBase
         if isinstance(body_file, (str, os.PathLike)):
@@ -170,6 +169,20 @@ def get_maxsize_msg(size: int, limit: int, request: Request, *, expected: bool) 
         f"{prefix} {size} bytes which is larger than download "
         f"max size ({limit}) in request {request}."
     )
+
+
+def get_warnsize(meta: dict[str, Any], default: int) -> int:
+    """Return the download warn size for a request with the given *meta*.
+
+    A request-specific ``download_maxsize`` disables the *default* warn size,
+    since a user who sets a request-specific size limit expects that size.
+    """
+    if "download_warnsize" in meta:
+        warnsize: int = meta["download_warnsize"]
+        return warnsize
+    if "download_maxsize" in meta:
+        return 0
+    return default
 
 
 def get_warnsize_msg(size: int, limit: int, request: Request, *, expected: bool) -> str:

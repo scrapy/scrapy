@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 import attr
 from twisted.internet import defer
@@ -14,15 +14,12 @@ from twisted.internet.interfaces import (
 )
 from zope.interface.declarations import implementer, provider
 
-from scrapy.utils.datatypes import LocalCache
+from scrapy.utils._datatypes import LocalCache
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 
@@ -66,7 +63,7 @@ class CachingThreadedResolver(ThreadedResolver):
             d.addCallback(self._cache_result, name)
         return d
 
-    def _cache_result(self, result: Any, name: str) -> Any:
+    def _cache_result(self, result: str, name: str) -> str:
         dnscache[name] = result
         return result
 

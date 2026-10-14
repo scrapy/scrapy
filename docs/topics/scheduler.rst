@@ -6,10 +6,10 @@ Scheduler
 
 .. module:: scrapy.core.scheduler
 
-The scheduler component receives requests from the :ref:`engine <component-engine>`
-and stores them into persistent and/or non-persistent data structures.
-It also gets those requests and feeds them back to the engine when it
-asks for a next request to be downloaded.
+The scheduler component receives requests from the :ref:`engine
+<component-engine>` and stores them into persistent and/or non-persistent data
+structures. It also gets those requests and feeds them back to the engine when
+it asks for the next request to be downloaded.
 
 
 Overriding the default scheduler
@@ -37,5 +37,10 @@ Default scheduler
 Priority queues
 ===============
 
+.. autoclass:: scrapy.pqueues.PriorityQueueProtocol
+    :members: from_crawler, push, pop, close, changed, next_priority, state
+    :special-members: __len__
+
 .. autoclass:: scrapy.pqueues.DownloaderAwarePriorityQueue
+
 .. autoclass:: scrapy.pqueues.ScrapyPriorityQueue
