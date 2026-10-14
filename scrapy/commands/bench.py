@@ -29,20 +29,23 @@ class Command(ScrapyCommand):
         return "Run quick benchmark test"
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        with _BenchServer():
+        with _BenchServer() as baseurl:
             assert self.crawler_process
-            self.crawler_process.crawl(_BenchSpider, total=100000)
+            self.crawler_process.crawl(_BenchSpider, total=100000, baseurl=baseurl)
             self.crawler_process.start()
 
 
 class _BenchServer:
-    def __enter__(self) -> None:
+    def __enter__(self) -> str:
         pargs = [sys.executable, "-u", "-m", "scrapy.utils._benchserver"]
         self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()
         )
         assert self.proc.stdout
-        self.proc.stdout.readline()
+        # The server listens on a random port and prints it at the end of
+        # its first line.
+        port = int(self.proc.stdout.readline().rsplit(b":", 1)[1])
+        return f"http://localhost:{port}"
 
     def __exit__(
         self,
@@ -61,7 +64,7 @@ class _BenchSpider(scrapy.Spider):
     name = "follow"
     total = 10000
     show = 20
-    baseurl = "http://localhost:8998"
+    baseurl: str
     link_extractor = LinkExtractor()
 
     async def start(self) -> AsyncIterator[Any]:
