@@ -8,6 +8,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.python import global_object_name
 from scrapy.utils.request import request_httprepr
+from scrapy.utils.response import _body_size
 
 if TYPE_CHECKING:
     from scrapy import Request, Spider
@@ -59,7 +60,7 @@ class DownloaderStats:
         self.stats.inc_value("downloader/response_count")
         self.stats.inc_value(f"downloader/response_status_count/{response.status}")
         reslen = (
-            len(response.body)
+            _body_size(response)
             + get_header_size(response.headers)
             + get_status_size(response.status)
             + len(b"\r\n")  # the empty line after the headers

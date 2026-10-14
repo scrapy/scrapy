@@ -20,7 +20,7 @@ from scrapy.exceptions import (
     NotConfigured,
     ScrapyDeprecationWarning,
 )
-from scrapy.http import HtmlResponse, Request, Response
+from scrapy.http import BodyFileResponse, HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded, gunzip
@@ -142,6 +142,17 @@ class TestHttpCompression:
         request = Request("https://example.com", meta={"body_file": "body"})
         self.mw.process_request(request)
         assert "Accept-Encoding" not in request.headers
+
+    @coroutine_test
+    async def test_process_response_body_file(self):
+        request = Request("https://example.com", meta={"body_file": "body"})
+        response = BodyFileResponse(
+            "https://example.com",
+            headers={"Content-Encoding": "gzip"},
+            body_file="body",
+            request=request,
+        )
+        assert await self.mw.process_response(request, response) is response
 
     @coroutine_test
     async def test_process_response_gzip(self):

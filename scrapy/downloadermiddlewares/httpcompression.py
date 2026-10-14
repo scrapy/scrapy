@@ -12,7 +12,7 @@ from scrapy.exceptions import (
     NotConfigured,
     ScrapyDeprecationWarning,
 )
-from scrapy.http import Response, TextResponse
+from scrapy.http import BodyFileResponse, Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
     _DECOMPRESSION_ERRORS,
@@ -90,9 +90,8 @@ class HttpCompressionMiddleware:
     def process_request(
         self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
-        if "body_file" in request.meta:
-            # The body of these responses is written to a file as it is
-            # received, so there is nothing that could decompress it later.
+        if request.meta.get("body_file"):
+            # Their body is written to a file, never decompressed.
             return None
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
@@ -101,7 +100,7 @@ class HttpCompressionMiddleware:
     async def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
-        if request.method == "HEAD":
+        if request.method == "HEAD" or isinstance(response, BodyFileResponse):
             return response
         content_encoding = response.headers.getlist("Content-Encoding")
         if content_encoding:

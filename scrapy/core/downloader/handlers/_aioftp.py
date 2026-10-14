@@ -7,7 +7,7 @@ import socket
 import ssl
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
+from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, NamedTuple
 from urllib.parse import unquote, urlsplit
 
 import aioftp
@@ -20,8 +20,7 @@ from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
 )
-from scrapy.http import Headers
-from scrapy.utils._download_handlers import _BodySink
+from scrapy.http import BodyFileResponse, Headers
 from scrapy.utils._ssl import _log_sslobj_debug_info, _make_ssl_context
 from scrapy.utils.httpobj import urlparse_cached
 
@@ -200,19 +199,19 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
 
     @staticmethod
     def _local_filename(response: _AioftpResponse, request: Request) -> bytes | None:
-        if response.data is None:
+        if response.data is None or request.meta.get("body_file"):
             return None
         return request.meta.get("ftp_local_filename")
 
     def _open_body_buffer(
         self, response: _AioftpResponse, request: Request
-    ) -> _BodySink:
+    ) -> BinaryIO:
         if local_filename := self._local_filename(response, request):
-            return _BodySink(local_filename.decode())
+            return Path(local_filename.decode()).open("wb")
         return super()._open_body_buffer(response, request)
 
     def _get_body(
-        self, buffer: _BodySink, response: _AioftpResponse, request: Request
+        self, buffer: BinaryIO, response: _AioftpResponse, request: Request
     ) -> bytes:
         if local_filename := self._local_filename(response, request):
             return local_filename
@@ -229,16 +228,13 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
     def _add_ftp_headers(
         self, result: Response, response: _AioftpResponse, request: Request
     ) -> None:
-        size: int | None
         if local_filename := self._local_filename(response, request):
             size = Path(local_filename.decode()).stat().st_size
-        elif "body_file" in request.meta:
-            size = None
+        elif isinstance(result, BodyFileResponse):
+            size = Path(result.body_file).stat().st_size
         else:
             size = len(result.body)
-        result.headers["Local Filename"] = local_filename or b""
-        if size is not None:
-            result.headers["Size"] = size
+        result.headers.update({"Local Filename": local_filename or b"", "Size": size})
 
     @staticmethod
     def _extract_headers(response: _AioftpResponse) -> Headers:

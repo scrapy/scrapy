@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import os
 from contextlib import contextmanager
 from http.cookiejar import CookieJar
-from io import BufferedIOBase, BytesIO
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import CancelledError
 from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
@@ -27,16 +24,16 @@ from scrapy.exceptions import (
     StopDownload,
     UnsupportedURLSchemeError,
 )
+from scrapy.http import BodyFileResponse
 from scrapy.utils.log import logger
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Iterator
     from http.client import HTTPResponse
     from http.cookiejar import Cookie
     from ipaddress import IPv4Address, IPv6Address
     from urllib.request import Request as ULRequest
-
-    from _typeshed import SizedBuffer
 
     from scrapy import Request
     from scrapy.crawler import Crawler
@@ -51,43 +48,6 @@ class NullCookieJar(CookieJar):  # pragma: no cover
 
     def set_cookie(self, cookie: Cookie) -> None:
         pass
-
-
-class _BodySink:
-    """Destination of the bytes of a response body while it is downloaded.
-
-    The bytes are kept in memory, unless *body_file* is set, as in the
-    ``body_file`` request meta key, in which case they are written to that file
-    and the response ends up with an empty body.
-    """
-
-    def __init__(self, body_file: str | os.PathLike[str] | BufferedIOBase | None):
-        self.to_file: bool = body_file is not None
-        self._buffer: BufferedIOBase
-        if isinstance(body_file, (str, os.PathLike)):
-            # A file opened here is also closed here, while a file object that
-            # comes from the meta key already open belongs to the caller.
-            self._buffer = Path(body_file).open("wb")
-            self._own_file = True
-        else:
-            self._buffer = body_file or BytesIO()
-            self._own_file = False
-
-    def write(self, data: SizedBuffer) -> None:
-        self._buffer.write(data)
-
-    def truncate(self) -> None:
-        """Discard the bytes received so far, to avoid keeping them in memory
-        for a long time."""
-        if not self.to_file:
-            self._buffer.truncate(0)
-
-    def getvalue(self) -> bytes:
-        return b"" if self.to_file else cast("BytesIO", self._buffer).getvalue()
-
-    def close(self) -> None:
-        if self._own_file:
-            self._buffer.close()
 
 
 @contextmanager
@@ -143,18 +103,26 @@ def make_response(
     ip_address: IPv4Address | IPv6Address | None = None,
     protocol: str | None = None,
     stop_download: StopDownload | None = None,
+    body_file: str | os.PathLike[str] | None = None,
 ) -> Response:
-    respcls = responsetypes.responsetypes.from_args(headers=headers, url=url, body=body)
-    response = respcls(
-        url=url,
-        status=status,
-        headers=headers,
-        body=body,
-        flags=flags,
-        certificate=certificate,
-        ip_address=ip_address,
-        protocol=protocol,
-    )
+    kwargs: dict[str, Any] = {
+        "url": url,
+        "status": status,
+        "headers": headers,
+        "flags": flags,
+        "certificate": certificate,
+        "ip_address": ip_address,
+        "protocol": protocol,
+    }
+    response: Response
+    if body_file is not None:
+        assert not body
+        response = BodyFileResponse(**kwargs, body_file=body_file)
+    else:
+        respcls = responsetypes.responsetypes.from_args(
+            headers=headers, url=url, body=body
+        )
+        response = respcls(**kwargs, body=body)
     if stop_download:
         response.flags.append("download_stopped")
         if stop_download.fail:

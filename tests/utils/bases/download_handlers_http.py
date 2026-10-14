@@ -31,7 +31,14 @@ from scrapy.exceptions import (
     StopDownload,
     UnsupportedURLSchemeError,
 )
-from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
+from scrapy.http import (
+    BodyFileResponse,
+    Headers,
+    HtmlResponse,
+    Request,
+    Response,
+    TextResponse,
+)
 from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -70,6 +77,7 @@ class TestHttpBase(ABC):
     http2: bool = False
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
+    handler_supports_body_file: bool = True
     # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
     # stream error (of type PROTOCOL_ERROR) so the client will send
     # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
@@ -1120,60 +1128,52 @@ class TestHttpBase(ABC):
         assert response.body == path.encode()
 
     @coroutine_test
-    async def test_body_file_path(self, mockserver: MockServer, tmp_path: Path) -> None:
+    async def test_body_file(self, mockserver: MockServer, tmp_path: Path) -> None:
+        if not self.handler_supports_body_file:
+            pytest.skip("The handler does not support body_file")
         body_file = tmp_path / "body"
         request = Request(
             mockserver.url("/text", is_secure=self.is_secure),
-            meta={"body_file": str(body_file)},
+            meta={"body_file": body_file},
         )
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
-        assert response.body == b""
-        assert body_file.read_bytes() == b"Works"
-
-    @coroutine_test
-    async def test_body_file_object(
-        self, mockserver: MockServer, tmp_path: Path
-    ) -> None:
-        body_file = tmp_path / "body"
-        with body_file.open("wb") as f:
-            request = Request(
-                mockserver.url("/text", is_secure=self.is_secure),
-                meta={"body_file": f},
-            )
-            async with self.get_dh() as download_handler:
-                response = await download_handler.download_request(request)
-            assert not f.closed
-        assert response.body == b""
+        assert isinstance(response, BodyFileResponse)
+        assert response.body_file == body_file
         assert body_file.read_bytes() == b"Works"
 
     @coroutine_test
     async def test_body_file_empty_response(
         self, mockserver: MockServer, tmp_path: Path
     ) -> None:
+        if not self.handler_supports_body_file:
+            pytest.skip("The handler does not support body_file")
         body_file = tmp_path / "body"
         request = Request(
             mockserver.url("/text", is_secure=self.is_secure),
             method="HEAD",
-            meta={"body_file": str(body_file)},
+            meta={"body_file": body_file},
         )
         async with self.get_dh() as download_handler:
-            await download_handler.download_request(request)
+            response = await download_handler.download_request(request)
+        assert isinstance(response, BodyFileResponse)
         assert body_file.read_bytes() == b""
 
     @coroutine_test
     async def test_body_file_maxsize(
         self, mockserver: MockServer, tmp_path: Path
     ) -> None:
+        if not self.handler_supports_body_file:
+            pytest.skip("The handler does not support body_file")
         body_file = tmp_path / "body"
         request = Request(
             mockserver.url("/largechunkedfile", is_secure=self.is_secure),
-            meta={"body_file": str(body_file)},
+            meta={"body_file": body_file},
         )
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
             with pytest.raises(DownloadCancelledError):
                 await download_handler.download_request(request)
-        assert body_file.stat().st_size > 1_500
+        assert body_file.read_bytes() == b""
 
 
 class TestHttpsBase(TestHttpBase, ABC):

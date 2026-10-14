@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from ipaddress import IPv4Address
+from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urlparse
@@ -16,7 +17,7 @@ from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
-from scrapy.http import Request
+from scrapy.http import BodyFileResponse, Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.engine import (
@@ -62,6 +63,8 @@ from tests.spiders import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from scrapy.statscollectors import StatsCollector
     from tests.mockserver.http import MockServer
 
@@ -74,6 +77,24 @@ class CloseSpiderProcessRequestMiddleware:
 class CloseSpiderProcessResponseMiddleware:
     def process_response(self, request, response):
         raise CloseSpider("my_reason")
+
+
+class BodyFileSpider(Spider):
+    name = "body_file"
+
+    def __init__(self, url: str, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.url = url
+        self.body: bytes | None = None
+
+    async def start(self) -> AsyncIterator[Any]:
+        yield Request(self.url, meta={"body_file": True})
+
+    def parse(self, response: Response) -> None:
+        assert isinstance(response, BodyFileResponse)
+        body_file = Path(response.body_file)
+        self.body = body_file.read_bytes()
+        body_file.unlink()
 
 
 class TestCrawl:
@@ -462,6 +483,15 @@ with multiples lines
                 crawler.crawl(mockserver.url("/status?n=200"), mockserver=mockserver)
             )
         assert not crawler.crawling
+
+    @coroutine_test
+    async def test_body_file(self, mockserver: MockServer) -> None:
+        crawler = get_crawler(BodyFileSpider)
+        await crawler.crawl_async(mockserver.url("/text"))
+        assert isinstance(crawler.spider, BodyFileSpider)
+        assert crawler.spider.body == b"Works"
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/response_bytes")
 
     @coroutine_test
     async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:

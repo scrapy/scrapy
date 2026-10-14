@@ -75,6 +75,7 @@ def test_not_configured_without_reactor() -> None:
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
     http2 = True
+    handler_supports_body_file = False
     handler_supports_http2_dataloss = False
 
     @coroutine_test

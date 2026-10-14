@@ -894,29 +894,31 @@ body_file
 
 .. versionadded:: VERSION
 
-File where the body of the response is written as it is downloaded, leaving the
-response with an empty body:
+Path of a file where the response body is written as it is downloaded, or
+``True`` to write it to a new temporary file, so that responses of any size can
+be downloaded without fitting them in memory:
 
 .. code-block:: python
 
-    Request("https://example.org/big.zip", meta={"body_file": "big.zip"})
+    Request("https://example.com/big.zip", meta={"body_file": "big.zip"})
 
-Use it to download files of any size without having to fit them in memory.
+The response is then a :class:`BodyFileResponse`.
 
-The value can be a path, which Scrapy opens for writing and closes once the
-response is downloaded, or an open, writable binary file object, which Scrapy
-writes to and leaves open. Prefer a path for requests that may be retried or
-redirected, since each attempt then starts the file over.
+Each download attempt, e.g. a retry or a redirect, writes the file from the
+start. If the download fails, e.g. because the response exceeds
+:setting:`DOWNLOAD_MAXSIZE`, the file may hold part of the body, except for
+temporary files, which Scrapy deletes. Deleting temporary files of successful
+downloads is up to you.
 
-The :ref:`compression middleware <http-compression>` does not ask for a
-compressed response for these requests, so that what reaches the file is the
-response body itself.
+Scrapy does not ask for a compressed response, and does not decompress the file
+if the server sends one anyway, as indicated by the ``Content-Encoding``
+response header.
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` skips
+these requests.
 
-If the download fails, e.g. because the response exceeds
-:setting:`DOWNLOAD_MAXSIZE`, the file may hold part of the body.
-
-The built-in download handlers support this key for HTTP, HTTPS, FTP and S3
-requests.
+Download handlers that do not support this key, such as :ref:`some built-in
+ones <download-handlers-ref>`, make the request fail with
+:exc:`~scrapy.exceptions.NotSupported`.
 
 .. reqmeta:: download_handler
 
@@ -1532,6 +1534,12 @@ JsonResponse objects
     that is used when the response has a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type`
     header.
+
+BodyFileResponse objects
+------------------------
+
+.. autoclass:: BodyFileResponse
+    :members: body_file
 
 
 Other functions related to responses

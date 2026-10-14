@@ -19,7 +19,7 @@ from scrapy.exceptions import (
     NotConfigured,
     ResponseDataLossError,
 )
-from scrapy.http import HtmlResponse, Request, TextResponse
+from scrapy.http import BodyFileResponse, HtmlResponse, Request, TextResponse
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
@@ -333,10 +333,13 @@ async def test_local_filename(ftp_server: MockFTPServer, tmp_path: Path) -> None
 @coroutine_test
 async def test_body_file(ftp_server: MockFTPServer, tmp_path: Path) -> None:
     body_file = tmp_path / "file.txt"
-    request = Request(ftp_server.url("file.txt"), meta={"body_file": str(body_file)})
+    request = Request(
+        ftp_server.url("file.txt"),
+        meta={"body_file": body_file, "ftp_local_filename": b"ignored"},
+    )
     response = await _download(request)
-    assert response.body == b""
-    assert response.headers == {b"Local Filename": [b""]}
+    assert isinstance(response, BodyFileResponse)
+    assert response.headers == {b"Local Filename": [b""], b"Size": [b"17"]}
     assert body_file.read_bytes() == FILES["file.txt"]
 
 
