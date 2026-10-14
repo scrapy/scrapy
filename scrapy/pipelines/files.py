@@ -77,7 +77,7 @@ class StatInfo(TypedDict, total=False):
 
 
 class FilesStoreProtocol(Protocol):
-    def __init__(self, uri: str): ...
+    def __init__(self, uri: str, /): ...
 
     def persist_file(
         self,
@@ -163,7 +163,7 @@ class S3FilesStore:
 
     @classmethod
     def from_crawler(
-        cls, crawler: Crawler, uri: str, *, resolve: Callable[[str], str]
+        cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
     ) -> Self:
         settings = crawler.settings
         return cls(
@@ -176,7 +176,7 @@ class S3FilesStore:
             AWS_USE_SSL=settings["AWS_USE_SSL"],
             AWS_VERIFY=settings["AWS_VERIFY"],
             AWS_MAX_POOL_CONNECTIONS=_get_max_pool_connections(settings),
-            POLICY=settings[resolve("FILES_STORE_S3_ACL")],
+            POLICY=settings[get_setting_name("S3_ACL")],
             UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
@@ -300,13 +300,13 @@ class GCSFilesStore:
 
     @classmethod
     def from_crawler(
-        cls, crawler: Crawler, uri: str, *, resolve: Callable[[str], str]
+        cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
     ) -> Self:
         settings = crawler.settings
         return cls(
             uri,
             GCS_PROJECT_ID=settings["GCS_PROJECT_ID"],
-            POLICY=settings[resolve("FILES_STORE_GCS_ACL")] or None,
+            POLICY=settings[get_setting_name("GCS_ACL")] or None,
             UPLOAD_TIMEOUT=settings.getfloat("UPLOAD_TIMEOUT") or None,
         )
 
@@ -392,7 +392,7 @@ class FTPFilesStore:
 
     @classmethod
     def from_crawler(
-        cls, crawler: Crawler, uri: str, *, resolve: Callable[[str], str]
+        cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
     ) -> Self:
         settings = crawler.settings
         return cls(
@@ -556,8 +556,10 @@ class FilesPipeline(MediaPipeline):
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings["FILES_STORE"], crawler=crawler)
 
-    def _resolve_store_setting(self, setting: str) -> str:
-        return self._key_for_pipe(setting, "FilesPipeline", self.crawler.settings)
+    def _get_store_setting_name(self, name: str) -> str:
+        return self._key_for_pipe(
+            f"FILES_STORE_{name}", "FilesPipeline", self.crawler.settings
+        )
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
         # to support win32 paths like: C:\\some\dir
@@ -567,7 +569,7 @@ class FilesPipeline(MediaPipeline):
             return cast(
                 "FilesStoreProtocol",
                 store_cls.from_crawler(
-                    self.crawler, uri, resolve=self._resolve_store_setting
+                    self.crawler, uri, get_setting_name=self._get_store_setting_name
                 ),
             )
         return cast("FilesStoreProtocol", store_cls(uri))

@@ -114,9 +114,9 @@ class ImagesPipeline(FilesPipeline):
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings["IMAGES_STORE"], crawler=crawler)
 
-    def _resolve_store_setting(self, setting: str) -> str:
+    def _get_store_setting_name(self, name: str) -> str:
         return self._key_for_pipe(
-            setting.replace("FILES_", "IMAGES_", 1),
+            f"IMAGES_STORE_{name}",
             "ImagesPipeline",
             self.crawler.settings,
         )

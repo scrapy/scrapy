@@ -445,16 +445,16 @@ value, and must define ``stat_file`` and ``persist_file``:
             self.acl = acl
 
         @classmethod
-        def from_crawler(cls, crawler, uri, *, resolve):
-            return cls(uri, acl=crawler.settings[resolve("FILES_STORE_ACL")])
+        def from_crawler(cls, crawler, uri, *, get_setting_name):
+            return cls(uri, acl=crawler.settings[get_setting_name("ACL")])
 
         def stat_file(self, path, info): ...
 
         def persist_file(self, path, buf, info, meta=None, headers=None): ...
 
-*resolve* maps a setting name to the name that applies to the pipeline being
-built, so that a single storage class can be configured separately for files and
-for images: ``resolve("FILES_STORE_ACL")`` returns ``"FILES_STORE_ACL"`` for
+*get_setting_name* adds the prefix of the pipeline being built to a setting
+name, so that a single storage class can be configured separately for files and
+for images: ``get_setting_name("ACL")`` returns ``"FILES_STORE_ACL"`` for
 :class:`~scrapy.pipelines.files.FilesPipeline` and ``"IMAGES_STORE_ACL"`` for
 :class:`~scrapy.pipelines.images.ImagesPipeline`, and takes :ref:`per-class
 setting names <media-pipeline-class-settings>` into account.

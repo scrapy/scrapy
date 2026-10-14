@@ -847,9 +847,9 @@ class CrawlerAwareStore:
 
     @classmethod
     def from_crawler(
-        cls, crawler: Crawler, uri: str, *, resolve: Callable[[str], str]
+        cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
     ) -> "CrawlerAwareStore":
-        return cls(uri, crawler, resolve("FILES_STORE_S3_ACL"))
+        return cls(uri, crawler, get_setting_name("S3_ACL"))
 
 
 class TestMediaStorages:
@@ -1201,7 +1201,9 @@ class TestGCSFilesStore:
         )
         with mock.patch("google.cloud.storage.Client", return_value=client_mock):
             store = GCSFilesStore.from_crawler(
-                crawler, "gs://my_bucket/my_prefix/", resolve=lambda setting: setting
+                crawler,
+                "gs://my_bucket/my_prefix/",
+                get_setting_name=lambda name: f"FILES_STORE_{name}",
             )
 
         assert store.GCS_PROJECT_ID == "my-project"

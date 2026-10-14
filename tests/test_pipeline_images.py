@@ -692,7 +692,7 @@ class TestImagesPipelineCustomSettings:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
-    def test_media_storages_resolve_setting(self):
+    def test_media_storages_setting_name(self):
         crawler = get_crawler(
             None,
             {
