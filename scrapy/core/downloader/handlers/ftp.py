@@ -32,9 +32,7 @@ from __future__ import annotations
 
 import logging
 import re
-from io import BytesIO
-from pathlib import Path
-from typing import TYPE_CHECKING, BinaryIO, ClassVar
+from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
@@ -44,6 +42,7 @@ from scrapy.exceptions import DownloadCancelledError, DownloadFailedError, NotCo
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._download_handlers import (
+    _BodySink,
     get_maxsize_msg,
     get_warnsize,
     get_warnsize_msg,
@@ -71,9 +70,8 @@ class ReceivedDataProtocol(Protocol):
         warnsize: int = 0,
     ):
         self.__filename: bytes | None = filename
-        self.body: BinaryIO = (
-            Path(filename.decode()).open("wb") if filename else BytesIO()
-        )
+        body_file = request.meta.get("body_file") if request else None
+        self.body: _BodySink = _BodySink(filename.decode() if filename else body_file)
         self.size: int = 0
         self._request: Request | None = request
         self._maxsize: int = maxsize
@@ -86,7 +84,7 @@ class ReceivedDataProtocol(Protocol):
         self.size += len(data)
         if self._maxsize and self.size > self._maxsize:
             self._exceeded_maxsize = True
-            self.body.truncate(0)
+            self.body.truncate()
             assert self.transport
             self.transport.loseConnection()
         elif (
@@ -105,10 +103,7 @@ class ReceivedDataProtocol(Protocol):
         return self.__filename
 
     def close(self) -> None:
-        if self.filename:
-            self.body.close()
-        else:
-            self.body.seek(0)
+        self.body.close()
 
 
 _CODE_RE = re.compile(r"\d+")
@@ -184,6 +179,6 @@ class FTPDownloadHandler(BaseDownloadHandler):
             logger.warning(warning_msg)
             raise DownloadCancelledError(warning_msg)
         headers = {"Local Filename": protocol.filename or b"", "Size": protocol.size}
-        body = protocol.filename or protocol.body.read()
+        body = protocol.filename or protocol.body.getvalue()
         respcls = responsetypes.from_args(url=request.url, body=body)
         return respcls(url=request.url, status=200, body=body, headers=headers)

@@ -915,8 +915,8 @@ response body itself.
 If the download fails, e.g. because the response exceeds
 :setting:`DOWNLOAD_MAXSIZE`, the file may hold part of the body.
 
-Only the built-in HTTP download handlers and :ref:`AioftpDownloadHandler
-<aioftp-handler>` support this key.
+The built-in download handlers support this key for HTTP, HTTPS, FTP and S3
+requests.
 
 .. reqmeta:: download_handler
 

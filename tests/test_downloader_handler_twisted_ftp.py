@@ -145,6 +145,18 @@ class TestFTPBase(ABC):
         assert local_path.read_bytes() == b"I have the power!"
         local_path.unlink()
 
+    @deferred_f_from_coro_f
+    async def test_body_file(
+        self, server_url: str, dh: FTPDownloadHandler, tmp_path: Path
+    ) -> None:
+        body_file = tmp_path / "body"
+        meta = {**self.req_meta, "body_file": str(body_file)}
+        request = Request(url=server_url + "file.txt", meta=meta)
+        r = await dh.download_request(request)
+        assert r.body == b""
+        assert r.headers == {b"Local Filename": [b""], b"Size": [b"17"]}
+        assert body_file.read_bytes() == b"I have the power!"
+
     @pytest.mark.parametrize("filename", ["file.txt", "big.bin"])
     @pytest.mark.parametrize("local", [False, True])
     @deferred_f_from_coro_f
