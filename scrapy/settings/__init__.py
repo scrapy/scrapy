@@ -7,7 +7,7 @@ from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
 from logging import getLogger
 from pprint import pformat
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
@@ -16,14 +16,12 @@ from scrapy.utils.python import global_object_name
 
 logger = getLogger(__name__)
 
+
 if TYPE_CHECKING:
     from types import ModuleType
 
     # https://github.com/python/typing/issues/445#issuecomment-1131458824
     from _typeshed import SupportsItems
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     _SettingsInput: TypeAlias = (
         SupportsItems[str, Any] | Iterable[tuple[str, Any]] | str | None
@@ -113,7 +111,7 @@ class BaseSettings(MutableMapping[str, Any]):
             return None
         return self.attributes[opt_name].value
 
-    def __contains__(self, name: Any) -> bool:
+    def __contains__(self, name: object) -> bool:
         return name in self.attributes
 
     def add_to_list(self, name: str, item: Any) -> None:
@@ -272,7 +270,7 @@ class BaseSettings(MutableMapping[str, Any]):
     def getdictorlist(
         self,
         name: str,
-        default: dict[Any, Any] | list[Any] | tuple[Any] | None = None,
+        default: dict[Any, Any] | list[Any] | tuple[Any, ...] | None = None,
     ) -> dict[Any, Any] | list[Any]:
         """Get a setting value as either a :class:`dict` or a :class:`list`.
 

@@ -367,15 +367,15 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
 To run the tests on a specific :doc:`tox <tox:index>` environment, use
 ``-e <name>`` with an environment name from ``tox.ini``. For example, to run
-the tests with Python 3.10 use::
+the tests with Python 3.14 use::
 
-    tox -e py310
+    tox -e py314
 
 You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py39,py310 -p auto
+    tox -e py313,py314 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the
@@ -385,9 +385,9 @@ default positional arguments (``scrapy tests``) after ``--`` as well::
     tox -- scrapy tests -x  # stop after first failure
 
 You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
-the Python 3.10 :doc:`tox <tox:index>` environment using all your CPU cores::
+the Python 3.14 :doc:`tox <tox:index>` environment using all your CPU cores::
 
-    tox -e py310 -- scrapy tests -n auto
+    tox -e py314 -- scrapy tests -n auto
 
 To see coverage report install :doc:`coverage <coverage:index>`
 (``pip install coverage``) and run:

@@ -141,7 +141,7 @@ class TestArguments(TestProjectBase):
     def test_spiders_prefix(self, spiders_path: Path) -> None:
         assert candidates("crawl", "al", cwd=spiders_path) == ["alpha"]
 
-    @pytest.mark.parametrize("command", ["fetch", "parse", "shell"])
+    @pytest.mark.parametrize("command", ["fetch", "parse", "settings", "shell"])
     def test_spiders_as_option_value(self, command: str, spiders_path: Path) -> None:
         assert candidates(command, "--spider", "b", cwd=spiders_path) == ["beta"]
 
@@ -203,9 +203,17 @@ class Command(ScrapyCommand):
     def test_name(self, command_path: Path) -> None:
         assert candidates("cust", cwd=command_path) == ["custom"]
 
-    def test_argument(self, command_path: Path) -> None:
-        assert candidates("custom", "", cwd=command_path) == ["first", "second"]
-        assert candidates("custom", "first", "", cwd=command_path) == ["second"]
+    @pytest.mark.parametrize(
+        ("words", "expected"),
+        [
+            (("",), ["first", "second"]),
+            (("first", ""), ["second"]),
+        ],
+    )
+    def test_argument(
+        self, words: tuple[str, ...], expected: list[str], command_path: Path
+    ) -> None:
+        assert candidates("custom", *words, cwd=command_path) == expected
 
     def test_option_choices(self, command_path: Path) -> None:
         assert candidates("custom", "--flavor", "s", cwd=command_path) == [

@@ -4,16 +4,12 @@ import re
 import time
 from http.cookiejar import Cookie, CookiePolicy, DefaultCookiePolicy
 from http.cookiejar import CookieJar as _CookieJar
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Self, cast
 
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request
     from scrapy.http import Response
@@ -185,13 +181,13 @@ class WrappedRequest:
 
     def get_header(self, name: str, default: str | None = None) -> str | None:
         value = self.request.headers.get(name, default)
-        return to_unicode(value, errors="replace") if value is not None else None
+        return value.decode(errors="replace") if value is not None else None
 
     def header_items(self) -> list[tuple[str, list[str]]]:
         return [
             (
-                to_unicode(k, errors="replace"),
-                [to_unicode(x, errors="replace") for x in v],
+                k.decode(errors="replace"),
+                [x.decode(errors="replace") for x in v],
             )
             for k, v in self.request.headers.items()
         ]
@@ -207,7 +203,5 @@ class WrappedResponse:
     def info(self) -> Self:
         return self
 
-    def get_all(self, name: str, default: Any = None) -> list[str]:
-        return [
-            to_unicode(v, errors="replace") for v in self.response.headers.getlist(name)
-        ]
+    def get_all(self, name: str, default: object = None) -> list[str]:
+        return [v.decode(errors="replace") for v in self.response.headers.getlist(name)]

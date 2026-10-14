@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from scrapy.exceptions import StopDownload
 from tests.utils.bases.engine import TestEngineBase
 from tests.utils.decorators import coroutine_test
@@ -14,8 +16,6 @@ from tests.utils.engine import (
 )
 
 if TYPE_CHECKING:
-    import pytest
-
     from tests.mockserver.http import MockServer
 
 
@@ -26,29 +26,29 @@ class HeadersReceivedCrawlerRun(CrawlerRun):
 
 
 class TestHeadersReceivedEngine(TestEngineBase):
+    @pytest.mark.parametrize(
+        "spider", [MySpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider]
+    )
     @coroutine_test
     async def test_crawler(
-        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+        self,
+        spider: type[MySpider],
+        mockserver: MockServer,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        for spider in (
-            MySpider,
-            DictItemsSpider,
-            AttrsItemsSpider,
-            DataClassItemsSpider,
-        ):
-            run = HeadersReceivedCrawlerRun(spider)
-            with caplog.at_level("DEBUG"):
-                await run.run(mockserver)
-            for url in ("/redirected", "/static/", "/numbers"):
-                assert (
-                    f"Download stopped for <GET {mockserver.url(url)}> "
-                    "from signal handler HeadersReceivedCrawlerRun.headers_received"
-                ) in caplog.text
-            self._assert_visited_urls(run)
-            self._assert_downloaded_responses(run, count=6)
-            self._assert_signals_caught(run)
-            self._assert_bytes_received(run)
-            self._assert_headers_received(run)
+        run = HeadersReceivedCrawlerRun(spider)
+        with caplog.at_level("DEBUG"):
+            await run.run(mockserver)
+        for url in ("/redirected", "/static/", "/numbers"):
+            assert (
+                f"Download stopped for <GET {mockserver.url(url)}> "
+                "from signal handler HeadersReceivedCrawlerRun.headers_received"
+            ) in caplog.text
+        self._assert_visited_urls(run)
+        self._assert_downloaded_responses(run, count=6)
+        self._assert_signals_caught(run)
+        self._assert_bytes_received(run)
+        self._assert_headers_received(run)
 
     @staticmethod
     def _assert_bytes_received(run: CrawlerRun) -> None:

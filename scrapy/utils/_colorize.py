@@ -9,7 +9,7 @@ from packaging.version import Version as parse_version
 
 def _enable_windows_terminal_processing() -> bool:
     # https://stackoverflow.com/a/36760881
-    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined,unused-ignore]
     return bool(kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7))
 
 

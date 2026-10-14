@@ -95,8 +95,9 @@ class TestEngineBase:
     def _assert_headers_received(run: CrawlerRun) -> None:
         for headers in run.headers.values():
             assert b"Server" in headers
-            assert headers[b"Server"]
-            assert b"TwistedWeb" in headers[b"Server"]
+            server = headers[b"Server"]
+            assert server
+            assert b"TwistedWeb" in server
             assert b"Date" in headers
             assert b"Content-Type" in headers
 
@@ -138,7 +139,7 @@ class TestEngineBase:
                 # signal was fired multiple times
                 assert len(data) > 1
                 # bytes were received in order
-                numbers = [str(x).encode("utf8") for x in range(2**18)]
+                numbers = [str(x).encode() for x in range(2**18)]
                 assert joined_data == b"".join(numbers)
 
     @staticmethod
@@ -157,4 +158,5 @@ class TestEngineBase:
         assert {
             "spider": run.crawler.spider,
             "reason": "finished",
+            "error": False,
         } == run.signals_caught[signals.spider_closed]

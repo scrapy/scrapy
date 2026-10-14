@@ -10,12 +10,13 @@ import asyncio
 from threading import Thread
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from scrapy import signals
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import ScrapyCommand, _add_curl_option, _request_from_curl
+from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import AsyncCrawlerProcess, Crawler
+from scrapy.exceptions import UsageError
 from scrapy.http import Request
 from scrapy.shell import Shell
-from scrapy.utils.defer import _schedule_coro
+from scrapy.utils._datatypes import SequenceExclude
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
@@ -53,6 +54,7 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser: ArgumentParser) -> None:
         super().add_options(parser)
+        _add_curl_option(parser)
         parser.add_argument(
             "-c",
             dest="code",
@@ -74,7 +76,19 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: Namespace) -> None:
         url = args[0] if args else None
-        if url:
+        request: Request | None = None
+        if opts.curl:
+            if url:
+                raise UsageError("--curl cannot be combined with a URL argument")
+            request = _request_from_curl(opts.curl, dont_filter=True)
+            if opts.no_redirect:
+                request.meta["handle_httpstatus_all"] = True
+            else:
+                request.meta["handle_httpstatus_list"] = SequenceExclude(
+                    range(300, 400)
+                )
+            url = request.url
+        elif url:
             # first argument may be a local file
             url = guess_scheme(url)
 
@@ -84,6 +98,10 @@ class Command(ScrapyCommand):
         spidercls: type[Spider] = DefaultSpider
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
+        elif request is not None:
+            spidercls = spidercls_for_request(
+                spider_loader, request, spidercls, log_multiple=True
+            )
         elif url:
             spidercls = spidercls_for_request(
                 spider_loader, Request(url), spidercls, log_multiple=True
@@ -100,34 +118,23 @@ class Command(ScrapyCommand):
             self._init_without_reactor(crawler)
             loop = self._get_reactorless_loop()
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code, loop=loop)
-        shell.start(url=url, redirect=not opts.no_redirect)
+        if request is not None:
+            shell.start(request=request, redirect=not opts.no_redirect)
+        else:
+            shell.start(url=url, redirect=not opts.no_redirect)
 
     def _init_with_reactor(self, crawler: Crawler) -> None:
-        # Create the engine and run start_async() in the main thread
-        crawler.engine = crawler._create_engine()
-        _schedule_coro(crawler.engine.start_async(_start_request_processing=False))
+        # Create the engine in the main thread
+        crawler.engine = ExecutionEngine(crawler)
         self._start_crawler_thread()
 
     def _init_without_reactor(self, crawler: Crawler) -> None:
-        # Create the engine and run start_async() in the event loop thread
+        # Create the engine in the event loop thread
         loop = self._get_reactorless_loop()
         self._start_crawler_thread()
 
         async def _init_engine() -> None:
-            started: asyncio.Future[None] = loop.create_future()
-
-            def on_engine_started(**kwargs: Any) -> None:
-                started.set_result(None)
-
-            crawler.signals.connect(on_engine_started, signals.engine_started)
-            crawler.engine = crawler._create_engine()
-            loop.create_task(
-                crawler.engine.start_async(_start_request_processing=False)
-            )
-            # Wait until the engine has been started, so that the engine is
-            # usable when this returns to the main thread.
-            await started
-            crawler.signals.disconnect(on_engine_started, signals.engine_started)
+            crawler.engine = ExecutionEngine(crawler)
 
         future = asyncio.run_coroutine_threadsafe(_init_engine(), loop)
         future.result()

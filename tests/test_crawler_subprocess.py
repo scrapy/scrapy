@@ -48,7 +48,7 @@ class ScriptRunnerMixin(ABC):
             stderr=subprocess.PIPE,
         )
         _, stderr = p.communicate()
-        return stderr.decode("utf-8")
+        return stderr.decode()
 
 
 class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
@@ -236,7 +236,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     def _test_shutdown_graceful(
         self, script: str = "sleeping.py", *extra_args: str
     ) -> None:
-        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
+        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined,unused-ignore]
         args = self.get_script_args(script, "3", *extra_args)
         p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
@@ -250,7 +250,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         self._test_shutdown_graceful()
 
     async def _test_shutdown_forced(self, script: str = "sleeping.py") -> None:
-        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
+        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined,unused-ignore]
         args = self.get_script_args(script, "10")
         p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
@@ -524,6 +524,21 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+
+    def test_custom_loop_closespider_timeout_no_item(self) -> None:
+        log = self.run_script("closespider_timeout_no_item.py")
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
+
+    @pytest.mark.requires_uvloop
+    def test_uvloop_closespider_timeout_no_item(self) -> None:
+        # uvloop has a different clock resolution
+        log = self.run_script("closespider_timeout_no_item.py", "uvloop.Loop")
+        assert "Using asyncio event loop: uvloop.Loop" in log
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
 
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
