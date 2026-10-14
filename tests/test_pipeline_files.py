@@ -930,6 +930,17 @@ class TestMediaStorages:
             store = build_from_crawler(FilesPipeline, crawler).store
         assert isinstance(store, SimpleStore)
 
+    def test_store_schemes_instance_deprecated(self, tmp_path: Path) -> None:
+        class DeprecatedPipeline(FilesPipeline):
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                self.STORE_SCHEMES = {"file": SimpleStore}  # type: ignore[dict-item,misc]
+                super().__init__(*args, **kwargs)
+
+        crawler = get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        with pytest.warns(ScrapyDeprecationWarning, match="STORE_SCHEMES"):
+            store = build_from_crawler(DeprecatedPipeline, crawler).store
+        assert isinstance(store, SimpleStore)
+
     def test_store_schemes_subclass_with_uri_only_init(self) -> None:
         class LegacyFTPFilesStore(FTPFilesStore):
             def __init__(self, uri: str) -> None:  # pylint: disable=useless-parent-delegation

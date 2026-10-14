@@ -513,14 +513,18 @@ class _DeprecatedStoreSchemes:
 
 
 def _store_scheme_overrides(
-    cls: type,
+    pipeline: FilesPipeline,
 ) -> dict[str, type[FilesStoreProtocol] | None]:
-    """Return the schemes that the ``STORE_SCHEMES`` attribute of *cls* adds
-    or replaces, and the built-in schemes that it removes, mapped to
+    """Return the schemes that the ``STORE_SCHEMES`` attribute of *pipeline*
+    adds or replaces, and the built-in schemes that it removes, mapped to
     ``None``.
     """
-    base = next(base for base in cls.__mro__ if "STORE_SCHEMES" in vars(base))
-    schemes = vars(base)["STORE_SCHEMES"]
+    owner = next(
+        obj
+        for obj in (pipeline, *type(pipeline).__mro__)
+        if "STORE_SCHEMES" in vars(obj)
+    )
+    schemes = vars(owner)["STORE_SCHEMES"]
     if isinstance(schemes, _DeprecatedStoreSchemes):
         schemes = schemes.value
     overrides: dict[str, type[FilesStoreProtocol] | None] = {
@@ -592,7 +596,7 @@ class FilesPipeline(MediaPipeline):
         settings = crawler.settings
         cls_name = "FilesPipeline"
         storages = dict(settings.getwithbase("MEDIA_STORAGES"))
-        overrides = _store_scheme_overrides(type(self))
+        overrides = _store_scheme_overrides(self)
         if overrides:
             warnings.warn(
                 _STORE_SCHEMES_DEPRECATION,
