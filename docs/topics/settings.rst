@@ -1299,15 +1299,6 @@ Optionally, this can be set on a per-request basis by using the
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers.
 
-.. warning::
-
-    This setting is ignored by the
-    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    :ref:`download handler <topics-download-handlers>`. In case of a data loss
-    error, the corresponding HTTP/2 connection may be corrupted, affecting other
-    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
-    failure is always raised for every request that was using that connection.
-
 .. setting:: DOWNLOAD_VERIFY_CERTIFICATES
 
 DOWNLOAD_VERIFY_CERTIFICATES
@@ -1440,6 +1431,22 @@ The editor to use for editing spiders with the :command:`edit` command.
 Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
 command will prefer it over the default setting.
 
+.. setting:: EVENT_LOOP_LAG_THRESHOLD
+
+EVENT_LOOP_LAG_THRESHOLD
+------------------------
+
+Default: ``10.0``
+
+The number of seconds that the event loop may be blocked before a warning is
+logged. CPU-bound code running in a callback, such as a spider callback,
+blocks the event loop and delays every other pending callback and I/O
+operation, including downloads, for as long as it runs.
+
+Set to ``0`` to disable the warning.
+
+See :ref:`event-loop-lag`.
+
 .. setting:: EXTENSIONS
 
 EXTENSIONS
@@ -1471,6 +1478,7 @@ Default:
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
         "scrapy.extensions.remote_control.RemoteControl": 0,
+        "scrapy.extensions.event_loop_lag.EventLoopLagMonitor": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
