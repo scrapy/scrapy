@@ -1299,15 +1299,6 @@ Optionally, this can be set on a per-request basis by using the
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers.
 
-.. warning::
-
-    This setting is ignored by the
-    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    :ref:`download handler <topics-download-handlers>`. In case of a data loss
-    error, the corresponding HTTP/2 connection may be corrupted, affecting other
-    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
-    failure is always raised for every request that was using that connection.
-
 .. setting:: DOWNLOAD_VERIFY_CERTIFICATES
 
 DOWNLOAD_VERIFY_CERTIFICATES
