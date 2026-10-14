@@ -428,6 +428,18 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             self.assertEqualResponse(res5, res0b)
             assert "cached" in res5.flags
 
+    def test_request_cache_control_none(self):
+        res0 = Response(
+            self.request.url, status=200, headers={"Expires": self.tomorrow}
+        )
+        req0 = Request("http://example.com", headers={"Cache-Control": None})
+        with self._middleware() as mw:
+            res1 = self._process_requestresponse(mw, req0, res0)
+            assert "cached" not in res1.flags
+            res2 = mw.process_request(req0)
+            assert isinstance(res2, Response)
+            assert "cached" in res2.flags
+
     def test_response_cacheability(self):
         responses = [
             # 304 is not cacheable no matter what servers sends

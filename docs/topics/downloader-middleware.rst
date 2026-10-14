@@ -118,9 +118,15 @@ defines one or more of these methods:
       halted and the returned request is rescheduled to be downloaded in the future.
       This is the same behavior as if a request is returned from :meth:`process_request`.
 
-      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the errback
-      function of the request (``Request.errback``) is called. If no code handles the raised
-      exception, it is ignored and not logged (unlike other exceptions).
+      If it raises an exception, and the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      the :meth:`process_exception` methods of the downloader middlewares that
+      have not processed the response yet are called.
+
+      If no middleware handles the exception, the errback function of the
+      request (``Request.errback``) is called. If no code handles an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception, it is ignored and not
+      logged, unlike other exceptions.
 
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.Request` object
@@ -133,7 +139,9 @@ defines one or more of these methods:
       Scrapy calls :meth:`process_exception` when a :ref:`download handler
       <topics-download-handlers>` or a :meth:`process_request` (from a
       downloader middleware) raises an exception (including an
-      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception), and, if the
+      :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``,
+      when a :meth:`process_response` does.
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
@@ -142,9 +150,12 @@ defines one or more of these methods:
       executing any other :meth:`process_exception` methods of installed middleware,
       until no middleware is left and the default exception handling kicks in.
 
-      If it returns a :class:`~scrapy.http.Response` object, the :meth:`process_response`
-      method chain of installed middleware is started, and Scrapy won't bother calling
-      any other :meth:`process_exception` methods of middleware.
+      If it returns a :class:`~scrapy.http.Response` object, the
+      :meth:`process_response` method chain of installed middleware is started,
+      and Scrapy won't bother calling any other :meth:`process_exception`
+      methods of middleware. For an exception from a :meth:`process_response`,
+      that chain resumes at the middlewares that have not processed the
+      response yet.
 
       If it returns a :class:`~scrapy.Request` object, the returned request is
       rescheduled to be downloaded in the future. This stops the execution of
@@ -633,6 +644,10 @@ The directory to use for storing the (low-level) HTTP cache. If empty, the HTTP
 cache will be disabled. If a relative path is given, is taken relative to the
 project data dir. For more info see: :ref:`topics-project-structure`.
 
+.. warning:: Treat the cache directory with the same security care as your
+    Scrapy project source code. Do not point :setting:`HTTPCACHE_DIR` to a
+    path that untrusted parties can write to.
+
 .. setting:: HTTPCACHE_IGNORE_HTTP_CODES
 
 HTTPCACHE_IGNORE_HTTP_CODES
@@ -836,6 +851,11 @@ HTTPPROXY_AUTH_ENCODING
 Default: ``"latin-1"``
 
 The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
+
+JsonValidationMiddleware
+------------------------
+
+.. autoclass:: scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware
 
 OffsiteMiddleware
 -----------------
@@ -1104,19 +1124,23 @@ cache.
 RETRY_EXCEPTIONS
 ^^^^^^^^^^^^^^^^
 
-Default::
+Default:
+
+.. code-block:: python
 
     [
-        'scrapy.exceptions.CannotResolveHostError',
-        'scrapy.exceptions.DownloadConnectionRefusedError',
-        'scrapy.exceptions.DownloadFailedError',
-        'scrapy.exceptions.DownloadTimeoutError',
-        'scrapy.exceptions.ResponseDataLossError',
-        'twisted.internet.error.ConnectionDone',
-        'twisted.internet.error.ConnectError',
-        'twisted.internet.error.ConnectionLost',
+        "scrapy.exceptions.CannotResolveHostError",
+        "scrapy.exceptions.DecompressionError",
+        "scrapy.exceptions.DownloadConnectionRefusedError",
+        "scrapy.exceptions.DownloadFailedError",
+        "scrapy.exceptions.DownloadTimeoutError",
+        "scrapy.exceptions.ResponseDataLossError",
+        "json.JSONDecodeError",
+        "twisted.internet.error.ConnectionDone",
+        "twisted.internet.error.ConnectError",
+        "twisted.internet.error.ConnectionLost",
         OSError,
-        'scrapy.core.downloader.handlers.http11.TunnelError',
+        "scrapy.core.downloader.handlers.http11.TunnelError",
     ]
 
 List of exceptions to retry.
@@ -1168,30 +1192,7 @@ See also: :reqmeta:`priority_adjust`.
 RobotsTxtMiddleware
 -------------------
 
-.. class:: scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
-
-    This middleware filters out requests forbidden by the robots.txt exclusion
-    standard.
-
-    To make sure Scrapy respects robots.txt make sure the middleware is enabled
-    and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
-
-    The :setting:`ROBOTSTXT_USER_AGENT` setting can be used to specify the
-    user agent string to use for matching in the robots.txt_ file. If it
-    is ``None``, the User-Agent header you are sending with the request or the
-    :setting:`USER_AGENT` setting (in that order) will be used for determining
-    the user agent to use in the robots.txt_ file.
-
-    This middleware has to be combined with a robots.txt_ parser.
-
-    Scrapy ships with support for the following robots.txt_ parsers:
-
-    * :ref:`Protego <protego-parser>` (default)
-    * :ref:`RobotFileParser <python-robotfileparser>`
-    * :ref:`Robotexclusionrulesparser <rerp-parser>`
-
-    You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
-    setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
+.. autoclass:: scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware()
 
 .. reqmeta:: dont_obey_robotstxt
 

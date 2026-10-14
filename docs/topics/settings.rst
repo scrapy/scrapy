@@ -105,8 +105,6 @@ and settings set there should use the ``"spider"`` priority explicitly:
             super().update_settings(settings)
             settings.set("SOME_SETTING", "some value", priority="spider")
 
-.. versionadded:: 2.11
-
 It's also possible to modify the settings in the
 :meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider
 arguments <spiderargs>` or other logic:
@@ -403,12 +401,13 @@ is ``True``.
 Logging settings
 ----------------
 
-**Logging settings** are settings that configure the global root logging
-handler installed by :func:`~scrapy.utils.log.configure_logging`.
+**Logging settings** are settings that configure logging process-wide, mostly
+through the global root logging handler installed by
+:func:`~scrapy.utils.log.configure_logging`.
 
-These settings can be defined from a spider. However, because only 1 root
-logging handler is active per process, these settings cannot use a different
-value per spider when :ref:`running multiple spiders in the same process
+These settings can be defined from a spider. However, because logging
+configuration is global, these settings cannot use a different value per
+spider when :ref:`running multiple spiders in the same process
 <run-multiple-spiders>`.
 
 These settings are:
@@ -422,6 +421,7 @@ These settings are:
 -   :setting:`LOG_FORMAT`
 -   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
+-   :setting:`LOG_LEVELS`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -933,6 +933,7 @@ Default:
         "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
         "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
         "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
+        "scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware": 560,
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
         "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -947,6 +948,32 @@ orders are closer to the engine, high orders are closer to the downloader. You
 should never modify this setting in your project, modify
 :setting:`DOWNLOADER_MIDDLEWARES` instead.  For more info see
 :ref:`topics-downloader-middleware-setting`.
+
+.. setting:: DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
+
+DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
+-----------------------------------------
+
+.. versionadded:: VERSION
+
+Default: ``False``
+
+Whether an exception raised by the
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method of a downloader middleware is passed to the
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
+method of the downloader middlewares that have not processed the response yet.
+
+Enabling this lets :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`
+retry those exceptions, e.g. a response that cannot be decompressed.
+
+Before enabling it, check that the ``process_exception`` methods of your
+downloader middlewares handle those exceptions as intended. They also get the
+:exc:`~scrapy.exceptions.IgnoreRequest` exceptions that middlewares raise to
+drop a response, so one that returns a request for every exception it gets
+turns such a drop into a new request.
+
+``True`` will become the only supported value in a future version of Scrapy.
 
 .. setting:: DOWNLOADER_STATS
 
@@ -1095,7 +1122,8 @@ Default:
         "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
-        "ftp": None,
+        "ftp": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+        "ftps": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
     }
 
 (when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
@@ -1116,6 +1144,19 @@ handler (without replacement), place this in your ``settings.py``:
 
 .. seealso:: :ref:`security-unencrypted-protocols` and
     :ref:`security-local-resources`
+
+
+.. setting:: DOWNLOAD_HANDLERS_BY_NAME
+
+DOWNLOAD_HANDLERS_BY_NAME
+-------------------------
+
+.. versionadded:: VERSION
+
+Default: ``{}``
+
+A dict mapping names to :ref:`download handlers <topics-download-handlers>`
+that requests can ask for by name. See :ref:`download-handler-ids`.
 
 
 .. reqmeta:: download_slot
@@ -1216,7 +1257,8 @@ Use ``0`` to disable this limit.
 .. note::
 
     This limit can be set per-request using the :reqmeta:`download_warnsize`
-    :attr:`.Request.meta` key.
+    :attr:`.Request.meta` key. Requests that set :reqmeta:`download_maxsize`
+    but not :reqmeta:`download_warnsize` log no warning.
 
 .. note::
 
@@ -1298,6 +1340,10 @@ The class used to detect and filter duplicate requests.
 The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters based on the
 :setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
+On crawls large enough for the memory that
+:class:`~scrapy.dupefilters.RFPDupeFilter` uses to become a problem, set this
+setting to :class:`~scrapy.dupefilters.DiskDupeFilter` instead.
+
 To change how duplicates are checked, you can point :setting:`DUPEFILTER_CLASS`
 to a custom subclass of :class:`~scrapy.dupefilters.RFPDupeFilter` that
 overrides its ``__init__`` method to use a :ref:`different request
@@ -1369,6 +1415,8 @@ interface:
 .. autoclass:: scrapy.dupefilters.BaseDupeFilter
 
 .. autoclass:: scrapy.dupefilters.RFPDupeFilter
+
+.. autoclass:: scrapy.dupefilters.DiskDupeFilter
 
 
 .. setting:: DUPEFILTER_DEBUG
@@ -1626,6 +1674,28 @@ A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
 
+.. setting:: JOBDIR_SYNC_EVERY
+
+JOBDIR_SYNC_EVERY
+-----------------
+
+.. versionadded:: VERSION
+
+Default: ``0``
+
+Number of changes to the crawl state kept in :setting:`JOBDIR` after which
+that state is written to disk while the crawl runs, in addition to when it
+stops. ``0`` writes it only when the crawl stops. ``1`` writes every change,
+so that a crawl killed before it can stop cleanly resumes from its latest
+state. Higher values trade some of that safety for fewer writes, which matters
+in broad crawls, where the state grows with the number of active domains.
+
+Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`.
+For a killed crawl to resume, the scheduler queues must survive the kill too,
+which requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
+:setting:`SCHEDULER_START_DISK_QUEUE`.
+
+
 .. setting:: LOG_COLOR
 
 LOG_COLOR
@@ -1698,7 +1768,9 @@ Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
 String for formatting log messages. Refer to the
 :ref:`Python logging documentation <logrecord-attributes>` for the whole
-list of available placeholders.
+list of available placeholders, plus ``%(spider)s`` for the name of the
+spider that triggered the log message, or ``"-"`` for messages not tied to
+a spider (see :ref:`topics-logging-from-spiders`).
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
@@ -1750,6 +1822,30 @@ Default: ``'DEBUG'``
 
 Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
 INFO, DEBUG. For more info see :ref:`topics-logging`.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
+.. setting:: LOG_LEVELS
+
+LOG_LEVELS
+----------
+
+Default: ``{}``
+
+.. versionadded:: VERSION
+
+Minimum level to log for specific loggers.
+
+It takes precedence over the levels that Scrapy sets by default::
+
+    {
+        "filelock": "ERROR",
+        "hpack": "ERROR",
+        "httpcore": "ERROR",
+        "httpx": "WARNING",
+        "scrapy": "DEBUG",
+        "twisted": "ERROR",
+    }
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
@@ -2124,6 +2220,10 @@ Default:
         "scrapy.contracts.default.UrlContract": 1,
         "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
         "scrapy.contracts.default.MetadataContract": 1,
+        "scrapy.contracts.default.MethodContract": 1,
+        "scrapy.contracts.default.BodyContract": 1,
+        "scrapy.contracts.default.HeaderContract": 1,
+        "scrapy.contracts.default.CookieContract": 1,
         "scrapy.contracts.default.ReturnsContract": 2,
         "scrapy.contracts.default.ScrapesContract": 3,
     }
@@ -2485,6 +2585,27 @@ For additional information, see :doc:`core/howto/choosing-reactor`.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
+.. setting:: UPLOAD_TIMEOUT
+
+UPLOAD_TIMEOUT
+--------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Number of seconds that uploads to a remote :ref:`feed storage backend
+<topics-feed-storage-backends>` or :ref:`media pipeline storage backend
+<topics-media-pipeline>` wait for a response before giving up.
+
+Raise it if large uploads fail over a slow connection.
+
+If ``None``, each backend keeps the default of the library it uses:
+`botocore <https://docs.aws.amazon.com/botocore/latest/reference/config.html>`_
+for Amazon S3, `google-cloud-storage
+<https://docs.cloud.google.com/python/docs/reference/storage/latest/retry_timeout#configuring-timeouts>`_
+for Google Cloud Storage, and :mod:`ftplib` for FTP, which waits indefinitely.
+
 .. setting:: URLLENGTH_LIMIT
 
 URLLENGTH_LIMIT
@@ -2541,7 +2662,7 @@ modifying generator function source code during runtime, skip AST parsing of
 callback functions, or improve performance in auto-reloading development
 environments.
 
-.. only:: html
+.. only:: not llm
 
     Settings documented elsewhere:
     ------------------------------

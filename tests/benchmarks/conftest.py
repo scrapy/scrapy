@@ -17,7 +17,7 @@ def running_reactor() -> Generator[None]:
     from twisted.internet import reactor
 
     # Marks the reactor as running without blocking, so that crawls can be
-    # driven with reactor.iterate(), see tests.benchmarks.crawl().
+    # driven with loop.run_until_complete(), see tests.benchmarks.crawl().
     reactor.startRunning(installSignalHandlers=False)
 
     yield

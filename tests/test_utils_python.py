@@ -11,8 +11,8 @@ import pytest
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
-    MutableAsyncChain,
     _looks_like_import_path,
+    _MutableAsyncChain,
     binary_is_text,
     get_func_args,
     get_spec,
@@ -56,7 +56,7 @@ class TestMutableAsyncChain:
 
     @coroutine_test
     async def test_mutableasyncchain(self):
-        m = MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
+        m = _MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
         m.extend(self.g2())
         m.extend(self.g3())
 
@@ -66,7 +66,7 @@ class TestMutableAsyncChain:
 
     @coroutine_test
     async def test_mutableasyncchain_exc(self):
-        m = MutableAsyncChain(self.g1())
+        m = _MutableAsyncChain(self.g1())
         m.extend(self.g4())
         m.extend(self.g3())
 
@@ -189,15 +189,18 @@ def test_get_func_args():
     assert get_func_args(" ".join, stripself=True) == ["iterable"]
 
     if sys.version_info >= (3, 13) or platform.python_implementation() == "PyPy":
-        # the correct and correctly extracted signature
         assert get_func_args(operator.itemgetter(2), stripself=True) == ["obj"]
-    elif platform.python_implementation() == "CPython":
-        # ["args", "kwargs"] is a correct result for the pre-3.13 incorrect function signature
-        # [] is an incorrect result on even older CPython (https://github.com/python/cpython/issues/86951)
-        assert get_func_args(operator.itemgetter(2), stripself=True) in [
-            [],
-            ["args", "kwargs"],
+    else:
+        # The interpreter returns a wrong signature
+        assert get_func_args(operator.itemgetter(2), stripself=True) == [
+            "args",
+            "kwargs",
         ]
+
+    # inspect.signature() fails for these
+    assert get_func_args(type) == []
+    if platform.python_implementation() != "PyPy":
+        assert get_func_args(max) == []
 
 
 @pytest.mark.skipif(

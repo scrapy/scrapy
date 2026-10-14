@@ -1,47 +1,42 @@
 from __future__ import annotations
 
-import logging
-import sys
+import warnings
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Self, cast
 from urllib.robotparser import RobotFileParser
 
 from protego import Protego
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Spider
     from scrapy.crawler import Crawler
 
 
-logger = logging.getLogger(__name__)
-
-
 def decode_robotstxt(
-    robotstxt_body: bytes, spider: Spider | None, to_native_str_type: bool = False
+    robotstxt_body: bytes,
+    spider: Spider | None = None,
+    to_native_str_type: bool | None = None,
 ) -> str:
-    try:
-        if to_native_str_type:
-            body_decoded = to_unicode(robotstxt_body)
-        else:
-            body_decoded = robotstxt_body.decode("utf-8-sig", errors="ignore")
-    except UnicodeDecodeError:
-        # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
-        # Switch to 'allow all' state.
-        logger.warning(
-            "Failure while parsing robots.txt. File either contains garbage or "
-            "is in an encoding other than UTF-8, treating it as an empty file.",
-            exc_info=sys.exc_info(),
-            extra={"spider": spider},
+    if spider is not None:  # pragma: no cover
+        warnings.warn(
+            "Passing a spider argument to decode_robotstxt() is "
+            "deprecated and has no effect.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
         )
-        body_decoded = ""
-    return body_decoded
+    if to_native_str_type is not None:  # pragma: no cover
+        warnings.warn(
+            "Passing a to_native_str_type argument to decode_robotstxt() is "
+            "deprecated and has no effect.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+    return robotstxt_body.decode("utf-8-sig", errors="ignore")
 
 
 class RobotParser(metaclass=ABCMeta):
@@ -91,7 +86,7 @@ class RobotParser(metaclass=ABCMeta):
 class PythonRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
         self.spider: Spider | None = spider
-        body_decoded = decode_robotstxt(robotstxt_body, spider, to_native_str_type=True)
+        body_decoded = decode_robotstxt(robotstxt_body)
         self.rp: RobotFileParser = RobotFileParser()
         self.rp.parse(body_decoded.splitlines())
 
@@ -116,7 +111,7 @@ class RerpRobotParser(RobotParser):
 
         self.spider: Spider | None = spider
         self.rp: RobotExclusionRulesParser = RobotExclusionRulesParser()
-        body_decoded = decode_robotstxt(robotstxt_body, spider)
+        body_decoded = decode_robotstxt(robotstxt_body)
         self.rp.parse(body_decoded)
 
     @classmethod
@@ -140,7 +135,7 @@ class RerpRobotParser(RobotParser):
 class ProtegoRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
         self.spider: Spider | None = spider
-        body_decoded = decode_robotstxt(robotstxt_body, spider)
+        body_decoded = decode_robotstxt(robotstxt_body)
         self.rp = Protego.parse(body_decoded)
 
     @classmethod
