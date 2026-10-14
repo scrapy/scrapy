@@ -76,9 +76,6 @@ class SitemapSpider(Spider):
     those declared through the ``Sitemap`` directive of a :file:`robots.txt`
     file.
 
-    .. versionchanged:: VERSION
-        Now also applies to sitemaps declared in :file:`robots.txt`.
-
     By default, all sitemaps are followed.
     """
 
