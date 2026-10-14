@@ -228,6 +228,38 @@ class TestWebSocketDownloadHandler:
         assert items == [{"closed": True}]
 
     @coroutine_test
+    async def test_download_warnsize(
+        self, ws_server: WebSocketMockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        async def callback(response: WebSocketResponse) -> AsyncIterator[Any]:
+            async with response:
+                for message in ("x" * 100, b"y" * 101, "z" * 101):
+                    await response.send(message)
+                    await response.receive()
+            return
+            yield
+
+        await _crawl(ws_server.url("/echo"), callback, DOWNLOAD_WARNSIZE=100)
+        assert [record.getMessage() for record in caplog.records].count(
+            "Received a 101-byte message, larger than the download warn size"
+            f" (100), from {ws_server.url('/echo')}."
+        ) == 1
+
+    @coroutine_test
+    async def test_download_warnsize_while_iterating(
+        self, ws_server: WebSocketMockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        async def callback(response: WebSocketResponse) -> AsyncIterator[Any]:
+            async with response:
+                async for _ in response:
+                    break
+            return
+            yield
+
+        await _crawl(ws_server.url("/large"), callback, DOWNLOAD_WARNSIZE=100)
+        assert "Received a 1000-byte message" in caplog.text
+
+    @coroutine_test
     @pytest.mark.parametrize(
         "setting", ["CONCURRENT_REQUESTS", "CONCURRENT_REQUESTS_PER_DOMAIN"]
     )

@@ -66,10 +66,10 @@ treatment, and a handshake that the server rejects becomes a regular response
 that the redirect and retry middlewares can act on.
 
 :setting:`DOWNLOAD_TIMEOUT` applies to the handshake, and
-:setting:`DOWNLOAD_MAXSIZE` to each received message: a message above the limit
-closes the connection, making the next :meth:`~scrapy.http.WebSocketResponse.receive`
-call, or iteration of the response, raise
-:exc:`~scrapy.exceptions.DownloadFailedError`.
+:setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` to each received
+message. A message above :setting:`DOWNLOAD_MAXSIZE` closes the connection,
+making the next :meth:`~scrapy.http.WebSocketResponse.receive` call, or
+iteration of the response, raise :exc:`~scrapy.exceptions.DownloadFailedError`.
 
 .. seealso:: :ref:`websocket-handler`, for the features and limitations of the
     download handler that implements this.

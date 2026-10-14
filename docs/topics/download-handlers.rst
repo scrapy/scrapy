@@ -593,7 +593,3 @@ TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
 .. _python-socks: https://github.com/romis2012/python-socks
-
-Other limitations:
-
--   :setting:`DOWNLOAD_WARNSIZE` is not applied to received messages.

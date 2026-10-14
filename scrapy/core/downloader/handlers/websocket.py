@@ -17,7 +17,11 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Headers
 from scrapy.http.response.websocket import WebSocketResponse
-from scrapy.utils._download_handlers import make_response, normalize_bind_address
+from scrapy.utils._download_handlers import (
+    get_warnsize,
+    make_response,
+    normalize_bind_address,
+)
 from scrapy.utils._ssl import (
     _log_sslobj_debug_info,
     _make_insecure_ssl_ctx,
@@ -152,6 +156,7 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
             ip_address=self._get_ip_address(connection),
             protocol="http/1.1",
             _connection=connection,
+            _warnsize=get_warnsize(request.meta, self._default_warnsize),
         )
 
     @staticmethod

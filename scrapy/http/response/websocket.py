@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any, Self
 
 from scrapy.exceptions import DownloadFailedError
@@ -12,6 +13,9 @@ if TYPE_CHECKING:
 
     from twisted.internet.defer import Deferred
     from websockets.asyncio.client import ClientConnection
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketResponse(Response):
@@ -34,13 +38,21 @@ class WebSocketResponse(Response):
     See :ref:`websockets`.
     """
 
-    attributes: tuple[str, ...] = (*Response.attributes, "_connection")
+    attributes: tuple[str, ...] = (*Response.attributes, "_connection", "_warnsize")
 
-    __slots__ = ("_connection", "_connection_closed")
+    __slots__ = ("_connection", "_connection_closed", "_warnsize")
 
-    def __init__(self, *args: Any, _connection: ClientConnection, **kwargs: Any):
+    def __init__(
+        self,
+        *args: Any,
+        _connection: ClientConnection,
+        _warnsize: int = 0,
+        **kwargs: Any,
+    ):
         super().__init__(*args, **kwargs)
         self._connection: ClientConnection = _connection
+        # Set to 0 after the first warning, to warn once per connection.
+        self._warnsize: int = _warnsize
         # The downloader reads this to know when the connection stops
         # occupying its slot.
         self._connection_closed: Deferred[None] = deferred_from_coro(
@@ -61,9 +73,22 @@ class WebSocketResponse(Response):
         from websockets.exceptions import ConnectionClosed  # noqa: PLC0415
 
         try:
-            return await self._connection.recv()
+            message = await self._connection.recv()
         except ConnectionClosed as e:
             raise DownloadFailedError(str(e)) from e
+        self._check_warnsize(message)
+        return message
+
+    def _check_warnsize(self, message: str | bytes) -> None:
+        if not self._warnsize:
+            return
+        size = len(message.encode() if isinstance(message, str) else message)
+        if size > self._warnsize:
+            logger.warning(
+                f"Received a {size}-byte message, larger than the download"
+                f" warn size ({self._warnsize}), from {self.url}."
+            )
+            self._warnsize = 0
 
     async def close(self) -> None:
         """Close the connection."""
@@ -80,6 +105,7 @@ class WebSocketResponse(Response):
 
         try:
             async for message in self._connection:
+                self._check_warnsize(message)
                 yield message
         except ConnectionClosedError as e:
             raise DownloadFailedError(str(e)) from e
