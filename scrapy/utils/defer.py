@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import sys
 import warnings
 from asyncio import Future
@@ -47,6 +48,8 @@ if TYPE_CHECKING:
 
         request: Request
 
+
+logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
@@ -212,8 +215,20 @@ class _ParallelTasks:
         self._running += 1
         self._coop.coiterate(self._work).addBoth(self._task_done)
 
-    def _task_done(self, _: Any) -> None:
+    def _task_done(self, result: Any) -> None:
         self._running -= 1
+        if isinstance(result, failure.Failure):
+            # circular import
+            from scrapy.utils.log import failure_to_exc_info  # noqa: PLC0415
+
+            logger.error(
+                "Error processing an item",
+                exc_info=failure_to_exc_info(result),
+            )
+            # A failed task stops consuming work, which may not be exhausted
+            # yet, so another one takes over.
+            self.start()
+            return
         # Only a running task can start another one, so once none is left no
         # more work can come.
         if not self._running:
