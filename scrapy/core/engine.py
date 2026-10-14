@@ -167,6 +167,7 @@ class _Slot:
 
     def _maybe_fire_closing(self) -> None:
         if self.closing is not None and not self.inprogress:
+            assert not self.closing.called
             self.nextcall.cancel()
             if self.heartbeat.running:
                 self.heartbeat.stop()
@@ -591,10 +592,23 @@ class ExecutionEngine:
             return False
         return not self._slot.scheduler.has_pending_requests()
 
+    def _drained(self) -> bool:
+        """Return whether the spider close has stopped waiting for the
+        requests in progress.
+
+        The close then closes the downloader and the scheduler, so new
+        requests can be neither downloaded nor scheduled.
+        """
+        return self._slot is None or (
+            self._slot.closing is not None and self._slot.closing.called
+        )
+
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
+        if self._drained():
+            raise RuntimeError(f"Cannot crawl {request}: the spider is closing")
         self._schedule_request(request)
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
@@ -649,6 +663,9 @@ class ExecutionEngine:
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         while True:
+            # This also refuses the requests that replace a downloaded request.
+            if self._drained():
+                raise RuntimeError(f"Cannot download {request}: the spider is closing")
             assert self._slot is not None
             self._slot.add_request(request)
             try:
