@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Self, TypedDict
 
 from twisted.python.failure import Failure
 
@@ -13,9 +13,6 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
 
 

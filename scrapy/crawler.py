@@ -15,7 +15,7 @@ from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from scrapy import Spider
 from scrapy.addons import AddonManager
 from scrapy.core.engine import EngineState, ExecutionEngine
-from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
@@ -24,6 +24,7 @@ from scrapy.utils._ossignals import install_shutdown_handlers, signal_names
 from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
 from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro, ensure_awaitable
 from scrapy.utils.log import (
+    _configure_logger_levels,
     configure_logging,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
@@ -113,6 +114,13 @@ class _LateAttribute(Generic[_T]):
 
 class Crawler:
     engine: _LateAttribute[ExecutionEngine] = _LateAttribute()
+    """The execution engine, which coordinates the core crawling logic between
+    the scheduler, downloader and spiders.
+
+    Some extensions may want to access the Scrapy engine to inspect or modify
+    the downloader and scheduler behaviour, although this is an advanced use
+    and this API is not yet stable.
+    """
     extensions: _LateAttribute[ExtensionManager] = _LateAttribute()
     logformatter: _LateAttribute[LogFormatter] = _LateAttribute()
     """The log formatter of this crawler.
@@ -142,7 +150,7 @@ class Crawler:
         self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
-        self._update_root_log_handler()
+        self._update_logging()
 
         self.addons: AddonManager = AddonManager(self)
         self.signals: SignalManager = SignalManager(self)
@@ -168,9 +176,10 @@ class Crawler:
     ) -> None:
         self._force_stop_callback = callback
 
-    def _update_root_log_handler(self) -> None:
+    def _update_logging(self) -> None:
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
+            _configure_logger_levels(self.settings)
             install_scrapy_root_handler(self.settings)
 
     def _apply_settings(self) -> None:
@@ -274,7 +283,10 @@ class Crawler:
             self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
                 "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler"
             )
-        self.settings["DOWNLOAD_HANDLERS_BASE"]["ftp"] = None
+        for scheme in ("ftp", "ftps"):
+            self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
+                "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler"
+            )
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside
@@ -298,19 +310,13 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
-            self._update_root_log_handler()
+            self._update_logging()
             self.engine = ExecutionEngine(self)
-            try:
-                yield deferred_from_coro(self.engine.open_spider_async())
-            except CloseSpider as exc:
-                yield deferred_from_coro(
-                    self.engine.close_async(reason=exc.reason, error=exc.error)
-                )
-            else:
-                # The spider may have been closed already, e.g. by an
-                # extension, in which case the engine is already stopped.
-                if self.engine.state is EngineState.SPIDER_OPEN:
-                    yield deferred_from_coro(self.engine.start_async())
+            yield deferred_from_coro(self.engine.open_spider_async())
+            # The spider may have been closed already, e.g. by an
+            # extension, in which case the engine is already stopped.
+            if self.engine.state is EngineState.SPIDER_OPEN:
+                yield deferred_from_coro(self.engine.start_async())
         except Exception:
             if self._engine is not None:
                 yield deferred_from_coro(self._engine.close_async())
@@ -338,17 +344,13 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
-            self._update_root_log_handler()
+            self._update_logging()
             self.engine = ExecutionEngine(self)
-            try:
-                await self.engine.open_spider_async()
-            except CloseSpider as exc:
-                await self.engine.close_async(reason=exc.reason, error=exc.error)
-            else:
-                # The spider may have been closed already, e.g. by an
-                # extension, in which case the engine is already stopped.
-                if self.engine.state is EngineState.SPIDER_OPEN:
-                    await self.engine.start_async()
+            await self.engine.open_spider_async()
+            # The spider may have been closed already, e.g. by an
+            # extension, in which case the engine is already stopped.
+            if self.engine.state is EngineState.SPIDER_OPEN:
+                await self.engine.start_async()
         except Exception:
             if self._engine is not None:
                 await self._engine.close_async()

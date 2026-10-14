@@ -54,10 +54,31 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: 2.14
 
-Every callable above may also :ref:`await a request directly
-<inline-requests>` to send it and get its response, except download handler
-methods, whose :class:`contract
-<scrapy.core.downloader.handlers.DownloadHandlerProtocol>` forbids it.
+-   The following methods of :ref:`item exporters <topics-exporters>`, when the
+    exporter is used by the :ref:`feed exports <topics-feed-exports>`:
+
+    - :meth:`~scrapy.exporters.BaseItemExporter.start_exporting`
+
+    - :meth:`~scrapy.exporters.BaseItemExporter.export_item`
+
+    - :meth:`~scrapy.exporters.BaseItemExporter.finish_exporting`
+
+    .. versionadded:: VERSION
+
+-   Methods of :ref:`custom feed storages <topics-feed-storage-custom>` (see
+    :setting:`FEED_STORAGES`):
+
+    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.open`
+
+    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
+
+    .. versionadded:: VERSION
+
+Every callable above may also :ref:`await a request directly <inline-requests>`
+to send it and get its response, except download handler methods, whose
+:class:`contract <scrapy.core.downloader.handlers.DownloadHandlerProtocol>`
+forbids it, and code that runs while the spider is closing, such as
+:signal:`spider_closed` handlers.
 
 .. versionadded:: VERSION
 
@@ -113,7 +134,7 @@ return coroutines are listed in :ref:`coroutine-support`):
 
 -   Custom feed storages (see :setting:`FEED_STORAGES`):
 
-    - ``store()``
+    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
 
 -   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
 
@@ -209,6 +230,32 @@ means you can use many useful Python libraries that provide such code:
 
 .. note:: If you want to ``await`` on Deferreds while using the asyncio reactor,
           you need to :ref:`wrap them<asyncio-await-dfd>`.
+
+Sometimes you need to call code that is not async-friendly at all, such as a
+third-party client library with no asynchronous support. Calling such code
+directly from a coroutine would block the underlying event loop, preventing
+Scrapy from doing any other work while it runs. To avoid this, you can wrap
+the blocking call with :func:`~scrapy.utils.decorators.inthread`, which runs
+it in a separate thread and returns an awaitable with the result:
+
+.. skip: next
+.. code-block:: python
+
+    from scrapy.utils.decorators import inthread
+
+
+    @inthread
+    def blocking_call(value):
+        # e.g. a call into a library with no async support
+        return some_sync_client.get(value)
+
+
+    class MySpider(Spider):
+        async def parse(self, response):
+            result = await blocking_call(response.url)
+            # ... use result to yield items and requests
+
+.. autofunction:: scrapy.utils.decorators.inthread
 
 Common use cases for asynchronous code include:
 

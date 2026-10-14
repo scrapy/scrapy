@@ -5,9 +5,19 @@ from __future__ import annotations
 import asyncio
 import contextvars
 import logging
+import math
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
-from typing import TYPE_CHECKING, Any, Concatenate, Generic, ParamSpec, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    Self,
+    TypeVar,
+    TypeVarTuple,
+)
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall, deferLater
@@ -19,14 +29,10 @@ from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_insta
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
 
-    # typing.Self, typing.TypeVarTuple and typing.Unpack require Python 3.11
-    from typing_extensions import Self, TypeVarTuple, Unpack
-
-    _Ts = TypeVarTuple("_Ts")
-
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
+_Ts = TypeVarTuple("_Ts")
 
 
 logger = logging.getLogger(__name__)
@@ -112,27 +118,25 @@ async def _parallel_asyncio(
     Tasks are created on demand, one per item, so that a *count* much larger
     than the amount of work does not cost anything.
 
-    This function is only used in
-    :meth:`scrapy.core.scraper.Scraper.handle_spider_output_async` and so it
-    assumes that neither *callable* nor iterating *iterable* will raise an
-    exception.
+    Exceptions raised by *callable_* are logged. If this coroutine is
+    cancelled, or iterating *iterable* raises an exception, the calls in
+    progress are cancelled; an exception from *iterable* is raised in an
+    :exc:`ExceptionGroup`.
     """
     semaphore = asyncio.Semaphore(count)
-    tasks: set[asyncio.Task[None]] = set()
 
     async def work(item: _T) -> None:
         try:
             await callable_(item, *args, **kwargs)
+        except Exception:
+            logger.exception("Error processing an item")
         finally:
             semaphore.release()
 
-    async for item in as_async_generator(iterable):
-        await semaphore.acquire()
-        task = asyncio.create_task(work(item))
-        tasks.add(task)
-        task.add_done_callback(tasks.discard)
-    if tasks:
-        await asyncio.wait(tasks)
+    async with asyncio.TaskGroup() as tg:
+        async for item in as_async_generator(iterable):
+            await semaphore.acquire()
+            tg.create_task(work(item))
 
 
 class AsyncioLoopingCall(Generic[_P, _T]):
@@ -177,24 +181,32 @@ class AsyncioLoopingCall(Generic[_P, _T]):
             raise ValueError("Interval must be greater than 0")
 
         self.interval = interval
-        self._start_time = time.monotonic()
+        self._start_time = start_time = time.monotonic()
         if now:
             self._call()
         loop = asyncio.get_event_loop()
-        self._task = loop.create_task(self._loop())
+        self._task = loop.create_task(self._loop(start_time))
 
-    def _to_sleep(self) -> float:
-        """Return the time to sleep until the next call."""
+    def _next_boundary(self, boundary: float) -> float:
+        """Return the first interval boundary that is later than both
+        *boundary* and the current time.
+
+        The event loop may wake the looping call up slightly before
+        :func:`time.monotonic` reaches a boundary, as its timers use
+        ``loop.time()``, which may have a coarser resolution.
+
+        See also https://github.com/tornadoweb/tornado/issues/2333.
+        """
         assert self.interval is not None
-        assert self._start_time is not None
-        now = time.monotonic()
-        running_for = now - self._start_time
-        return self.interval - (running_for % self.interval)
+        passed = max(math.floor((time.monotonic() - boundary) / self.interval), 0)
+        return boundary + (passed + 1) * self.interval
 
-    async def _loop(self) -> None:
-        """Run an infinite loop that calls the function periodically."""
+    async def _loop(self, boundary: float) -> None:
+        """Run an infinite loop that calls the function periodically, on the
+        interval boundaries that follow *boundary*."""
         while self.running:
-            await asyncio.sleep(self._to_sleep())
+            boundary = self._next_boundary(boundary)
+            await asyncio.sleep(boundary - time.monotonic())
             self._call()
 
     def stop(self) -> None:
@@ -237,7 +249,7 @@ def create_looping_call(
 
 
 def call_later(
-    delay: float, func: Callable[[Unpack[_Ts]], object], *args: Unpack[_Ts]
+    delay: float, func: Callable[[*_Ts], object], *args: *_Ts
 ) -> CallLaterResult:
     """Schedule a function to be called after a delay.
 

@@ -50,8 +50,8 @@ class SignalSpider(Spider):
 def test_stacktracedump_installs_signal_handlers() -> None:
     crawler = get_crawler()
     ext = build_from_crawler(StackTraceDump, crawler)
-    assert signal.getsignal(signal.SIGUSR2) == ext.dump_stacktrace  # pylint: disable=comparison-with-callable
-    assert signal.getsignal(signal.SIGQUIT) == ext.dump_stacktrace  # pylint: disable=comparison-with-callable
+    assert signal.getsignal(signal.SIGUSR2) == ext.dump_stacktrace
+    assert signal.getsignal(signal.SIGQUIT) == ext.dump_stacktrace
 
 
 def test_stacktracedump_works_without_signal_support(
