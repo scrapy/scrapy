@@ -3,7 +3,7 @@ from __future__ import annotations
 import gzip
 import logging
 import pickle
-from datetime import timezone
+from datetime import UTC
 from email.utils import parsedate_to_datetime
 from importlib import import_module
 from pathlib import Path
@@ -16,7 +16,7 @@ from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.python import to_unicode
 from scrapy.utils.response import response_from_dict
 
 if TYPE_CHECKING:
@@ -67,7 +67,7 @@ class RFC2616Policy:
             Request | Response, dict[bytes, bytes | None]
         ] = WeakKeyDictionary()
         self.ignore_response_cache_controls: list[bytes] = [
-            to_bytes(cc)
+            cc.encode()
             for cc in settings.getlist("HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS")
         ]
 
@@ -363,7 +363,7 @@ class FilesystemCacheStorage:
             "timestamp": time(),
         }
         with self._open(rpath / "meta", "wb") as f:
-            f.write(to_bytes(repr(metadata)))
+            f.write(repr(metadata).encode())
         with self._open(rpath / "pickled_meta", "wb") as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(rpath / "response_headers", "wb") as f:
@@ -429,7 +429,7 @@ def rfc1123_to_epoch(date_str: str | bytes | None) -> int | None:
         date_str = to_unicode(date_str, encoding="ascii")
         date = parsedate_to_datetime(date_str)
         if date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
+            date = date.replace(tzinfo=UTC)
         return int(date.timestamp())
     except Exception:
         return None

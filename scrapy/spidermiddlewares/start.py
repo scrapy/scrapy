@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+from scrapy import Request
 
 from .base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
-    from scrapy.http import Request
-    from scrapy.http.response import Response
+    from collections.abc import AsyncIterator
 
 
 class StartSpiderMiddleware(BaseSpiderMiddleware):
@@ -23,9 +24,8 @@ class StartSpiderMiddleware(BaseSpiderMiddleware):
     <topics-downloader-middleware>`.
     """
 
-    def get_processed_request(
-        self, request: Request, response: Response | None
-    ) -> Request | None:
-        if response is None:
-            request.meta.setdefault("is_start_request", True)
-        return request
+    async def process_start(self, start: AsyncIterator[Any]) -> AsyncIterator[Any]:
+        async for o in start:
+            if isinstance(o, Request):
+                o.meta.setdefault("is_start_request", True)
+            yield o

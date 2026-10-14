@@ -4,6 +4,7 @@ import dataclasses
 import datetime
 import json
 from decimal import Decimal
+from typing import Any
 
 import attr
 import pytest
@@ -18,39 +19,43 @@ class TestJsonEncoder:
     def encoder(self) -> ScrapyJSONEncoder:
         return ScrapyJSONEncoder(sort_keys=True)
 
-    def test_encode_decode(self, encoder: ScrapyJSONEncoder) -> None:
-        dt_naive = datetime.datetime(2010, 1, 2, 10, 11, 12)  # noqa: DTZ001
-        dt_naives = "2010-01-02T10:11:12"
-        dt_aware = datetime.datetime(
-            2010, 1, 2, 10, 11, 12, 133700, tzinfo=datetime.timezone.utc
-        )
-        dt_awares = "2010-01-02T10:11:12.133700+00:00"
-        d = datetime.date(2010, 1, 2)
-        ds = "2010-01-02"
-        t = datetime.time(10, 11, 12)
-        ts = "10:11:12"
-        t_us = datetime.time(10, 11, 12, 133700)
-        t_uss = "10:11:12.133700"
-        dec = Decimal("1000.12")
-        decs = "1000.12"
-        s = {"foo"}
-        ss = ["foo"]
-        dt_set = {dt_naive}
-        dt_sets = [dt_naives]
-
-        for input_, output in [
-            ("foo", "foo"),
-            (d, ds),
-            (t, ts),
-            (t_us, t_uss),
-            (dt_naive, dt_naives),
-            (dt_aware, dt_awares),
-            (dec, decs),
-            (["foo", d], ["foo", ds]),
-            (s, ss),
-            (dt_set, dt_sets),
-        ]:
-            assert encoder.encode(input_) == json.dumps(output, sort_keys=True)
+    @pytest.mark.parametrize(
+        ("input_", "output"),
+        [
+            pytest.param("foo", "foo", id="str"),
+            pytest.param(datetime.date(2010, 1, 2), "2010-01-02", id="date"),
+            pytest.param(datetime.time(10, 11, 12), "10:11:12", id="time"),
+            pytest.param(
+                datetime.time(10, 11, 12, 133700),
+                "10:11:12.133700",
+                id="time-microseconds",
+            ),
+            pytest.param(
+                datetime.datetime(2010, 1, 2, 10, 11, 12),  # noqa: DTZ001
+                "2010-01-02T10:11:12",
+                id="datetime-naive",
+            ),
+            pytest.param(
+                datetime.datetime(2010, 1, 2, 10, 11, 12, 133700, tzinfo=datetime.UTC),
+                "2010-01-02T10:11:12.133700+00:00",
+                id="datetime-aware",
+            ),
+            pytest.param(Decimal("1000.12"), "1000.12", id="decimal"),
+            pytest.param(
+                ["foo", datetime.date(2010, 1, 2)], ["foo", "2010-01-02"], id="list"
+            ),
+            pytest.param({"foo"}, ["foo"], id="set"),
+            pytest.param(
+                {datetime.datetime(2010, 1, 2, 10, 11, 12)},  # noqa: DTZ001
+                ["2010-01-02T10:11:12"],
+                id="datetime-set",
+            ),
+        ],
+    )
+    def test_encode_decode(
+        self, input_: Any, output: Any, encoder: ScrapyJSONEncoder
+    ) -> None:
+        assert encoder.encode(input_) == json.dumps(output, sort_keys=True)
 
     def test_encode_deferred(self, encoder: ScrapyJSONEncoder) -> None:
         assert "Deferred" in encoder.encode(defer.Deferred())

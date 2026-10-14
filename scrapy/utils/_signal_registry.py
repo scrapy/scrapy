@@ -14,14 +14,14 @@ from scrapy.utils.python import global_object_name
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-#: Sender that matches receivers connected to any sender.
 Any = ANY
+"""Sender that matches receivers connected to any sender."""
 
-#: Default sender of signals sent without one.
 Anonymous = object()
+"""Default sender of signals sent without one."""
 
-#: Arguments that every signal sends, on top of its own.
 _COMMON_ARGS = frozenset({"signal", "sender"})
+"""Arguments that every signal sends, on top of its own."""
 
 
 class _OrderedSet(dict[TypingAny, TypingAny]):

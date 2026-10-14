@@ -30,9 +30,6 @@ item_error = _NamedSignal("item_error")
 feed_slot_closed = _NamedSignal("feed_slot_closed")
 feed_exporter_closed = _NamedSignal("feed_exporter_closed")
 
-#: Arguments that each signal sends, used to catch handlers that declare an
-#: argument their signal never sends. ``signal`` and ``sender`` are omitted
-#: because every signal sends them.
 _signal_args: dict[object, frozenset[str]] = {
     engine_started: frozenset(),
     engine_stopped: frozenset(),
@@ -57,3 +54,7 @@ _signal_args: dict[object, frozenset[str]] = {
     feed_slot_closed: frozenset({"slot"}),
     feed_exporter_closed: frozenset(),
 }
+"""Arguments that each signal sends, used to catch handlers that declare an
+argument their signal never sends. ``signal`` and ``sender`` are omitted
+because every signal sends them.
+"""

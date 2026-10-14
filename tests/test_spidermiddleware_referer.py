@@ -633,6 +633,20 @@ POLICY_CASES: list[tuple[str | None, str, ScenarioTable]] = [
 ]
 
 
+# Each policy, as (REFERRER_POLICY name, policy class).
+POLICY_CLASSES: list[tuple[str, type[ReferrerPolicy]]] = [
+    (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+    (POLICY_NO_REFERRER, NoReferrerPolicy),
+    (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+    (POLICY_SAME_ORIGIN, SameOriginPolicy),
+    (POLICY_ORIGIN, OriginPolicy),
+    (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
+    (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+    (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
+    (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+]
+
+
 def assert_scenarii(
     scenarii: ScenarioTable,
     *,
@@ -792,116 +806,107 @@ def test_policy_precedence(
 
 
 class TestRequestMetaSettingFallback:
-    params = [
+    @pytest.mark.parametrize(
         (
+            "settings",
+            "response_headers",
+            "request_meta",
+            "policy_class",
+            "check_warning",
+        ),
+        [
             # When an unknown policy is referenced in Request.meta
             # (here, a typo error),
             # the policy defined in settings takes precedence
-            {
-                "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
-            },
-            {},
-            {"referrer_policy": "ssscrapy-default"},
-            OriginWhenCrossOriginPolicy,
-            True,
-        ),
-        (
+            pytest.param(
+                {
+                    "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
+                },
+                {},
+                {"referrer_policy": "ssscrapy-default"},
+                OriginWhenCrossOriginPolicy,
+                True,
+                id="unknown-meta-settings-path",
+            ),
             # same as above but with string value for settings policy
-            {"REFERRER_POLICY": "origin-when-cross-origin"},
-            {},
-            {"referrer_policy": "ssscrapy-default"},
-            OriginWhenCrossOriginPolicy,
-            True,
-        ),
-        (
+            pytest.param(
+                {"REFERRER_POLICY": "origin-when-cross-origin"},
+                {},
+                {"referrer_policy": "ssscrapy-default"},
+                OriginWhenCrossOriginPolicy,
+                True,
+                id="unknown-meta-settings-name",
+            ),
             # request meta references a wrong policy but it is set,
             # so the Referrer-Policy header in response is not used,
             # and the settings' policy is applied
-            {"REFERRER_POLICY": "origin-when-cross-origin"},
-            {"Referrer-Policy": "unsafe-url"},
-            {"referrer_policy": "ssscrapy-default"},
-            OriginWhenCrossOriginPolicy,
-            True,
-        ),
-        (
+            pytest.param(
+                {"REFERRER_POLICY": "origin-when-cross-origin"},
+                {"Referrer-Policy": "unsafe-url"},
+                {"referrer_policy": "ssscrapy-default"},
+                OriginWhenCrossOriginPolicy,
+                True,
+                id="unknown-meta-header",
+            ),
             # here, request meta does not set the policy
             # so response headers take precedence
-            {"REFERRER_POLICY": "origin-when-cross-origin"},
-            {"Referrer-Policy": "unsafe-url"},
-            {},
-            UnsafeUrlPolicy,
-            False,
-        ),
-        (
+            pytest.param(
+                {"REFERRER_POLICY": "origin-when-cross-origin"},
+                {"Referrer-Policy": "unsafe-url"},
+                {},
+                UnsafeUrlPolicy,
+                False,
+                id="no-meta-header",
+            ),
             # here, request meta does not set the policy,
             # but response headers also use an unknown policy,
             # so the settings' policy is used
-            {"REFERRER_POLICY": "origin-when-cross-origin"},
-            {"Referrer-Policy": "unknown"},
-            {},
-            OriginWhenCrossOriginPolicy,
-            True,
-        ),
-    ]
-
-    def test(self):
+            pytest.param(
+                {"REFERRER_POLICY": "origin-when-cross-origin"},
+                {"Referrer-Policy": "unknown"},
+                {},
+                OriginWhenCrossOriginPolicy,
+                True,
+                id="no-meta-unknown-header",
+            ),
+        ],
+    )
+    def test(
+        self,
+        settings: dict[str, Any],
+        response_headers: dict[str, str],
+        request_meta: dict[str, Any],
+        policy_class: type[ReferrerPolicy],
+        check_warning: bool,
+    ) -> None:
         origin = "http://www.scrapy.org"
         target = "http://www.example.com"
 
-        for (
-            settings,
-            response_headers,
-            request_meta,
-            policy_class,
-            check_warning,
-        ) in self.params:
-            mw = RefererMiddleware(Settings(settings))
+        mw = RefererMiddleware(Settings(settings))
 
-            response = Response(origin, headers=response_headers)
-            request = Request(target, meta=request_meta)
+        response = Response(origin, headers=response_headers)
+        request = Request(target, meta=request_meta)
 
-            if check_warning:
-                with pytest.warns(
-                    RuntimeWarning, match="Could not load referrer policy"
-                ):
-                    policy = mw.policy(response, request)
-            else:
+        if check_warning:
+            with pytest.warns(RuntimeWarning, match="Could not load referrer policy"):
                 policy = mw.policy(response, request)
-            assert isinstance(policy, policy_class)
+        else:
+            policy = mw.policy(response, request)
+        assert isinstance(policy, policy_class)
 
 
 class TestSettingsPolicyByName:
-    def test_valid_name(self):
-        for s, p in [
-            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-            (POLICY_NO_REFERRER, NoReferrerPolicy),
-            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-            (POLICY_SAME_ORIGIN, SameOriginPolicy),
-            (POLICY_ORIGIN, OriginPolicy),
-            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-        ]:
-            settings = Settings({"REFERRER_POLICY": s})
-            mw = RefererMiddleware(settings)
-            assert mw.default_policy == p
+    @pytest.mark.parametrize(("name", "policy_class"), POLICY_CLASSES)
+    def test_valid_name(self, name: str, policy_class: type[ReferrerPolicy]) -> None:
+        mw = RefererMiddleware(Settings({"REFERRER_POLICY": name}))
+        assert mw.default_policy == policy_class
 
-    def test_valid_name_casevariants(self):
-        for s, p in [
-            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-            (POLICY_NO_REFERRER, NoReferrerPolicy),
-            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-            (POLICY_SAME_ORIGIN, SameOriginPolicy),
-            (POLICY_ORIGIN, OriginPolicy),
-            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-        ]:
-            settings = Settings({"REFERRER_POLICY": s.upper()})
-            mw = RefererMiddleware(settings)
-            assert mw.default_policy == p
+    @pytest.mark.parametrize(("name", "policy_class"), POLICY_CLASSES)
+    def test_valid_name_casevariants(
+        self, name: str, policy_class: type[ReferrerPolicy]
+    ) -> None:
+        mw = RefererMiddleware(Settings({"REFERRER_POLICY": name.upper()}))
+        assert mw.default_policy == policy_class
 
     def test_invalid_name(self):
         settings = Settings({"REFERRER_POLICY": "some-custom-unknown-policy"})

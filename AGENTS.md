@@ -11,6 +11,11 @@ This file adds what agents tend to get wrong.
   docstrings. CI runs these first and skips the test matrix when they fail.
 - Run the tests you touched: `tox -e py -- tests/test_foo.py`. Anything after
   `tox -e py --` is passed to pytest.
+- If the change depends on what a dependency exposes, run the tests under the
+  matching `min-` environment too (see `tox.ini`), e.g.
+  `tox -e min-botocore -- tests/test_foo.py`. They pin the oldest supported
+  version, which can be years older than the one you have and expose less, so
+  assert only on what it has as well.
 - Review your own diff. Remove whatever the change does not need: unused
   parameters, dead code, leftover debugging, comments that restate the code.
 

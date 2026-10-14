@@ -9,7 +9,7 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.10+, either the CPython implementation (default) or
+Scrapy requires Python 3.11+, either the CPython implementation (default) or
 the PyPy implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:
@@ -111,8 +111,12 @@ The following extras are available:
      - Provides
    * - ``bpython``
      - :ref:`bpython shell <shell-config>`
+   * - ``clipboard``
+     - Reading the system clipboard with :command:`genrequest`
    * - ``color``
      - :setting:`LOG_COLOR`
+   * - ``ftp-socks``
+     - SOCKS proxy support in :ref:`aioftp-handler`
    * - ``gcs``
      - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
        :ref:`feed exports <topics-feed-exports>` and
@@ -123,6 +127,9 @@ The following extras are available:
      - :ref:`Images pipeline <images-pipeline>`
    * - ``ipython``
      - :ref:`IPython shell <shell-config>`
+   * - ``memusage``
+     - :ref:`Memory usage extension <topics-extensions-ref-memusage>` on
+       Windows
    * - ``ptpython``
      - :ref:`ptpython shell <shell-config>`
    * - ``robotparser``
