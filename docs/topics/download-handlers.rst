@@ -480,7 +480,7 @@ the plain-text output of the FTP ``NLST`` command, one file or directory name
 per line.
 
 It supports SOCKS4 and SOCKS5 :reqmeta:`proxies <proxy>` if you install the
-:ref:`ftp-socks <extras>` extra.
+:ref:`socks <extras>` extra.
 
 .. warning::
 
@@ -584,12 +584,10 @@ It's implemented using the websockets_ library.
 Features and limitations
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-=========================== =======================================
+=========================== =========================================
 HTTP proxies                Yes
-SOCKS proxies               Yes, with python-socks_ installed
+SOCKS proxies               Yes, with the :ref:`socks <extras>` extra
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` Yes
 TLS implementation          Standard library ``ssl``
-=========================== =======================================
-
-.. _python-socks: https://github.com/romis2012/python-socks
+=========================== =========================================

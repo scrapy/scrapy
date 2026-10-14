@@ -3,6 +3,7 @@ from __future__ import annotations
 import ipaddress
 import ssl
 import time
+from importlib.util import find_spec
 from socket import gaierror
 from typing import TYPE_CHECKING, Any, ClassVar
 from weakref import WeakSet
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
 
 
+_HAS_SOCKS = find_spec("python_socks") is not None
 _HAS_WEBSOCKETS = True
 
 try:
@@ -100,6 +102,11 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
         if urlparse_cached(request).scheme == "wss":
             kwargs["ssl"] = self._ssl_context
         proxy = self._extract_proxy_url_with_creds(request)
+        if proxy and proxy.startswith("socks") and not _HAS_SOCKS:  # pragma: no cover
+            raise ValueError(
+                f"SOCKS proxy support in {type(self).__name__} requires the"
+                f" 'socks' extra to be installed."
+            )
         if proxy and proxy.startswith("https:") and not self._verify_certificates:
             kwargs["proxy_ssl"] = _make_insecure_ssl_ctx()
 

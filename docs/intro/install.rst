@@ -115,8 +115,6 @@ The following extras are available:
      - Reading the system clipboard with :command:`genrequest`
    * - ``color``
      - :setting:`LOG_COLOR`
-   * - ``ftp-socks``
-     - SOCKS proxy support in :ref:`aioftp-handler`
    * - ``gcs``
      - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
        :ref:`feed exports <topics-feed-exports>` and
@@ -139,6 +137,9 @@ The following extras are available:
        :ref:`feed exports <topics-feed-exports>`,
        :ref:`media pipelines <media-pipelines-s3>`, and
        :ref:`S3 downloads <s3-handler>`
+   * - ``socks``
+     - SOCKS proxy support in :ref:`aioftp-handler` and
+       :ref:`websocket-handler`
    * - ``twisted-http2``
      - :ref:`twisted-http2-handler`
    * - ``uvloop``

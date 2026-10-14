@@ -7,9 +7,13 @@ from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 import pytest
+from w3lib.http import basic_auth_header
 
 from scrapy import Request, Spider, signals
-from scrapy.core.downloader.handlers.websocket import WebSocketDownloadHandler
+from scrapy.core.downloader.handlers.websocket import (
+    _HAS_SOCKS,
+    WebSocketDownloadHandler,
+)
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadConnectionRefusedError,
@@ -36,6 +40,7 @@ if TYPE_CHECKING:
 pytest.importorskip("websockets")
 
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.socks import HAS_SIOSOCKS, socks_proxy
 from tests.mockserver.websocket import WebSocketMockServer
 from tests.spiders import SingleRequestSpider
 from tests.utils.decorators import coroutine_test
@@ -98,6 +103,12 @@ async def _rejecting_proxy(status: int = 403) -> AsyncIterator[str]:
     host, port = server.sockets[0].getsockname()[:2]
     async with server:
         yield f"http://{host}:{port}"
+
+
+requires_socks = pytest.mark.skipif(
+    not _HAS_SOCKS or not HAS_SIOSOCKS,
+    reason="Requires python-socks and siosocks",
+)
 
 
 class TestWebSocketDownloadHandler:
@@ -387,6 +398,48 @@ class TestWebSocketDownloadHandler:
         async with _dh() as download_handler:
             with pytest.raises(ValueError, match="Expected Basic auth"):
                 await download_handler.download_request(request)
+
+    @requires_socks
+    @coroutine_test
+    @pytest.mark.parametrize("scheme", ["socks4", "socks5"])
+    async def test_socks_proxy(
+        self, ws_server: WebSocketMockServer, scheme: str
+    ) -> None:
+        async with socks_proxy() as proxy:
+            request = Request(
+                ws_server.url("/echo"), meta={"proxy": f"{scheme}://{proxy}"}
+            )
+            async with _dh() as download_handler:
+                response = await download_handler.download_request(request)
+                assert isinstance(response, WebSocketResponse)
+                async with response:
+                    await response.send("ping")
+                    assert await response.receive() == "ping"
+
+    @requires_socks
+    @coroutine_test
+    @pytest.mark.parametrize(
+        ("password", "succeeds"), [("pass", True), ("wrong", False)]
+    )
+    async def test_socks_proxy_credentials(
+        self, ws_server: WebSocketMockServer, password: str, succeeds: bool
+    ) -> None:
+        async with socks_proxy(
+            allowed_versions={5}, username="user", password="pass"
+        ) as proxy:
+            request = Request(
+                ws_server.url("/echo"),
+                meta={"proxy": f"socks5://{proxy}"},
+                headers={"Proxy-Authorization": basic_auth_header("user", password)},
+            )
+            async with _dh() as download_handler:
+                if succeeds:
+                    response = await download_handler.download_request(request)
+                    assert isinstance(response, WebSocketResponse)
+                    await response.close()
+                else:
+                    with pytest.raises(DownloadFailedError):
+                        await download_handler.download_request(request)
 
     @coroutine_test
     async def test_https_proxy_verify_certificates_false(self) -> None:
