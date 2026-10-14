@@ -7,9 +7,11 @@ from io import BytesIO
 from logging import WARNING
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import SitemapSpider
@@ -148,6 +150,106 @@ Sitemap: /sitemap-relative-url.xml
         assert [req.url for req in spider._parse_sitemap(r)] == [
             "http://example.com/ok.xml",
         ]
+
+    def test_get_sitemap_urls_from_robots_parsed_signal(self):
+        crawler = get_crawler(self.spider_class, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+
+        class FakeRobotParser:
+            def sitemaps(self):
+                return [
+                    "http://example.com/sitemap.xml",  # already found below
+                    "/sitemap-from-parser.xml",  # only reported through the signal
+                ]
+
+        crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=FakeRobotParser(),
+            request=Request("http://www.example.com/robots.txt"),
+            response=TextResponse("http://www.example.com/robots.txt"),
+        )
+
+        robots = b"Sitemap: http://example.com/sitemap.xml\n"
+        r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "http://example.com/sitemap.xml",
+            "http://www.example.com/sitemap-from-parser.xml",
+        ]
+
+    def test_robots_parsed_signal_not_connected_without_robotstxt_obey(self):
+        crawler = get_crawler(self.spider_class)
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+
+        crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=None,
+            request=Request("http://www.example.com/robots.txt"),
+            response=TextResponse("http://www.example.com/robots.txt"),
+        )
+
+        assert spider._robots_sitemaps == {}
+
+    def test_robots_parsed_signal_schedules_sitemaps_for_skipped_netloc(self):
+        calls = []
+
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                calls.append((loc, entry, source, response))
+                return super().sitemap_request(
+                    loc, callback, entry, source=source, response=response
+                )
+
+        crawler = get_crawler(_Spider, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = _Spider.from_crawler(crawler, "example.com")
+        crawler.engine = mock.MagicMock()
+        spider._signal_only_netlocs.add("www.example.com")
+
+        class FakeRobotParser:
+            def sitemaps(self):
+                return ["/sitemap.xml"]
+
+        robots_response = TextResponse("http://www.example.com/robots.txt")
+        # request is whatever other request to that host triggered the fetch,
+        # not necessarily a request for robots.txt itself.
+        crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=FakeRobotParser(),
+            request=Request("http://www.example.com/some/page"),
+            response=robots_response,
+        )
+
+        crawler.engine.crawl.assert_called_once()
+        scheduled = crawler.engine.crawl.call_args[0][0]
+        assert scheduled.url == "http://www.example.com/sitemap.xml"
+        assert scheduled.callback == spider._parse_sitemap  # pylint: disable=comparison-with-callable
+        url = "http://www.example.com/sitemap.xml"
+        assert calls == [(url, {"loc": url}, "robotstxt", robots_response)]
+        assert spider._signal_only_netlocs == set()
+        assert spider._robots_sitemaps == {}
+
+    def test_sitemap_follow_robots_parsed_signal(self):
+        class _FollowSpider(self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_follow = [r"1\.xml"]
+
+        crawler = get_crawler(_FollowSpider, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = _FollowSpider.from_crawler(crawler, "example.com")
+        crawler.engine = mock.MagicMock()
+        spider._signal_only_netlocs.add("www.example.com")
+
+        class FakeRobotParser:
+            def sitemaps(self):
+                return ["/sitemap1.xml", "/sitemap2.xml"]
+
+        crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=FakeRobotParser(),
+            request=Request("http://www.example.com/some/page"),
+            response=TextResponse("http://www.example.com/robots.txt"),
+        )
+
+        crawler.engine.crawl.assert_called_once()
+        scheduled = crawler.engine.crawl.call_args[0][0]
+        assert scheduled.url == "http://www.example.com/sitemap1.xml"
 
     def test_alternate_url_locs(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -357,6 +459,93 @@ Sitemap: /sitemap-relative-url.xml
 
         items, _ = await crawl_items(_Spider, mockserver)
         assert items == [{"url": mockserver.url("/text")}]
+
+    @coroutine_test
+    async def test_robots_txt_requested_once(self, mockserver: MockServer):
+        """robots.txt should be downloaded only once, even though both
+        SitemapSpider and RobotsTxtMiddleware need its content: the spider
+        requests it directly to look for sitemaps, while the middleware
+        downloads it to know what the spider is allowed to crawl.
+        """
+        robots_url = mockserver.url("/robots.txt")
+
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            name = "robots_txt_requested_once"
+            custom_settings = {"ROBOTSTXT_OBEY": True}
+            sitemap_urls = [robots_url]
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                spider.robots_txt_requests = []
+                crawler.signals.connect(
+                    spider._track_downloader_hit,
+                    signals.request_reached_downloader,
+                )
+                return spider
+
+            def _track_downloader_hit(self, request, spider):
+                if request.url == robots_url:
+                    self.robots_txt_requests.append(request)
+
+        _, crawler = await crawl_items(_Spider, mockserver)
+        assert isinstance(crawler.spider, _Spider)
+        assert len(crawler.spider.robots_txt_requests) == 1
+
+    @coroutine_test
+    async def test_start_skips_robots_url_covered_by_another_sitemap_url(self):
+        crawler = get_crawler(self.spider_class, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = self.spider_class.from_crawler(
+            crawler,
+            "example.com",
+            sitemap_urls=[
+                "http://www.example.com/sitemap.xml",
+                "http://www.example.com/robots.txt",
+                "http://other.example.com/robots.txt",
+            ],
+        )
+
+        urls = [request.url async for request in spider.start()]
+
+        assert urls == [
+            "http://www.example.com/sitemap.xml",
+            "http://other.example.com/robots.txt",
+        ]
+        assert spider._signal_only_netlocs == {"www.example.com"}
+
+    @coroutine_test
+    async def test_robots_txt_requested_once_when_other_sitemap_url_goes_first(
+        self, mockserver: MockServer
+    ):
+        """When another sitemap_urls entry targets the same host, the spider
+        should not also request robots.txt itself: RobotsTxtMiddleware's own
+        robots.txt request, triggered by that other entry, covers it.
+        """
+        robots_url = mockserver.url("/robots.txt")
+        other_url = mockserver.url("/text")
+
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            name = "robots_txt_requested_once_other_first"
+            custom_settings = {"ROBOTSTXT_OBEY": True}
+            sitemap_urls = [other_url, robots_url]
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                spider.robots_txt_requests = []
+                crawler.signals.connect(
+                    spider._track_downloader_hit,
+                    signals.request_reached_downloader,
+                )
+                return spider
+
+            def _track_downloader_hit(self, request, spider):
+                if request.url == robots_url:
+                    self.robots_txt_requests.append(request)
+
+        _, crawler = await crawl_items(_Spider, mockserver)
+        assert isinstance(crawler.spider, _Spider)
+        assert len(crawler.spider.robots_txt_requests) == 1
 
     def test_parse_sitemap_empty_body(self, caplog: pytest.LogCaptureFixture) -> None:
         r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
