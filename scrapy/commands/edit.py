@@ -51,7 +51,7 @@ class Command(ScrapyCommand):
             raise UsageError
 
         assert self.settings is not None
-        editor = self.settings["EDITOR"]
+        editor = self.settings["EDITOR"]  # pylint: disable=unsubscriptable-object
         spider_loader = get_spider_loader(self.settings)
         try:
             spidercls = spider_loader.load(args[0])

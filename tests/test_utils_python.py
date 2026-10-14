@@ -11,8 +11,8 @@ import pytest
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
-    MutableAsyncChain,
     _looks_like_import_path,
+    _MutableAsyncChain,
     binary_is_text,
     get_func_args,
     get_spec,
@@ -56,7 +56,7 @@ class TestMutableAsyncChain:
 
     @coroutine_test
     async def test_mutableasyncchain(self):
-        m = MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
+        m = _MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
         m.extend(self.g2())
         m.extend(self.g3())
 
@@ -66,7 +66,7 @@ class TestMutableAsyncChain:
 
     @coroutine_test
     async def test_mutableasyncchain_exc(self):
-        m = MutableAsyncChain(self.g1())
+        m = _MutableAsyncChain(self.g1())
         m.extend(self.g4())
         m.extend(self.g3())
 

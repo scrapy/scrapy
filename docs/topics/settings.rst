@@ -401,12 +401,13 @@ is ``True``.
 Logging settings
 ----------------
 
-**Logging settings** are settings that configure the global root logging
-handler installed by :func:`~scrapy.utils.log.configure_logging`.
+**Logging settings** are settings that configure logging process-wide, mostly
+through the global root logging handler installed by
+:func:`~scrapy.utils.log.configure_logging`.
 
-These settings can be defined from a spider. However, because only 1 root
-logging handler is active per process, these settings cannot use a different
-value per spider when :ref:`running multiple spiders in the same process
+These settings can be defined from a spider. However, because logging
+configuration is global, these settings cannot use a different value per
+spider when :ref:`running multiple spiders in the same process
 <run-multiple-spiders>`.
 
 These settings are:
@@ -420,6 +421,7 @@ These settings are:
 -   :setting:`LOG_FORMAT`
 -   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
+-   :setting:`LOG_LEVELS`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -1120,7 +1122,8 @@ Default:
         "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
-        "ftp": None,
+        "ftp": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+        "ftps": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
     }
 
 (when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
@@ -1141,6 +1144,19 @@ handler (without replacement), place this in your ``settings.py``:
 
 .. seealso:: :ref:`security-unencrypted-protocols` and
     :ref:`security-local-resources`
+
+
+.. setting:: DOWNLOAD_HANDLERS_BY_NAME
+
+DOWNLOAD_HANDLERS_BY_NAME
+-------------------------
+
+.. versionadded:: VERSION
+
+Default: ``{}``
+
+A dict mapping names to :ref:`download handlers <topics-download-handlers>`
+that requests can ask for by name. See :ref:`download-handler-ids`.
 
 
 .. reqmeta:: download_slot
@@ -1241,7 +1257,8 @@ Use ``0`` to disable this limit.
 .. note::
 
     This limit can be set per-request using the :reqmeta:`download_warnsize`
-    :attr:`.Request.meta` key.
+    :attr:`.Request.meta` key. Requests that set :reqmeta:`download_maxsize`
+    but not :reqmeta:`download_warnsize` log no warning.
 
 .. note::
 
@@ -1808,6 +1825,30 @@ INFO, DEBUG. For more info see :ref:`topics-logging`.
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
+.. setting:: LOG_LEVELS
+
+LOG_LEVELS
+----------
+
+Default: ``{}``
+
+.. versionadded:: VERSION
+
+Minimum level to log for specific loggers.
+
+It takes precedence over the levels that Scrapy sets by default::
+
+    {
+        "filelock": "ERROR",
+        "hpack": "ERROR",
+        "httpcore": "ERROR",
+        "httpx": "WARNING",
+        "scrapy": "DEBUG",
+        "twisted": "ERROR",
+    }
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
 .. setting:: LOG_STDOUT
 
 LOG_STDOUT
@@ -2179,6 +2220,10 @@ Default:
         "scrapy.contracts.default.UrlContract": 1,
         "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
         "scrapy.contracts.default.MetadataContract": 1,
+        "scrapy.contracts.default.MethodContract": 1,
+        "scrapy.contracts.default.BodyContract": 1,
+        "scrapy.contracts.default.HeaderContract": 1,
+        "scrapy.contracts.default.CookieContract": 1,
         "scrapy.contracts.default.ReturnsContract": 2,
         "scrapy.contracts.default.ScrapesContract": 3,
     }

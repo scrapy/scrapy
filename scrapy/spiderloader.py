@@ -3,7 +3,7 @@ from __future__ import annotations
 import traceback
 import warnings
 from collections import defaultdict
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, Self, cast
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from scrapy import Request, Spider  # noqa: TC001
@@ -12,9 +12,6 @@ from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
     from types import ModuleType
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.settings import BaseSettings
 

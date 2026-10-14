@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -442,7 +442,7 @@ def test_get_status_project_unset() -> None:
 
 def test_get_status_start_time() -> None:
     extension = _get_extension()
-    start_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+    start_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
     extension._crawler.stats.set_value("start_time", start_time)
     assert extension._get_status()["start_time"] == start_time.timestamp()
 
@@ -451,7 +451,7 @@ def test_get_status_start_time() -> None:
 async def test_status(tmp_path: Path) -> None:
     async with _started_extension(tmp_path) as extension:
         extension._crawler.stats.set_value(
-            "start_time", datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+            "start_time", datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
         )
         status, body = await _request_status(extension, headers=_auth(extension))
     assert status == 200
@@ -460,7 +460,7 @@ async def test_status(tmp_path: Path) -> None:
         "spider": extension._crawler.spidercls.name,
         "project": "scrapybot",
         "scrapy_version": scrapy.__version__,
-        "start_time": datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc).timestamp(),
+        "start_time": datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC).timestamp(),
     }
 
 

@@ -14,7 +14,6 @@ from scrapy.dupefilters import BaseDupeFilter, DiskDupeFilter, RFPDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
@@ -100,7 +99,7 @@ class DupeFilterTestMixin:
 
         class CaseInsensitiveRequestFingerprinter:
             def fingerprint(self, request: Request) -> bytes:
-                return hashlib.sha1(to_bytes(request.url.lower())).digest()
+                return hashlib.sha1(request.url.lower().encode()).digest()
 
         case_insensitive_dupefilter = self._get_dupefilter(
             REQUEST_FINGERPRINTER_CLASS=CaseInsensitiveRequestFingerprinter
@@ -242,7 +241,7 @@ class TestRFPDupeFilter(DupeFilterTestMixin):
     def test_request_fingerprint_override_deprecation(self):
         class LegacyDupeFilter(RFPDupeFilter):
             def request_fingerprint(self, request):
-                return hashlib.sha1(to_bytes(request.url.lower())).hexdigest()
+                return hashlib.sha1(request.url.lower().encode()).hexdigest()
 
         with pytest.warns(
             ScrapyDeprecationWarning,

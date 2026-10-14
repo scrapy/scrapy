@@ -6,7 +6,7 @@ exclude: |
   )
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.16.8
+  rev: v0.16.10
   hooks:
     - id: ruff-check
       args: [ --fix ]
@@ -31,7 +31,7 @@ repos:
   hooks:
     - id: sphinx-scrapy
 - repo: https://github.com/zizmorcore/zizmor-pre-commit
-  rev: v1.28.0
+  rev: v1.30.1
   hooks:
     - id: zizmor
       args: [--no-progress, --fix]

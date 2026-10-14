@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -21,9 +21,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import Request

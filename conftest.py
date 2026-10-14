@@ -222,6 +222,7 @@ def pytest_runtest_setup(item):
         "uvloop",
         "botocore",
         "boto3",
+        "psutil",
     ]
 
     for module in optional_deps:

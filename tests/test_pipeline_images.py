@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import io
 import random
 import sys
@@ -17,7 +18,7 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.pipelines.files import GCSFilesStore, S3FilesStore
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
@@ -250,7 +251,7 @@ class TestImagesPipeline:
         )
 
         buf.seek(0)
-        assert checksum == _md5sum(buf)
+        assert checksum == hashlib.file_digest(buf, "md5").hexdigest()
         name = "3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert Path(self.tempdir, "full", name).read_bytes() == buf.getvalue()
         assert Path(self.tempdir, "thumbs", "small", name).exists()

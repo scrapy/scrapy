@@ -223,17 +223,22 @@ async def test_pool_limits(concurrency: int, expected: int | None) -> None:
         await handler.close()
 
 
-@coroutine_test
-async def test_experimental_warning(caplog: pytest.LogCaptureFixture) -> None:
-    class StableHandler(HttpxDownloadHandler):
-        experimental = False
+class StableHandler(HttpxDownloadHandler):
+    experimental = False
 
-    crawler = get_crawler()
-    for handler_cls, expected in ((HttpxDownloadHandler, True), (StableHandler, False)):
-        caplog.clear()
-        handler = build_from_crawler(handler_cls, crawler)
-        await handler.close()
-        assert ("is experimental" in caplog.text) is expected
+
+@pytest.mark.parametrize(
+    ("handler_cls", "expected"), [(HttpxDownloadHandler, True), (StableHandler, False)]
+)
+@coroutine_test
+async def test_experimental_warning(
+    handler_cls: type[HttpxDownloadHandler],
+    expected: bool,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    handler = build_from_crawler(handler_cls, get_crawler())
+    await handler.close()
+    assert ("is experimental" in caplog.text) is expected
 
 
 @coroutine_test

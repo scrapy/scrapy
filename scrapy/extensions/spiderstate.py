@@ -2,16 +2,13 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.conf import _job_dir
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
 
 
