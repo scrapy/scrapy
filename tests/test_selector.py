@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import weakref
 
 import pytest
@@ -7,7 +9,7 @@ from scrapy.selector import Selector
 
 
 class TestSelector:
-    def test_simple_selection(self):
+    def test_simple_selection(self) -> None:
         """Simple selector tests"""
         body = b"<p><input name='a'value='1'/><input name='b'value='2'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding="utf-8")
@@ -34,14 +36,14 @@ class TestSelector:
             )
         ] == ["12"]
 
-    def test_root_base_url(self):
+    def test_root_base_url(self) -> None:
         body = b'<html><form action="/path"><input name="a" /></form></html>'
         url = "http://example.com"
         response = TextResponse(url=url, body=body, encoding="utf-8")
         sel = Selector(response)
         assert url == sel.root.base
 
-    def test_flavor_detection(self):
+    def test_flavor_detection(self) -> None:
         text = b'<div><img src="a.jpg"><p>Hello</div>'
         sel = Selector(XmlResponse("http://example.com", body=text, encoding="utf-8"))
         assert sel.type == "xml"
@@ -77,7 +79,7 @@ class TestSelector:
         )
         assert Selector(response).type == "html"
 
-    def test_http_header_encoding_precedence(self):
+    def test_http_header_encoding_precedence(self) -> None:
         # '\xa3'     = pound symbol in unicode
         # '\xc2\xa3' = pound symbol in utf-8
         # '\xa3'     = pound symbol in latin-1 (iso-8859-1)
@@ -99,7 +101,7 @@ class TestSelector:
         x = Selector(response)
         assert x.xpath("//span[@id='blank']/text()").getall() == ["\xa3"]
 
-    def test_badly_encoded_body(self):
+    def test_badly_encoded_body(self) -> None:
         # \xe9 alone isn't valid utf8 sequence
         r1 = TextResponse(
             "http://www.example.com",
@@ -122,7 +124,7 @@ class TestSelector:
         response = HtmlResponse("https://example.com", body=body, headers=headers)
         assert response.css("p::text").get() == "£€"
 
-    def test_weakref_slots(self):
+    def test_weakref_slots(self) -> None:
         """Check that classes are using slots and are weak-referenceable"""
         x = Selector(text="")
         weakref.ref(x)
@@ -130,7 +132,11 @@ class TestSelector:
             f"{x.__class__.__name__} does not use __slots__"
         )
 
-    def test_selector_bad_args(self):
+    def test_response(self) -> None:
+        response = TextResponse(url="http://example.com", body=b"")
+        assert Selector(response).response is response
+
+    def test_selector_bad_args(self) -> None:
         with pytest.raises(ValueError, match="received both response and text"):
             Selector(TextResponse(url="http://example.com", body=b""), text="")
 
