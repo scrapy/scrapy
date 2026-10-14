@@ -135,43 +135,48 @@ class TestBatchDeliveries:
         with pytest.raises(NotConfigured):
             build_from_crawler(FeedExporter, crawler)
 
+    @pytest.mark.parametrize("fmt", ["json", "jsonlines", "xml", "csv"])
     @coroutine_test
     async def test_export_no_items_not_store_empty(
-        self, mockserver: MockServer, tmp_path: Path
+        self, fmt: str, mockserver: MockServer, tmp_path: Path
     ) -> None:
-        for fmt in ("json", "jsonlines", "xml", "csv"):
-            settings = {
-                "FEEDS": {
-                    unique_path(tmp_path) / self._file_mark: {"format": fmt},
-                },
-                "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
-                "FEED_STORE_EMPTY": False,
-            }
-            data = await export_batches(mockserver, [], settings)
-            assert len(data[fmt]) == 0
+        settings = {
+            "FEEDS": {
+                unique_path(tmp_path) / self._file_mark: {"format": fmt},
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+            "FEED_STORE_EMPTY": False,
+        }
+        data = await export_batches(mockserver, [], settings)
+        assert len(data[fmt]) == 0
 
+    @pytest.mark.parametrize(
+        ("fmt", "expected"),
+        [
+            pytest.param("json", b"[]", id="json"),
+            pytest.param("jsonlines", b"", id="jsonlines"),
+            pytest.param(
+                "xml",
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items></items>',
+                id="xml",
+            ),
+            pytest.param("csv", b"", id="csv"),
+        ],
+    )
     @coroutine_test
     async def test_export_no_items_store_empty(
-        self, mockserver: MockServer, tmp_path: Path
+        self, fmt: str, expected: bytes, mockserver: MockServer, tmp_path: Path
     ) -> None:
-        formats = (
-            ("json", b"[]"),
-            ("jsonlines", b""),
-            ("xml", b'<?xml version="1.0" encoding="utf-8"?>\n<items></items>'),
-            ("csv", b""),
-        )
-
-        for fmt, expctd in formats:
-            settings = {
-                "FEEDS": {
-                    unique_path(tmp_path) / self._file_mark: {"format": fmt},
-                },
-                "FEED_STORE_EMPTY": True,
-                "FEED_EXPORT_INDENT": None,
-                "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
-            }
-            data = await export_batches(mockserver, [], settings)
-            assert data[fmt][0] == expctd
+        settings = {
+            "FEEDS": {
+                unique_path(tmp_path) / self._file_mark: {"format": fmt},
+            },
+            "FEED_STORE_EMPTY": True,
+            "FEED_EXPORT_INDENT": None,
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+        }
+        data = await export_batches(mockserver, [], settings)
+        assert data[fmt][0] == expected
 
     @coroutine_test
     async def test_export_multiple_configs(

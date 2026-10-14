@@ -121,6 +121,28 @@ class TestPriorityQueue:
         assert dequeued.priority == req3.priority
         assert set(queue.close()) == {-1, -2}
 
+    def test_next_priority_empty_startprios(self, crawler: Crawler) -> None:
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, crawler, FifoMemoryQueue, "", [-1]
+        )
+        assert queue.next_priority() is None
+
+    def test_next_priority_with_start_queue(self, crawler: Crawler) -> None:
+        queue = build_from_crawler(
+            ScrapyPriorityQueue,
+            crawler,
+            FifoMemoryQueue,
+            "",
+            start_queue_cls=FifoMemoryQueue,
+        )
+        queue.push(Request("https://example.org/1", meta={"is_start_request": True}))
+        queue.push(Request("https://example.org/2", priority=1))
+        assert queue.next_priority() == -1
+        queue.pop()
+        assert queue.next_priority() == 0
+        queue.pop()
+        assert queue.next_priority() is None
+
 
 class TestDownloaderAwarePriorityQueue:
     @pytest.fixture

@@ -73,7 +73,7 @@ async def test_bad_credentials() -> None:
 async def test_good_credentials() -> None:
     with _get_console_and_portal() as (console, portal):
         creds = credentials.UsernamePassword(
-            console.username.encode("utf8"), console.password.encode("utf8")
+            console.username.encode(), console.password.encode()
         )
         d = portal.login(creds, None, ITelnetProtocol)
         await maybe_deferred_to_future(d)

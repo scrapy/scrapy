@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
@@ -41,21 +40,12 @@ class MockFTPServer:
         self.proc = Popen(
             [sys.executable, "-u", "-m", "tests.mockserver.ftp", "-d", str(self.path)]
             + (["--tls"] if self.tls else []),
-            stderr=PIPE,
+            stdout=PIPE,
             env=get_script_run_env(),
             text=True,
         )
-        assert self.proc.stderr is not None
-        for line in self.proc.stderr:
-            if m := re.search(r"starting FTPS? .*on ([^ :]+):(\d+),", line):
-                self.port = int(m.group(2))
-                break
-        else:
-            self.proc.kill()
-            self.proc.communicate()
-            raise RuntimeError(
-                "The FTP server failed to start or the output is unrecognized"
-            )
+        assert self.proc.stdout is not None
+        self.port = int(self.proc.stdout.readline())
         return self
 
     def __exit__(
@@ -94,6 +84,7 @@ def main() -> None:
     handler.authorizer = authorizer
     address = ("127.0.0.1", 0)
     server = FTPServer(address, handler)
+    print(server.address[1])
     server.serve_forever()
 
 

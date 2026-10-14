@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
+    "aioftp>=0.26.1",
     "aiohttp>=3.13.3",
     "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
@@ -20,12 +21,12 @@ dependencies = [
     "packaging",
     "parsel>=1.8.1",
     "platformdirs>=2.0.0",
-    "protego>=0.1.15",
+    "protego>=0.2.0",
     "pyOpenSSL>=24.3.0",
     "queuelib>=1.8.0",
     "service_identity>=24.2.0",
     "tldextract",
-    'typing-extensions>=4.5.0; python_version < "3.13"',
+    'typing-extensions>=4.6.0; python_version < "3.13"',
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
@@ -72,6 +73,7 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 bpython = ["bpython>=0.7.1"]
 clipboard = ["pyperclip>=1.8.0"]
 color = ["colorlog>=6.6.0"]
+ftp-socks = ["python-socks[asyncio]>=2.6.0"]
 gcs = ["google-cloud-storage>=1.30.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=9.2.0"]
@@ -79,7 +81,7 @@ ipython = ["ipython>=8.15.0"]
 memusage = ["psutil>=5.9.0"]
 ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
-s3 = ["boto3>=1.20.0"]
+s3 = ["boto3>=1.35.2"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.17.0; platform_system != 'Windows' and implementation_name != 'pypy'",
@@ -154,6 +156,7 @@ module = [
     "pyperclip",
     "pytest_twisted",
     "robotexclusionrulesparser",
+    "siosocks.*",
     "zope.interface.*",
 ]
 ignore_missing_imports = true

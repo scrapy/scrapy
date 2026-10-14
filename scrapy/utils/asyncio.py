@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
 from typing import (
@@ -181,24 +182,32 @@ class AsyncioLoopingCall(Generic[_P, _T]):
             raise ValueError("Interval must be greater than 0")
 
         self.interval = interval
-        self._start_time = time.monotonic()
+        self._start_time = start_time = time.monotonic()
         if now:
             self._call()
         loop = asyncio.get_event_loop()
-        self._task = loop.create_task(self._loop())
+        self._task = loop.create_task(self._loop(start_time))
 
-    def _to_sleep(self) -> float:
-        """Return the time to sleep until the next call."""
+    def _next_boundary(self, boundary: float) -> float:
+        """Return the first interval boundary that is later than both
+        *boundary* and the current time.
+
+        The event loop may wake the looping call up slightly before
+        :func:`time.monotonic` reaches a boundary, as its timers use
+        ``loop.time()``, which may have a coarser resolution.
+
+        See also https://github.com/tornadoweb/tornado/issues/2333.
+        """
         assert self.interval is not None
-        assert self._start_time is not None
-        now = time.monotonic()
-        running_for = now - self._start_time
-        return self.interval - (running_for % self.interval)
+        passed = max(math.floor((time.monotonic() - boundary) / self.interval), 0)
+        return boundary + (passed + 1) * self.interval
 
-    async def _loop(self) -> None:
-        """Run an infinite loop that calls the function periodically."""
+    async def _loop(self, boundary: float) -> None:
+        """Run an infinite loop that calls the function periodically, on the
+        interval boundaries that follow *boundary*."""
         while self.running:
-            await asyncio.sleep(self._to_sleep())
+            boundary = self._next_boundary(boundary)
+            await asyncio.sleep(boundary - time.monotonic())
             self._call()
 
     def stop(self) -> None:

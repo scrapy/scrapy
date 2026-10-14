@@ -21,7 +21,6 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore
 from scrapy.pipelines.media import FileException
 from scrapy.utils.defer import ensure_awaitable
-from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -268,7 +267,7 @@ class ImagesPipeline(FilesPipeline):
         *,
         item: Any = None,
     ) -> str:
-        image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
+        image_guid = hashlib.sha1(request.url.encode()).hexdigest()  # noqa: S324
         ext = "" if self.preserve_format else ".jpg"
         return f"full/{image_guid}{ext}"
 
@@ -281,6 +280,6 @@ class ImagesPipeline(FilesPipeline):
         *,
         item: Any = None,
     ) -> str:
-        thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
+        thumb_guid = hashlib.sha1(request.url.encode()).hexdigest()  # noqa: S324
         ext = "" if self.preserve_format else ".jpg"
         return f"thumbs/{thumb_id}/{thumb_guid}{ext}"

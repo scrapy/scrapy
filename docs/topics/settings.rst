@@ -1124,7 +1124,8 @@ Default:
         "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
-        "ftp": None,
+        "ftp": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+        "ftps": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
         "ws": "scrapy.core.downloader.handlers.websocket.WebSocketDownloadHandler",
         "wss": "scrapy.core.downloader.handlers.websocket.WebSocketDownloadHandler",
     }
@@ -1260,7 +1261,8 @@ Use ``0`` to disable this limit.
 .. note::
 
     This limit can be set per-request using the :reqmeta:`download_warnsize`
-    :attr:`.Request.meta` key.
+    :attr:`.Request.meta` key. Requests that set :reqmeta:`download_maxsize`
+    but not :reqmeta:`download_warnsize` log no warning.
 
 .. note::
 
@@ -2222,6 +2224,10 @@ Default:
         "scrapy.contracts.default.UrlContract": 1,
         "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
         "scrapy.contracts.default.MetadataContract": 1,
+        "scrapy.contracts.default.MethodContract": 1,
+        "scrapy.contracts.default.BodyContract": 1,
+        "scrapy.contracts.default.HeaderContract": 1,
+        "scrapy.contracts.default.CookieContract": 1,
         "scrapy.contracts.default.ReturnsContract": 2,
         "scrapy.contracts.default.ScrapesContract": 3,
     }

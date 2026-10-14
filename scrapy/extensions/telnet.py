@@ -112,8 +112,8 @@ class TelnetConsole(protocol.ServerFactory):
 
             def login(self_, credentials, mind, *interfaces):  # type: ignore[no-untyped-def]  # pylint: disable=no-self-argument
                 if not (
-                    credentials.username == self.username.encode("utf8")
-                    and credentials.checkPassword(self.password.encode("utf8"))
+                    credentials.username == self.username.encode()
+                    and credentials.checkPassword(self.password.encode())
                 ):
                     return fail(ValueError("Invalid credentials"))
 

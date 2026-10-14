@@ -20,6 +20,7 @@ from scrapy.exceptions import (
 )
 from scrapy.http import WebSocketResponse
 from scrapy.spidermiddlewares.httperror import HttpError
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
@@ -227,15 +228,18 @@ class TestWebSocketDownloadHandler:
         assert items == [{"closed": True}]
 
     @coroutine_test
+    @pytest.mark.parametrize(
+        "setting", ["CONCURRENT_REQUESTS", "CONCURRENT_REQUESTS_PER_DOMAIN"]
+    )
     async def test_open_connection_occupies_a_slot(
-        self, ws_server: WebSocketMockServer
+        self, ws_server: WebSocketMockServer, setting: str
     ) -> None:
         """A request waits for the connection of the previous one to close,
         because an open connection keeps occupying its downloader slot."""
 
         class TwoRequestSpider(Spider):
             name = "two"
-            custom_settings = {"CONCURRENT_REQUESTS": 1}
+            custom_settings = {setting: 1}
             order: list[str] = []
 
             async def start(self) -> AsyncIterator[Any]:
@@ -251,6 +255,8 @@ class TestWebSocketDownloadHandler:
             ) -> AsyncIterator[Any]:
                 self.order.append(f"open {index}")
                 async with response:
+                    # Give the next request time to connect if it could.
+                    await sleep(0.2)
                     await response.send("ping")
                     await response.receive()
                 self.order.append(f"close {index}")

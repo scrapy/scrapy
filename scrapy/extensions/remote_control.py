@@ -320,11 +320,11 @@ class RemoteControl:
 
 def _cap(s: str, limit: int) -> tuple[str, bool]:
     """Cap a string to ``limit`` bytes, appending an inline truncation marker."""
-    b = s.encode("utf-8")
+    b = s.encode()
     if len(b) <= limit:
         return s, False
     extra_kb = (len(b) - limit) // 1024 + 1
-    head = b[:limit].decode("utf-8", "ignore")
+    head = b[:limit].decode(errors="ignore")
     return f"{head}…[truncated, +{extra_kb}KB]", True
 
 

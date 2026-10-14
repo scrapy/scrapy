@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import random
 import warnings
 from collections import deque
@@ -333,6 +334,7 @@ class Downloader:
             assert isinstance(download_dfd, Deferred)
             self._download_tasks[request] = download_dfd
             download_dfd.addBoth(self._download_task_done, request)
+            download_dfd.addBoth(self._release_unstarted, slot, request, queue_dfd)
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)
@@ -340,6 +342,21 @@ class Downloader:
 
     def _download_task_done(self, result: Any, request: Request) -> Any:
         self._download_tasks.pop(request, None)
+        return result
+
+    def _release_unstarted(
+        self, result: Any, slot: Slot, request: Request, queue_dfd: Deferred[Response]
+    ) -> Any:
+        # Runs when the download task finishes. The task itself normally ends
+        # the transfer (in _download()) and fires queue_dfd (in
+        # _wait_for_download()). But a task that is cancelled before it starts
+        # running, e.g. by stop(), never runs any of its code, so this does
+        # both instead. A task that did run returns None, and may have left
+        # the transfer for _release_when_closed() to end.
+        if isinstance(result, Failure) and request in slot.transferring:
+            self._end_transfer(slot, request)
+        if not queue_dfd.called:
+            queue_dfd.errback(result)
         return result
 
     def _latercall(self, slot: Slot) -> None:
@@ -385,7 +402,7 @@ class Downloader:
     ) -> None:
         try:
             response = await self._download(slot, request)
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             if not queue_dfd.called:
                 queue_dfd.errback(Failure())
         else:

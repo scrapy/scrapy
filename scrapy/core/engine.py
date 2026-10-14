@@ -174,6 +174,15 @@ class _Slot:
 
 
 class ExecutionEngine:
+    """The execution engine manages all the core :ref:`components
+    <topics-components>`, such as the :ref:`scheduler <topics-scheduler>`, the
+    downloader, or the :ref:`spider <topics-spiders>`, at run time.
+
+    Some components access the engine through :attr:`Crawler.engine
+    <scrapy.crawler.Crawler.engine>` to access or modify other components, or
+    use core functionality such as closing the running spider.
+    """
+
     _SLOT_HEARTBEAT_INTERVAL: float = 5.0
 
     def __init__(
@@ -474,8 +483,9 @@ class ExecutionEngine:
             await self.stop_async()
 
     def _start_scheduled_requests(self) -> None:
-        if self._slot is None or self._slot.closing is not None or self.paused:
+        if self._state is not EngineState.RUNNING or self.paused:
             return
+        assert self._slot is not None
 
         while not self.needs_backout():
             if not self._start_scheduled_request():
@@ -512,6 +522,7 @@ class ExecutionEngine:
             self.signals.send_catch_log(signals.scheduler_empty)
             return False
 
+        self._slot.add_request(request)
         d: Deferred[Response | Request] = self._download(request)
         d.addBoth(self._handle_downloader_output, request)
         d.addErrback(
@@ -638,12 +649,13 @@ class ExecutionEngine:
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         while True:
+            assert self._slot is not None
+            self._slot.add_request(request)
             try:
                 response_or_request = await maybe_deferred_to_future(
                     self._download(request)
                 )
             finally:
-                assert self._slot is not None
                 self._slot.remove_request(request)
             if not isinstance(response_or_request, Request):
                 return response_or_request
@@ -656,7 +668,6 @@ class ExecutionEngine:
         assert self._slot is not None  # typing
         assert self.spider is not None
 
-        self._slot.add_request(request)
         try:
             result: Response | Request
             if self._downloader_fetch_needs_spider:
@@ -699,6 +710,17 @@ class ExecutionEngine:
         """Open the spider.
 
         Raises :exc:`RuntimeError` if a spider has already been opened.
+
+        If an exception is raised during opening, the spider is still
+        considered open (the engine always transitions to the
+        :attr:`EngineState.SPIDER_OPEN` state).
+
+        .. versionchanged:: VERSION
+            A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the
+            spider is opening now closes the spider instead of being re-raised.
+
+        If the engine is requested to close the spider during opening, that is
+        done right after the spider is opened.
         """
         assert self.crawler.spider
         if self._state is EngineState.STOPPED:
@@ -721,7 +743,6 @@ class ExecutionEngine:
             # The rest of the startup runs anyway, so that components that are
             # started also get stopped, and the request is honored once the spider
             # is open.
-            close_spider_exc: CloseSpider | None = None
             try:
                 self._start = await self.scraper.spidermw.process_start()
                 if hasattr(scheduler, "open") and (
@@ -730,7 +751,7 @@ class ExecutionEngine:
                     await maybe_deferred_to_future(d)
                 await self.scraper.open_spider_async()
             except CloseSpider as exc:
-                close_spider_exc = exc
+                await self.close_spider_async(reason=exc.reason, error=exc.error)
             stats = self.crawler.stats
             if argument_is_required(stats.open_spider, "spider"):
                 warnings.warn(
@@ -747,14 +768,14 @@ class ExecutionEngine:
             )
             for _, result in results:
                 if isinstance(result, CloseSpider):
-                    close_spider_exc = close_spider_exc or result
-            if close_spider_exc is not None:
-                raise close_spider_exc
+                    await self.close_spider_async(
+                        reason=result.reason, error=result.error
+                    )
         finally:
             # Partially open counts as open because we still want to close the
             # components that were opened (close_spider_async() will do that).
             self._transition_to(EngineState.SPIDER_OPEN)
-        await self._close_spider_if_pending()
+            await self._close_spider_if_pending()
 
     async def _close_spider_if_pending(self) -> None:
         """Perform a close requested while the spider was opening."""
@@ -841,17 +862,17 @@ class ExecutionEngine:
         mode: _StopMode = "graceful",
         error: bool = False,
     ) -> None:
-        """Close (cancel) spider and clear all its outstanding requests, and
-        stop the engine.
+        """Stop the crawl with the specified *reason* and clear all its
+        outstanding requests.
 
         .. versionadded:: 2.14
 
-        *reason* is the spider finish reason (see the :stat:`finish_reason`
-        stat). *error* is a flag that specifies whether the crawl should be
-        considered failed (see the :stat:`finish_reason_error` stat). If
-        *mode* is ``"graceful"``, this method will wait until the requests
-        that are already in the downloader are downloaded and processed; if
-        it's ``"fast"`` they will be dropped.
+        *reason* is an arbitrary string; see :stat:`finish_reason` for the
+        reasons that built-in components use. *error* is a flag that specifies
+        whether the crawl should be considered failed (see the
+        :stat:`finish_reason_error` stat). If *mode* is ``"graceful"``, this
+        method will wait until the requests that are already in the downloader
+        are downloaded and processed; if it's ``"fast"`` they will be dropped.
 
         If the spider was not opened before, this method raises
         :exc:`RuntimeError`.
