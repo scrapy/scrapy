@@ -9,7 +9,6 @@ from time import monotonic
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
-from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -380,9 +379,9 @@ class Downloader:
     ) -> None:
         try:
             response = await self._download(slot, request)
-        except (Exception, asyncio.CancelledError):
+        except (Exception, asyncio.CancelledError) as exc:
             if not queue_dfd.called:
-                queue_dfd.errback(Failure())
+                queue_dfd.errback(exc)
         else:
             queue_dfd.callback(response)  # awaited in _enqueue_request()
 
@@ -398,10 +397,8 @@ class Downloader:
                 dropped_count += 1
                 if not queue_dfd.called:
                     queue_dfd.errback(
-                        Failure(
-                            DownloadCancelledError(
-                                "Request dropped due to fast downloader shutdown"
-                            )
+                        DownloadCancelledError(
+                            "Request dropped due to fast downloader shutdown"
                         )
                     )
                 self.signals.send_catch_log(
