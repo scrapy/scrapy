@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import pytest
@@ -19,7 +19,7 @@ def test_store_load(tmp_path: Path) -> None:
     jobdir = str(tmp_path)
 
     spider = Spider(name="default")
-    dt = datetime.now(tz=timezone.utc)
+    dt = datetime.now(tz=UTC)
 
     ss = SpiderState(jobdir)
     ss.spider_opened(spider)

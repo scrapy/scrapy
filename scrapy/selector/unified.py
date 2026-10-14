@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import weakref
 from typing import Any, Literal
 
 from parsel import Selector as _ParselSelector
@@ -71,7 +72,7 @@ class Selector(_ParselSelector, object_ref):
        supported.
     """
 
-    __slots__ = ["response"]
+    __slots__ = ["_response"]
     selectorlist_cls = SelectorList
 
     def __init__(
@@ -117,9 +118,15 @@ class Selector(_ParselSelector, object_ref):
                 text = response.text
             kwargs.setdefault("base_url", get_base_url(response))
 
-        self.response = response
+        self._response: TextResponse | weakref.ref[TextResponse] | None = response
 
         if root is not _NOT_SET:
             kwargs["root"] = root
 
         super().__init__(text=text, type=type, **kwargs)
+
+    @property
+    def response(self) -> TextResponse | None:
+        if isinstance(self._response, weakref.ref):
+            return self._response()
+        return self._response
