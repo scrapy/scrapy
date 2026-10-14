@@ -563,9 +563,9 @@ It's implemented using the botocore_ library.
 WebSocketDownloadHandler
 ------------------------
 
-.. note:: Requires the :ref:`websockets <extras>` extra.
-
 .. versionadded:: VERSION
+
+.. note:: Requires the :ref:`websockets <extras>` extra.
 
 .. autoclass:: scrapy.core.downloader.handlers.websocket.WebSocketDownloadHandler
 
