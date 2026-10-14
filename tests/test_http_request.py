@@ -1,13 +1,20 @@
 import contextvars
 import xmlrpc.client
-from collections.abc import Coroutine, Generator
+from collections.abc import Callable, Coroutine, Generator
+from contextlib import AbstractContextManager
+from functools import partial
 from typing import Any
 
 import pytest
 
 from scrapy import Request
 from scrapy.http import XmlRpcRequest
-from scrapy.http.request import _active_crawler, _active_crawler_scope
+from scrapy.http.request import (
+    _active_crawler,
+    _active_crawler_scope,
+    _in_download_handler,
+    _in_download_handler_scope,
+)
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.http_request import TestRequestBase
 
@@ -51,19 +58,34 @@ class _Suspend:
         yield
 
 
-def test_active_crawler_scope_closed_elsewhere():
-    crawler = get_crawler()
+@pytest.mark.parametrize(
+    ("make_scope", "var"),
+    [
+        (lambda: partial(_active_crawler_scope, get_crawler()), _active_crawler),
+        (lambda: _in_download_handler_scope, _in_download_handler),
+    ],
+    ids=["active_crawler", "in_download_handler"],
+)
+def test_scope_closed_elsewhere(
+    make_scope: Callable[[], Callable[[], AbstractContextManager[None]]],
+    var: contextvars.ContextVar[Any],
+) -> None:
+    scope = make_scope()
 
     async def inner() -> None:
-        with _active_crawler_scope(crawler):
+        with scope():
             await _Suspend()
 
     def outer() -> Coroutine[Any, Any, None]:
-        with _active_crawler_scope(crawler):
+        with scope():
             coro = inner()
             coro.send(None)
         return coro
 
-    coro = contextvars.copy_context().run(outer)
-    coro.close()
-    assert _active_crawler.get() is None
+    def run() -> None:
+        default = var.get()
+        coro = contextvars.copy_context().run(outer)
+        coro.close()
+        assert var.get() == default
+
+    contextvars.Context().run(run)

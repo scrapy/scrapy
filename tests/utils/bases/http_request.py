@@ -1,3 +1,4 @@
+import contextvars
 import warnings
 from abc import ABC, abstractmethod
 from typing import Any
@@ -376,7 +377,7 @@ class TestRequestBase(ABC):
     def test_await_needs_active_crawler(self):
         request = self.request_class("http://example.com")
         with pytest.raises(RuntimeError, match="can only be awaited"):
-            request.__await__()
+            contextvars.Context().run(request.__await__)
         assert request.callback is None
 
     def test_await_rejects_download_handler_scope(self):
@@ -407,7 +408,7 @@ class TestRequestBase(ABC):
     def test_await_allows_no_callback(self):
         request = self.request_class("http://example.com", callback=NO_CALLBACK)
         with pytest.raises(RuntimeError, match="can only be awaited"):
-            request.__await__()
+            contextvars.Context().run(request.__await__)
 
     def test_setters(self):
         request = self.request_class("http://example.com")
