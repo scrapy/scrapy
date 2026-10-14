@@ -5,6 +5,4 @@ build:
     python: "3.14"
   commands:
     - pip install tox
-    - tox -e docs
-    - mkdir -p $READTHEDOCS_OUTPUT/html
-    - cp -a docs/_build/all/. $READTHEDOCS_OUTPUT/html/
+    - tox -e docs -- $READTHEDOCS_OUTPUT/html

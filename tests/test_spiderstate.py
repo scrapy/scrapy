@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -37,7 +37,7 @@ def test_not_configured() -> None:
 async def test_store_load(tmp_path: Path) -> None:
     jobdir = str(tmp_path)
     spider = Spider(name="default")
-    dt = datetime.now(tz=timezone.utc)
+    dt = datetime.now(tz=UTC)
 
     crawler = get_crawler(Spider, {"JOBDIR": jobdir})
     ss = build_from_crawler(SpiderState, crawler)
