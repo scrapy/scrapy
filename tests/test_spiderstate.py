@@ -72,7 +72,7 @@ async def test_spider_state_loaded_signal_fires(tmp_path: Path) -> None:
     await ss._spider_opened(spider)
 
     assert received == [{}]
-    assert spider.state == {}  # type: ignore[attr-defined]
+    assert spider.state == {}
 
 
 @coroutine_test
@@ -82,7 +82,7 @@ async def test_spider_state_saving_signal_fires(tmp_path: Path) -> None:
 
     spider = Spider(name="default")
     await ss._spider_opened(spider)
-    spider.state["key"] = "value"  # type: ignore[attr-defined]
+    spider.state["key"] = "value"
 
     saving_calls: list[dict[str, Any]] = []
 

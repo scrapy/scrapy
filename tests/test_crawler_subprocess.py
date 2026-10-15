@@ -218,6 +218,11 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             "setting (uvloop.Loop)"
         ) in log
 
+    def test_asyncio_enabled_reactor_loop_not_current(self) -> None:
+        log = self.run_script("asyncio_enabled_reactor_loop_not_current.py")
+        assert "Spider closed (finished)" in log
+        assert "ERROR: " not in log
+
     def test_default_loop_asyncio_deferred_signal(self) -> None:
         log = self.run_script("asyncio_deferred_signal.py")
         assert "Spider closed (finished)" in log
@@ -370,11 +375,6 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "RuntimeError: CrawlerProcess doesn't support TWISTED_REACTOR_ENABLED=False"
             in log
         )
-
-    def test_asyncio_enabled_reactor_loop_not_current(self) -> None:
-        log = self.run_script("asyncio_enabled_reactor_loop_not_current.py")
-        assert "Spider closed (finished)" in log
-        assert "ERROR: " not in log
 
 
 class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
@@ -671,6 +671,14 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "ERROR: " not in log
         assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
         assert log.count("WARNING: ") == 2
+
+    def test_reactorless_loop_not_running(self) -> None:
+        log = self.run_script("reactorless_loop_not_running.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Calling AsyncCrawlerRunner.crawl() without a running asyncio event"
+            " loop when TWISTED_REACTOR_ENABLED is False is deprecated"
+        ) in log
 
     def test_reactorless_custom_settings(self) -> None:
         """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
