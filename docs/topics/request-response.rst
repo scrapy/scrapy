@@ -1308,6 +1308,8 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.follow_redirect
+
     .. automethod:: Response.to_dict
 
     .. automethod:: Response.from_dict
