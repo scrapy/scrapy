@@ -347,7 +347,7 @@ class ExecutionEngine:
             if is_asyncio_available():
                 # not wrapping in a Deferred here to avoid https://github.com/twisted/twisted/issues/12470
                 # (can happen when this is cancelled, e.g. in test_close_during_start_iteration())
-                self._start_request_processing_awaitable = asyncio.ensure_future(coro)
+                self._start_request_processing_awaitable = asyncio.create_task(coro)
             else:
                 self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
         elif self.state is EngineState.STOPPING:
