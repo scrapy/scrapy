@@ -10,16 +10,20 @@ from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectionClosed
-from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
 from scrapy import signals
-from scrapy.exceptions import DownloadCancelledError, StopDownload
+from scrapy.exceptions import (
+    DownloadCancelledError,
+    ResponseDataLossError,
+    StopDownload,
+)
 from scrapy.http.headers import Headers
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_headers_warnsize_msg,
     get_maxsize_msg,
+    get_warnsize,
     get_warnsize_msg,
     make_response,
 )
@@ -127,8 +131,10 @@ class Stream:
         self._download_maxsize = self._request.meta.get(
             "download_maxsize", download_maxsize
         )
-        self._download_warnsize = self._request.meta.get(
-            "download_warnsize", download_warnsize
+        self._download_warnsize = get_warnsize(self._request.meta, download_warnsize)
+        self._fail_on_dataloss: bool = self._request.meta.get(
+            "download_fail_on_dataloss",
+            crawler.settings.getbool("DOWNLOAD_FAIL_ON_DATALOSS"),
         )
 
         # Metadata of an HTTP/2 connection stream
@@ -191,7 +197,7 @@ class Stream:
             self._response["headers"].get(b"Content-Length", -1)
         )
         return (
-            self._download_warnsize
+            bool(self._download_warnsize)
             and (
                 self._response["flow_controlled_size"] > self._download_warnsize
                 or content_length_header > self._download_warnsize
@@ -215,7 +221,7 @@ class Stream:
             == f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}"
         )
 
-    def _get_request_headers(self) -> list[tuple[str, str]]:
+    def _get_request_headers(self) -> list[tuple[bytes, bytes]]:
         url = urlparse_cached(self._request)
 
         path = url.path
@@ -231,38 +237,27 @@ class Stream:
         if not path:
             path = "*" if self._request.method == "OPTIONS" else "/"
 
-        # Make sure pseudo-headers comes before all the other headers
-        headers = [
-            (":method", self._request.method),
-            (":authority", url.netloc),
+        # Make sure pseudo-headers come before all the other headers. All
+        # names and values are bytes because h2 < 4.2.0 compares :authority
+        # and Host without converting them to the same type first.
+        headers: list[tuple[bytes, bytes]] = [
+            (b":method", self._request.method.encode()),
+            (b":authority", url.netloc.encode()),
         ]
 
         # The ":scheme" and ":path" pseudo-header fields MUST
         # be omitted for CONNECT method (refer RFC 7540 - Section 8.3)
         if self._request.method != "CONNECT":
             headers += [
-                (":scheme", self._protocol.metadata["uri"].scheme),
-                (":path", path),
+                (b":scheme", self._protocol.metadata["uri"].scheme),
+                (b":path", path.encode()),
             ]
 
-        content_length = str(len(self._request.body))
-        headers.append(("Content-Length", content_length))
+        if b"Content-Length" not in self._request.headers:
+            headers.append((b"Content-Length", str(len(self._request.body)).encode()))
 
-        content_length_name = self._request.headers.normkey(b"Content-Length")
         for name, values in self._request.headers.items():
-            for value_bytes in values:
-                value = str(value_bytes, "utf-8")
-                if name == content_length_name:
-                    if value != content_length:
-                        logger.warning(
-                            "Ignoring bad Content-Length header %r of request %r, "
-                            "sending %r instead",
-                            value,
-                            self._request,
-                            content_length,
-                        )
-                    continue
-                headers.append((str(name, "utf-8"), value))
+            headers.extend((name, value) for value in values)
 
         return headers
 
@@ -370,9 +365,9 @@ class Stream:
             self._response["flow_controlled_size"], self.stream_id
         )
 
-    def receive_headers(self, headers: list[tuple[str, str]]) -> None:
+    def receive_headers(self, headers: list[tuple[bytes, bytes]]) -> None:
         for name, value in headers:
-            if name == ":status":
+            if name == b":status":
                 # it's a pseudo-header
                 self._response["status"] = int(value)
             else:
@@ -380,10 +375,7 @@ class Stream:
 
         # DOWNLOAD_HEADERS_MAXSIZE is enforced by the HPACK decoder, which has
         # no equivalent hook for a warning, so the warning happens here instead,
-        # using the same accounting that RFC 9113 §6.5.2 defines. Headers are
-        # already decoded at this point, so character counts stand in for the
-        # octet counts of the specification, which only differ for non-ASCII
-        # values.
+        # using the same accounting that RFC 9113 §6.5.2 defines.
         headers_warnsize = self._protocol.headers_warnsize
         if headers_warnsize:
             headers_size = sum(len(name) + len(value) + 32 for name, value in headers)
@@ -498,16 +490,15 @@ class Stream:
             self._deferred_response.errback(
                 ResponseFailed(
                     [
-                        Failure(
-                            f"Remote peer {self._protocol.metadata['ip_address']} sent RST_STREAM",
-                            ProtocolError,
+                        ProtocolError(
+                            f"Remote peer {self._protocol.metadata['ip_address']} sent RST_STREAM"
                         )
                     ]
                 )
             )
 
         elif reason is StreamCloseReason.CONNECTION_LOST:
-            self._deferred_response.errback(ResponseFailed(errors))
+            self._handle_connection_lost(errors)
 
         elif reason is StreamCloseReason.INACTIVE:
             errors = (InactiveStreamClosed(self._request), *errors)
@@ -523,7 +514,17 @@ class Stream:
                 )
             )
 
-    def _fire_response_deferred(self) -> None:
+    def _handle_connection_lost(self, errors: Sequence[BaseException]) -> None:
+        # A response body is only complete once the stream ends, so having
+        # received the response headers means that the body was cut short.
+        if self._response["status"] is None:
+            self._deferred_response.errback(ResponseFailed(errors))
+        elif self._fail_on_dataloss:
+            self._deferred_response.errback(ResponseDataLossError(str(list(errors))))
+        else:
+            self._fire_response_deferred(flags=["dataloss"])
+
+    def _fire_response_deferred(self, flags: list[str] | None = None) -> None:
         """Builds response from the self._response dict
         and fires the response deferred callback with the
         generated response instance"""
@@ -534,6 +535,7 @@ class Stream:
                 status=self._response["status"],
                 headers=self._response["headers"],
                 body=self._response["body"].getvalue(),
+                flags=flags,
                 certificate=self._protocol.metadata["certificate"],
                 ip_address=self._protocol.metadata["ip_address"],
                 protocol="h2",

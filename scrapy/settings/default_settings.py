@@ -73,6 +73,7 @@ __all__ = [
     "DOWNLOAD_FAIL_ON_DATALOSS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
+    "DOWNLOAD_HANDLERS_BY_NAME",
     "DOWNLOAD_HEADERS_MAXSIZE",
     "DOWNLOAD_HEADERS_WARNSIZE",
     "DOWNLOAD_MAXSIZE",
@@ -85,6 +86,7 @@ __all__ = [
     "DUPEFILTER_CLASS",
     "DUPEFILTER_DEBUG",
     "EDITOR",
+    "EVENT_LOOP_LAG_THRESHOLD",
     "EXTENSIONS",
     "EXTENSIONS_BASE",
     "FEEDS",
@@ -95,6 +97,7 @@ __all__ = [
     "FEED_EXPORT_FIELDS",
     "FEED_EXPORT_INDENT",
     "FEED_FORMAT",
+    "FEED_MODE",
     "FEED_STORAGES",
     "FEED_STORAGES_BASE",
     "FEED_STORAGE_FTP_ACTIVE",
@@ -140,6 +143,7 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JOBDIR_SYNC_EVERY",
     "JSONVALIDATION_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
@@ -152,6 +156,7 @@ __all__ = [
     "LOG_FORMATTER",
     "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
+    "LOG_LEVELS",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
     "LOG_VERSIONS",
@@ -162,6 +167,9 @@ __all__ = [
     "MAIL_SSL",
     "MAIL_TLS",
     "MAIL_USER",
+    "MEDIA_CACHE_SIZE",
+    "MEDIA_STORAGES",
+    "MEDIA_STORAGES_BASE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -227,6 +235,7 @@ __all__ = [
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
+    "UPLOAD_TIMEOUT",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
     "WARN_ON_GENERATOR_RETURN_VALUE",
@@ -308,6 +317,7 @@ DOWNLOAD_HANDLERS_BASE = {
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
+DOWNLOAD_HANDLERS_BY_NAME: dict[str, str] = {}
 
 # Firefox, the most lenient of the reference web browsers, allows 384k.
 DOWNLOAD_HEADERS_MAXSIZE = 384 * 1024  # 384k
@@ -364,6 +374,8 @@ EDITOR = "vi"
 if sys.platform == "win32":
     EDITOR = "%s -m idlelib.idle"
 
+EVENT_LOOP_LAG_THRESHOLD = 10.0
+
 EXTENSIONS: dict[str, int] = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
@@ -377,6 +389,7 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": 0,
     "scrapy.extensions.remote_control.RemoteControl": 0,
+    "scrapy.extensions.event_loop_lag.EventLoopLagMonitor": 0,
 }
 
 FEEDS: dict[str | Path, dict[str, Any]] = {}
@@ -396,6 +409,7 @@ FEED_EXPORTERS_BASE = {
     "pickle": "scrapy.exporters.PickleItemExporter",
 }
 FEED_FORMAT = "jsonlines"
+FEED_MODE = None
 FEED_STORE_EMPTY = True
 FEED_STORAGES: dict[str, str] = {}
 FEED_STORAGES_BASE = {
@@ -463,6 +477,7 @@ ITEM_PIPELINES_BASE: dict[str, int] = {}
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
+JOBDIR_SYNC_EVERY = 0
 
 JSONVALIDATION_ENABLED = False
 
@@ -476,6 +491,7 @@ LOG_FILE_APPEND = True
 LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
+LOG_LEVELS: dict[str, str] = {}
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
 LOG_VERSIONS = [
@@ -500,6 +516,17 @@ MAIL_USER = None
 MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
+
+MEDIA_CACHE_SIZE = -1
+
+MEDIA_STORAGES: dict[str, str] = {}
+MEDIA_STORAGES_BASE = {
+    "": "scrapy.pipelines.files.FSFilesStore",
+    "file": "scrapy.pipelines.files.FSFilesStore",
+    "ftp": "scrapy.pipelines.files.FTPFilesStore",
+    "gs": "scrapy.pipelines.files.GCSFilesStore",
+    "s3": "scrapy.pipelines.files.S3FilesStore",
+}
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 
@@ -624,6 +651,8 @@ TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+UPLOAD_TIMEOUT = None
 
 URLLENGTH_LIMIT = 2083
 

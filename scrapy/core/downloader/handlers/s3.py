@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
@@ -10,8 +10,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from scrapy import Request
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -68,10 +66,15 @@ class S3DownloadHandler(BaseDownloadHandler):
         else:
             import botocore.awsrequest  # noqa: PLC0415
 
+            # AWSRequest takes a mapping, so values of the same header are
+            # joined with commas.
+            headers: dict[str, list[str]] = {}
+            for name, value in request.headers.to_tuple_list():
+                headers.setdefault(name, []).append(value)
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
                 url=f"{scheme}://s3.amazonaws.com/{bucket}{path}",
-                headers=cast("Mapping[str, Any]", request.headers.to_unicode_dict()),
+                headers={name: ",".join(values) for name, values in headers.items()},
                 data=request.body,
             )
             assert self._signer

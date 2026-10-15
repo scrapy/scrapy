@@ -1,5 +1,3 @@
-"""Tests for scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler."""
-
 from __future__ import annotations
 
 import sys
@@ -8,13 +6,16 @@ from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import Mock
 
 import pytest
+from twisted.internet.error import ConnectingCancelledError
 from twisted.internet.protocol import Factory, Protocol
-from twisted.internet.testing import StringTransport
+from twisted.internet.testing import MemoryReactorClock, StringTransport
+from twisted.python.failure import Failure
 from twisted.web._newclient import Request as TxClientRequest
 from twisted.web._newclient import RequestNotSent
 from twisted.web.http_headers import Headers as TxHeaders
 
 from scrapy import Request, Spider
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
     TunnelError,
@@ -52,7 +53,7 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from twisted.python.failure import Failure
+    from twisted.internet.base import ReactorBase
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
@@ -74,11 +75,42 @@ class HTTP11DownloadHandlerMixin:
             }
         }
 
+    handler_supports_custom_content_length = False
+
 
 def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         build_from_crawler(HTTP11DownloadHandler, crawler)
+
+
+def test_tunneling_cancelled_before_connected() -> None:
+    """Cancelling a tunneled download before the connection to the proxy is
+    established stops the connection attempt.
+
+    A download cannot reach this scenario, because the connection timeout of
+    the endpoint, which uses the same value as the download timeout, always
+    fires earlier than the cancellation. See also
+    ``test_download_with_proxy_stalled_connect``, which covers cancelling once
+    the connection to the proxy is established.
+    """
+    reactor = MemoryReactorClock()
+    endpoint = _TunnelingTCP4ClientEndpoint(
+        reactor=cast("ReactorBase", reactor),
+        host=b"example.com",
+        port=443,
+        proxyConf=("127.0.0.1", 8080, None),
+        contextFactory=_load_context_factory_from_settings(get_crawler()),
+        timeout=30,
+    )
+    results: list[Protocol | Failure] = []
+    endpoint.connect(Factory()).addBoth(results.append)
+
+    endpoint._tunnelReadyDeferred.cancel()
+
+    assert reactor.connectors[0].stoppedConnecting
+    assert isinstance(results[0], Failure)
+    assert isinstance(results[0].value, ConnectingCancelledError)
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):
@@ -156,7 +188,7 @@ class TestTunnelingHeadersMaxsize:
 
         endpoint = _TunnelingTCP4ClientEndpoint(
             reactor=cast("Any", reactor),
-            host="example.com",
+            host=b"example.com",
             port=443,
             proxyConf=("proxy.example.com", 8080, None),
             contextFactory=cast("Any", None),

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Address
 from pathlib import Path
 
@@ -52,8 +52,8 @@ def generate_keys():
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(random_serial_number())
-        .not_valid_before(datetime.now(tz=timezone.utc))
-        .not_valid_after(datetime.now(tz=timezone.utc) + timedelta(days=10))
+        .not_valid_before(datetime.now(tz=UTC))
+        .not_valid_after(datetime.now(tz=UTC) + timedelta(days=10))
         .add_extension(
             SubjectAlternativeName(
                 [DNSName("localhost"), IPAddress(IPv4Address("127.0.0.1"))]
