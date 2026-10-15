@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Self
 from unittest import mock
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, fail, inlineCallbacks
 from twisted.internet.interfaces import IReadDescriptor
 from twisted.internet.task import Cooperator
 from zope.interface import implementer
@@ -147,7 +147,7 @@ class _ReadTracker:
 
     def __enter__(self) -> Self:
         if is_asyncio_available():
-            asyncio.get_event_loop().add_reader(self._rx, self._read)
+            asyncio.get_running_loop().add_reader(self._rx, self._read)
         else:
             from twisted.internet import reactor
 
@@ -157,7 +157,7 @@ class _ReadTracker:
 
     def __exit__(self, *exc_info: object) -> None:
         if is_asyncio_available():
-            asyncio.get_event_loop().remove_reader(self._rx)
+            asyncio.get_running_loop().remove_reader(self._rx)
         else:
             from twisted.internet import reactor
 
@@ -308,6 +308,24 @@ class TestParallelAsync:
         assert sorted(results) == [0, 1, 2]
         # One task per item, plus the one that finds no more work.
         assert coiterate.call_count <= 4
+
+    @pytest.mark.parametrize("count", [1, 2])
+    @inline_callbacks_test
+    def test_callable_error(
+        self, count: int, caplog: pytest.LogCaptureFixture
+    ) -> Generator[Deferred[Any], Any, None]:
+        results: list[int] = []
+
+        def callable_(o: int) -> Deferred[None] | None:
+            if o == 1:
+                return fail(ValueError("Bad item"))
+            results.append(o)
+            return None
+
+        yield parallel_async(self.get_async_iterable(4), count, callable_)
+        assert sorted(results) == [0, 2, 3]
+        assert "Error processing an item" in caplog.text
+        assert "Bad item" in caplog.text
 
 
 class TestDeferredFromCoro:

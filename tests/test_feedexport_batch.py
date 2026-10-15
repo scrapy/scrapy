@@ -10,8 +10,9 @@ import pytest
 from packaging.version import Version
 
 import scrapy
+from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.extensions.feedexport import FeedExporter, S3FeedStorage
+from scrapy.extensions.feedexport import FeedExporter, FeedSlot, S3FeedStorage
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
@@ -318,6 +319,83 @@ class TestBatchDeliveries:
         }
         data = await export_batches(mockserver, items, settings)
         assert len(items) == len(data["json"])
+
+    @coroutine_test
+    async def test_jobdir_resume(self, mockserver: MockServer, tmp_path: Path) -> None:
+        """Resuming a crawl with the same JOBDIR continues the batch numbering
+        instead of overwriting the batches of the previous run (#5153)."""
+        settings = {
+            "FEEDS": {
+                unique_path(tmp_path) / "%(batch_id)d.jsonl": {"format": "jsonlines"}
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+            "JOBDIR": str(tmp_path / "job"),
+        }
+        run1 = await export_batches(
+            mockserver, [{"foo": "bar1"}, {"foo": "bar2"}], settings
+        )
+        run2 = await export_batches(
+            mockserver, [{"foo": "bar3"}, {"foo": "bar4"}], settings
+        )
+        assert run2["jsonlines"] == [
+            *run1["jsonlines"],
+            b'{"foo": "bar3"}\n',
+            b'{"foo": "bar4"}\n',
+        ]
+
+    @coroutine_test
+    async def test_jobdir_resume_new_feed(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        """A feed added when resuming a crawl starts at batch 1."""
+        dir_a = unique_path(tmp_path)
+        dir_b = unique_path(tmp_path)
+        settings: dict[str, Any] = {
+            "FEEDS": {build_url(dir_a / "%(batch_id)d.jsonl"): {"format": "jsonlines"}},
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+            "JOBDIR": str(tmp_path / "job"),
+        }
+        items = [{"foo": "bar1"}, {"foo": "bar2"}]
+        await crawl_items(mockserver, items, settings)
+        settings["FEEDS"][build_url(dir_b / "%(batch_id)d.jsonl")] = {
+            "format": "jsonlines"
+        }
+        await crawl_items(mockserver, items, settings)
+        assert sorted(p.name for p in dir_a.iterdir()) == [
+            "1.jsonl",
+            "2.jsonl",
+            "3.jsonl",
+            "4.jsonl",
+        ]
+        assert sorted(p.name for p in dir_b.iterdir()) == ["1.jsonl", "2.jsonl"]
+
+    @pytest.mark.parametrize(
+        ("jobdir", "batch_id"), [(False, 1), (True, 3)], ids=["no-jobdir", "resume"]
+    )
+    @coroutine_test
+    async def test_feed_slots_initialized(
+        self, mockserver: MockServer, tmp_path: Path, jobdir: bool, batch_id: int
+    ) -> None:
+        settings: dict[str, Any] = {
+            "FEEDS": {
+                build_url(unique_path(tmp_path) / "%(batch_id)d.jsonl"): {
+                    "format": "jsonlines"
+                }
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+        }
+        if jobdir:
+            settings["JOBDIR"] = str(tmp_path / "job")
+            await crawl_items(mockserver, [{"foo": "bar1"}, {"foo": "bar2"}], settings)
+        batch_ids: list[int] = []
+
+        def on_initialized(slots: list[FeedSlot]) -> None:
+            batch_ids.extend(slot.batch_id for slot in slots)
+
+        crawler = get_crawler(settings_dict=settings)
+        crawler.signals.connect(on_initialized, signals.feed_slots_initialized)
+        await crawler.crawl_async()
+        assert batch_ids == [batch_id]
 
     @coroutine_test
     async def test_stats_batch_file_success(
