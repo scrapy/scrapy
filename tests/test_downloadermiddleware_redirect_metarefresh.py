@@ -23,7 +23,7 @@ from tests.utils.redirect import (
 
 def meta_refresh_body(url: str, interval: int = 5) -> bytes:
     html = f"""<html><head><meta http-equiv="refresh" content="{interval};url={url}"/></head></html>"""
-    return html.encode("utf-8")
+    return html.encode()
 
 
 class TestMetaRefreshMiddleware(TestRedirectBase):

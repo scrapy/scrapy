@@ -155,18 +155,9 @@ def main() -> None:
     )
     pre_commit.write_text(config, encoding="utf-8")
 
-    rev = re.search(r"/sphinx-scrapy\n\s+rev: (\S+)", config)
-    assert rev
-    for path in (Path("tox.ini"), Path("docs/requirements.in")):
-        text = re.sub(
-            r"(sphinx-scrapy(?:\[tox\])?==)\S+",
-            rf"\g<1>{rev[1]}",
-            path.read_text(encoding="utf-8"),
-        )
-        path.write_text(text, encoding="utf-8")
-
-    # sphinx-scrapy sets the Python version of .readthedocs.yml to the latest
-    # one that Read the Docs supports.
+    # sphinx-scrapy syncs its pins in tox.ini and docs/requirements.in with its
+    # pre-commit rev, and sets the Python version of .readthedocs.yml to the
+    # latest one that Read the Docs supports.
     subprocess.run(
         ["pre-commit", "run", "sphinx-scrapy", "--all-files"],  # noqa: S607
         check=False,
