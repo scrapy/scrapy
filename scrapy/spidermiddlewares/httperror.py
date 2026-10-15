@@ -7,16 +7,13 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -30,7 +27,7 @@ logger = logging.getLogger(__name__)
 class HttpError(IgnoreRequest):
     """A non-2xx response was filtered"""
 
-    def __init__(self, response: Response, *args: Any, **kwargs: Any):
+    def __init__(self, response: Response, *args: object, **kwargs: object):
         self.response = response
         super().__init__(*args, **kwargs)
 

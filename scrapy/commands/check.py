@@ -1,10 +1,14 @@
 import argparse
+import asyncio
 import time
 from collections import defaultdict
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Iterable
 from typing import Any, ClassVar
+from unittest import TestCase, TextTestRunner
 from unittest import TextTestResult as _TextTestResult
-from unittest import TextTestRunner
+
+from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
@@ -44,6 +48,42 @@ class TextTestResult(_TextTestResult):
             write("\n")
 
 
+def _report_crawl_errors(
+    crawl: Awaitable[None], spidername: str, result: TextTestResult
+) -> None:
+    """Make an exception that stops *crawl* before its contracts can run show
+    up as an error in *result*, instead of being silently discarded."""
+
+    class CrawlTestCase(TestCase):
+        # unittest requires a test method, but this one is only reported, never run.
+        runTest = staticmethod(lambda: None)
+
+        def __str__(self) -> str:
+            return f"[{spidername}] crawl"
+
+    def report(exception: BaseException) -> None:
+        result.addError(
+            CrawlTestCase(),
+            (type(exception), exception, exception.__traceback__),  # type: ignore[arg-type]
+        )
+
+    if isinstance(crawl, Deferred):
+
+        def on_failure(failure: Failure) -> None:
+            assert failure.value is not None
+            report(failure.value)
+
+        crawl.addErrback(on_failure)
+    else:
+        assert isinstance(crawl, asyncio.Task)
+
+        def on_done(task: asyncio.Task[None]) -> None:
+            if not task.cancelled() and (exception := task.exception()) is not None:
+                report(exception)
+
+        crawl.add_done_callback(on_done)
+
+
 class Command(ScrapyCommand):
     requires_project = True
     default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
@@ -53,6 +93,9 @@ class Command(ScrapyCommand):
 
     def short_desc(self) -> str:
         return "Check spider contracts"
+
+    def complete_argument(self, args: list[str]) -> Iterable[str]:
+        return () if args else self._spider_names()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)
@@ -128,7 +171,8 @@ class Command(ScrapyCommand):
                     for method in tested_methods:
                         contract_reqs[spidername].append(method)
                 elif tested_methods:
-                    self.crawler_process.crawl(spidercls, **opts.spargs)
+                    crawl = self.crawler_process.crawl(spidercls, **opts.spargs)
+                    _report_crawl_errors(crawl, spidername, result)
 
             # start checks
             if opts.list:

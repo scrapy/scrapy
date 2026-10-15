@@ -92,7 +92,7 @@ class _StreamReader:
     def _read_unicode(self, n: int = 65535) -> bytes:
         s, e = self._ptr, self._ptr + n
         self._ptr = e
-        return cast("str", self._text)[s:e].encode("utf-8")
+        return cast("str", self._text)[s:e].encode()
 
 
 def csviter(
@@ -179,7 +179,7 @@ def _body_or_str(obj: Response | str | bytes, unicode: bool = True) -> str | byt
             return obj.body
         if isinstance(obj, TextResponse):
             return obj.text
-        return obj.body.decode("utf-8")
+        return obj.body.decode()
     if isinstance(obj, str):
-        return obj if unicode else obj.encode("utf-8")
-    return obj.decode("utf-8") if unicode else obj
+        return obj if unicode else obj.encode()
+    return obj.decode() if unicode else obj
