@@ -22,6 +22,7 @@ from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils._ossignals import install_shutdown_handlers, signal_names
 from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
+from scrapy.utils.asyncio import _get_running_or_installed_loop, _has_running_loop
 from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro, ensure_awaitable
 from scrapy.utils.log import (
     _configure_logger_levels,
@@ -665,8 +666,8 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
     When the :setting:`TWISTED_REACTOR_ENABLED` setting is set to ``True``,
     this class requires a reactor to be installed and uses it, otherwise it
-    requires a reactor to not be installed but requires an asyncio event loop
-    to be installed and uses it.
+    requires a reactor to not be installed but requires a running asyncio
+    event loop and uses it.
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -746,10 +747,21 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         self.crawlers.discard(crawler)
         self.bootstrap_failed |= not getattr(crawler, "spider", None)
 
+    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
+        if self.settings.getbool("TWISTED_REACTOR_ENABLED") or _has_running_loop():
+            return _get_running_or_installed_loop()
+        warnings.warn(
+            f"Calling {type(self).__name__}.crawl() without a running asyncio"
+            f" event loop when TWISTED_REACTOR_ENABLED is False is deprecated."
+            f" Call it from a coroutine that runs in the event loop instead,"
+            f" e.g. one passed to asyncio.run().",
+            ScrapyDeprecationWarning,
+            stacklevel=4,
+        )
+        return asyncio.get_event_loop()
+
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
-        # At this point the asyncio loop has been installed either by the user
-        # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
-        loop = asyncio.get_event_loop()
+        loop = self._get_event_loop()
         self.crawlers.add(crawler)
 
         task = loop.create_task(self._crawl_and_track(crawler, *args, **kwargs))
@@ -1103,6 +1115,13 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         self._initialized_reactor = True
         self._reactorless_main_task: asyncio.Future[None] | None = None
 
+    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
+        # crawl() can be called before start() runs the loop installed by
+        # __init__().
+        if self._reactorless_loop is not None:
+            return self._reactorless_loop
+        return super()._get_event_loop()
+
     def _force_stop(self) -> None:
         if self.settings.getbool("TWISTED_REACTOR_ENABLED"):
             self._stop_reactor()
@@ -1317,7 +1336,8 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         from twisted.internet import reactor
 
         if stop_after_crawl:
-            loop = asyncio.get_event_loop()
+            # The loop of the installed asyncio reactor, which isn't running yet.
+            loop = _get_running_or_installed_loop()
             join_task = loop.create_task(self.join())
             join_task.add_done_callback(self._stop_reactor)
 
