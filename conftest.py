@@ -210,7 +210,6 @@ def pytest_runtest_setup(item):
         "botocore",
         "boto3",
         "keyring",
-        "dotenv",
         "psutil",
     ]
 

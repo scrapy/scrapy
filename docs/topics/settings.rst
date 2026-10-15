@@ -244,82 +244,55 @@ one of the methods provided by the :class:`~scrapy.settings.Settings` API.
 Secret settings
 ===============
 
-Some settings hold sensitive values such as API keys, passwords, or tokens.
-Scrapy reads those settings with
-:meth:`~scrapy.settings.BaseSettings.getsecret`, which supports a JSON
-reference syntax that lets you store the actual secret outside your settings
-file.
-
-Plain string values are returned as-is:
+Settings that hold credentials, such as :setting:`AWS_SECRET_ACCESS_KEY`, can
+reference a secret stored elsewhere instead:
 
 .. code-block:: python
 
-    AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+    AWS_ACCESS_KEY_ID = {"env": "AWS_ACCESS_KEY_ID"}
+    AWS_SECRET_ACCESS_KEY = {"keyring": "aws"}
+    FTP_PASSWORD = {
+        "keyring": {
+            "username": "ftp",
+            "service": "myproject",
+            "backend": "keyring.backends.SecretService.Keyring",
+        }
+    }
 
-To read the secret from an environment variable instead, set the value to a
-JSON object with an ``"env"`` key:
+``{"env": "VAR"}`` reads the ``VAR`` environment variable.
 
-.. code-block:: python
-
-    AWS_ACCESS_KEY_ID = '{"env": "AWS_ACCESS_KEY_ID"}'
-
-If the environment variable is not set, ``getsecret()`` logs a warning and the
-default setting value is used instead.
-
-To read the secret from the system keyring (requires keyring_ >= 21.7.0),
-use a ``"keyring"`` key.  The value can be a username string — in which case
-the service name defaults to ``"scrapy"`` — or an object for full control:
+``{"keyring": …}`` reads from a keyring_ (21.7.0 or later) entry, given either
+its username or an object with its ``username``, ``service`` (default:
+``"scrapy"``) and the import path of the keyring ``backend`` to use instead of
+the default one.
 
 .. _keyring: https://pypi.org/project/keyring/
 
-.. code-block:: python
+A missing environment variable or keyring entry raises :exc:`KeyError`.
 
-    # short form — service name defaults to "scrapy"
-    AWS_ACCESS_KEY_ID = '{"keyring": "my-aws-account"}'
+From the command line, write references as JSON:
 
-    # long form
-    AWS_ACCESS_KEY_ID = '{"keyring": {"username": "my-aws-account", "service": "myapp", "backend": "onepassword_keyring.OnePasswordKeyring"}}'
+.. code-block:: shell
 
-If the keyring entry does not exist, components that use the secret setting may
-treat the issue as a user error and e.g. disable themselves or even stop the
-spider.
+    scrapy crawl myspider -s 'AWS_ACCESS_KEY_ID={"env": "AWS_ACCESS_KEY_ID"}'
 
-If a secret value is itself a JSON object (e.g. a GCP service-account blob),
-use the ``"raw"`` key to prevent the object from being misinterpreted as a
-source reference:
+To set a secret that is itself a JSON object with an ``env``, ``keyring`` or
+``raw`` key, wrap it in a ``raw`` key: ``'{"raw": {"env": "production", …}}'``.
 
-.. code-block:: python
+To load environment variables from a :file:`.env` file, run Scrapy through
+`dotenv run`_ or through a secrets manager command like 1Password’s `op run`_,
+which also resolves secret references in the file:
 
-    GCP_CREDENTIALS = (
-        '{"raw": {"type": "service_account", "project_id": "my-project", ...}}'
-    )
+.. code-block:: shell
 
-The inner value is returned as-is if it is a string, or JSON-serialised
-otherwise.
+    dotenv run -- scrapy crawl myspider
+    op run --env-file=.env -- scrapy crawl myspider
 
-You can also combine the ``"env"`` syntax with a JSON secret: store the
-JSON-encoded blob in the environment variable and reference it with
-``{"env": "MY_VAR"}``.
+.. _dotenv run: https://pypi.org/project/python-dotenv/
+.. _op run: https://developer.1password.com/docs/cli/reference/commands/run/
 
-.. rubric:: Loading secrets from a :file:`.env` file
-
-Use :setting:`DOTENV_PATH` to automatically load a :file:`.env` file at the
-start of each crawl. This pairs naturally with the ``"env"`` reference syntax:
-
-.. code-block:: ini
-
-    # .env  (keep out of version control)
-    AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-    AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-
-.. code-block:: python
-
-    # settings.py
-    AWS_ACCESS_KEY_ID = '{"env": "AWS_ACCESS_KEY_ID"}'
-    AWS_SECRET_ACCESS_KEY = '{"env": "AWS_SECRET_ACCESS_KEY"}'
-
-Real environment variables always take precedence over :file:`.env` values
-(see :setting:`DOTENV_OVERRIDE`).
+Components read secret settings with
+:meth:`~scrapy.settings.BaseSettings.getsecret`.
 
 .. _component-priority-dictionaries:
 
@@ -880,46 +853,6 @@ out before being sent, in which case increasing
     either when :setting:`TWISTED_DNS_RESOLVER` is set to a different resolver.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
-
-.. setting:: DOTENV_OVERRIDE
-
-DOTENV_OVERRIDE
----------------
-
-Default: ``False``
-
-If ``True``, variables loaded from the :setting:`DOTENV_PATH` file override
-existing environment variables. The default ``False`` ensures that real
-environment variables always take precedence over the file.
-
-.. setting:: DOTENV_PATH
-
-DOTENV_PATH
------------
-
-Default: ``".env"``
-
-Path to a :file:`.env` file that is loaded into the environment at the start of
-each crawl (via :class:`~scrapy.crawler.Crawler`). Relative paths are resolved
-from the current working directory. If the file does not exist the setting is
-silently ignored.
-
-Loading a :file:`.env` file requires python-dotenv_ >= 0.10.2::
-
-    pip install python-dotenv
-
-.. _python-dotenv: https://pypi.org/project/python-dotenv/
-
-Use this in combination with :meth:`~scrapy.settings.BaseSettings.getsecret`
-to keep secrets out of your settings files::
-
-    # settings.py
-    ZYTE_API_KEY = '{"env": "ZYTE_API_KEY"}'
-
-    # .env  (not committed to version control)
-    ZYTE_API_KEY=your-actual-key
-
-See also :setting:`DOTENV_OVERRIDE`.
 
 .. setting:: DOWNLOADER
 
