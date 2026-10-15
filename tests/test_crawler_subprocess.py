@@ -371,6 +371,11 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
+    def test_asyncio_enabled_reactor_loop_not_current(self) -> None:
+        log = self.run_script("asyncio_enabled_reactor_loop_not_current.py")
+        assert "Spider closed (finished)" in log
+        assert "ERROR: " not in log
+
 
 class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     @property
