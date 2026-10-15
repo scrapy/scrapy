@@ -125,7 +125,7 @@ engine status::
     len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.queue)                  : 0
     len(engine.scraper.slot.active)                 : 0
-    engine.downloader.middleware._total_active_size : 1310720
+    engine.response_active_size                     : 1310720
     engine.scraper.slot.itemproc_size               : 0
 
 

@@ -24,7 +24,7 @@ def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, object]]:
         "len(engine.scheduler.mqs)",
         "len(engine.scraper.slot.queue)",
         "len(engine.scraper.slot.active)",
-        "engine.downloader.middleware._total_active_size",
+        "engine.response_active_size",
         "engine.scraper.slot.itemproc_size",
     ]
 

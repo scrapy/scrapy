@@ -41,7 +41,7 @@ what every part of the engine is doing at a given moment:
     len(engine.downloader.active)                   : 16
     len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.active)                 : 0
-    engine.downloader.middleware._total_active_size : 1310720
+    engine.response_active_size                     : 1310720
 
 A coding agent using the :ref:`Scrapy MCP server <using-mcp-server>` can also
 retrieve these values directly.
@@ -63,12 +63,13 @@ Take a few readings at different points of the crawl:
     page at a time cannot use more concurrency than it creates. See
     :ref:`optimize-requests`.
 
--   ``engine.downloader.middleware._total_active_size`` approaches
+-   :attr:`engine.response_active_size
+    <scrapy.core.engine.ExecutionEngine.response_active_size>` approaches
     :setting:`RESPONSE_MAX_ACTIVE_SIZE`, or the
     ``request_backout_seconds/response_max_active_size`` stat grows (see
     :ref:`crawl-bottlenecks`): responses arrive faster than your callbacks and
-    :ref:`item pipelines <topics-item-pipeline>` handle them, or your code keeps
-    responses in memory. The bottleneck is your own code.
+    :ref:`item pipelines <topics-item-pipeline>` handle them, or your code
+    keeps responses in memory. The bottleneck is your own code.
 
 -   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
     requests faster than it downloads them. This is what makes long crawls run

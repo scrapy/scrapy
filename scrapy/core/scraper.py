@@ -78,7 +78,8 @@ async def _aset_parent_id(
 class _Slot:
     """Scraper slot (one per running spider)"""
 
-    def __init__(self) -> None:
+    def __init__(self, crawler: Crawler) -> None:
+        self._crawler = crawler
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
         self.itemproc_size: int = 0
@@ -102,6 +103,38 @@ class _Slot:
 
     def is_idle(self) -> bool:
         return not (self.queue or self.active or self.itemproc_size)
+
+    @property
+    def active_size(self) -> int:
+        warnings.warn(
+            "Scraper.slot.active_size is deprecated, use "
+            "ExecutionEngine.response_active_size instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        assert self._crawler.engine is not None
+        return self._crawler.engine.response_active_size
+
+    @property
+    def max_active_size(self) -> int:
+        warnings.warn(
+            "Scraper.slot.max_active_size is deprecated, use the "
+            "RESPONSE_MAX_ACTIVE_SIZE setting instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        assert self._crawler.engine is not None
+        return self._crawler.engine.downloader.middleware._max_active_size
+
+    def needs_backout(self) -> bool:
+        warnings.warn(
+            "Scraper.slot.needs_backout() is deprecated, use "
+            "ExecutionEngine.needs_backout() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        assert self._crawler.engine is not None
+        return self._crawler.engine.downloader._exceeds_max_active_size()
 
 
 class Scraper:
@@ -169,7 +202,7 @@ class Scraper:
 
         .. versionadded:: 2.14
         """
-        self.slot = _Slot()
+        self.slot = _Slot(self.crawler)
         if not self.crawler.spider:
             raise RuntimeError(
                 "Scraper.open_spider() called before Crawler.spider is set."
