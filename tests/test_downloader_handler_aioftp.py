@@ -232,10 +232,11 @@ async def test_connection_lost() -> None:
 
 
 def _fake_ftp(
-    retr_reply: bytes, data: bytes = b""
+    retr_reply: bytes | None, data: bytes = b""
 ) -> Callable[[asyncio.StreamReader, asyncio.StreamWriter], Any]:
     """Return a minimal FTP server connection handler that sends *data*, if
-    any, and then answers RETR with *retr_reply*."""
+    any, and then answers RETR with *retr_reply*, or hangs if *retr_reply* is
+    ``None``."""
 
     async def handle(
         reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -267,8 +268,12 @@ def _fake_ftp(
                 if data:
                     writer.write(b"150 Sending\r\n")
                     w.write(data)
+                if retr_reply is None:
+                    await reader.read()
                 w.close()
                 data_server.close()
+                if retr_reply is None:
+                    break
                 writer.write(retr_reply)
             await writer.drain()
         writer.close()
@@ -286,6 +291,7 @@ async def _serve(
         yield f"ftp://127.0.0.1:{port}/file.txt"
     finally:
         server.close()
+        await server.wait_closed()
 
 
 @coroutine_test
@@ -310,6 +316,19 @@ async def test_dataloss_allowed() -> None:
     async with _serve(_TRUNCATED) as url:
         response = await _download(
             Request(url, meta={"download_fail_on_dataloss": False})
+        )
+    assert response.body == b"partial"
+    assert response.flags == ["dataloss"]
+
+
+@coroutine_test
+async def test_timeout_partial_response() -> None:
+    async with _serve(_fake_ftp(None, data=b"partial")) as url:
+        response = await _download(
+            Request(
+                url,
+                meta={"download_timeout": 0.5, "download_fail_on_dataloss": False},
+            )
         )
     assert response.body == b"partial"
     assert response.flags == ["dataloss"]

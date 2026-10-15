@@ -78,6 +78,9 @@ class TestHttpBase(ABC):
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
     handler_supports_body_file: bool = True
+    # whether the handler can return the body received so far, instead of
+    # erroring out, when a request times out mid-response
+    handler_supports_partial_response_on_timeout: bool = False
     # whether the handler sends a request Content-Length header as is, instead
     # of building its own (https://github.com/scrapy/scrapy/issues/4919)
     handler_supports_custom_content_length: bool = True
@@ -442,6 +445,25 @@ class TestHttpBase(ABC):
             d = deferred_from_coro(download_handler.download_request(request))
             with pytest.raises(DownloadTimeoutError):
                 await maybe_deferred_to_future(d)
+
+    @coroutine_test
+    async def test_timeout_download_from_spider_server_hangs_partial_response(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.handler_supports_partial_response_on_timeout:
+            pytest.skip("This handler doesn't support partial responses on timeout")
+        # client connects, server sends headers and some body bytes but hangs;
+        # with dataloss failures disabled the body received so far is
+        # returned instead of raising a timeout error
+        meta = {"download_timeout": 0.5, "download_fail_on_dataloss": False}
+        request = Request(
+            mockserver.url("/hang-after-headers", is_secure=self.is_secure), meta=meta
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.body == b"some bytes"
+        assert response.flags == ["dataloss"]
 
     @pytest.mark.parametrize("send_header", [True, False])
     @coroutine_test
