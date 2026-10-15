@@ -343,3 +343,10 @@ class TestAsyncioLoopingCall:
             await _wait_for(lambda: len(calls) >= 3)
             looping_call.stop()
         assert calls == [1, 4, 5]
+
+
+@pytest.mark.only_not_asyncio
+def test_looping_call_no_asyncio() -> None:
+    looping_call = AsyncioLoopingCall(lambda: None)
+    with pytest.raises(RuntimeError, match="no running asyncio event loop"):
+        looping_call.start(1, now=False)

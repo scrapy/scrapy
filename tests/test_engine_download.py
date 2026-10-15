@@ -21,6 +21,7 @@ def engine() -> ExecutionEngine:
     engine.downloader.close()
     engine.downloader = Mock()
     engine._slot = Mock()
+    engine._slot.closing = None
     engine._slot.inprogress = set()
     return engine
 

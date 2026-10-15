@@ -84,6 +84,7 @@ __all__ = [
     "DUPEFILTER_CLASS",
     "DUPEFILTER_DEBUG",
     "EDITOR",
+    "EVENT_LOOP_LAG_THRESHOLD",
     "EXTENSIONS",
     "EXTENSIONS_BASE",
     "FEEDS",
@@ -127,6 +128,7 @@ __all__ = [
     "HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS",
     "HTTPCACHE_IGNORE_SCHEMES",
     "HTTPCACHE_POLICY",
+    "HTTPCACHE_SCOPE",
     "HTTPCACHE_STORAGE",
     "HTTPERROR_ALLOWED_CODES",
     "HTTPERROR_ALLOW_ALL",
@@ -165,6 +167,8 @@ __all__ = [
     "MAIL_TLS",
     "MAIL_USER",
     "MEDIA_CACHE_SIZE",
+    "MEDIA_STORAGES",
+    "MEDIA_STORAGES_BASE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -364,6 +368,8 @@ EDITOR = "vi"
 if sys.platform == "win32":
     EDITOR = "%s -m idlelib.idle"
 
+EVENT_LOOP_LAG_THRESHOLD = 10.0
+
 EXTENSIONS: dict[str, int] = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
@@ -377,6 +383,7 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": 0,
     "scrapy.extensions.remote_control.RemoteControl": 0,
+    "scrapy.extensions.event_loop_lag.EventLoopLagMonitor": 0,
 }
 
 FEEDS: dict[str | Path, dict[str, Any]] = {}
@@ -444,6 +451,7 @@ HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS: list[str] = []
 HTTPCACHE_IGNORE_SCHEMES = ["file"]
 HTTPCACHE_POLICY = "scrapy.extensions.httpcache.DummyPolicy"
+HTTPCACHE_SCOPE = "spider"
 HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 HTTPERROR_ALLOW_ALL = False
@@ -505,6 +513,15 @@ MAIL_SSL = False
 MAIL_TLS = False
 
 MEDIA_CACHE_SIZE = -1
+
+MEDIA_STORAGES: dict[str, str] = {}
+MEDIA_STORAGES_BASE = {
+    "": "scrapy.pipelines.files.FSFilesStore",
+    "file": "scrapy.pipelines.files.FSFilesStore",
+    "ftp": "scrapy.pipelines.files.FTPFilesStore",
+    "gs": "scrapy.pipelines.files.GCSFilesStore",
+    "s3": "scrapy.pipelines.files.S3FilesStore",
+}
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 

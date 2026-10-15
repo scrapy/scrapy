@@ -322,8 +322,8 @@ class Scraper:
     ) -> None:
         try:
             await self._scrape(result, request)
-        except Exception:
-            queue_dfd.errback(Failure())
+        except Exception as exc:
+            queue_dfd.errback(exc)
         else:
             queue_dfd.callback(None)  # awaited in enqueue_scrape()
 
