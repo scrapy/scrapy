@@ -6,8 +6,7 @@ from urllib.parse import unquote, urlunparse
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
-    from scrapy import Request, Spider
-    from scrapy.http import Response
+    from scrapy import Request
 
 
 class UriUserInfoMiddleware:
@@ -26,9 +25,7 @@ class UriUserInfoMiddleware:
     .. _URI userinfo: https://tools.ietf.org/html/rfc2396.html#section-3.2.2
     """
 
-    def process_request(
-        self, request: Request, spider: Spider | None = None
-    ) -> Request | Response | None:
+    def process_request(self, request: Request) -> Request | None:
         parsed_url = urlparse_cached(request)
         if parsed_url.username is None and parsed_url.password is None:
             return None

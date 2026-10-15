@@ -65,6 +65,7 @@ __all__ = [
     "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
     "DOWNLOADER_MIDDLEWARES",
     "DOWNLOADER_MIDDLEWARES_BASE",
+    "DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS",
     "DOWNLOADER_STATS",
     "DOWNLOAD_BIND_ADDRESS",
     "DOWNLOAD_DELAY",
@@ -72,6 +73,7 @@ __all__ = [
     "DOWNLOAD_FAIL_ON_DATALOSS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
+    "DOWNLOAD_HANDLERS_BY_NAME",
     "DOWNLOAD_MAXSIZE",
     "DOWNLOAD_SLOTS",
     "DOWNLOAD_TIMEOUT",
@@ -82,6 +84,7 @@ __all__ = [
     "DUPEFILTER_CLASS",
     "DUPEFILTER_DEBUG",
     "EDITOR",
+    "EVENT_LOOP_LAG_THRESHOLD",
     "EXTENSIONS",
     "EXTENSIONS_BASE",
     "FEEDS",
@@ -92,6 +95,7 @@ __all__ = [
     "FEED_EXPORT_FIELDS",
     "FEED_EXPORT_INDENT",
     "FEED_FORMAT",
+    "FEED_MODE",
     "FEED_STORAGES",
     "FEED_STORAGES_BASE",
     "FEED_STORAGE_FTP_ACTIVE",
@@ -124,6 +128,7 @@ __all__ = [
     "HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS",
     "HTTPCACHE_IGNORE_SCHEMES",
     "HTTPCACHE_POLICY",
+    "HTTPCACHE_SCOPE",
     "HTTPCACHE_STORAGE",
     "HTTPERROR_ALLOWED_CODES",
     "HTTPERROR_ALLOW_ALL",
@@ -137,6 +142,8 @@ __all__ = [
     "ITEM_PIPELINES_BASE",
     "ITEM_PROCESSOR",
     "JOBDIR",
+    "JOBDIR_SYNC_EVERY",
+    "JSONVALIDATION_ENABLED",
     "LOGSTATS_INTERVAL",
     "LOG_COLOR",
     "LOG_DATEFORMAT",
@@ -148,6 +155,7 @@ __all__ = [
     "LOG_FORMATTER",
     "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
+    "LOG_LEVELS",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
     "LOG_VERSIONS",
@@ -158,6 +166,9 @@ __all__ = [
     "MAIL_SSL",
     "MAIL_TLS",
     "MAIL_USER",
+    "MEDIA_CACHE_SIZE",
+    "MEDIA_STORAGES",
+    "MEDIA_STORAGES_BASE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -213,6 +224,7 @@ __all__ = [
     "STATSMAILER_RCPTS",
     "STATS_CLASS",
     "STATS_DUMP",
+    "STICKY_META_KEYS",
     "TELNETCONSOLE_ENABLED",
     "TELNETCONSOLE_HOST",
     "TELNETCONSOLE_PASSWORD",
@@ -222,6 +234,7 @@ __all__ = [
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
+    "UPLOAD_TIMEOUT",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
     "WARN_ON_GENERATOR_RETURN_VALUE",
@@ -303,6 +316,7 @@ DOWNLOAD_HANDLERS_BASE = {
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
+DOWNLOAD_HANDLERS_BY_NAME: dict[str, str] = {}
 
 DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024  # 1024m
 DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
@@ -334,6 +348,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
+    "scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware": 560,
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -343,6 +358,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware": 900,
     # Downloader side
 }
+DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS = False
 
 DOWNLOADER_STATS = True
 
@@ -352,6 +368,8 @@ DUPEFILTER_DEBUG = False
 EDITOR = "vi"
 if sys.platform == "win32":
     EDITOR = "%s -m idlelib.idle"
+
+EVENT_LOOP_LAG_THRESHOLD = 10.0
 
 EXTENSIONS: dict[str, int] = {}
 EXTENSIONS_BASE = {
@@ -366,6 +384,7 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": 0,
     "scrapy.extensions.remote_control.RemoteControl": 0,
+    "scrapy.extensions.event_loop_lag.EventLoopLagMonitor": 0,
 }
 
 FEEDS: dict[str | Path, dict[str, Any]] = {}
@@ -385,6 +404,7 @@ FEED_EXPORTERS_BASE = {
     "pickle": "scrapy.exporters.PickleItemExporter",
 }
 FEED_FORMAT = "jsonlines"
+FEED_MODE = None
 FEED_STORE_EMPTY = True
 FEED_STORAGES: dict[str, str] = {}
 FEED_STORAGES_BASE = {
@@ -432,6 +452,7 @@ HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS: list[str] = []
 HTTPCACHE_IGNORE_SCHEMES = ["file"]
 HTTPCACHE_POLICY = "scrapy.extensions.httpcache.DummyPolicy"
+HTTPCACHE_SCOPE = "spider"
 HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 HTTPERROR_ALLOW_ALL = False
@@ -452,6 +473,9 @@ ITEM_PIPELINES_BASE: dict[str, int] = {}
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
+JOBDIR_SYNC_EVERY = 0
+
+JSONVALIDATION_ENABLED = False
 
 LOG_COLOR = True
 LOG_ENABLED = True
@@ -463,6 +487,7 @@ LOG_FILE_APPEND = True
 LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
+LOG_LEVELS: dict[str, str] = {}
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
 LOG_VERSIONS = [
@@ -487,6 +512,17 @@ MAIL_USER = None
 MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
+
+MEDIA_CACHE_SIZE = -1
+
+MEDIA_STORAGES: dict[str, str] = {}
+MEDIA_STORAGES_BASE = {
+    "": "scrapy.pipelines.files.FSFilesStore",
+    "file": "scrapy.pipelines.files.FSFilesStore",
+    "ftp": "scrapy.pipelines.files.FTPFilesStore",
+    "gs": "scrapy.pipelines.files.GCSFilesStore",
+    "s3": "scrapy.pipelines.files.S3FilesStore",
+}
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 
@@ -530,15 +566,15 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
     "scrapy.exceptions.CannotResolveHostError",
+    "scrapy.exceptions.DecompressionError",
     "scrapy.exceptions.DownloadConnectionRefusedError",
     "scrapy.exceptions.DownloadFailedError",
     "scrapy.exceptions.DownloadTimeoutError",
     "scrapy.exceptions.ResponseDataLossError",
+    "json.JSONDecodeError",
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    # OSError is raised by the HttpCompression middleware when trying to
-    # decompress an empty response
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
@@ -585,7 +621,8 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
-    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 1000,
+    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 999,
+    "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     # Spider side
 }
 
@@ -595,6 +632,8 @@ STATS_CLASS = "scrapy.statscollectors.MemoryStatsCollector"
 STATS_DUMP = True
 
 STATSMAILER_RCPTS: list[str] = []
+
+STICKY_META_KEYS: list[str] = []
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_HOST = "127.0.0.1"
@@ -608,6 +647,8 @@ TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+UPLOAD_TIMEOUT = None
 
 URLLENGTH_LIMIT = 2083
 

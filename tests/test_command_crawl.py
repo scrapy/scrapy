@@ -94,7 +94,7 @@ class MySpider(scrapy.Spider):
         args = ["-O", "example.json"]
         log = self.get_log(spider_code, proj_path, args=args)
         assert (
-            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
+            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "mode": "overwrite"}}'
             in log
         )
         with j.open(encoding="utf-8") as f2:
@@ -133,6 +133,53 @@ class MySpider(scrapy.Spider):
         returncode, _, err = self.crawl(spider_code, proj_path)
         assert "Spider closed (closespider_errorcount)" in err
         assert returncode != 0
+
+    def test_close_spider_error_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+from scrapy.exceptions import CloseSpider
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise CloseSpider('payment_required', error=True)
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (payment_required)" in err
+        assert returncode != 0
+
+    def test_close_spider_custom_reason_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+from scrapy.exceptions import CloseSpider
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise CloseSpider('custom_reason')
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (custom_reason)" in err
+        assert returncode == 0
+
+    def test_start_error_exit_code(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.crawl(spider_code, proj_path)
+        assert "Spider closed (start_error)" in err
+        assert returncode == 1
 
     def test_default_reactor(self, proj_path: Path) -> None:
         spider_code = """

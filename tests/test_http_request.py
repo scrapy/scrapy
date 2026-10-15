@@ -5,7 +5,6 @@ import pytest
 
 from scrapy import Request
 from scrapy.http import XmlRpcRequest
-from scrapy.utils.python import to_bytes
 from tests.utils.bases.http_request import TestRequestBase
 
 
@@ -21,8 +20,8 @@ class TestXmlRpcRequest(TestRequestBase):
     def _test_request(self, **kwargs: Any) -> None:
         r = self.request_class("http://scrapytest.org/rpc2", **kwargs)
         assert r.headers[b"Content-Type"] == b"text/xml"
-        assert r.body == to_bytes(
-            xmlrpc.client.dumps(**kwargs), encoding=kwargs.get("encoding", "utf-8")
+        assert r.body == xmlrpc.client.dumps(**kwargs).encode(
+            encoding=kwargs.get("encoding", "utf-8")
         )
         assert r.method == "POST"
         assert r.encoding == kwargs.get("encoding", "utf-8")
