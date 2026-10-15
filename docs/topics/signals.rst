@@ -607,9 +607,12 @@ robots_parsed
 ~~~~~~~~~~~~~
 
 .. signal:: robots_parsed
-.. function:: robots_parsed(robotparser, request)
+.. function:: robots_parsed(robotparser, request, response)
 
     .. versionadded:: 2.18.0
+
+    .. versionchanged:: VERSION
+        Added *response*.
 
     Sent by
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after it
@@ -623,6 +626,9 @@ robots_parsed
 
     :param request: the request that triggered the :file:`robots.txt` download
     :type request: :class:`~scrapy.Request` object
+
+    :param response: the :file:`robots.txt` response
+    :type response: :class:`~scrapy.http.Response` object
 
 
 Response signals

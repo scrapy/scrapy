@@ -17,6 +17,7 @@ from twisted.internet.defer import Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint, wrapClientTLS
 from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.protocol import ClientFactory, Factory, Protocol, connectionDone
+from twisted.python.failure import Failure
 from twisted.web._newclient import (
     HEADER,
     STATUS,
@@ -69,7 +70,6 @@ from ._base_http import BaseHttpDownloadHandler
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer, IProtocol
-    from twisted.python.failure import Failure
     from twisted.web._newclient import Request as TxRequest
 
     from scrapy.crawler import Crawler
@@ -654,9 +654,20 @@ class _ScrapyAgent:
         d2: Deferred[_ResultT] = d.addCallback(self._cb_bodyready, request)
         d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, url)
         # check download timeout
-        self._timeout_cl = reactor.callLater(timeout, d3.cancel)
+        self._timeout_cl = reactor.callLater(timeout, self._cb_timed_out, d3, request)
         d3.addBoth(self._cb_timeout, request, url, timeout)
         return d3
+
+    def _cb_timed_out(self, d3: Deferred[Response], request: Request) -> None:
+        fail_on_dataloss = request.meta.get(
+            "download_fail_on_dataloss", self._fail_on_dataloss
+        )
+        if not fail_on_dataloss and self._txresponse is not None:
+            # let the response be delivered as a partial one instead of
+            # cancelling the request outright
+            self._txresponse._transport.stopProducing()
+        else:
+            d3.cancel()
 
     def _cb_timeout(self, result: _T, request: Request, url: str, timeout: float) -> _T:
         if self._timeout_cl.active():
@@ -666,6 +677,9 @@ class _ScrapyAgent:
         # receive connectionLost()
         if self._txresponse:
             self._txresponse._transport.stopProducing()
+
+        if not isinstance(result, Failure):
+            return result
 
         raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
