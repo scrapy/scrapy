@@ -86,6 +86,16 @@ class TestRobotParserBase(ABC):
         assert rp.allowed("https://site.local/index.html", "*")
         assert rp.allowed("https://site.local/disallowed", "*")
 
+    def test_non_utf8_response(self) -> None:
+        rp = self._parse(b"# caf\xe9\nUser-agent: *\nDisallow: /disallowed\n")
+        assert rp.allowed("https://site.local/", "*")
+        assert not rp.allowed("https://site.local/disallowed", "*")
+
+    def test_utf8_bom(self) -> None:
+        rp = self._parse(b"\xef\xbb\xbfUser-agent: *\nDisallow: /disallowed\n")
+        assert rp.allowed("https://site.local/", "*")
+        assert not rp.allowed("https://site.local/disallowed", "*")
+
     def test_crawl_delay(self) -> None:
         robotstxt_body = b"User-agent: *\nDisallow: /private\nCrawl-delay: 10\n"
         rp = self._parse(robotstxt_body)
@@ -95,6 +105,19 @@ class TestRobotParserBase(ABC):
         robotstxt_body = b"User-agent: *\nDisallow: /private\n"
         rp = self._parse(robotstxt_body)
         assert rp.crawl_delay("*") is None
+
+    def test_sitemaps(self) -> None:
+        robotstxt_body = (
+            b"User-agent: *\nDisallow: /private\n"
+            b"Sitemap: https://site.local/sitemap.xml\n"
+        )
+        rp = self._parse(robotstxt_body)
+        assert list(rp.sitemaps()) == ["https://site.local/sitemap.xml"]
+
+    def test_sitemaps_unset(self) -> None:
+        robotstxt_body = b"User-agent: *\nDisallow: /private\n"
+        rp = self._parse(robotstxt_body)
+        assert list(rp.sitemaps()) == []
 
     def test_unicode_url_and_useragent(self) -> None:
         robotstxt_robotstxt_body = """
@@ -133,29 +156,38 @@ class TestRobotParser:
         )
         assert rp.crawl_delay("*") is None
 
+    def test_sitemaps_unsupported(self) -> None:
+        class AllowAllRobotParser(RobotParser):
+            @classmethod
+            def from_crawler(cls, crawler: Crawler, robotstxt_body: bytes) -> Self:
+                return cls()
+
+            def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
+                return True
+
+        rp = build_from_crawler(
+            AllowAllRobotParser,
+            NO_CRAWLER,
+            b"User-agent: *\nSitemap: https://site.local/sitemap.xml\n",
+        )
+        assert list(rp.sitemaps()) == []
+
 
 class TestDecodeRobotsTxt:
-    def test_native_string_conversion(self) -> None:
-        robotstxt_body = b"User-agent: *\nDisallow: /\n"
-        decoded_content = decode_robotstxt(
-            robotstxt_body, spider=None, to_native_str_type=True
-        )
-        assert decoded_content == "User-agent: *\nDisallow: /\n"
-
     def test_decode_utf8(self) -> None:
         robotstxt_body = b"User-agent: *\nDisallow: /\n"
-        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        decoded_content = decode_robotstxt(robotstxt_body)
         assert decoded_content == "User-agent: *\nDisallow: /\n"
 
     def test_decode_non_utf8(self) -> None:
         robotstxt_body = b"User-agent: *\n\xffDisallow: /\n"
-        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        decoded_content = decode_robotstxt(robotstxt_body)
         assert decoded_content == "User-agent: *\nDisallow: /\n"
 
     # UTF-8 BOM at the beginning of the file ignored
     def test_decode_utf8_bom(self) -> None:
         robotstxt_body = b"\xef\xbb\xbfUser-agent: *\nDisallow: /\n"
-        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        decoded_content = decode_robotstxt(robotstxt_body)
         assert decoded_content == "User-agent: *\nDisallow: /\n"
 
 
@@ -182,6 +214,9 @@ class TestPythonRobotParser(TestRobotParserBase):
     )
     def test_allowed_wildcards(self) -> None:
         super().test_allowed_wildcards()
+
+    def test_sitemaps(self) -> None:
+        pytest.skip("RobotFileParser does not support the Sitemap directive.")
 
 
 @pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.dupefilters import BaseDupeFilter
     from scrapy.http.request import Request
-    from scrapy.pqueues import ScrapyPriorityQueue
+    from scrapy.pqueues import PriorityQueueProtocol
     from scrapy.statscollectors import StatsCollector
 
 
@@ -252,8 +252,8 @@ class Scheduler(BaseScheduler):
         The file is generated whenever the job stops (cleanly) and is loaded
         when resuming the job. If :setting:`JOBDIR_SYNC_EVERY` is set and the
         priority queue implements
-        :attr:`~scrapy.pqueues.ScrapyPriorityQueue.changed` and
-        :meth:`~scrapy.pqueues.ScrapyPriorityQueue.state`, the file is also
+        :attr:`~scrapy.pqueues.PriorityQueueProtocol.changed` and
+        :meth:`~scrapy.pqueues.PriorityQueueProtocol.state`, the file is also
         generated while the job runs.
 
     -   Instantiates the configured :setting:`SCHEDULER_PRIORITY_QUEUE` with
@@ -291,7 +291,7 @@ class Scheduler(BaseScheduler):
         mqclass: type[BaseQueue] | None = None,
         logunser: bool = False,
         stats: StatsCollector | None = None,
-        pqclass: type[ScrapyPriorityQueue] | None = None,
+        pqclass: type[PriorityQueueProtocol] | None = None,
         crawler: Crawler | None = None,
     ):
         """Initialize the scheduler.
@@ -332,7 +332,7 @@ class Scheduler(BaseScheduler):
         """
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
-        self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
+        self.pqclass: type[PriorityQueueProtocol] | None = pqclass
         self.dqclass: type[BaseQueue] | None = dqclass
         self.mqclass: type[BaseQueue] | None = mqclass
         self.logunser: bool = logunser
@@ -368,8 +368,8 @@ class Scheduler(BaseScheduler):
         (3) return the result of the dupefilter's ``open`` method
         """
         self.spider: Spider = spider
-        self.mqs: ScrapyPriorityQueue = self._mq()
-        self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        self.mqs: PriorityQueueProtocol = self._mq()
+        self.dqs: PriorityQueueProtocol | None = self._dq() if self.dqdir else None
         self._dqs_changes = 0
         self._sync_dqs_state()
         return self.df.open()
@@ -415,18 +415,21 @@ class Scheduler(BaseScheduler):
 
     def next_request(self) -> Request | None:
         """
-        Return a :class:`~scrapy.Request` object from the memory queue,
-        falling back to the disk queue if the memory queue is empty.
-        Return ``None`` if there are no more enqueued requests.
+        Return the :class:`~scrapy.Request` object with the highest
+        :attr:`~scrapy.Request.priority` from the memory and disk queues,
+        preferring the memory queue on a tie. Return ``None`` if there are no
+        more enqueued requests.
 
         Increment the appropriate stats, such as: :stat:`scheduler/dequeued`,
         :stat:`scheduler/dequeued/disk`, :stat:`scheduler/dequeued/memory`.
         """
-        request: Request | None = self.mqs.pop()
+        request: Request | None = None
         assert self.stats is not None
-        if request is not None:
-            self.stats.inc_value("scheduler/dequeued/memory")
-        else:
+        if not self._dqs_first():
+            request = self.mqs.pop()
+            if request is not None:
+                self.stats.inc_value("scheduler/dequeued/memory")
+        if request is None:
             request = self._dqpop()
             if request is not None:
                 self.stats.inc_value("scheduler/dequeued/disk")
@@ -469,6 +472,16 @@ class Scheduler(BaseScheduler):
     def _mqpush(self, request: Request) -> None:
         self.mqs.push(request)
 
+    def _dqs_first(self) -> bool:
+        # Priority queues without next_priority() pop memory requests first.
+        if self.dqs is None or not hasattr(self.mqs, "next_priority"):
+            return False
+        mqs_priority = self.mqs.next_priority()
+        if mqs_priority is None:
+            return False
+        dqs_priority = self.dqs.next_priority()
+        return dqs_priority is not None and dqs_priority < mqs_priority
+
     def _dqpop(self) -> Request | None:
         if self.dqs is None:
             return None
@@ -489,7 +502,7 @@ class Scheduler(BaseScheduler):
             assert isinstance(self.dqdir, str)
             self._write_dqs_state(self.dqdir, self.dqs.state())
 
-    def _mq(self) -> ScrapyPriorityQueue:
+    def _mq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
@@ -501,7 +514,7 @@ class Scheduler(BaseScheduler):
             start_queue_cls=self._smqclass,
         )
 
-    def _dq(self) -> ScrapyPriorityQueue:
+    def _dq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with disk storage"""
         assert self.crawler
         assert self.dqdir

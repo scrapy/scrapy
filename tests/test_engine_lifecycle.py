@@ -7,10 +7,11 @@ from unittest.mock import Mock
 import pytest
 from twisted.internet.defer import Deferred
 
-from scrapy import Request, signals
+from scrapy import Request, Spider, signals
 from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -21,9 +22,10 @@ from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator, Callable
 
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
     from scrapy.utils._stopmode import _StopMode
 
 
@@ -37,6 +39,7 @@ class SignalRecorder:
         self.crawler = crawler
         self.calls: list[tuple[str, EngineState]] = []
         self.close_reasons: list[str] = []
+        self.close_errors: list[bool] = []
         # Keep strong references to the handlers: signal connections are weak.
         self._handlers = [self._make_handler(name) for name in self.SIGNALS]
         for name, handler in zip(self.SIGNALS, self._handlers, strict=True):
@@ -48,6 +51,7 @@ class SignalRecorder:
             self.calls.append((name, self.crawler.engine.state))
             if name == "spider_closed":
                 self.close_reasons.append(kwargs["reason"])
+                self.close_errors.append(kwargs["error"])
 
         return handler
 
@@ -80,6 +84,11 @@ class BlockingScheduler(BaseScheduler):
     def close(self, reason: str) -> Deferred[None]:
         self.entered_close.callback(None)
         return self.unblock_close
+
+
+class ClosingPipeline:
+    def open_spider(self) -> None:
+        raise CloseSpider("early", error=True)
 
 
 def make_engine(crawler: Crawler) -> ExecutionEngine:
@@ -405,6 +414,89 @@ class TestCloseDuringOpen:
         assert errors == [True]
 
     @coroutine_test
+    async def test_close_spider_exception_from_component(self) -> None:
+        """CloseSpider raised by a component while the spider is opening
+        closes the spider once it is open, instead of being raised."""
+        crawler = get_crawler(
+            DefaultSpider, settings_dict={"ITEM_PIPELINES": {ClosingPipeline: 1}}
+        )
+        recorder = SignalRecorder(crawler)
+        engine = make_engine(crawler)
+        await engine.open_spider_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.names == NEVER_STARTED_SIGNAL_ORDER
+        assert recorder.close_reasons == ["early"]
+        assert recorder.close_errors == [True]
+
+    @coroutine_test
+    async def test_close_spider_exception_from_spider_opened(self) -> None:
+        """CloseSpider raised by a spider_opened handler closes the spider
+        once it is open, instead of being raised."""
+        crawler = get_crawler(DefaultSpider)
+        recorder = SignalRecorder(crawler)
+        engine = make_engine(crawler)
+
+        def close(**kwargs: Any) -> None:
+            raise CloseSpider("early", error=True)
+
+        crawler.signals.connect(close, signals.spider_opened)
+        await engine.open_spider_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.names == NEVER_STARTED_SIGNAL_ORDER
+        assert recorder.close_reasons == ["early"]
+        assert recorder.close_errors == [True]
+
+    @coroutine_test
+    async def test_close_spider_call_wins_over_exception(self) -> None:
+        """The first close requested while the spider is opening wins, and a
+        CloseSpider raised by a spider_opened handler only counts as requested
+        once all spider_opened handlers have finished."""
+        crawler = get_crawler(DefaultSpider)
+        recorder = SignalRecorder(crawler)
+        engine = make_engine(crawler)
+
+        def raise_close_spider(**kwargs: Any) -> None:
+            raise CloseSpider("exception")
+
+        async def call_close_spider(**kwargs: Any) -> None:
+            await engine.close_spider_async(reason="call")
+
+        crawler.signals.connect(raise_close_spider, signals.spider_opened)
+        crawler.signals.connect(call_close_spider, signals.spider_opened)
+        await engine.open_spider_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.close_reasons == ["call"]
+
+    @coroutine_test
+    async def test_close_spider_during_failed_open(self) -> None:
+        """A close requested while the spider is opening is performed even if
+        opening the spider then fails."""
+        opening: Deferred[None] = Deferred()
+        fail_open: Deferred[None] = Deferred()
+
+        class FailingPipeline:
+            async def open_spider(self) -> None:
+                opening.callback(None)
+                await maybe_deferred_to_future(fail_open)
+                raise ValueError("open failed")
+
+        crawler = get_crawler(
+            DefaultSpider, settings_dict={"ITEM_PIPELINES": {FailingPipeline: 1}}
+        )
+        recorder = SignalRecorder(crawler)
+        crawl_dfd = deferred_from_coro(crawler.crawl_async())
+        await maybe_deferred_to_future(opening)
+        engine = crawler.engine
+        assert engine is not None
+        await engine.close_spider_async(reason="early", error=True)
+        fail_open.callback(None)
+        with pytest.raises(ValueError, match="open failed"):
+            await maybe_deferred_to_future(crawl_dfd)
+        assert_state(engine, EngineState.STOPPED)
+        assert recorder.close_reasons == ["early"]
+        assert recorder.close_errors == [True]
+
+    @coroutine_test
     async def test_stop_during_open(self) -> None:
         """stop_async() while the spider is opening is performed once the
         spider is open."""
@@ -545,6 +637,165 @@ class TestDoubleClose:
         assert engine is not None
         assert_state(engine, EngineState.STOPPED)
         assert recorder.names == NORMAL_SIGNAL_ORDER
+
+
+class TestRequestsDuringClose:
+    """Requests sent while the spider is closing are processed as long as the
+    close waits for them, and refused afterwards."""
+
+    @coroutine_test
+    async def test_from_callback(self) -> None:
+        """Callbacks of the responses in progress when a graceful stop starts
+        can still download requests and schedule them."""
+        reached: Deferred[None] = Deferred()
+        proceed: Deferred[None] = Deferred()
+        bodies: list[bytes] = []
+
+        class CallbackSpider(Spider):
+            name = "callback"
+
+            async def start(self) -> AsyncIterator[Request]:
+                yield Request("data:,a")
+
+            async def parse(self, response: Response) -> None:
+                reached.callback(None)
+                await maybe_deferred_to_future(proceed)
+                assert self.crawler.engine is not None
+                response = await self.crawler.engine.download_async(Request("data:,b"))
+                bodies.append(response.body)
+                self.crawler.engine.crawl(Request("data:,c"))
+
+        crawler = get_crawler(CallbackSpider)
+        crawl_dfd = deferred_from_coro(crawler.crawl_async())
+        await maybe_deferred_to_future(reached)
+        stop_dfd = deferred_from_coro(crawler.stop_async())
+        await sleep(0)
+        assert crawler.engine is not None
+        assert_state(crawler.engine, EngineState.SPIDER_CLOSING)
+        proceed.callback(None)
+        await maybe_deferred_to_future(stop_dfd)
+        await maybe_deferred_to_future(crawl_dfd)
+        assert bodies == [b"b"]
+        assert crawler.stats.get_value("scheduler/enqueued") == 2
+        assert crawler.stats.get_value("finish_reason") == "shutdown"
+
+    @coroutine_test
+    async def test_replacement_request(self, caplog: pytest.LogCaptureFixture) -> None:
+        """When a downloader middleware replaces a request downloaded with
+        download_async() after the close has stopped waiting for the requests
+        in progress, the replacement is not downloaded."""
+        reached: Deferred[None] = Deferred()
+        proceed: Deferred[None] = Deferred()
+        errors: list[Exception] = []
+
+        class ReplacingMiddleware:
+            async def process_request(self, request: Request) -> None:
+                if request.url == "data:,1":
+                    reached.callback(None)
+                    await maybe_deferred_to_future(proceed)
+
+            def process_response(
+                self, request: Request, response: Response
+            ) -> Request | Response:
+                if request.url == "data:,1":
+                    return Request("data:,2")
+                return response
+
+        async def download() -> None:
+            assert crawler.engine is not None
+            try:
+                await crawler.engine.download_async(Request("data:,1"))
+            except Exception as e:
+                errors.append(e)
+
+        def engine_started() -> None:
+            _schedule_coro(download())
+
+        crawler = get_crawler(
+            DefaultSpider,
+            {"DOWNLOADER_MIDDLEWARES": {ReplacingMiddleware: 0}},
+        )
+        crawler.signals.connect(engine_started, signals.engine_started)
+        crawl_dfd = deferred_from_coro(crawler.crawl_async())
+        await maybe_deferred_to_future(reached)
+        stop_dfd = deferred_from_coro(crawler.stop_async())
+        await sleep(0)
+        assert crawler.engine is not None
+        assert_state(crawler.engine, EngineState.SPIDER_CLOSING)
+        proceed.callback(None)
+        await maybe_deferred_to_future(stop_dfd)
+        await maybe_deferred_to_future(crawl_dfd)
+        assert len(errors) == 1
+        assert isinstance(errors[0], RuntimeError)
+        assert "Cannot download <GET data:,2>: the spider is closing" in str(errors[0])
+        assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
+        assert crawler.stats.get_value("downloader/request_count") == 1
+        assert crawler.stats.get_value("finish_reason") == "shutdown"
+
+    @pytest.mark.parametrize("source", ["pipeline", "spider_closed"])
+    @coroutine_test
+    async def test_download_after_drain(
+        self, source: str, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Pipelines' close_spider() and spider_closed handlers run after the
+        downloads have finished and cannot start new ones."""
+        errors: list[Exception] = []
+
+        async def download() -> None:
+            assert crawler.engine is not None
+            try:
+                await crawler.engine.download_async(Request("data:,"))
+            except Exception as e:
+                errors.append(e)
+
+        class DownloadingPipeline:
+            async def close_spider(self) -> None:
+                await download()
+
+        if source == "pipeline":
+            crawler = get_crawler(
+                DefaultSpider, {"ITEM_PIPELINES": {DownloadingPipeline: 0}}
+            )
+        else:
+            crawler = get_crawler(DefaultSpider)
+            crawler.signals.connect(download, signals.spider_closed)
+        await crawler.crawl_async()
+        assert len(errors) == 1
+        assert isinstance(errors[0], RuntimeError)
+        assert "spider is closing" in str(errors[0])
+        assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
+        assert crawler.stats.get_value("finish_reason") == "finished"
+
+    @pytest.mark.parametrize("source", ["pipeline", "spider_closed"])
+    @coroutine_test
+    async def test_crawl_after_drain(self, source: str) -> None:
+        """Pipelines' close_spider() and spider_closed handlers run after the
+        downloads have finished and cannot schedule new ones."""
+        errors: list[Exception] = []
+
+        def crawl() -> None:
+            assert crawler.engine is not None
+            try:
+                crawler.engine.crawl(Request("data:,"))
+            except Exception as e:
+                errors.append(e)
+
+        class CrawlingPipeline:
+            def close_spider(self) -> None:
+                crawl()
+
+        if source == "pipeline":
+            crawler = get_crawler(
+                DefaultSpider, {"ITEM_PIPELINES": {CrawlingPipeline: 0}}
+            )
+        else:
+            crawler = get_crawler(DefaultSpider)
+            crawler.signals.connect(crawl, signals.spider_closed)
+        await crawler.crawl_async()
+        assert len(errors) == 1
+        assert isinstance(errors[0], RuntimeError)
+        assert "spider is closing" in str(errors[0])
+        assert crawler.stats.get_value("scheduler/enqueued") is None
 
 
 class TestInvalidTransitions:

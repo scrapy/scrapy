@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Self
 from unittest import mock
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, fail, inlineCallbacks
 from twisted.internet.interfaces import IReadDescriptor
 from twisted.internet.task import Cooperator
 from zope.interface import implementer
@@ -22,11 +22,9 @@ from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
     deferred_to_future,
-    iter_errback,
     maybe_deferred_to_future,
     maybeDeferred_coro,
     mustbe_deferred,
-    parallel,
     parallel_async,
 )
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
@@ -77,30 +75,6 @@ class TestMustbeDeferred:
         yield dfd
 
 
-class TestIterErrback:
-    def test_iter_errback_good(self):
-        def itergood() -> Generator[int, None, None]:
-            yield from range(10)
-
-        errors: list[Failure] = []
-        out = list(iter_errback(itergood(), errors.append))
-        assert out == list(range(10))
-        assert not errors
-
-    def test_iter_errback_bad(self):
-        def iterbad() -> Generator[int, None, None]:
-            for x in range(10):
-                if x == 5:
-                    1 / 0
-                yield x
-
-        errors: list[Failure] = []
-        out = list(iter_errback(iterbad(), errors.append))
-        assert out == [0, 1, 2, 3, 4]
-        assert len(errors) == 1
-        assert isinstance(errors[0].value, ZeroDivisionError)
-
-
 class TestAiterErrback:
     @coroutine_test
     async def test_aiter_errback_good(self):
@@ -114,7 +88,7 @@ class TestAiterErrback:
         assert not errors
 
     @coroutine_test
-    async def test_iter_errback_bad(self):
+    async def test_aiter_errback_bad(self):
         async def iterbad() -> AsyncGenerator[int, None]:
             for x in range(10):
                 if x == 5:
@@ -137,20 +111,6 @@ class TestAsyncDefTestsuite:
     @coroutine_test
     async def test_coroutine_test_xfail(self):
         raise RuntimeError("This is expected to be raised")
-
-
-@pytest.mark.requires_reactor  # parallel() requires a reactor
-class TestParallel:
-    @inline_callbacks_test
-    def test_count_higher_than_work(self) -> Generator[Deferred[Any], Any, None]:
-        results: list[int] = []
-        with mock.patch.object(
-            Cooperator, "coiterate", autospec=True, side_effect=Cooperator.coiterate
-        ) as coiterate:
-            yield parallel(range(3), 1_000_000, results.append)
-        assert results == [0, 1, 2]
-        # One task per item, plus the one that finds no more work.
-        assert coiterate.call_count <= 4
 
 
 @implementer(IReadDescriptor)
@@ -187,7 +147,7 @@ class _ReadTracker:
 
     def __enter__(self) -> Self:
         if is_asyncio_available():
-            asyncio.get_event_loop().add_reader(self._rx, self._read)
+            asyncio.get_running_loop().add_reader(self._rx, self._read)
         else:
             from twisted.internet import reactor
 
@@ -197,7 +157,7 @@ class _ReadTracker:
 
     def __exit__(self, *exc_info: object) -> None:
         if is_asyncio_available():
-            asyncio.get_event_loop().remove_reader(self._rx)
+            asyncio.get_running_loop().remove_reader(self._rx)
         else:
             from twisted.internet import reactor
 
@@ -298,45 +258,45 @@ class TestParallelAsync:
                 await maybe_deferred_to_future(dfd)
             yield i
 
+    @pytest.mark.parametrize("length", [20, 50, 100])
     @inline_callbacks_test
-    def test_simple(self):
-        for length in [20, 50, 100]:
-            parallel_count = [0]
-            max_parallel_count = [0]
-            results: list[int] = []
-            ait = self.get_async_iterable(length)
-            dl = parallel_async(
-                ait,
-                self.CONCURRENT_ITEMS,
-                self.callable_wrapped,
-                results,
-                parallel_count,
-                max_parallel_count,
-            )
-            yield dl
-            assert list(range(length)) == sorted(results)
-            assert parallel_count[0] == 0
-            assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
+    def test_simple(self, length: int) -> Generator[Deferred[Any], Any, None]:
+        parallel_count = [0]
+        max_parallel_count = [0]
+        results: list[int] = []
+        ait = self.get_async_iterable(length)
+        dl = parallel_async(
+            ait,
+            self.CONCURRENT_ITEMS,
+            self.callable_wrapped,
+            results,
+            parallel_count,
+            max_parallel_count,
+        )
+        yield dl
+        assert list(range(length)) == sorted(results)
+        assert parallel_count[0] == 0
+        assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
 
+    @pytest.mark.parametrize("length", [20, 50, 100])
     @inline_callbacks_test
-    def test_delays(self):
-        for length in [20, 50, 100]:
-            parallel_count = [0]
-            max_parallel_count = [0]
-            results: list[int] = []
-            ait = self.get_async_iterable_with_delays(length)
-            dl = parallel_async(
-                ait,
-                self.CONCURRENT_ITEMS,
-                self.callable_wrapped,
-                results,
-                parallel_count,
-                max_parallel_count,
-            )
-            yield dl
-            assert list(range(length)) == sorted(results)
-            assert parallel_count[0] == 0
-            assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
+    def test_delays(self, length: int) -> Generator[Deferred[Any], Any, None]:
+        parallel_count = [0]
+        max_parallel_count = [0]
+        results: list[int] = []
+        ait = self.get_async_iterable_with_delays(length)
+        dl = parallel_async(
+            ait,
+            self.CONCURRENT_ITEMS,
+            self.callable_wrapped,
+            results,
+            parallel_count,
+            max_parallel_count,
+        )
+        yield dl
+        assert list(range(length)) == sorted(results)
+        assert parallel_count[0] == 0
+        assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
 
     @inline_callbacks_test
     def test_count_higher_than_work(self) -> Generator[Deferred[Any], Any, None]:
@@ -348,6 +308,24 @@ class TestParallelAsync:
         assert sorted(results) == [0, 1, 2]
         # One task per item, plus the one that finds no more work.
         assert coiterate.call_count <= 4
+
+    @pytest.mark.parametrize("count", [1, 2])
+    @inline_callbacks_test
+    def test_callable_error(
+        self, count: int, caplog: pytest.LogCaptureFixture
+    ) -> Generator[Deferred[Any], Any, None]:
+        results: list[int] = []
+
+        def callable_(o: int) -> Deferred[None] | None:
+            if o == 1:
+                return fail(ValueError("Bad item"))
+            results.append(o)
+            return None
+
+        yield parallel_async(self.get_async_iterable(4), count, callable_)
+        assert sorted(results) == [0, 2, 3]
+        assert "Error processing an item" in caplog.text
+        assert "Bad item" in caplog.text
 
 
 class TestDeferredFromCoro:
@@ -465,6 +443,17 @@ class TestDeferredToFuture:
         assert isinstance(result, Future)
         future_result = await result
         assert future_result == 42
+
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_thread_without_loop(self):
+        # No loop runs in the other thread, so the future gets the loop of the
+        # installed reactor.
+        d: Deferred[int] = Deferred()
+        result = await asyncio.to_thread(deferred_to_future, d)
+        assert result.get_loop() is asyncio.get_running_loop()
+        d.callback(42)
+        assert await result == 42
 
 
 @pytest.mark.only_not_asyncio

@@ -261,6 +261,25 @@ def feed_complete_default_values_from_settings(
     feed: dict[str, Any], settings: BaseSettings, uri: str | None = None
 ) -> dict[str, Any]:
     out = feed.copy()
+    if "overwrite" in out:
+        warnings.warn(
+            "The overwrite feed option is deprecated, use the mode feed option"
+            " instead: mode='overwrite' instead of overwrite=True, and"
+            " mode='append' instead of overwrite=False.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        if out.get("mode") is not None:
+            raise ValueError(
+                "The overwrite and mode feed options are mutually exclusive,"
+                " please set only the mode feed option."
+            )
+        out["mode"] = "overwrite" if out.pop("overwrite") else "append"
+    out.setdefault("mode", settings["FEED_MODE"])
+    if out["mode"] in {"append", "overwrite"}:
+        # Kept for feed storages that were written before the mode feed option
+        # existed and hence only look for the overwrite feed option.
+        out["overwrite"] = out["mode"] == "overwrite"
     if uri is not None:
         out.setdefault("format", Path(uri).suffix.removeprefix("."))
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
@@ -323,7 +342,9 @@ def feed_process_params_from_cli(
         check_valid_format(feed_format)
         result[feed_uri] = {"format": feed_format}
         if overwrite:
-            result[feed_uri]["overwrite"] = True
+            # -O unambiguously means overwriting, so it ignores FEED_MODE. -o
+            # does not, because appending is not supported by every storage.
+            result[feed_uri]["mode"] = "overwrite"
 
     # FEEDS setting should take precedence over the matching CLI options
     result.update(settings.getdict("FEEDS"))

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import shutil
+import sqlite3
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -14,7 +15,6 @@ from scrapy.dupefilters import BaseDupeFilter, DiskDupeFilter, RFPDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
@@ -100,7 +100,7 @@ class DupeFilterTestMixin:
 
         class CaseInsensitiveRequestFingerprinter:
             def fingerprint(self, request: Request) -> bytes:
-                return hashlib.sha1(to_bytes(request.url.lower())).digest()
+                return hashlib.sha1(request.url.lower().encode()).digest()
 
         case_insensitive_dupefilter = self._get_dupefilter(
             REQUEST_FINGERPRINTER_CLASS=CaseInsensitiveRequestFingerprinter
@@ -242,7 +242,7 @@ class TestRFPDupeFilter(DupeFilterTestMixin):
     def test_request_fingerprint_override_deprecation(self):
         class LegacyDupeFilter(RFPDupeFilter):
             def request_fingerprint(self, request):
-                return hashlib.sha1(to_bytes(request.url.lower())).hexdigest()
+                return hashlib.sha1(request.url.lower().encode()).hexdigest()
 
         with pytest.warns(
             ScrapyDeprecationWarning,
@@ -269,6 +269,30 @@ class TestDiskDupeFilter(DupeFilterTestMixin):
 
         dupefilter.close("finished")
         assert not tempdir.exists()
+
+    @pytest.mark.parametrize(
+        ("sync_every", "committed"),
+        [
+            (0, [0, 0, 0, 0]),
+            (1, [1, 1, 2, 3]),
+            (2, [0, 0, 2, 2]),
+        ],
+    )
+    def test_sync_every(
+        self, tmp_path: Path, sync_every: int, committed: list[int]
+    ) -> None:
+        dupefilter = self._get_dupefilter(
+            JOBDIR=str(tmp_path), JOBDIR_SYNC_EVERY=sync_every
+        )
+        # A second connection only sees committed rows.
+        reader = sqlite3.connect(tmp_path / "requests.seen.db")
+        urls = [f"https://example.com/{i}" for i in (1, 1, 2, 3)]
+        for url, expected in zip(urls, committed, strict=True):
+            dupefilter.request_seen(Request(url))
+            (count,) = reader.execute("SELECT COUNT(*) FROM seen").fetchone()
+            assert count == expected
+        reader.close()
+        dupefilter.close("finished")
 
 
 class TestBaseDupeFilter:

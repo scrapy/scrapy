@@ -25,6 +25,14 @@ class TestCurlToRequestKwargs:
         expected_result = {"method": "GET", "url": "http://example.org/"}
         self._test_command(curl_command, expected_result)
 
+    def test_get_url_with_escaped_space(self):
+        curl_command = r"curl http://example.org/a\ b"
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/a b",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_get_without_scheme(self):
         curl_command = "curl www.example.org"
         expected_result = {"method": "GET", "url": "http://www.example.org"}
@@ -57,6 +65,15 @@ class TestCurlToRequestKwargs:
             "method": "GET",
             "url": "http://example.org/",
             "headers": [("X-Flag", "")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_header_with_string_prefix(self):
+        curl_command = "curl 'http://example.org/' -H $'X-A: b'"
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-A", "b")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -237,6 +254,15 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_raw_preserves_leading_dollar(self):
+        curl_command = "curl 'https://www.example.org/' --data-raw '$top=10&$skip=5'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "$top=10&$skip=5",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_post_data_multiple(self):
         # curl merges repeated -d/--data/--data-raw options into a single body
         # joined with "&"; scrapy must do the same, not keep only the last one.
@@ -260,8 +286,8 @@ class TestCurlToRequestKwargs:
         self._test_command(curl_command, expected_result)
 
     def test_post_data_multiple_with_string_prefix(self):
-        # The leading "$" left by bash $'...' quoting is stripped per option,
-        # before the values are merged.
+        # Bash $'...' quoting is normalized before parsing,
+        # so the prefix is not included when the values are merged.
         curl_command = "curl 'https://www.example.org/' -d $'a=1' -d $'b=2'"
         expected_result = {
             "method": "POST",

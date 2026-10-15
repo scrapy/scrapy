@@ -41,6 +41,7 @@ from scrapy.utils.test import get_crawler
 from tests import IDNA_REJECTED_HOSTNAMES, NON_EXISTING_RESOLVABLE
 from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
+from tests.mockserver.proxy_stalling import StallingProxy
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import (
     BytesReceivedCallbackSpider,
@@ -69,13 +70,6 @@ class TestHttpBase(ABC):
     http2: bool = False
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
-    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
-    # stream error (of type PROTOCOL_ERROR) so the client will send
-    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
-    # connection (see handling of ProtocolError in
-    # h2.connection.H2Connection.receive_data()), thus closing all streams that
-    # were using it, and we handle this as a normal exception.
-    handler_supports_http2_dataloss: bool = True
     # whether the handler sends a request Content-Length header as is, instead
     # of building its own (https://github.com/scrapy/scrapy/issues/4919)
     handler_supports_custom_content_length: bool = True
@@ -202,7 +196,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == HTTPStatus.OK
-        body = json.loads(response.body.decode("utf-8"))
+        body = json.loads(response.body.decode())
         assert "headers" in body
         for header_name, header_value in request_headers.items():
             assert header_name in body["headers"]
@@ -222,7 +216,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == HTTPStatus.OK
-        body = json.loads(response.body.decode("utf-8"))
+        body = json.loads(response.body.decode())
         assert "headers" in body
         for header_name in request_headers:
             assert header_name not in body["headers"]
@@ -246,7 +240,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == HTTPStatus.OK
-        body = json.loads(response.body.decode("utf-8"))
+        body = json.loads(response.body.decode())
         assert "headers" in body
         assert body["headers"]["X-Custom-Header"] == ["foo", "bar"]
 
@@ -259,7 +253,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == HTTPStatus.OK
-        body = json.loads(response.body.decode("utf-8"))
+        body = json.loads(response.body.decode())
         assert body["headers"]["X-Custom-Header"] == ["café"]
 
     @coroutine_test
@@ -273,7 +267,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == HTTPStatus.OK
-        body = json.loads(response.body.decode("utf-8"))
+        body = json.loads(response.body.decode())
         # the mockserver decodes invalid UTF-8 with surrogateescape
         received = [
             value.encode("utf-8", "surrogateescape")
@@ -292,7 +286,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == HTTPStatus.OK
-        body = json.loads(response.body.decode("utf-8"))
+        body = json.loads(response.body.decode())
         assert "headers" in body
         received_headers = set(body["headers"].keys())
         allowed_headers = {
@@ -317,7 +311,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == HTTPStatus.OK
-        body = json.loads(response.body.decode("utf-8"))
+        body = json.loads(response.body.decode())
         assert json.loads(body["body"]) == request_body
 
     @coroutine_test
@@ -372,9 +366,7 @@ class TestHttpBase(ABC):
             assert header_name in response.headers, (
                 f"Response was missing expected header {header_name}"
             )
-            assert response.headers.getlist(header_name) == [
-                header_value.encode(encoding="utf-8")
-            ]
+            assert response.headers.getlist(header_name) == [header_value.encode()]
 
     @coroutine_test
     async def test_download_no_extra_response_headers(
@@ -788,6 +780,31 @@ class TestHttpBase(ABC):
         )
         assert caplog.text.count("download warn size (4)") == 1
 
+    @pytest.mark.parametrize(
+        ("meta", "warns"),
+        [
+            pytest.param({"download_maxsize": 100}, False, id="maxsize-only"),
+            pytest.param(
+                {"download_maxsize": 100, "download_warnsize": 4},
+                True,
+                id="maxsize-and-warnsize",
+            ),
+        ],
+    )
+    @coroutine_test
+    async def test_download_warnsize_with_request_maxsize(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        meta: dict[str, int],
+        warns: bool,
+    ) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure), meta=meta)
+        async with self.get_dh({"DOWNLOAD_WARNSIZE": 4}) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        assert ("download warn size (4)" in caplog.text) is warns
+
     @coroutine_test
     async def test_download_with_warnsize_no_content_length(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
@@ -838,8 +855,6 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_download_cause_data_loss(self, mockserver: MockServer) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -849,8 +864,6 @@ class TestHttpBase(ABC):
     async def test_download_cause_data_loss_double_warning(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -866,8 +879,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_broken(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(
             mockserver.url("/broken", is_secure=self.is_secure),
             meta={"download_fail_on_dataloss": False},
@@ -896,8 +907,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_via_setting(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOAD_FAIL_ON_DATALOSS": False}
@@ -1654,6 +1663,26 @@ class TestHttpProxyBase(ABC):
             with pytest.raises(DownloadTimeoutError) as exc_info:
                 await download_handler.download_request(request)
         assert domain in str(exc_info.value)
+
+    @coroutine_test
+    async def test_download_with_proxy_stalled_connect(self) -> None:
+        """A download that times out while the proxy is being asked to open a
+        tunnel must not leave the connection to the proxy open."""
+        if self.is_secure:
+            pytest.skip("The stalling proxy only speaks plain HTTP")
+        with StallingProxy() as proxy:
+            request = Request(
+                "https://example.com",
+                meta={"proxy": proxy.url, "download_timeout": 0.2},
+            )
+            async with self.get_dh() as download_handler:
+                with pytest.raises(DownloadTimeoutError):
+                    await download_handler.download_request(request)
+                connection = await proxy.wait_for_connection()
+                assert connection.request.startswith(b"CONNECT example.com:443")
+                assert await connection.wait_closed(), (
+                    "The connection to the proxy was left open"
+                )
 
     @coroutine_test
     async def test_download_with_proxy_without_http_scheme(
