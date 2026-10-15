@@ -147,7 +147,7 @@ class _ReadTracker:
 
     def __enter__(self) -> Self:
         if is_asyncio_available():
-            asyncio.get_event_loop().add_reader(self._rx, self._read)
+            asyncio.get_running_loop().add_reader(self._rx, self._read)
         else:
             from twisted.internet import reactor
 
@@ -157,7 +157,7 @@ class _ReadTracker:
 
     def __exit__(self, *exc_info: object) -> None:
         if is_asyncio_available():
-            asyncio.get_event_loop().remove_reader(self._rx)
+            asyncio.get_running_loop().remove_reader(self._rx)
         else:
             from twisted.internet import reactor
 
