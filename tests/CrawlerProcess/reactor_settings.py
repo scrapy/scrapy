@@ -1,4 +1,5 @@
 import sys
+from typing import Any
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
@@ -7,7 +8,7 @@ from scrapy.resolver import dnscache
 
 class Spider1(scrapy.Spider):
     name = "spider1"
-    custom_settings = {
+    custom_settings: dict[str, Any] = {
         "DNSCACHE_ENABLED": False,
         "DNS_TIMEOUT": 11,
         "REACTOR_THREADPOOL_MAXSIZE": 42,

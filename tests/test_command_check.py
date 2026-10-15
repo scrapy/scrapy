@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, PropertyMock, call, patch
 
+import pytest
+
 from scrapy.commands.check import Command, TextTestResult
 from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import proc
@@ -45,7 +47,7 @@ class CheckSpider(scrapy.Spider):
     def parse(self, response, **cb_kwargs):
         \"\"\"
         @url data:,
-        {contracts}
+        {contracts.strip()}
         \"\"\"
         {parse_def}
         """,
@@ -92,6 +94,27 @@ class CheckSpider(scrapy.Spider):
         yield scrapy.Request(url='http://next-url.com')
         """
         self._test_contract(proj_path, contracts, parse_def, use_reactor=False)
+
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            "",
+            "TWISTED_REACTOR_ENABLED = False\n",
+            "FORCE_CRAWLER_PROCESS = True\n",
+        ],
+        ids=["async", "no_reactor", "crawler_process"],
+    )
+    def test_check_crawl_error(self, proj_path: Path, settings: str) -> None:
+        self._write_contract(proj_path, "@returns requests 0", "pass")
+        self._append_settings(
+            proj_path / self.project_name,
+            f"\nEXTENSIONS = {{'nonexistent.module.Extension': 300}}\n{settings}",
+        )
+        ret, _, err = proc("check", cwd=proj_path)
+        assert f"[{self.spider_name}] crawl" in err
+        assert "ModuleNotFoundError" in err
+        assert "FAILED (errors=1)" in err
+        assert ret == 1
 
     def test_check_returns_items_contract(self, proj_path: Path) -> None:
         contracts = """

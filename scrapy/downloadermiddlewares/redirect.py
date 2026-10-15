@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
-from urllib.parse import urljoin, urlparse
+from typing import TYPE_CHECKING, Any, Self, cast
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
@@ -16,9 +16,6 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.response import get_meta_refresh
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
@@ -43,7 +40,7 @@ class BaseRedirectMiddleware:
     def from_crawler(cls, crawler: Crawler) -> Self:
         o = cls(crawler.settings)
         o.crawler = crawler
-        crawler.signals.connect(o._engine_started, signal=signals.engine_started)
+        crawler.signals.connect(o._spider_opened, signal=signals.spider_opened)
         return o
 
     def handle_referer(self, request: Request, response: Response) -> None:
@@ -63,7 +60,7 @@ class BaseRedirectMiddleware:
             return
         self._referer_spider_middleware.get_processed_request(request, response)
 
-    def _engine_started(self) -> None:
+    def _spider_opened(self) -> None:
         self._referer_spider_middleware = self.crawler.get_spider_middleware(
             RefererMiddleware
         )
@@ -90,7 +87,9 @@ class BaseRedirectMiddleware:
             f"{referer_cls} (or a subclass), or {replacement}.",
         )
 
-    def _redirect(self, redirected: Request, request: Request, reason: Any) -> Request:
+    def _redirect(
+        self, redirected: Request, request: Request, reason: str | int
+    ) -> Request:
         ttl = request.meta.setdefault("redirect_ttl", self.max_redirect_times)
         redirects = request.meta.get("redirect_times", 0) + 1
 
@@ -224,15 +223,17 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         }:
             return response
 
-        assert response.headers["Location"] is not None
-        location = safe_url_string(response.headers["Location"])
-        if response.headers["Location"].startswith(b"//"):
+        location_header = response.headers["Location"]
+        assert location_header is not None
+        location = safe_url_string(location_header)
+        if location_header.startswith(b"//"):
             request_scheme = urlparse_cached(request).scheme
             location = request_scheme + "://" + location.lstrip("/")
 
         redirected_url = urljoin(request.url, location)
 
-        if not urlparse(redirected_url).fragment:
+        # A percent-encoded number sign is URI data, not a fragment delimiter.
+        if b"#" not in location_header:
             fragment = urlparse_cached(request).fragment
             if fragment:
                 redirected_url = urljoin(redirected_url, f"#{fragment}")

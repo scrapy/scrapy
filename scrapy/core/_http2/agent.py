@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, TypeAlias
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
 from twisted.web.error import SchemeNotSupported
 
@@ -138,8 +137,8 @@ class H2Agent:
         uri = URI.fromBytes(bytes(request.url, encoding="utf-8"))
         try:
             endpoint = self.get_endpoint(uri)
-        except SchemeNotSupported:
-            return defer.fail(Failure())
+        except SchemeNotSupported as exc:
+            return defer.fail(exc)
 
         key = self.get_key(uri)
         d: Deferred[H2ClientProtocol] = self._pool.get_connection(key, uri, endpoint)
