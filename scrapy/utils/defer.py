@@ -635,8 +635,7 @@ def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
     if not is_asyncio_available():
         Deferred.fromCoroutine(coro)
         return
-    loop = asyncio.get_event_loop()
-    loop.create_task(coro)  # noqa: RUF006
+    asyncio.create_task(coro)  # noqa: RUF006
 
 
 @overload

@@ -16,7 +16,6 @@ from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory, Protocol, connectionDone
-from twisted.python.failure import Failure
 from twisted.web._newclient import (
     HEADER,
     STATUS,
@@ -71,6 +70,7 @@ if TYPE_CHECKING:
 
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
+    from twisted.python.failure import Failure
     from twisted.web._newclient import Request as TxRequest
 
     from scrapy.crawler import Crawler
@@ -967,5 +967,4 @@ class _ResponseReader(Protocol):
 
         exc = ResponseDataLossError()
         exc.__cause__ = reason.value
-        reason = Failure(exc)
-        self._finished.errback(reason)
+        self._finished.errback(exc)
