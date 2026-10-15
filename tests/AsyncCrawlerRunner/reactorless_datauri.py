@@ -3,6 +3,7 @@ import asyncio
 from scrapy import Request, Spider
 from scrapy.crawler import AsyncCrawlerRunner
 from scrapy.utils.log import configure_logging
+from tests.utils import CURRENT_DEFAULTS
 
 
 class DataSpider(Spider):
@@ -20,9 +21,8 @@ async def main() -> None:
     runner = AsyncCrawlerRunner(
         settings={
             "TWISTED_REACTOR_ENABLED": False,
-            "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
-            "DOWNLOAD_DELAY": 0,
-            "ROBOTSTXT_OBEY": False,
+            "MEMUSAGE_ENABLED": False,
+            **CURRENT_DEFAULTS,
         }
     )
     await runner.crawl(DataSpider)

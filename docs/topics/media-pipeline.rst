@@ -14,15 +14,15 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 
 Both pipelines implement these features:
 
-* Avoid re-downloading media that was downloaded recently
-* Specifying where to store the media (filesystem directory, FTP server, Amazon S3 bucket,
-  Google Cloud Storage bucket)
+* Avoid re-downloading media that have been downloaded recently
+* Specify where to store the media (filesystem directory, FTP server, Amazon S3
+  bucket, Google Cloud Storage bucket)
 
 The Images Pipeline has a few extra functions for processing images:
 
-* Convert all downloaded images to a common format (JPG) and mode (RGB)
+* Convert all downloaded images to a common format (JPEG) and mode (RGB)
 * Thumbnail generation
-* Check images width/height to make sure they meet a minimum constraint
+* Check images' width/height to make sure they meet a minimum constraint
 
 The pipelines also keep an internal queue of those media URLs which are currently
 being scheduled for download, and connect those responses that arrive containing
@@ -49,9 +49,9 @@ this:
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
    about the downloaded files, such as the downloaded path, the original
-   scraped url (taken from the ``file_urls`` field), the file checksum and the file status.
-   The files in the list of the ``files`` field will retain the same order of
-   the original ``file_urls`` field. If some file failed downloading, an
+   scraped URL (taken from the ``file_urls`` field), the file checksum and the
+   file status. The files in the ``files`` field will retain the same order as
+   in the original ``file_urls`` field. If some file failed downloading, an
    error will be logged and the file won't be present in the ``files`` field.
 
 
@@ -209,10 +209,43 @@ the resulting path. A path that depends on the response can never match that
 check, and :setting:`FILES_EXPIRES` set to ``0`` disables it, at the cost of
 downloading every file on every run.
 
+.. _media-request-headers:
+
+Setting request headers
+-----------------------
+
+Media requests are built from the item, not from the response that yielded
+it, so features like :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware`
+do not apply to them. To send a header such as ``Referer``, store the value
+on the item in your spider, and read it back from the item in
+``get_media_requests`` of your custom media pipeline:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+    from scrapy.pipelines.files import FilesPipeline
+
+
+    class MySpider(Spider):
+        def parse(self, response):
+            yield {
+                "file_urls": response.css("a.file::attr(href)").getall(),
+                "referrer": response.url,
+            }
+
+
+    class MyFilesPipeline(FilesPipeline):
+        def get_media_requests(self, item, info):
+            for file_url in item["file_urls"]:
+                yield Request(file_url, headers={"Referer": item["referrer"]})
+
 .. _topics-supported-storage:
 
 Supported Storage
 =================
+
+Use :setting:`UPLOAD_TIMEOUT` to limit how long uploads to a remote storage
+backend may take.
 
 File system storage
 -------------------
@@ -284,9 +317,31 @@ policy:
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
+To send custom headers with the uploaded files, subclass ``S3FilesStore``
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme to it
+with :setting:`MEDIA_STORAGES`:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import S3FilesStore
+
+
+    class CustomS3FilesStore(S3FilesStore):
+        HEADERS = {
+            "Cache-Control": "max-age=172800",
+            "X-Amz-Storage-Class": "STANDARD_IA",
+        }
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"s3": "myproject.storages.CustomS3FilesStore"}
+
+Supported headers are those that the installed botocore version models for
+the `PutObject`_ operation; any other header raises :exc:`TypeError`.
+
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
-`Zenko CloudServer`_. All you need to do is set endpoint option in you Scrapy
-settings:
+`Zenko CloudServer`_. All you need to do is set the endpoint option in your
+Scrapy settings:
 
 .. code-block:: python
 
@@ -304,6 +359,7 @@ To reuse connections for as many files as you check or upload in parallel, set
 
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
+.. _PutObject: https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 
@@ -345,6 +401,63 @@ policy:
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
 .. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
+
+.. _media-pipeline-custom-storage:
+
+Custom storage
+--------------
+
+.. versionadded:: VERSION
+
+.. setting:: MEDIA_STORAGES
+
+The :setting:`MEDIA_STORAGES` setting maps URL schemes to storage classes, so
+that you can support additional schemes or replace a built-in storage:
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"myscheme": "myproject.storages.MyStorage"}
+    FILES_STORE = "myscheme://example.com/files/"
+
+.. setting:: MEDIA_STORAGES_BASE
+
+It is merged into :setting:`MEDIA_STORAGES_BASE`, which holds the built-in
+storages:
+
+.. code-block:: python
+
+    {
+        "": "scrapy.pipelines.files.FSFilesStore",
+        "file": "scrapy.pipelines.files.FSFilesStore",
+        "ftp": "scrapy.pipelines.files.FTPFilesStore",
+        "gs": "scrapy.pipelines.files.GCSFilesStore",
+        "s3": "scrapy.pipelines.files.S3FilesStore",
+    }
+
+A storage class receives the :setting:`FILES_STORE` or :setting:`IMAGES_STORE`
+value, and must define ``stat_file`` and ``persist_file``:
+
+.. code-block:: python
+
+    class MyStorage:
+        def __init__(self, uri, *, acl=None):
+            self.uri = uri
+            self.acl = acl
+
+        @classmethod
+        def from_crawler(cls, crawler, uri, *, get_setting_name):
+            return cls(uri, acl=crawler.settings[get_setting_name("ACL")])
+
+        def stat_file(self, path, info): ...
+
+        def persist_file(self, path, buf, info, meta=None, headers=None): ...
+
+*get_setting_name* adds the prefix of the pipeline being built to a setting
+name, so that a single storage class can be configured separately for files and
+for images: ``get_setting_name("ACL")`` returns ``"FILES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.files.FilesPipeline` and ``"IMAGES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.images.ImagesPipeline`, and takes :ref:`per-class
+setting names <media-pipeline-class-settings>` into account.
 
 Usage example
 =============
@@ -400,6 +513,8 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
 
+.. _media-pipeline-class-settings:
+
 If you have multiple image pipelines inheriting from :class:`ImagesPipeline`
 and you want to have different settings in different pipelines you can set
 setting keys preceded with uppercase name of your pipeline class. E.g. if your
@@ -432,18 +547,47 @@ specifies the delay in number of days:
     # 30 days of delay for images expiration
     IMAGES_EXPIRES = 30
 
-The default value for both settings is 90 days.
+The default value for both settings is 90 days. A negative value disables
+expiration, i.e. files are never re-downloaded once fetched.
 
-If you have pipeline that subclasses FilesPipeline and you'd like to have
-different setting for it you can set setting keys preceded by uppercase
-class name. E.g. given pipeline class called MyPipeline you can set setting key:
+If you have a pipeline that subclasses FilesPipeline and you'd like to have a
+different setting for it, you can set setting keys preceded by the uppercase
+class name. For example, given a pipeline class called MyPipeline you can set
+the setting key:
 
     MYPIPELINE_FILES_EXPIRES = 180
 
-and pipeline class MyPipeline will have expiration time set to 180.
+and the pipeline class MyPipeline will have an expiration time set to 180.
 
 The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.
+
+.. _checksum-algorithm:
+
+Checksum algorithm
+------------------
+
+.. versionadded:: VERSION
+
+.. setting:: FILES_CHECKSUM_ALGORITHM
+.. setting:: IMAGES_CHECKSUM_ALGORITHM
+
+Checksums are `MD5 hashes <MD5 hash_>`_ by default. To use a different
+algorithm, set :setting:`FILES_CHECKSUM_ALGORITHM` (or
+:setting:`IMAGES_CHECKSUM_ALGORITHM`, in case of the Images Pipeline) to the
+name of any algorithm supported by :func:`hashlib.new`:
+
+.. code-block:: python
+
+    FILES_CHECKSUM_ALGORITHM = "sha256"
+
+Amazon S3 and Google Cloud Storage cannot calculate checksums of stored files
+on demand, and only report MD5 hashes, so with a different algorithm files that
+are not downloaded again, because they have not expired yet, get no checksum.
+
+A :ref:`custom storage <media-pipeline-custom-storage>` that calculates
+checksums in ``stat_file`` must use the algorithm that the pipeline sets as its
+``checksum_algorithm`` attribute.
 
 .. _topics-images-thumbnails:
 
@@ -489,6 +633,26 @@ Example of image files stored using ``small`` and ``big`` thumbnail names::
 
 The first one is the full image, as downloaded from the site.
 
+.. _preserving-image-format:
+
+Preserving the original image format
+------------------------------------
+
+.. setting:: IMAGES_PRESERVE_FORMAT
+
+By default, the Images Pipeline converts every image to JPEG, flattening
+transparency onto a white background. Set :setting:`IMAGES_PRESERVE_FORMAT`
+to ``True`` to keep each image, and its thumbnails, in the format it was
+downloaded in instead:
+
+.. code-block:: python
+
+    IMAGES_PRESERVE_FORMAT = True
+
+Stored files then get no extension, since the actual format is only known
+once the image has been downloaded; see :ref:`file-naming-response` to
+derive one from the response instead.
+
 Filtering out small images
 --------------------------
 
@@ -531,13 +695,31 @@ To handle media redirections, set this setting to ``True``:
 
     MEDIA_ALLOW_REDIRECTS = True
 
+Limiting the result cache
+-------------------------
+
+.. setting:: MEDIA_CACHE_SIZE
+
+Media pipelines remember the outcome of every media request they handle, so
+that a file referenced by several items is downloaded once. By default every
+outcome is kept for the whole crawl, which takes about 600 bytes per distinct
+media URL.
+
+.. versionadded:: VERSION
+
+To cap that memory, set :setting:`MEDIA_CACHE_SIZE` to the number of most
+recently used outcomes to keep, or to ``0`` to keep none:
+
+.. code-block:: python
+
+    MEDIA_CACHE_SIZE = 10000
+
 .. _topics-media-pipeline-override:
 
 Extending the Media Pipelines
 =============================
 
 .. module:: scrapy.pipelines.files
-   :synopsis: Files Pipeline
 
 See here the methods that you can override in your custom Files Pipeline:
 
@@ -595,6 +777,8 @@ See here the methods that you can override in your custom Files Pipeline:
              for file_url in adapter["file_urls"]:
                  yield scrapy.Request(file_url)
 
+      You can also use it to set request headers, see :ref:`media-request-headers`.
+
       Those requests will be processed by the pipeline and, when they have finished
       downloading, the results will be sent to the
       :meth:`~item_completed` method, as a list of 2-element tuples.
@@ -614,7 +798,8 @@ See here the methods that you can override in your custom Files Pipeline:
         * ``path`` - the path (relative to :setting:`FILES_STORE`) where the file
           was stored
 
-        * ``checksum`` - a `MD5 hash`_ of the image contents
+        * ``checksum`` - a `MD5 hash`_ of the file contents, unless a different
+          :ref:`checksum algorithm <checksum-algorithm>` is configured
 
         * ``status`` - the file status indication.
 
@@ -684,7 +869,6 @@ See here the methods that you can override in your custom Files Pipeline:
 
 
 .. module:: scrapy.pipelines.images
-   :synopsis: Images Pipeline
 
 See here the methods that you can override in your custom Images Pipeline:
 
@@ -766,6 +950,49 @@ See here the methods that you can override in your custom Images Pipeline:
       but using a different field names for storing image downloading results.
 
       By default, the :meth:`item_completed` method returns the item.
+
+
+.. _media-pipeline-failed-downloads:
+
+Accessing the response of a failed download
+===========================================
+
+When a download fails, :meth:`~item_completed` receives it as a
+:exc:`~twisted.python.failure.Failure` whose ``value`` is the exception
+raised from :meth:`~media_downloaded`. For a non-2xx response, that
+exception is a :exc:`~scrapy.pipelines.media.FileException` built from just
+a message, without a reference to the response. To access the response, for
+example to record its ``status`` on the item, override
+:meth:`~media_downloaded` to attach it to a custom exception:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline
+    from scrapy.pipelines.media import FileException
+
+
+    class ResponseFileException(FileException):
+        def __init__(self, response):
+            super().__init__(f"download-error ({response.status})")
+            self.response = response
+
+
+    class MyFilesPipeline(FilesPipeline):
+        async def media_downloaded(self, response, request, info, *, item=None):
+            try:
+                return await super().media_downloaded(response, request, info, item=item)
+            except FileException:
+                raise ResponseFileException(response)
+
+        def item_completed(self, results, item, info):
+            errors = [
+                value.value.response.status
+                for ok, value in results
+                if not ok and value.check(ResponseFileException)
+            ]
+            if errors:
+                item["download_errors"] = errors
+            return super().item_completed(results, item, info)
 
 
 .. _media-pipeline-example:

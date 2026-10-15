@@ -6,7 +6,8 @@ from scrapy import Spider
 from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import BaseSettings, Settings
-from scrapy.utils.test import get_crawler, get_reactor_settings
+from scrapy.utils.test import get_crawler
+from tests.utils import get_test_settings
 from tests.utils.decorators import inline_callbacks_test
 
 
@@ -115,7 +116,7 @@ class TestAddonManager:
             settings = {"ADDONS": {a: i for i, a in enumerate(ordered_addons)}}
             crawler = get_crawler(settings_dict=settings)
             manager = crawler.addons
-            assert [a.number for a in manager.addons] == expected_order
+            assert [a.number for a in manager.addons] == expected_order  # type: ignore[attr-defined]
             assert crawler.settings.getint("KEY1") == expected_order[-1]
 
     def test_build_from_crawler(self):
@@ -134,7 +135,7 @@ class TestAddonManager:
         }
         settings_dict = {
             "ADDONS": {get_addon_cls(config): 1},
-            **get_reactor_settings(),
+            **get_test_settings(),
         }
         crawler = get_crawler(settings_dict=settings_dict)
         assert crawler.settings.getint("KEY") == 15
@@ -155,7 +156,7 @@ class TestAddonManager:
         settings_dict = {
             "KEY": 20,  # priority=project
             "ADDONS": {get_addon_cls(config): 1},
-            **get_reactor_settings(),
+            **get_test_settings(),
         }
         settings = Settings(settings_dict)
         settings.set("KEY", 0, priority="default")
@@ -229,7 +230,7 @@ class TestAddonManager:
                 return spider
 
         settings = Settings()
-        settings.setdict(get_reactor_settings())
+        settings.setdict(get_test_settings())
         settings.set("KEY", "default", priority="default")
         runner_cls = (
             CrawlerRunner

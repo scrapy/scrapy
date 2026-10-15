@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+import warnings
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, Self
 
 from scrapy import Spider, signals
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
@@ -14,9 +15,6 @@ if TYPE_CHECKING:
     from json import JSONEncoder
 
     from twisted.internet.task import LoopingCall
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
@@ -38,7 +36,8 @@ class PeriodicLog:
     ):
         self.stats: StatsCollector = stats
         self.interval: float = interval
-        self.task: AsyncioLoopingCall | LoopingCall | None = None
+        self._multiplier: float = 60.0 / interval
+        self.task: AsyncioLoopingCall[[], None] | LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
         self.ext_stats_include: Sequence[str] = (
@@ -55,6 +54,24 @@ class PeriodicLog:
             ext_delta.get("exclude", ()) if ext_delta else ()
         )
         self.ext_timing_enabled: bool = ext_timing_enabled
+
+    @property
+    def multiplier(self) -> float:
+        warnings.warn(
+            "The PeriodicLog.multiplier attribute is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._multiplier
+
+    @multiplier.setter
+    def multiplier(self, value: float) -> None:
+        warnings.warn(
+            "The PeriodicLog.multiplier attribute is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self._multiplier = value
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -101,7 +118,7 @@ class PeriodicLog:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        self.time_prev: datetime = datetime.now(tz=timezone.utc)
+        self.time_prev: datetime = datetime.now(tz=UTC)
         self.delta_prev: dict[str, int | float] = {}
         self.stats_prev: dict[str, int | float] = {}
 
@@ -130,7 +147,7 @@ class PeriodicLog:
         return {"delta": delta}
 
     def log_timing(self) -> dict[str, Any]:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         time = {
             "log_interval": self.interval,
             "start_time": self.stats._stats["start_time"],

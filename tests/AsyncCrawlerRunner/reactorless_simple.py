@@ -4,6 +4,7 @@ from scrapy import Spider
 from scrapy.crawler import AsyncCrawlerRunner
 from scrapy.utils.log import configure_logging
 from scrapy.utils.reactorless import is_reactorless
+from tests.utils import CURRENT_DEFAULTS
 
 
 class NoRequestsSpider(Spider):
@@ -20,9 +21,8 @@ async def main() -> None:
     runner = AsyncCrawlerRunner(
         settings={
             "TWISTED_REACTOR_ENABLED": False,
-            "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
-            "DOWNLOAD_DELAY": 0,
-            "ROBOTSTXT_OBEY": False,
+            "MEMUSAGE_ENABLED": False,
+            **CURRENT_DEFAULTS,
         }
     )
     await runner.crawl(NoRequestsSpider)

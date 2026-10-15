@@ -3,17 +3,17 @@ from __future__ import annotations
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.python import to_bytes
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
 def get_defaults_mw() -> tuple[dict[bytes, list[bytes]], DefaultHeadersMiddleware]:
     crawler = get_crawler(Spider)
     defaults = {
-        to_bytes(k): [to_bytes(v)]
+        k.encode(): [v.encode()]
         for k, v in crawler.settings.get("DEFAULT_REQUEST_HEADERS").items()
     }
-    return defaults, DefaultHeadersMiddleware.from_crawler(crawler)
+    return defaults, build_from_crawler(DefaultHeadersMiddleware, crawler)
 
 
 def test_process_request():

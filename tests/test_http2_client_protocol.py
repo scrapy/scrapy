@@ -15,13 +15,18 @@ from pytest_twisted import async_yield_fixture
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
+from twisted.internet.task import deferLater
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
 from twisted.web.http import Request as TxRequest
 from twisted.web.server import NOT_DONE_YET, Site
 from twisted.web.static import File
 
-from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError
+from scrapy.exceptions import (
+    DownloadCancelledError,
+    DownloadTimeoutError,
+    ResponseDataLossError,
+)
 from scrapy.http import JsonRequest, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import (
@@ -36,7 +41,8 @@ from tests.mockserver.utils import ssl_context_factory
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
 
-    from scrapy.core.http2.protocol import H2ClientProtocol
+    from scrapy.core._http2.protocol import H2ClientProtocol
+    from scrapy.crawler import Crawler
 
 
 pytestmark = [
@@ -75,7 +81,7 @@ class Data:
     STR_LARGE = generate_random_string(LARGE_SIZE)
 
     EXTRA_SMALL = generate_random_string(1024 * 15)
-    EXTRA_LARGE = generate_random_string((1024**2) * 15)
+    EXTRA_LARGE = generate_random_string(LARGE_SIZE)
 
     HTML_SMALL = make_html_body(STR_SMALL)
     HTML_LARGE = make_html_body(STR_LARGE)
@@ -236,13 +242,20 @@ class TestHttps2ClientProtocol:
         ) + self.certificate_file.read_text(encoding="utf-8")
         return PrivateCertificate.loadPEM(pem)  # type: ignore[no-any-return]
 
+    @pytest.fixture
+    def crawler(self, request: pytest.FixtureRequest) -> Crawler:
+        return get_crawler(settings_dict=getattr(request, "param", None))
+
     @async_yield_fixture  # type: ignore[untyped-decorator]
     async def client(
-        self, server_port: int, client_certificate: PrivateCertificate
+        self,
+        server_port: int,
+        client_certificate: PrivateCertificate,
+        crawler: Crawler,
     ) -> AsyncGenerator[H2ClientProtocol]:
         from twisted.internet import reactor
 
-        from scrapy.core.http2.protocol import H2ClientFactory  # noqa: PLC0415
+        from scrapy.core._http2.protocol import H2ClientFactory  # noqa: PLC0415
 
         client_options = optionsForClientTLS(
             hostname=self.host,
@@ -250,7 +263,7 @@ class TestHttps2ClientProtocol:
             acceptableProtocols=[b"h2"],
         )
         uri = URI.fromBytes(bytes(self.get_url(server_port, "/"), "utf-8"))
-        h2_client_factory = H2ClientFactory(uri, get_crawler(), Deferred())
+        h2_client_factory = H2ClientFactory(uri, crawler, Deferred())
         client_endpoint = SSL4ClientEndpoint(
             reactor, self.host, server_port, client_options
         )
@@ -258,7 +271,9 @@ class TestHttps2ClientProtocol:
 
         yield client
 
-        if client.connected:
+        # H2ClientProtocol.connected stays set once the connection is made, so
+        # the underlying transport is what tells whether it is still open.
+        if client.transport.connected:
             client.transport.loseConnection()
             client.transport.abortConnection()
 
@@ -311,6 +326,17 @@ class TestHttps2ClientProtocol:
     ) -> None:
         request = Request(self.get_url(server_port, "/get-data-html-large"))
         await self._check_GET(client, request, Data.HTML_LARGE, 200)
+
+    @pytest.mark.parametrize(
+        "crawler", [{"HTTP2_MAX_FRAME_SIZE": 1024**2}], indirect=True
+    )
+    @deferred_f_from_coro_f
+    async def test_GET_large_frames(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(self.get_url(server_port, "/get-data-html-large"))
+        await self._check_GET(client, request, Data.HTML_LARGE, 200)
+        assert client.conn.local_settings.max_frame_size == 1024**2
 
     async def _check_GET_x10(
         self,
@@ -460,7 +486,7 @@ class TestHttps2ClientProtocol:
     def test_invalid_negotiated_protocol(
         self, server_port: int, client: H2ClientProtocol
     ) -> Generator[Deferred[Any], Any, None]:
-        with mock.patch("scrapy.core.http2.protocol.PROTOCOL_NAME", new=b"not-h2"):
+        with mock.patch("scrapy.core._http2.protocol.PROTOCOL_NAME", new=b"not-h2"):
             request = Request(url=self.get_url(server_port, "/status?n=200"))
             with pytest.raises(ResponseFailed):
                 yield make_request_dfd(client, request)
@@ -492,22 +518,25 @@ class TestHttps2ClientProtocol:
         ):
             await make_request(client, request)
 
-    @inlineCallbacks
-    def test_received_dataloss_response(
+    @deferred_f_from_coro_f
+    async def test_received_dataloss_response(
         self, server_port: int, client: H2ClientProtocol
-    ) -> Generator[Deferred[Any], Any, None]:
-        """In case when value of Header Content-Length != len(Received Data)
-        ProtocolError is raised"""
-        from h2.exceptions import InvalidBodyLengthError  # noqa: PLC0415
-
+    ) -> None:
         request = Request(url=self.get_url(server_port, "/dataloss"))
-        with pytest.raises(ResponseFailed) as exc_info:
-            yield make_request_dfd(client, request)
-        assert len(exc_info.value.reasons) > 0
-        assert any(
-            isinstance(error, InvalidBodyLengthError)
-            for error in exc_info.value.reasons
+        with pytest.raises(ResponseDataLossError, match=r"InvalidBodyLengthError"):
+            await make_request(client, request)
+
+    @deferred_f_from_coro_f
+    async def test_allow_dataloss_response(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(
+            url=self.get_url(server_port, "/dataloss"),
+            meta={"download_fail_on_dataloss": False},
         )
+        response = await make_request(client, request)
+        assert response.flags == ["dataloss"]
+        assert response.body == Data.DATALOSS
 
     @deferred_f_from_coro_f
     async def test_missing_content_length_header(
@@ -527,7 +556,7 @@ class TestHttps2ClientProtocol:
         expected_body: bytes,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        with caplog.at_level("WARNING", "scrapy.core.http2.stream"):
+        with caplog.at_level("WARNING", "scrapy.core._http2.stream"):
             response = await make_request(client, request)
         assert response.status == 200
         assert response.body == expected_body
@@ -605,7 +634,7 @@ class TestHttps2ClientProtocol:
         def assert_inactive_stream(failure):
             assert failure.check(ResponseFailed) is not None
 
-            from scrapy.core.http2.stream import InactiveStreamClosed  # noqa: PLC0415
+            from scrapy.core._http2.stream import InactiveStreamClosed  # noqa: PLC0415
 
             assert any(
                 isinstance(e, InactiveStreamClosed) for e in failure.value.reasons
@@ -660,14 +689,14 @@ class TestHttps2ClientProtocol:
         data = json.loads(str(response.body, content_encoding))
         assert data == params
 
+    @pytest.mark.parametrize("status", [200, 404])
     @deferred_f_from_coro_f
     async def test_status_codes(
-        self, server_port: int, client: H2ClientProtocol
+        self, status: int, server_port: int, client: H2ClientProtocol
     ) -> None:
-        for status in [200, 404]:
-            request = Request(self.get_url(server_port, f"/status?n={status}"))
-            response = await make_request(client, request)
-            assert response.status == status
+        request = Request(self.get_url(server_port, f"/status?n={status}"))
+        response = await make_request(client, request)
+        assert response.status == status
 
     @pytest.mark.filterwarnings(
         r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
@@ -692,7 +721,7 @@ class TestHttps2ClientProtocol:
 
     @staticmethod
     async def _check_invalid_netloc(client: H2ClientProtocol, url: str) -> None:
-        from scrapy.core.http2.stream import InvalidHostname  # noqa: PLC0415
+        from scrapy.core._http2.stream import InvalidHostname  # noqa: PLC0415
 
         request = Request(url)
         with pytest.raises(InvalidHostname) as exc_info:
@@ -737,7 +766,7 @@ class TestHttps2ClientProtocol:
             yield make_request_dfd(client, request)
 
         for err in exc_info.value.reasons:
-            from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
+            from scrapy.core._http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
             if isinstance(err, DownloadTimeoutError):
                 assert (
@@ -747,6 +776,17 @@ class TestHttps2ClientProtocol:
                 break
         else:
             pytest.fail("No TimeoutError raised.")
+
+    @deferred_f_from_coro_f
+    async def test_connection_timeout_no_streams(
+        self, client: H2ClientProtocol
+    ) -> None:
+        """A connection with no streams is closed when it times out."""
+        from twisted.internet import reactor
+
+        client.setTimeout(0.1)  # type: ignore[no-untyped-call]
+        await maybe_deferred_to_future(deferLater(reactor, 0.5))
+        assert client.transport.disconnecting
 
     @deferred_f_from_coro_f
     async def test_request_headers_received(
@@ -761,7 +801,9 @@ class TestHttps2ClientProtocol:
 
         response_headers = json.loads(str(response.body, "utf-8"))
         assert isinstance(response_headers, dict)
+        # The server reports header names in its own case.
+        received = {k.lower(): v for k, v in response_headers.items()}
         for k, v in request.headers.items():
-            k_decoded, v_decoded = str(k, "utf-8"), str(v[0], "utf-8")
-            assert k_decoded in response_headers
-            assert v_decoded == response_headers[k_decoded]
+            k_decoded, v_decoded = str(k, "utf-8").lower(), str(v[0], "utf-8")
+            assert k_decoded in received
+            assert v_decoded == received[k_decoded]

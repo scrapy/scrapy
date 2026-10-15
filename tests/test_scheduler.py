@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 from unittest.mock import Mock
 
 import pytest
@@ -11,23 +12,25 @@ import pytest
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
 from scrapy.crawler import Crawler
+from scrapy.dupefilters import BaseDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
+from scrapy.pqueues import ScrapyPriorityQueue
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 from tests.utils.downloader import MockDownloader
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncGenerator, Callable
     from pathlib import Path
 
 
 class MockCrawler(Crawler):
-    def __init__(self, priority_queue_cls: str, jobdir: Path | None):
+    def __init__(self, priority_queue_cls: str, jobdir: Path | None, **settings: Any):
         settings = {
             "SCHEDULER_DEBUG": False,
             "SCHEDULER_DISK_QUEUE": "scrapy.squeues.PickleLifoDiskQueue",
@@ -35,6 +38,7 @@ class MockCrawler(Crawler):
             "SCHEDULER_PRIORITY_QUEUE": priority_queue_cls,
             "JOBDIR": str(jobdir) if jobdir is not None else None,
             "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+            **settings,
         }
         super().__init__(Spider, settings)
         self.engine = Mock(downloader=MockDownloader())
@@ -43,18 +47,17 @@ class MockCrawler(Crawler):
 
 @asynccontextmanager
 async def create_scheduler(
-    priority_queue_cls: str, jobdir: Path | None
+    priority_queue_cls: str, jobdir: Path | None, **settings: Any
 ) -> AsyncGenerator[Scheduler]:
-    mock_crawler = MockCrawler(priority_queue_cls, jobdir)
-    scheduler = Scheduler.from_crawler(mock_crawler)
-    spider = Spider(name="spider")
+    mock_crawler = MockCrawler(priority_queue_cls, jobdir, **settings)
+    scheduler = build_from_crawler(Scheduler, mock_crawler)
+    spider = Spider.from_crawler(mock_crawler, name="spider")
     await ensure_awaitable(scheduler.open(spider))
     try:
         yield scheduler
     finally:
         await ensure_awaitable(scheduler.close("finished"))
         await mock_crawler.stop_async()
-        assert mock_crawler.engine
         mock_crawler.engine.downloader.close()
 
 
@@ -70,7 +73,29 @@ _PRIORITIES = [
 _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
 
 
+def _active_json(jobdir: Path) -> Any:
+    path = jobdir / "requests.queue" / "active.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _enqueue_across_queues(scheduler: Scheduler) -> None:
+    for name, priority in (("memory", 0), ("disk", 1), ("disk", 0), ("memory", -1)):
+        request = Request(f"https://example.com/{name}{priority}", priority=priority)
+        if name == "memory":
+            request.meta["unserializable"] = lambda: None
+        scheduler.enqueue_request(request)
+
+
+def _dequeue_urls(scheduler: Scheduler) -> list[str]:
+    urls = []
+    while request := scheduler.next_request():
+        urls.append(request.url)
+    return urls
+
+
 class TestSchedulerBase(ABC):
+    reopen = False
+
     @property
     @abstractmethod
     def priority_queue_cls(self) -> str:
@@ -81,33 +106,47 @@ class TestSchedulerBase(ABC):
         return None
 
     def create_scheduler(
-        self, jobdir: Path | None
+        self, jobdir: Path | None, **settings: Any
     ) -> AbstractAsyncContextManager[Scheduler]:
-        return create_scheduler(self.priority_queue_cls, jobdir)
+        return create_scheduler(self.priority_queue_cls, jobdir, **settings)
 
-    # TODO: unify test methods using "reopen" like in DownloaderAwareSchedulerTestMixin
+    @asynccontextmanager
+    async def create_scheduler_for_assertions(
+        self, jobdir: Path | None, setup: Callable[[Scheduler], None]
+    ) -> AsyncGenerator[Scheduler]:
+        if self.reopen:
+            async with self.create_scheduler(jobdir) as scheduler:
+                setup(scheduler)
+            async with self.create_scheduler(jobdir) as scheduler:
+                yield scheduler
+        else:
+            async with self.create_scheduler(jobdir) as scheduler:
+                setup(scheduler)
+                yield scheduler
 
 
-class TestSchedulerInMemoryBase(TestSchedulerBase):
+class SchedulerTestMixin(TestSchedulerBase):
     @coroutine_test
     async def test_length(self, jobdir: Path | None) -> None:
-        async with self.create_scheduler(jobdir) as scheduler:
+        def _setup(scheduler: Scheduler) -> None:
             assert not scheduler.has_pending_requests()
             assert len(scheduler) == 0
 
             for url in _URLS:
                 scheduler.enqueue_request(Request(url))
 
+        async with self.create_scheduler_for_assertions(jobdir, _setup) as scheduler:
             assert scheduler.has_pending_requests()
             assert len(scheduler) == len(_URLS)
 
     @coroutine_test
     async def test_dequeue(self, jobdir: Path | None) -> None:
-        async with self.create_scheduler(jobdir) as scheduler:
+        def _setup(scheduler: Scheduler) -> None:
             for url in _URLS:
                 scheduler.enqueue_request(Request(url))
 
-            urls = set()
+        urls = set()
+        async with self.create_scheduler_for_assertions(jobdir, _setup) as scheduler:
             while scheduler.has_pending_requests():
                 request = scheduler.next_request()
                 assert request is not None
@@ -117,11 +156,12 @@ class TestSchedulerInMemoryBase(TestSchedulerBase):
 
     @coroutine_test
     async def test_dequeue_priorities(self, jobdir: Path | None) -> None:
-        async with self.create_scheduler(jobdir) as scheduler:
+        def _setup(scheduler: Scheduler) -> None:
             for url, priority in _PRIORITIES:
                 scheduler.enqueue_request(Request(url, priority=priority))
 
-            priorities = []
+        priorities = []
+        async with self.create_scheduler_for_assertions(jobdir, _setup) as scheduler:
             while scheduler.has_pending_requests():
                 request = scheduler.next_request()
                 assert request is not None
@@ -130,50 +170,27 @@ class TestSchedulerInMemoryBase(TestSchedulerBase):
         assert priorities == sorted([x[1] for x in _PRIORITIES], key=lambda x: -x)
 
 
-class TestSchedulerOnDiskBase(TestSchedulerBase):
+class TestSchedulerInMemoryBase(SchedulerTestMixin):
+    pass
+
+
+class TestSchedulerOnDiskBase(SchedulerTestMixin):
+    reopen = True
+
     @pytest.fixture
     def jobdir(self, tmp_path: Path) -> Path | None:
         return tmp_path
 
     @coroutine_test
-    async def test_length(self, jobdir: Path | None) -> None:
+    async def test_dequeue_priorities_across_queues(self, jobdir: Path | None) -> None:
         async with self.create_scheduler(jobdir) as scheduler:
-            assert not scheduler.has_pending_requests()
-            assert len(scheduler) == 0
-            for url in _URLS:
-                scheduler.enqueue_request(Request(url))
-
-        async with self.create_scheduler(jobdir) as scheduler:
-            assert scheduler.has_pending_requests()
-            assert len(scheduler) == len(_URLS)
-
-    @coroutine_test
-    async def test_dequeue(self, jobdir: Path | None) -> None:
-        async with self.create_scheduler(jobdir) as scheduler:
-            for url in _URLS:
-                scheduler.enqueue_request(Request(url))
-
-        urls = set()
-        async with self.create_scheduler(jobdir) as scheduler:
-            while scheduler.has_pending_requests():
-                request = scheduler.next_request()
-                assert request is not None
-                urls.add(request.url)
-        assert urls == _URLS
-
-    @coroutine_test
-    async def test_dequeue_priorities(self, jobdir: Path | None) -> None:
-        async with self.create_scheduler(jobdir) as scheduler:
-            for url, priority in _PRIORITIES:
-                scheduler.enqueue_request(Request(url, priority=priority))
-
-        priorities = []
-        async with self.create_scheduler(jobdir) as scheduler:
-            while scheduler.has_pending_requests():
-                request = scheduler.next_request()
-                assert request is not None
-                priorities.append(request.priority)
-        assert priorities == sorted([x[1] for x in _PRIORITIES], key=lambda x: -x)
+            _enqueue_across_queues(scheduler)
+            assert _dequeue_urls(scheduler) == [
+                "https://example.com/disk1",
+                "https://example.com/memory0",
+                "https://example.com/disk0",
+                "https://example.com/memory-1",
+            ]
 
 
 class TestSchedulerInMemory(TestSchedulerInMemoryBase):
@@ -182,6 +199,42 @@ class TestSchedulerInMemory(TestSchedulerInMemoryBase):
 
 class TestSchedulerOnDisk(TestSchedulerOnDiskBase):
     priority_queue_cls = "scrapy.pqueues.ScrapyPriorityQueue"
+
+    @coroutine_test
+    async def test_active_json(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        path = jobdir / "requests.queue" / "active.json"
+        async with self.create_scheduler(jobdir) as scheduler:
+            for url, priority in _PRIORITIES:
+                scheduler.enqueue_request(Request(url, priority=priority))
+            assert not path.exists()
+        assert _active_json(jobdir) == [-2, -1, 0, 1, 2]
+
+    @coroutine_test
+    async def test_active_json_sync_every(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        async with self.create_scheduler(jobdir, JOBDIR_SYNC_EVERY=1) as scheduler:
+            for url, priority in _PRIORITIES:
+                scheduler.enqueue_request(Request(url, priority=priority))
+            assert _active_json(jobdir) == [-2, -1, 0, 1, 2]
+            scheduler.next_request()
+            assert _active_json(jobdir) == [-1, 0, 1, 2]
+
+    @coroutine_test
+    async def test_active_json_sync_window(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        path = jobdir / "requests.queue" / "active.json"
+        async with self.create_scheduler(jobdir, JOBDIR_SYNC_EVERY=2) as scheduler:
+            scheduler.enqueue_request(Request("http://foo.com/a", priority=-2))
+            assert not path.exists()
+            scheduler.enqueue_request(Request("http://foo.com/b", priority=1))
+            assert _active_json(jobdir) == [-1, 2]
+            scheduler.enqueue_request(Request("http://foo.com/c", priority=0))
+            assert _active_json(jobdir) == [-1, 2]
+            scheduler.enqueue_request(Request("http://foo.com/d", priority=1))
+            assert _active_json(jobdir) == [-1, 2]
+            scheduler.enqueue_request(Request("http://foo.com/e", priority=2))
+            assert _active_json(jobdir) == [-2, -1, 0, 2]
 
 
 _URLS_WITH_SLOTS = [
@@ -254,7 +307,6 @@ class DownloaderAwareSchedulerTestMixin(TestSchedulerBase):
             dequeued_slots: list[str] = []
             requests: list[Request] = []
             assert scheduler.crawler
-            assert scheduler.crawler.engine
             downloader = scheduler.crawler.engine.downloader
             assert isinstance(downloader, MockDownloader)
             while scheduler.has_pending_requests():
@@ -294,6 +346,25 @@ class TestSchedulerWithDownloaderAwareOnDisk(
 ):
     reopen = True
 
+    @coroutine_test
+    async def test_active_json_sync_every(self, jobdir: Path | None) -> None:
+        assert jobdir is not None
+        async with self.create_scheduler(jobdir, JOBDIR_SYNC_EVERY=1) as scheduler:
+
+            def enqueue(slot: str, priority: int) -> None:
+                request = Request(f"http://foo.com/{slot}{priority}", priority=priority)
+                request.meta[Downloader.DOWNLOAD_SLOT] = slot
+                scheduler.enqueue_request(request)
+
+            enqueue("a", 1)
+            assert _active_json(jobdir) == {"a": [-1]}
+            enqueue("a", 2)
+            assert _active_json(jobdir) == {"a": [-2, -1]}
+            enqueue("b", 1)
+            assert _active_json(jobdir) == {"a": [-2, -1], "b": [-1]}
+            scheduler.next_request()
+            assert _active_json(jobdir) == {"a": [-1], "b": [-1]}
+
 
 class StartUrlsSpider(Spider):
     def __init__(self, start_urls):
@@ -320,7 +391,6 @@ class TestIntegrationWithDownloaderAwareInMemory:
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)
-            assert self.crawler.stats
             assert self.crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )
@@ -333,8 +403,8 @@ class TestIncompatibility:
             "CONCURRENT_REQUESTS_PER_IP": 1,
         }
         crawler = get_crawler(Spider, settings)
-        scheduler = Scheduler.from_crawler(crawler)
-        spider = Spider(name="spider")
+        scheduler = build_from_crawler(Scheduler, crawler)
+        spider = Spider.from_crawler(crawler, name="spider")
         scheduler.open(spider)
 
     def test_incompatibility(self):
@@ -348,3 +418,66 @@ class TestIncompatibility:
                 ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
             ):
                 self._incompatible()
+
+
+class _PriorityQueueWithoutNextPriority:
+    @classmethod
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
+        return cls(ScrapyPriorityQueue.from_crawler(crawler, *args, **kwargs))
+
+    def __init__(self, queue: ScrapyPriorityQueue):
+        self._queue = queue
+
+    def push(self, request: Request) -> None:
+        self._queue.push(request)
+
+    def pop(self) -> Request | None:
+        return self._queue.pop()
+
+    def close(self) -> list[int]:
+        return self._queue.close()
+
+    def __len__(self) -> int:
+        return len(self._queue)
+
+
+@coroutine_test
+async def test_priority_queue_without_next_priority(tmp_path: Path) -> None:
+    async with create_scheduler(
+        f"{__name__}._PriorityQueueWithoutNextPriority", tmp_path
+    ) as scheduler:
+        _enqueue_across_queues(scheduler)
+        assert _dequeue_urls(scheduler) == [
+            "https://example.com/memory0",
+            "https://example.com/memory-1",
+            "https://example.com/disk1",
+            "https://example.com/disk0",
+        ]
+
+
+def test_scheduler_without_crawler() -> None:
+    """The crawler argument of Scheduler is optional."""
+    scheduler = Scheduler(BaseDupeFilter())
+    assert scheduler.crawler is None
+
+
+@coroutine_test
+async def test_unserializable_requests(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Requests that cannot be serialized fall back to the memory queue."""
+
+    class UnserializableSpider(Spider):
+        name = "unserializable"
+
+        async def start(self):
+            for index in range(2):
+                yield Request(f"data:,{index}", meta={"callable": lambda: None})
+
+    crawler = get_crawler(
+        UnserializableSpider, {"JOBDIR": str(tmp_path), "SCHEDULER_DEBUG": True}
+    )
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("scheduler/unserializable") == 2
+    assert crawler.stats.get_value("scheduler/enqueued/memory") == 2
+    assert caplog.text.count("Unable to serialize request") == 1

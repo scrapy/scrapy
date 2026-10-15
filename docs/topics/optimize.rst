@@ -39,10 +39,13 @@ what every part of the engine is doing at a given moment:
 .. code-block:: text
 
     len(engine.downloader.active)                   : 16
-    len(engine._slot.scheduler.mqs)                 : 92
+    len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.active)                 : 0
     engine.scraper.slot.active_size                 : 0
     engine.scraper.slot.needs_backout()             : False
+
+A coding agent using the :ref:`Scrapy MCP server <using-mcp-server>` can also
+retrieve these values directly.
 
 Take a few readings at different points of the crawl:
 
@@ -66,9 +69,9 @@ Take a few readings at different points of the crawl:
     callbacks and :ref:`item pipelines <topics-item-pipeline>` handle them. The
     bottleneck is your own code.
 
--   ``len(engine._slot.scheduler.mqs)`` grows without settling: the crawl
-    discovers requests faster than it downloads them. This is what makes long
-    crawls run out of memory.
+-   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
+    requests faster than it downloads them. This is what makes long crawls run
+    out of memory.
 
 
 Reading resource usage
@@ -79,6 +82,10 @@ CPU
     code you explicitly move to a thread runs in a single thread. One CPU core
     is the ceiling; a process sitting at 100% of a core is CPU-bound no matter
     how many cores the machine has.
+
+    The :ref:`event loop lag monitor <event-loop-lag>` logs a warning when
+    CPU-bound code blocks that single thread for too long; lower
+    :setting:`EVENT_LOOP_LAG_THRESHOLD` to catch shorter stalls.
 
     Use a sampling profiler, such as py-spy_, to find out which code is
     spending that CPU. :ref:`Selectors <topics-selectors>` and item pipelines
@@ -92,9 +99,9 @@ Memory
     far above :stat:`memusage/startup` is expected; what matters is whether it
     keeps growing for as long as the crawl runs.
 
-    Growth that tracks ``len(engine._slot.scheduler.mqs)`` is a scheduling
-    problem, covered in :ref:`optimize-memory`. Growth that does not is a
-    :ref:`memory leak <topics-leaks>`.
+    Growth that tracks ``len(engine.scheduler.mqs)`` is a scheduling problem,
+    covered in :ref:`optimize-memory`. Growth that does not is a :ref:`memory
+    leak <topics-leaks>`.
 
 Network
     Compare :stat:`downloader/response_bytes` over the crawl time against your
@@ -155,7 +162,8 @@ crawl slower than a lower concurrency would have been. To find that limit:
 -   Crawl when the website is idle, in its own timezone, so that the capacity
     you take is capacity nobody else wanted.
 
--   Raise concurrency gradually and watch the website respond.
+-   Raise concurrency gradually and watch the website respond, changing it on
+    the running crawl from the :ref:`telnet console <telnet-concurrency>`.
     :stat:`downloader/response_status_count/{status_code}` counts for 429, 503
     or the ban page of the website, growing :stat:`retry/count`, or a
     :ref:`download latency <download-latency>` that climbs as you push harder,
@@ -188,6 +196,46 @@ Each of these trades memory for speed: a request produced before the downloader
 can take it waits in the scheduler, or on disk if you set :setting:`JOBDIR`.
 Pushed far enough, they turn memory or disk into your new bottleneck, which is
 why :ref:`optimize-memory` recommends the reverse of the last point.
+
+
+.. _optimize-blocking:
+
+Keeping the event loop free
+===========================
+
+Your callbacks, :ref:`spider middlewares <topics-spider-middleware>`,
+:ref:`downloader middlewares <topics-downloader-middleware>` and :ref:`item
+pipelines <topics-item-pipeline>` share a thread with the event loop. While any
+of them runs, Scrapy neither sends requests nor reads responses, so every
+download in flight waits for it.
+
+That shows up as a :ref:`download latency <download-latency>` that grows
+through the crawl, often into tens of seconds, while the target website answers
+as fast as ever: the latency of a response covers the time until Scrapy gets
+around to reading it, and every pending callback runs first.
+
+Move the slow code to a thread so that downloads continue while it runs:
+
+.. code-block:: python
+
+    from scrapy import Spider
+    from scrapy.utils.asyncio import run_in_thread
+
+
+    class SlowParseSpider(Spider):
+        name = "slow_parse"
+        start_urls = ["https://toscrape.com"]
+
+        async def parse(self, response):
+            yield await run_in_thread(self.extract_item, response)
+
+        def extract_item(self, response):
+            # CPU-heavy parsing
+            ...
+
+A thread does not give CPU-bound Python code more CPU to work with, since it
+still competes for the GIL; it only keeps that code from holding up downloads.
+See :ref:`distributed-crawls` to use more than one core.
 
 
 .. _optimize-resources:
@@ -251,19 +299,18 @@ Lowering memory usage
 
     -   Set :setting:`JOBDIR` to offload all scheduled requests to disk.
 
+-   Set :setting:`DUPEFILTER_CLASS` to
+    :class:`~scrapy.dupefilters.DiskDupeFilter` to keep the fingerprint of
+    every sent request on disk instead of in memory.
+
+-   Set :setting:`MEDIA_CACHE_SIZE` if you use :ref:`media pipelines
+    <topics-media-pipeline>`.
+
 -   Be on the lookout for :ref:`memory leaks <topics-leaks>`.
 
 
 Lowering network usage
 ----------------------
-
--   Install brotli_ and zstandard_ to support brotli-compressed_ and
-    zstd-compressed_ responses.
-
-    .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-    .. _brotli: https://pypi.org/project/Brotli/
-    .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
-    .. _zstandard: https://pypi.org/project/zstandard/
 
 -   Enable :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`
     while developing your spider, so that re-runs do not download the same

@@ -1,5 +1,6 @@
 from scrapy import Request, Spider
 from scrapy.crawler import AsyncCrawlerProcess
+from tests.utils import CURRENT_DEFAULTS
 
 
 class DataSpider(Spider):
@@ -15,9 +16,8 @@ class DataSpider(Spider):
 process = AsyncCrawlerProcess(
     settings={
         "TWISTED_REACTOR_ENABLED": False,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
-        "DOWNLOAD_DELAY": 0,
-        "ROBOTSTXT_OBEY": False,
+        "MEMUSAGE_ENABLED": False,
+        **CURRENT_DEFAULTS,
     }
 )
 

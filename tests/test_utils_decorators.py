@@ -18,7 +18,12 @@ if TYPE_CHECKING:
 
 class TestDeprecated:
     def test_warns_and_still_calls(self):
-        @deprecated()
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"decorators\.deprecated\(\) is deprecated"
+        ):
+            decorate = deprecated()
+
+        @decorate
         def add(a: int, b: int) -> int:
             return a + b
 
@@ -30,7 +35,11 @@ class TestDeprecated:
         assert result == 5
 
     def test_use_instead_in_message(self):
-        @deprecated(use_instead="other_function")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+            decorate = deprecated(use_instead="other_function")
+
+        @decorate
         def old() -> None:
             return None
 
@@ -41,9 +50,12 @@ class TestDeprecated:
             old()
 
     def test_applied_without_parentheses(self):
-        @deprecated
         def square(x: int) -> int:
             return x * x
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+            square = deprecated(square)
 
         with pytest.warns(
             ScrapyDeprecationWarning, match=r"Call to deprecated function square\."
@@ -59,7 +71,7 @@ class TestInthread:
     @coroutine_test
     async def test_returns_deferred_with_result(self):
         @inthread
-        def multiply(a, b):
+        def multiply(a: int, b: int) -> int:
             return a * b
 
         deferred = multiply(6, 7)
@@ -97,6 +109,26 @@ class TestWarnSpiderArg:
         )
         parse_func: Callable[..., str] = namespace["parse"]
         parse = _warn_spider_arg(parse_func)
+
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"Passing a 'spider' argument"
+        ):
+            assert parse("response", spider="spider") == "response"
+
+    def test_sync_warns_with_positional_spider_arg(self):
+        @_warn_spider_arg
+        def parse(response: str, spider: str | None = None) -> str:
+            return response
+
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"Passing a 'spider' argument"
+        ):
+            assert parse("response", "spider") == "response"
+
+    def test_sync_warns_with_keyword_only_spider_arg(self):
+        @_warn_spider_arg
+        def parse(response: str, *, spider: str | None = None) -> str:
+            return response
 
         with pytest.warns(
             ScrapyDeprecationWarning, match=r"Passing a 'spider' argument"

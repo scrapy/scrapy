@@ -2,14 +2,28 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred
 
+from scrapy.crawler import _CHANGING_DEFAULTS
 from scrapy.settings import Settings, default_settings
+from scrapy.utils.test import get_reactor_settings
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+CURRENT_DEFAULTS: dict[str, Any] = {
+    name: current_default for name, (current_default, _) in _CHANGING_DEFAULTS.items()
+}
+"""Settings whose default value will change, set to their current default
+value to avoid deprecation warnings."""
+
+
+def get_test_settings() -> dict[str, Any]:
+    """Return settings for crawlers built without
+    :func:`~scrapy.utils.test.get_crawler`."""
+    return {**get_reactor_settings(), **CURRENT_DEFAULTS}
 
 
 def twisted_sleep(seconds: float):

@@ -10,7 +10,7 @@ Scrapy is controlled through the ``scrapy`` command-line tool, to be referred to
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
 
-The Scrapy tool provides several commands, for multiple purposes, and each one
+The Scrapy tool provides several commands for multiple purposes, and each one
 accepts a different set of arguments and options.
 
 (The ``scrapy deploy`` command has been removed in 1.0 in favor of the
@@ -65,13 +65,30 @@ structure by default, similar to this::
            ...
 
 The directory where the ``scrapy.cfg`` file resides is known as the *project
-root directory*. That file contains the name of the python module that defines
+root directory*. That file contains the name of the Python module that defines
 the project settings. Here is an example:
 
 .. code-block:: ini
 
     [settings]
     default = myproject.settings
+
+The project name also appears elsewhere by default. :setting:`SPIDER_MODULES`
+and :setting:`NEWSPIDER_MODULE` reference the project module itself, so they
+must match its actual location. :setting:`BOT_NAME` defaults to the same name
+but is just an identifier, and the capitalized project-name prefix of class
+names in :file:`middlewares.py` and :file:`pipelines.py` is only a naming
+convention; neither needs to match the module name.
+
+.. _find-projects:
+
+Finding projects
+----------------
+
+To find the Scrapy projects in a directory tree, e.g. from an editor extension,
+use :func:`~scrapy.utils.project.find_projects`:
+
+.. autofunction:: scrapy.utils.project.find_projects
 
 .. _topics-project-envvar:
 
@@ -105,7 +122,7 @@ for ``scrapy`` to use::
 Using the ``scrapy`` tool
 =========================
 
-You can start by running the Scrapy tool with no arguments and it will print
+You can start by running the Scrapy tool with no arguments, and it will print
 some usage help and the available commands::
 
     Scrapy X.Y - no active project
@@ -119,8 +136,8 @@ some usage help and the available commands::
     [...]
 
 The first line will print the currently active project if you're inside a
-Scrapy project. In this example it was run from outside a project. If run from inside
-a project it would have printed something like this::
+Scrapy project. In this example, it was run from outside a project. If run from
+inside a project, it would have printed something like this::
 
     Scrapy X.Y - project: myproject
 
@@ -137,8 +154,8 @@ project::
 
     scrapy startproject myproject [project_dir]
 
-That will create a Scrapy project under the ``project_dir`` directory.
-If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
+That will create a Scrapy project under the ``project_dir`` directory. If
+``project_dir`` isn't specified, it defaults to ``myproject``.
 
 Next, you go inside the new project directory::
 
@@ -159,7 +176,8 @@ For example, to create a new spider::
 
 Some Scrapy commands (like :command:`crawl`) must be run from inside a Scrapy
 project. See the :ref:`commands reference <topics-commands-ref>` below for more
-information on which commands must be run from inside projects, and which not.
+information on which commands must be run from inside projects and which ones
+do not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
@@ -186,7 +204,7 @@ And you can see all available commands with::
 There are two kinds of commands, those that only work from inside a Scrapy
 project (Project-specific commands) and those that also work without an active
 Scrapy project (Global commands), though they may behave slightly differently
-when run from inside a project (as they would use the project overridden
+when run from inside a project (as they would use the project-overridden
 settings).
 
 Global commands:
@@ -199,6 +217,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`genrequest`
 * :command:`bench`
 
 Project-only commands:
@@ -218,8 +237,7 @@ startproject
 * Requires project: *no*
 
 Creates a new Scrapy project named ``project_name``, under the ``project_dir``
-directory.
-If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``project_name``.
+directory. If ``project_dir`` isn't specified, it defaults to ``project_name``.
 
 Usage example::
 
@@ -233,7 +251,10 @@ genspider
 * Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
 
-Creates a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+Creates a new spider in the current folder or in the current project's
+``spiders`` folder, if called from inside a project. The ``<name>`` parameter
+becomes the spider's ``name``, while ``<domain or URL>`` is used to generate
+the spider's ``allowed_domains`` and ``start_urls`` attributes.
 
 Usage example::
 
@@ -250,10 +271,46 @@ Usage example::
     $ scrapy genspider -t crawl scrapyorg scrapy.org
     Created spider 'scrapyorg' using template 'crawl'
 
-This is just a convenient shortcut command for creating spiders based on
-pre-defined templates, but certainly not the only way to create spiders. You
-can just create the spider source code files yourself, instead of using this
+This command is just a convenient shortcut for creating spiders based on
+pre-defined templates, but it's certainly not the only way to create spiders;
+you can create the spider source code files yourself instead of using this
 command.
+
+.. _spider-templates:
+
+Custom spider templates
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To define your own spider templates, point :setting:`TEMPLATES_DIR` at a
+directory with a :file:`spiders` subdirectory, and write a :file:`{name}.tmpl`
+file there for every template, where *name* is the value to pass to ``-t``.
+Your templates replace the built-in ones, which live in the :file:`templates`
+directory of the ``scrapy`` package, so copy over any of those that you want to
+keep.
+
+Alternatively, pass ``-t`` a path to a :file:`.tmpl` file instead of a name,
+to use it without touching :setting:`TEMPLATES_DIR`.
+
+Templates are rendered with :class:`string.Template`: ``$variable`` and
+``${variable}`` are replaced, and ``$$`` renders as a single ``$``, which
+regular expressions often need. Rendering fails on any variable other than the
+following:
+
+-   ``name``: the spider name, as passed to the command.
+
+-   ``module``: *name* as a valid module name, also used as the file name of
+    the generated spider.
+
+-   ``classname``: *module* in camel case, with a ``Spider`` suffix.
+
+-   ``url``: the URL passed to the command, with an ``https`` scheme added if
+    it had none.
+
+-   ``domain``: the domain of *url*.
+
+-   ``project_name``: :setting:`BOT_NAME`.
+
+-   ``ProjectName``: *project_name* in camel case.
 
 .. command:: crawl
 
@@ -273,9 +330,14 @@ Supported options:
 
 * ``-a NAME=VALUE``: set a spider argument (may be repeated)
 
-* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout). To define the output format, set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+* ``--output FILE`` or ``-o FILE``: dump scraped items into FILE (use ``-`` for
+  stdout), handling an existing FILE as the :setting:`FEED_MODE` setting
+  indicates. To define the output format, add a colon at the end of the output
+  URI (for example, ``-o FILE:FORMAT``)
 
-* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file. To define the output format, set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
+* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE,
+  overwriting any existing file. To define the output format, add a colon at
+  the end of the output URI (for example, ``-O FILE:FORMAT``)
 
 Usage examples::
 
@@ -283,10 +345,10 @@ Usage examples::
     [ ... myspider starts crawling ... ]
 
     $ scrapy crawl -o myfile:csv myspider
-    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
+    [ ... myspider starts crawling and appends the result to the file myfile in CSV format ... ]
 
     $ scrapy crawl -O myfile:json myspider
-    [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
+    [ ... myspider starts crawling and saves the result in myfile in JSON format, overwriting the original content ... ]
 
 .. command:: check
 
@@ -297,6 +359,9 @@ check
 * Requires project: *yes*
 
 Run contract checks.
+
+.. versionadded:: 2.19.0
+   The ``-a`` option, to pass spider arguments, as in :command:`crawl`.
 
 .. skip: start
 
@@ -362,7 +427,7 @@ Edit the given spider using the editor defined in the ``EDITOR`` environment
 variable or (if unset) the :setting:`EDITOR` setting.
 
 This command is provided only as a convenient shortcut for the most common
-case, the developer is of course free to choose any tool or IDE to write and
+case; the developer is of course free to choose any tool or IDE to write and
 debug spiders.
 
 Usage example::
@@ -386,7 +451,7 @@ attribute which overrides the User Agent, it will use that one.
 
 So this command can be used to "see" how your spider would fetch a certain page.
 
-If used outside a project, no particular per-spider behaviour would be applied
+If used outside a project, no particular per-spider behaviour will be applied,
 and it will just use the default Scrapy downloader settings.
 
 Supported options:
@@ -397,16 +462,26 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument, taking the URL, HTTP method, headers, cookies and body from the
+  command (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It cannot
+  be combined with a URL argument.
+
+  .. versionadded:: VERSION
+
 Usage examples::
 
     $ scrapy fetch --nolog http://www.example.com/some/page.html
+    [ ... html content here ... ]
+
+    $ scrapy fetch --nolog --curl 'curl -d title=hello https://httpbin.org/post'
     [ ... html content here ... ]
 
     $ scrapy fetch --nolog --headers http://www.example.com/
     > Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
     > Accept-Language: en
     > User-Agent: Scrapy/2.16.0 (+https://scrapy.org)
-    > Accept-Encoding: gzip, deflate, br
+    > Accept-Encoding: gzip, deflate, br, zstd
     >
     < Date: Wed, 08 Jul 2026 06:15:01 GMT
     < Content-Type: text/html
@@ -435,6 +510,12 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
+
 Usage example::
 
     $ scrapy view http://www.example.com/some/page.html
@@ -448,10 +529,10 @@ shell
 * Syntax: ``scrapy shell [url]``
 * Requires project: *no*
 
-Starts the Scrapy shell for the given URL (if given) or empty if no URL is
-given. Also supports UNIX-style local file paths, either relative with
-``./`` or ``../`` prefixes or absolute file paths.
-See :ref:`topics-shell` for more info.
+Starts the Scrapy shell for the given URL (if provided) or leaves it empty if
+no URL is given. It also supports UNIX-style local file paths, either relative
+with ``./`` or ``../`` prefixes or absolute file paths. See :ref:`topics-shell`
+for more info.
 
 Supported options:
 
@@ -462,6 +543,12 @@ Supported options:
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them);
   this only affects the URL you may pass as argument on the command line;
   once you are inside the shell, ``fetch(url)`` will still follow HTTP redirects by default.
+
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
 
 Usage example::
 
@@ -501,11 +588,19 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
-* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
-  request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
 
-* ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
-  This must be a valid json string. Example: --cbkwargs='{"foo" : "bar"}'
+  .. versionadded:: VERSION
+
+* ``--meta`` or ``-m``: additional request meta that will be passed to the
+  callback request. This must be a valid JSON string. Example:
+  ``--meta='{"foo": "bar"}'``
+
+* ``--cbkwargs``: additional keyword arguments that will be passed to the
+  callback. This must be a valid JSON string. Example: ``--cbkwargs='{"foo":
+  "bar"}'``
 
 * ``--pipelines``: :ref:`process items through pipelines <test-item-pipeline>`
 
@@ -555,8 +650,8 @@ settings
 
 Get the value of a Scrapy setting.
 
-If used inside a project it'll show the project setting value, otherwise it'll
-show the default Scrapy value for that setting.
+If used inside a project, it'll show the project setting value; otherwise,
+it'll show the default Scrapy value for that setting.
 
 Example usage::
 
@@ -564,6 +659,17 @@ Example usage::
     scrapybot
     $ scrapy settings --get DOWNLOAD_DELAY
     0
+
+The settings of enabled :ref:`add-ons <topics-addons>` are taken into account.
+:ref:`Spider settings <spider-settings>` are only taken into account if you name
+a spider with ``--spider``::
+
+    $ scrapy settings --get DOWNLOAD_DELAY --spider myspider
+    2.0
+
+.. versionchanged:: VERSION
+   Add-on settings are now taken into account, and the ``--spider`` option was
+   added.
 
 .. command:: runspider
 
@@ -593,6 +699,27 @@ version
 Prints the Scrapy version. If used with ``-v`` it also prints Python, Twisted
 and Platform info, which is useful for bug reports.
 
+.. command:: genrequest
+
+genrequest
+----------
+
+* Syntax: ``scrapy genrequest [curl command]``
+* Requires project: *no*
+
+.. versionadded:: VERSION
+
+Print the Python code of a :class:`~scrapy.Request` object equivalent to a
+`cURL <https://curl.se/>`_ command. If the curl command is not given as an
+argument, it is read from the system clipboard, which requires the
+``clipboard`` :ref:`extra <extras>`. If `ruff`_ is installed, it is used to
+format the output.
+
+Usage example::
+
+    $ scrapy genrequest 'curl -d title=hello https://httpbin.org/post'
+    Request(method="POST", url="https://httpbin.org/post", body="title=hello")
+
 .. command:: bench
 
 bench
@@ -602,6 +729,50 @@ bench
 * Requires project: *no*
 
 Run a quick benchmark test. :ref:`benchmarking`.
+
+.. command:: complete
+
+complete
+--------
+
+* Syntax: ``scrapy complete <bash|fish|zsh>``
+* Requires project: *no*
+
+.. versionadded:: VERSION
+
+Print a shell completion script. See :ref:`completion`.
+
+.. _completion:
+
+Shell completion
+================
+
+.. versionadded:: VERSION
+
+The :command:`complete` command prints a completion script for Bash, fish or
+Zsh.
+
+For Bash, add the following to your ``~/.bashrc``:
+
+.. code-block:: bash
+
+    eval "$(scrapy complete bash)"
+
+For Zsh, add the following to your ``~/.zshrc``, after ``compinit`` is called:
+
+.. code-block:: bash
+
+    eval "$(scrapy complete zsh)"
+
+For fish:
+
+.. code-block:: bash
+
+    scrapy complete fish > ~/.config/fish/completions/scrapy.fish
+
+Completion candidates are computed by Scrapy every time you press :kbd:`Tab`,
+so they cover the spiders, settings and templates of the project you are in, as
+well as any :ref:`custom command <custom-commands>`.
 
 .. _topics-commands-crawlerprocess:
 
@@ -621,7 +792,7 @@ spider or a special internal one:
 * :command:`view`
 
 They use an internal instance of :class:`scrapy.crawler.AsyncCrawlerProcess` or
-:class:`scrapy.crawler.CrawlerProcess` for this. In most cases this detail
+:class:`scrapy.crawler.CrawlerProcess` for this. In most cases, this detail
 shouldn't matter to the user running the command, but when the user :ref:`needs
 a non-default Twisted reactor <disable-asyncio>`, it may be important.
 
@@ -640,18 +811,152 @@ project-level setting is set to :ref:`the asyncio reactor <install-asyncio>`
 <default-settings>`) and :ref:`the setting of the spider being run
 <spider-settings>` is set to :ref:`a different one <disable-asyncio>`, because
 :class:`~scrapy.crawler.AsyncCrawlerProcess` only supports the asyncio reactor.
-In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
+In this case, you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
 ``True`` (at the project level or via the command line) so that Scrapy uses
-:class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
+:class:`~scrapy.crawler.CrawlerProcess`, which supports all reactors.
+
+.. _custom-commands:
 
 Custom project commands
 =======================
 
 You can also add your custom project commands by using the
-:setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
-`scrapy/commands`_ for examples on how to implement your commands.
+:setting:`COMMANDS_MODULE` setting. This allows you to create project-specific
+commands that are automatically discovered and made available through the
+``scrapy`` command-line tool.
+
+Creating custom commands
+------------------------
+
+To create a custom command, inherit from the :class:`~scrapy.commands.ScrapyCommand` class
+and implement the required methods. This allows you to extend Scrapy's command-line
+interface with your own functionality, such as project-specific utilities, data
+processing tools, or deployment helpers.
+
+When you create a custom command, you define its behavior by setting class attributes
+and overriding specific methods. Here's what you need to know:
+
+**Attributes you can set:**
+
+* :attr:`~scrapy.commands.ScrapyCommand.requires_project` (bool): If ``True``,
+  the command only runs inside a Scrapy project (default: ``False``).
+* :attr:`~scrapy.commands.ScrapyCommand.requires_crawler_process` (bool): If
+  ``True``, a :class:`~scrapy.crawler.AsyncCrawlerProcess` or
+  :class:`~scrapy.crawler.CrawlerProcess` instance will be created by Scrapy
+  when the command runs and made available in the
+  :attr:`~scrapy.commands.ScrapyCommand.crawler_process` attribute (default:
+  ``True``).
+* :attr:`~scrapy.commands.ScrapyCommand.default_settings` (dict): Settings that
+  will override the default ones when running this command (default: ``{}``).
+* :attr:`~scrapy.commands.ScrapyCommand.exitcode` (int): Process exit code to
+  set when the command completes (default: ``0``).
+
+**Methods you must override:**
+
+* :meth:`~scrapy.commands.ScrapyCommand.short_desc`: Return a short description
+  of the command.
+* :meth:`~scrapy.commands.ScrapyCommand.run`: Main entry point for the command
+  execution.
+
+**Methods you can override:**
+
+* :meth:`~scrapy.commands.ScrapyCommand.syntax`: Return command syntax
+  (preferably one-line, without command name).
+* :meth:`~scrapy.commands.ScrapyCommand.long_desc`: Return a detailed command
+  description.
+* :meth:`~scrapy.commands.ScrapyCommand.add_options`: Add command-specific
+  options to the argument parser.
+* :meth:`~scrapy.commands.ScrapyCommand.process_options`: Process parsed
+  command-line options and set settings before
+  :attr:`~scrapy.commands.ScrapyCommand.crawler_process` is instantiated.
+
+**Example custom command:**
+
+.. code-block:: python
+
+    from scrapy.commands import ScrapyCommand
+    import argparse
+
+
+    class MyCustomCommand(ScrapyCommand):
+        requires_project = True
+
+        def syntax(self):
+            return "[options] <spider_name>"
+
+        def short_desc(self):
+            return "Run my custom command"
+
+        def add_options(self, parser):
+            super().add_options(parser)
+            parser.add_argument("--my-option", help="My custom option")
+
+        def run(self, args, opts):
+            # Command implementation here
+            spider_name = args[0] if args else None
+            print(f"Running custom command for spider: {spider_name}")
+
+For real examples, see the built-in Scrapy commands in the `scrapy/commands`_ directory.
 
 .. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
+
+To make a command support :ref:`shell completion <completion>`, override
+:meth:`~scrapy.commands.ScrapyCommand.complete_argument`,
+:meth:`~scrapy.commands.ScrapyCommand.complete_option` or both:
+
+.. code-block:: python
+
+    from collections.abc import Iterable
+
+    from scrapy.commands import ScrapyCommand
+
+
+    class Command(ScrapyCommand):
+        def complete_argument(self, args: list[str]) -> Iterable[str]:
+            return ["report", "summary"] if not args else []
+
+        def complete_option(self, dest: str) -> Iterable[str]:
+            if dest == "format":
+                return ["csv", "json"]
+            return super().complete_option(dest)
+
+Candidates are filtered by the word being typed, and options that define
+``choices`` are completed without any code on your side.
+
+.. _ruff: https://docs.astral.sh/ruff/
+
+.. autoclass:: scrapy.commands.ScrapyCommand
+   :members:
+   :undoc-members:
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
+
+.. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
+
+Register commands via setup.py entry points
+-------------------------------------------
+
+You can also add Scrapy commands from an external library by adding a
+``scrapy.commands`` section in the entry points of the library ``setup.py``
+file.
+
+The following example adds the ``my_command`` command:
+
+.. skip: next
+
+.. code-block:: python
+
+  from setuptools import setup, find_packages
+
+  setup(
+      name="scrapy-mymodule",
+      entry_points={
+          "scrapy.commands": [
+              "my_command=my_scrapy_module.commands:MyCommand",
+          ],
+      },
+  )
+
 .. setting:: COMMANDS_MODULE
 
 COMMANDS_MODULE
@@ -668,30 +973,4 @@ Example:
 
     COMMANDS_MODULE = "mybot.commands"
 
-.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
-
-.. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
-
-Register commands via setup.py entry points
--------------------------------------------
-
-You can also add Scrapy commands from an external library by adding a
-``scrapy.commands`` section in the entry points of the library ``setup.py``
-file.
-
-The following example adds ``my_command`` command:
-
-.. skip: next
-
-.. code-block:: python
-
-  from setuptools import setup, find_packages
-
-  setup(
-      name="scrapy-mymodule",
-      entry_points={
-          "scrapy.commands": [
-              "my_command=my_scrapy_module.commands:MyCommand",
-          ],
-      },
-  )
+.. _cURL: https://curl.se/

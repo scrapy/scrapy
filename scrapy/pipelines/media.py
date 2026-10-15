@@ -5,21 +5,20 @@ import functools
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
+from collections import OrderedDict, defaultdict
+from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias, TypedDict, cast
 
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK, Request
+from scrapy.utils._datatypes import SequenceExclude
 from scrapy.utils._deps_compat import TWISTED_FAILURE_HAS_STACK
-from scrapy.utils.asyncio import call_later, is_asyncio_available
-from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
-    _DEFER_DELAY,
-    _defer_sleep_async,
+    _process_pending_io,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
@@ -30,9 +29,6 @@ from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -81,7 +77,7 @@ class MediaPipeline(ABC):
         def __init__(self, spider: Spider):
             self.spider: Spider = spider
             self.downloading: set[bytes] = set()
-            self.downloaded: dict[bytes, FileInfo | Failure] = {}
+            self.downloaded: OrderedDict[bytes, FileInfo | Failure] = OrderedDict()
             self.waiting: defaultdict[bytes, list[Deferred[FileInfo]]] = defaultdict(
                 list
             )
@@ -112,6 +108,7 @@ class MediaPipeline(ABC):
             resolve("MEDIA_ALLOW_REDIRECTS"), False
         )
         self._handle_statuses(self.allow_redirects)
+        self._cache_size: int = settings.getint(resolve("MEDIA_CACHE_SIZE"))
 
     def _handle_statuses(self, allow_redirects: bool) -> None:
         self.handle_httpstatus_list = None
@@ -177,7 +174,8 @@ class MediaPipeline(ABC):
 
         # Return cached result if request was already seen
         if fp in info.downloaded:
-            await _defer_sleep_async()
+            await _process_pending_io()
+            info.downloaded.move_to_end(fp)
             cached_result = info.downloaded[fp]
             if isinstance(cached_result, Failure):
                 if eb:
@@ -197,7 +195,7 @@ class MediaPipeline(ABC):
 
         # Download request checking media_to_download hook output first
         info.downloading.add(fp)
-        await _defer_sleep_async()
+        await _process_pending_io()
         result: FileInfo | Failure
         try:
             file_info: FileInfo | None = await ensure_awaitable(
@@ -213,6 +211,7 @@ class MediaPipeline(ABC):
             result = Failure()
             if not _media_request_filtered(result):
                 logger.exception(result)
+        await _process_pending_io()
         self._cache_result_and_execute_waiters(result, fp, info)
         return await maybe_deferred_to_future(wad)  # it must return wad at last
 
@@ -276,11 +275,13 @@ class MediaPipeline(ABC):
 
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result
+        if 0 <= self._cache_size < len(info.downloaded):
+            info.downloaded.popitem(last=False)
         for wad in info.waiting.pop(fp):
             if isinstance(result, Failure):
-                call_later(_DEFER_DELAY, wad.errback, result)
+                wad.errback(result)
             else:
-                call_later(_DEFER_DELAY, wad.callback, result)
+                wad.callback(result)
 
     # Overridable Interface
     @abstractmethod

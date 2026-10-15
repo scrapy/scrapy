@@ -13,9 +13,14 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.web.client import Agent
 
-from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner, CrawlerRunnerBase
+from scrapy.crawler import (
+    _CHANGING_DEFAULTS,
+    AsyncCrawlerRunner,
+    CrawlerRunner,
+    CrawlerRunnerBase,
+)
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
+from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
@@ -40,7 +45,7 @@ def get_reactor_settings() -> dict[str, Any]:
     """
     settings: dict[str, Any] = {}
     if is_reactor_installed():
-        if not is_asyncio_reactor_installed():
+        if not _is_asyncio_reactor_installed():
             settings["TWISTED_REACTOR"] = None
     else:
         # We are either running Scrapy tests for the reactorless mode, or
@@ -50,9 +55,10 @@ def get_reactor_settings() -> dict[str, Any]:
         # last one from them.
         settings["TWISTED_REACTOR_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
-            "ftp": None,
-            "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-            "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+            "ftp": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+            "ftps": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+            "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+            "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         }
     return settings
 
@@ -67,14 +73,15 @@ def get_crawler(
     priority.
     """
     settings: dict[str, Any] = {
+        "FEED_MODE": "overwrite",
+        "REMOTE_CONTROL_ENABLED": False,
         "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),
         **(settings_dict or {}),
     }
     if prevent_warnings:
-        settings.setdefault("CONCURRENT_REQUESTS_PER_DOMAIN", 8)
-        settings.setdefault("DOWNLOAD_DELAY", 0)
-        settings.setdefault("ROBOTSTXT_OBEY", False)
+        for name, (current_default, _) in _CHANGING_DEFAULTS.items():
+            settings.setdefault(name, current_default)
     runner: CrawlerRunnerBase
     if is_reactor_installed():
         runner = CrawlerRunner(settings)
@@ -119,4 +126,4 @@ def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:  # pragma: no co
     from twisted.internet import reactor
 
     agent = Agent(reactor)
-    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))
+    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode()))

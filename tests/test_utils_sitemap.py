@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
 
 
 def test_sitemap():
@@ -39,6 +39,21 @@ def test_sitemap():
             "changefreq": "weekly",
         },
     ]
+
+
+def test_sitemap_str():
+    xmltext = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
+<url><loc>http://www.example.com/</loc></url>
+</urlset>"""
+
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Passing `str` type as `xmltext` is deprecated",
+    ):
+        s = Sitemap(xmltext)
+    assert s.type == "urlset"
+    assert list(s) == [{"loc": "http://www.example.com/"}]
 
 
 def test_sitemap_index():

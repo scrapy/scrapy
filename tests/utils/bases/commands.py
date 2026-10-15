@@ -38,3 +38,20 @@ class TestProjectBase:
         """Add text to the end of the project settings.py."""
         with (proj_mod_path / "settings.py").open("a", encoding="utf-8") as f:
             f.write(text)
+
+    @classmethod
+    def _break_bootstrap(cls, proj_mod_path: Path) -> None:
+        """Enable a spider middleware that raises an exception when built, so
+        that crawling any spider of the project fails before it starts."""
+        cls._append_settings(
+            proj_mod_path,
+            """
+
+class BreakingMiddleware:
+    def __init__(self):
+        raise RuntimeError("Breaking middleware")
+
+
+SPIDER_MIDDLEWARES = {f"{__name__}.BreakingMiddleware": 100}
+""",
+        )
