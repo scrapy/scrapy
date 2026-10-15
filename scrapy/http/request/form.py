@@ -8,7 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 from warnings import warn
 
@@ -17,10 +17,9 @@ from w3lib.html import strip_html5_whitespace
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import Request
-from scrapy.utils.python import is_listlike, to_bytes
+from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
     from lxml.html import (
         FormElement,
         InputElement,
@@ -28,13 +27,17 @@ if TYPE_CHECKING:
         SelectElement,
         TextareaElement,
     )
-    from typing_extensions import Self
 
     from scrapy.http.response.text import TextResponse
 
-FormdataVType: TypeAlias = str | Iterable[str]
-FormdataKVType: TypeAlias = tuple[str, FormdataVType]
-FormdataType: TypeAlias = Mapping[str, FormdataVType] | Iterable[FormdataKVType] | None
+FormdataVType: TypeAlias = str | bytes | Iterable[str] | Iterable[bytes]
+FormdataKVType: TypeAlias = tuple[str | bytes, FormdataVType]
+FormdataType: TypeAlias = (
+    Mapping[str, FormdataVType]
+    | Mapping[bytes, FormdataVType]
+    | Iterable[FormdataKVType]
+    | None
+)
 
 
 class FormRequest(Request):
@@ -165,7 +168,7 @@ def _urlencode(seq: Iterable[FormdataKVType], enc: str) -> str:
     values = [
         (to_bytes(k, enc), to_bytes(v, enc))
         for k, vs in seq
-        for v in (vs if is_listlike(vs) else [cast("str", vs)])
+        for v in ([vs] if isinstance(vs, (str, bytes)) else vs)
     ]
     return urlencode(values, doseq=True)
 

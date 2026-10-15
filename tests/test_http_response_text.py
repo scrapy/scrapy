@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import codecs
+import gc
+import platform
+import weakref
 from typing import cast
 from unittest import mock
 
@@ -8,7 +11,6 @@ import pytest
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
-from scrapy.utils.python import to_unicode
 from tests.utils.bases.http_response import TestResponseBase
 
 
@@ -54,7 +56,7 @@ class TestTextResponse(TestResponseBase):
         resp = self.response_class(
             url="http://www.example.com/price/\xa3", encoding="utf-8"
         )
-        assert resp.url == to_unicode(b"http://www.example.com/price/\xc2\xa3")
+        assert resp.url == b"http://www.example.com/price/\xc2\xa3".decode()
         resp = self.response_class(
             url="http://www.example.com/price/\xa3", encoding="latin-1"
         )
@@ -63,7 +65,7 @@ class TestTextResponse(TestResponseBase):
             "http://www.example.com/price/\xa3",
             headers={"Content-type": ["text/html; charset=utf-8"]},
         )
-        assert resp.url == to_unicode(b"http://www.example.com/price/\xc2\xa3")
+        assert resp.url == b"http://www.example.com/price/\xc2\xa3".decode()
         resp = self.response_class(
             "http://www.example.com/price/\xa3",
             headers={"Content-type": ["text/html; charset=iso-8859-1"]},
@@ -246,11 +248,7 @@ class TestTextResponse(TestResponseBase):
             encoding="utf-8",
             body=b"PREFIX\xe3\xabSUFFIX",
         )
-        # XXX: Policy for replacing invalid chars may suffer minor variations
-        # but it should always contain the unicode replacement char ('\ufffd')
-        assert "\ufffd" in r.text, repr(r.text)
-        assert "PREFIX" in r.text, repr(r.text)
-        assert "SUFFIX" in r.text, repr(r.text)
+        assert r.text == "PREFIX\ufffdSUFFIX"
 
         # Do not destroy html tags due to encoding bugs
         r = self.response_class(
@@ -260,22 +258,35 @@ class TestTextResponse(TestResponseBase):
         )
         assert "<span>value</span>" in r.text, repr(r.text)
 
-        # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
-        # r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
-        # assert '\ufffd' in r.text, repr(r.text)
-
     def test_selector(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
         response = self.response_class("http://www.example.com", body=body)
 
         assert isinstance(response.selector, Selector)
         assert response.selector.type == "html"
-        assert response.selector is response.selector  # property is cached
+        # property is cached
+        assert response.selector is response.selector  # pylint: disable=comparison-with-itself
         assert response.selector.response is response
 
         assert response.selector.xpath("//title/text()").getall() == ["Some page"]
         assert response.selector.css("title::text").getall() == ["Some page"]
         assert response.selector.re("Some (.*)</title>") == ["page"]
+
+    @pytest.mark.skipif(
+        platform.python_implementation() != "CPython",
+        reason="Relies on reference counting",
+    )
+    def test_selector_response_refcounting(self):
+        response = self.response_class("http://www.example.com", body=b"<a>b</a>")
+        selector = response.selector
+        ref = weakref.ref(response)
+        gc.disable()
+        try:
+            del response
+            assert ref() is None
+        finally:
+            gc.enable()
+        assert selector.response is None
 
     def test_selector_shortcuts(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
@@ -519,17 +530,16 @@ class TestTextResponse(TestResponseBase):
         )
         assert response.json() == {"message": "café"}
 
-    def test_cache_json_response(self):
-        json_valid_bodies = [b"""{"ip": "109.187.217.200"}""", b"""null"""]
-        for json_body in json_valid_bodies:
-            json_response = self.response_class(
-                "http://www.example.com", body=json_body
-            )
+    @pytest.mark.parametrize(
+        "json_body", [b"""{"ip": "109.187.217.200"}""", b"""null"""]
+    )
+    def test_cache_json_response(self, json_body: bytes) -> None:
+        json_response = self.response_class("http://www.example.com", body=json_body)
 
-            with mock.patch("json.loads") as mock_json:
-                for _ in range(2):
-                    json_response.json()
-                mock_json.assert_called_once_with(json_body)
+        with mock.patch("json.loads") as mock_json:
+            for _ in range(2):
+                json_response.json()
+            mock_json.assert_called_once_with(json_body)
 
 
 class TestHtmlResponse(TestTextResponse):
@@ -609,7 +619,8 @@ class TestXmlResponse(TestTextResponse):
 
         assert isinstance(response.selector, Selector)
         assert response.selector.type == "xml"
-        assert response.selector is response.selector  # property is cached
+        # property is cached
+        assert response.selector is response.selector  # pylint: disable=comparison-with-itself
         assert response.selector.response is response
 
         assert response.selector.xpath("//elem/text()").getall() == ["value"]

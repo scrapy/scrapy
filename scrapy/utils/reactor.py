@@ -152,7 +152,7 @@ def set_asyncio_event_loop(event_loop_path: str | None) -> AbstractEventLoop:
     else:
         try:
             with catch_warnings():
-                # In Python 3.10.9, 3.11.1, 3.12 and 3.13, a DeprecationWarning
+                # In Python 3.11.1-3.13.x, a DeprecationWarning
                 # is emitted about the lack of a current event loop, because in
                 # Python 3.14 and later `get_event_loop` will raise a
                 # RuntimeError in that event. Because our code is already

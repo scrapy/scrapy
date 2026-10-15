@@ -18,35 +18,40 @@ class TestHttpProxyMiddleware:
         with pytest.raises(NotConfigured):
             build_from_crawler(HttpProxyMiddleware, crawler)
 
-    def test_no_environment_proxies(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    @pytest.mark.parametrize("url", ["http://e.com", "https://e.com", "file:///tmp/a"])
+    def test_no_environment_proxies(
+        self, url: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         for name in list(os.environ):
             monkeypatch.delenv(name)
         monkeypatch.setenv("dummy_proxy", "reset_env_and_do_not_raise")
         mw = HttpProxyMiddleware()
 
-        for url in ("http://e.com", "https://e.com", "file:///tmp/a"):
-            req = Request(url)
-            assert mw.process_request(req) is None
-            assert req.url == url
-            assert req.meta == {}
+        req = Request(url)
+        assert mw.process_request(req) is None
+        assert req.url == url
+        assert req.meta == {}
 
-    def test_environment_proxies(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        http_proxy = "https://proxy.for.http:3128"
-        https_proxy = "http://proxy.for.https:8080"
-        monkeypatch.setenv("http_proxy", http_proxy)
-        monkeypatch.setenv("https_proxy", https_proxy)
+    @pytest.mark.parametrize(
+        ("url", "proxy"),
+        [
+            ("http://e.com", "https://proxy.for.http:3128"),
+            ("https://e.com", "http://proxy.for.https:8080"),
+            ("file://tmp/a", None),
+        ],
+    )
+    def test_environment_proxies(
+        self, url: str, proxy: str | None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("http_proxy", "https://proxy.for.http:3128")
+        monkeypatch.setenv("https_proxy", "http://proxy.for.https:8080")
         monkeypatch.delenv("file_proxy", raising=False)
         mw = HttpProxyMiddleware()
 
-        for url, proxy in [
-            ("http://e.com", http_proxy),
-            ("https://e.com", https_proxy),
-            ("file://tmp/a", None),
-        ]:
-            req = Request(url)
-            assert mw.process_request(req) is None
-            assert req.url == url
-            assert req.meta.get("proxy") == proxy
+        req = Request(url)
+        assert mw.process_request(req) is None
+        assert req.url == url
+        assert req.meta.get("proxy") == proxy
 
     def test_proxy_precedence_meta(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("http_proxy", "https://proxy.com")
