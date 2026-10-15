@@ -67,6 +67,7 @@ class HttpxDownloadHandlerMixin:
     # HTTP/1.1 the limit is httpcore's MAX_INCOMPLETE_EVENT_SIZE (100 KiB),
     # which h11 only enforces once the head exceeds it and is still incomplete.
     headers_maxsize: int | None = 100 * 1024
+    handler_supports_partial_response_on_timeout = True
 
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
