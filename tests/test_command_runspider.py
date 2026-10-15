@@ -150,7 +150,7 @@ class MySpider(scrapy.Spider):
         yield
 """
         log = self.get_log(tmp_path, nameless_spider)
-        assert "[myspider.MySpider] DEBUG: It Works!" in log
+        assert "[MySpider] DEBUG: It Works!" in log
         assert "INFO: Spider closed (finished)" in log
 
     def test_runspider_prefers_named_spider(self, tmp_path: Path) -> None:

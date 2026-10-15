@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Protocol, Self, cast
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from scrapy import Request, Spider  # noqa: TC001
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object, walk_modules_iter
+from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -80,7 +82,19 @@ class SpiderLoader:
             )
 
     def _load_spiders(self, module: ModuleType) -> None:
-        for spcls in iter_spider_classes(module, require_name=self.require_name):
+        for spcls in iter_spider_classes(module, require_name=False):
+            if self.require_name and not getattr(spcls, "name", None):
+                warnings.warn(
+                    f"{global_object_name(spcls)} has no name, so it is not"
+                    " loaded. In a future Scrapy version, spiders without a name"
+                    " will be loaded with their class name as name. Set the"
+                    " SPIDER_LOADER_REQUIRE_NAME setting to False to get that"
+                    " behavior now, and decorate base spiders with"
+                    " scrapy.spiders.ignore_spider so that they are not loaded.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                continue
             name = spcls._default_name()
             self._found[name].append((module.__name__, spcls.__name__))
             self._spiders[name] = spcls

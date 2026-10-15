@@ -1,7 +1,6 @@
 import contextlib
 import shutil
 import sys
-import warnings
 from pathlib import Path
 from unittest import mock
 
@@ -11,6 +10,7 @@ import pytest
 # alone
 import scrapy
 from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.spiderloader import DummySpiderLoader, SpiderLoader, get_spider_loader
@@ -169,8 +169,6 @@ class TestSpiderLoader:
 
 class TestNamelessSpiderLoader:
     module = "tests.test_spiderloader.nameless_spiders"
-    nameless1 = f"{module}.nameless1.NamelessSpider"
-    nameless2 = f"{module}.nameless2.NamelessSpider"
 
     @pytest.fixture
     def spider_loader(self):
@@ -185,17 +183,22 @@ class TestNamelessSpiderLoader:
     def test_list(self, spider_loader):
         assert set(spider_loader.list()) == {
             "subclass",
-            self.nameless1,
-            self.nameless2,
+            "NamelessSpider",
+            "OtherNamelessSpider",
         }
 
     def test_list_require_name(self):
         settings = Settings({"SPIDER_MODULES": [self.module]})
-        spider_loader = SpiderLoader.from_settings(settings)
+        with pytest.warns(ScrapyDeprecationWarning) as record:
+            spider_loader = SpiderLoader.from_settings(settings)
+        assert sorted(str(w.message).split()[0] for w in record) == [
+            f"{self.module}.nameless1.NamelessSpider",
+            f"{self.module}.nameless2.OtherNamelessSpider",
+        ]
         assert set(spider_loader.list()) == {"subclass"}
 
     def test_load(self, spider_loader):
-        assert spider_loader.load(self.nameless1) is NamelessSpider
+        assert spider_loader.load("NamelessSpider") is NamelessSpider
 
     def test_instance_name(self, spider_loader):
         """Spiders are instantiated with the name that the loader knows them
@@ -206,18 +209,7 @@ class TestNamelessSpiderLoader:
     def test_find_by_request(self, spider_loader):
         assert spider_loader.find_by_request(
             Request("https://nameless.example.com")
-        ) == [self.nameless1]
-
-    def test_no_dupename_warning(self):
-        settings = Settings(
-            {
-                "SPIDER_MODULES": [self.module],
-                "SPIDER_LOADER_REQUIRE_NAME": False,
-            }
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
-            SpiderLoader.from_settings(settings)
+        ) == ["NamelessSpider"]
 
     def test_crawler_runner_loading(self, spider_loader):
         runner = CrawlerRunner(
@@ -226,7 +218,7 @@ class TestNamelessSpiderLoader:
                 "SPIDER_LOADER_REQUIRE_NAME": False,
             }
         )
-        crawler = runner.create_crawler(self.nameless1)
+        crawler = runner.create_crawler("NamelessSpider")
         assert crawler.spidercls is NamelessSpider
 
 

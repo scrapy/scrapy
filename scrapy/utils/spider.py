@@ -56,7 +56,7 @@ def iter_spider_classes(
     defined in the given module, excluding those marked with
     :func:`scrapy.spiders.ignore_spider`.
 
-    If `require_name` is ``True`` (default), any
+    If *require_name* is ``True`` (default), any
     :class:`~scrapy.spiders.Spider` subclass without a non-empty
     :attr:`~scrapy.Spider.name` is also excluded.
     """

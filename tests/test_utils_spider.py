@@ -63,7 +63,14 @@ class SpiderC2(SpiderC):
 
 @pytest.fixture
 def spider_loader() -> SpiderLoaderProtocol:
-    return get_spider_loader(Settings({"SPIDER_MODULES": ["tests.test_utils_spider"]}))
+    return get_spider_loader(
+        Settings(
+            {
+                "SPIDER_MODULES": ["tests.test_utils_spider"],
+                "SPIDER_LOADER_REQUIRE_NAME": False,
+            }
+        )
+    )
 
 
 def test_iterate_spider_output():

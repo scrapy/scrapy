@@ -48,9 +48,8 @@ class MySpider(scrapy.Spider):
         (proj_path / self.project_name / "spiders" / "myspider.py").write_text(
             spider_code, encoding="utf-8"
         )
-        name = f"{self.project_name}.spiders.myspider.MySpider"
-        _, _, log = proc("crawl", name, cwd=proj_path)
-        assert f"[{name}] DEBUG: It works!" in log
+        _, _, log = proc("crawl", "MySpider", cwd=proj_path)
+        assert "[MySpider] DEBUG: It works!" in log
         assert "Spider closed (finished)" in log
 
     def test_no_output(self, proj_path: Path) -> None:

@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.utils.python import global_object_name
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
@@ -70,8 +69,8 @@ class Spider(object_ref):
     @classmethod
     def _default_name(cls) -> str:
         """Return the name under which spider loaders and commands know this
-        spider class, which falls back to its import path."""
-        return getattr(cls, "name", None) or global_object_name(cls)
+        spider class, which falls back to its class name."""
+        return getattr(cls, "name", None) or cls.__name__
 
     @classmethod
     def _is_ignored(cls) -> bool:

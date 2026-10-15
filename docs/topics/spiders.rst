@@ -39,16 +39,13 @@ scrapy.Spider
 
    .. attribute:: name
 
-       A string which defines the name for this spider.
+       A string which defines the name for this spider. Defaults to the name of
+       the spider class.
 
-       If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` and you use the
-       default Scrapy spider loader (see :setting:`SPIDER_LOADER_CLASS`), a
-       non-empty name is required for the spider to be discoverable by the
-       Scrapy commands :command:`crawl` and :command:`list`.
-
-       The spider name must be unique to one spider class. If two or more
-       spiders have the same name, Scrapy commands :command:`crawl` and
-       :command:`runspider` will only be able to run one of the spiders.
+       The spider name is how commands like :command:`crawl` locate the spider,
+       so it must be unique within the project. Spiders without a name of their
+       own are only found if :setting:`SPIDER_LOADER_REQUIRE_NAME` is
+       ``False``.
 
        If the spider scrapes a single domain, a common practice is to name the
        spider after the domain, with or without the `TLD`_. So, for example, a
@@ -261,6 +258,32 @@ objects:
 
             for href in response.xpath("//a/@href").getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
+
+.. _base-spiders:
+
+Base spiders
+============
+
+Base spiders are :class:`~scrapy.spiders.Spider` subclasses that are not meant
+to be run by Scrapy. They are only meant to be subclassed to create regular
+spiders or other base spiders. They are one way to share code between two or
+more spiders.
+
+Use the :func:`~scrapy.spiders.ignore_spider` decorator to mark any base spider
+class:
+
+.. autodecorator:: scrapy.spiders.ignore_spider
+
+For example::
+
+    from scrapy.spiders import ignore_spider, Spider
+
+    @ignore_spider
+    class MyBaseSpider(Spider):
+        pass
+
+If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), spiders
+without a :attr:`~scrapy.Spider.name` are also ignored.
 
 .. _spiderargs:
 
@@ -707,29 +730,3 @@ Combine SitemapSpider with other sources of urls:
 .. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
-
-
-Base spiders
-============
-
-Base spiders are :class:`~scrapy.spiders.Spider` subclasses that are not meant
-to be run by Scrapy. They are only meant to be subclassed to create regular
-spiders or other base spiders. They are one way to share code between two or
-more spiders.
-
-Use the :func:`~scrapy.spiders.ignore_spider` decorator to mark any base spider
-class:
-
-.. autodecorator:: scrapy.spiders.ignore_spider
-
-For example::
-
-    from scrapy.spiders import ignore_spider, Spider
-
-    @ignore_spider
-    class MyBaseSpider(Spider):
-        pass
-
-If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), any
-:class:`~scrapy.spiders.Spider` subclass without a ``name`` class attribute is
-also ignored.

@@ -559,9 +559,10 @@ class TestMiscCommands(TestProjectBase):
             cwd=proj_path,
         )
         assert returncode == 0, err
-        nameless = f"{self.project_name}.spiders.nameless.NamelessSpider"
-        expected = ["named"] if require_name else ["named", nameless]
-        assert out.split() == expected
+        assert out.split() == (
+            ["named"] if require_name else ["NamelessSpider", "named"]
+        )
+        assert ("NamelessSpider has no name" in err) is require_name
 
 
 class TestCommandListing(TestProjectBase):

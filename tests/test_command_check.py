@@ -209,7 +209,7 @@ class NamelessSpider(scrapy.Spider):
 ''',
             encoding="utf-8",
         )
-        name = f"{self.project_name}.spiders.namelessspider.NamelessSpider"
+        name = "NamelessSpider"
         ret, out, err = proc("check", "-l", name, cwd=proj_path)
         assert ret == 0, err
         assert out == f"{name}\n  * parse\n"
