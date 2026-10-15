@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import ipaddress
 import ssl
 from contextlib import asynccontextmanager
@@ -79,17 +78,18 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @asynccontextmanager
     async def _make_request(
-        self, request: Request, timeout: float
+        self,
+        request: Request,
+        timeout: float,  # noqa: ASYNC109
     ) -> AsyncIterator[_ClientResponse]:
         proxy = self._extract_proxy_url_with_creds(request)
         proxy_headers = get_proxy_headers(request)
-        headers = self._request_headers(request)
+        headers = self._utf8_request_headers(request)
         if proxy_headers and not request.url.startswith("https:"):
             # without a tunnel the proxy reads the request headers, so the
             # headers meant for it travel among them, and it is up to the proxy
             # not to pass them on to the target server
-            for name, value in proxy_headers:
-                headers.appendlist(name, value)
+            headers.extend(proxy_headers)
         url: str | yarl.URL = request.url
         if request.meta.get("verbatim_url"):
             # encoded=True disables the percent-encoding normalization that
@@ -100,7 +100,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
                 request.method,
                 url,
                 data=request.body,
-                headers=headers.to_tuple_list(),
+                headers=headers,
                 timeout=aiohttp.ClientTimeout(total=timeout),
                 ssl=self._ssl_context,
                 allow_redirects=False,
@@ -108,7 +108,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
                 proxy_headers=dict(proxy_headers) or None,
             ) as response:
                 yield cast("_ClientResponse", response)
-        except (TimeoutError, asyncio.TimeoutError) as e:
+        except TimeoutError as e:
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
             ) from e
@@ -126,7 +126,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @staticmethod
     def _extract_headers(response: _ClientResponse) -> Headers:
-        return Headers(list(response.headers.items()))
+        return Headers(response.raw_headers)
 
     @staticmethod
     def _build_base_response_args(
