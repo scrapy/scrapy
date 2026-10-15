@@ -123,6 +123,13 @@ Log Stats extension
 
 Log basic stats like crawled pages and scraped items.
 
+.. _event-loop-lag:
+
+Event loop lag monitor
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: scrapy.extensions.event_loop_lag.EventLoopLagMonitor
+
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -148,7 +155,8 @@ Memory usage extension
 
 .. class:: scrapy.extensions.memusage.MemoryUsage
 
-.. note:: This extension does not work in Windows.
+.. note:: On Windows, this extension requires the ``memusage``
+   :ref:`extra <extras>`.
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 

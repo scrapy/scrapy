@@ -211,6 +211,7 @@ def pytest_runtest_setup(item):
         "boto3",
         "keyring",
         "dotenv",
+        "psutil",
     ]
 
     for module in optional_deps:
