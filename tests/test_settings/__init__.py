@@ -3,6 +3,8 @@
 
 import logging
 import re
+import textwrap
+from pathlib import Path
 from typing import Any
 from unittest import mock
 
@@ -27,6 +29,7 @@ NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES = {
     "DOWNLOAD_HANDLERS_BASE",
     "FEED_EXPORTERS_BASE",
     "FEED_STORAGES_BASE",
+    "MEDIA_STORAGES_BASE",
 }
 
 
@@ -117,7 +120,10 @@ class TestBaseSettings:
         assert "TEST_OPTION" in self.settings.attributes
         assert attr is self.settings.attributes["TEST_OPTION"]
 
-    def test_set_calls_settings_attributes_methods_on_update(self):
+    @pytest.mark.parametrize("priority", [0, 10, 20])
+    def test_set_calls_settings_attributes_methods_on_update(
+        self, priority: int
+    ) -> None:
         attr = SettingsAttribute("value", 10)
         with (
             mock.patch.object(attr, "__setattr__") as mock_setattr,
@@ -125,12 +131,9 @@ class TestBaseSettings:
         ):
             self.settings.attributes = {"TEST_OPTION": attr}
 
-            for priority in (0, 10, 20):
-                self.settings.set("TEST_OPTION", "othervalue", priority)
-                mock_set.assert_called_once_with("othervalue", priority)
-                assert not mock_setattr.called
-                mock_set.reset_mock()
-                mock_setattr.reset_mock()
+            self.settings.set("TEST_OPTION", "othervalue", priority)
+            mock_set.assert_called_once_with("othervalue", priority)
+            assert not mock_setattr.called
 
     def test_setitem(self):
         settings = BaseSettings()
@@ -492,22 +495,24 @@ class TestBaseSettings:
                 == settings[setting_name]
             )
 
-    def test_getwithbase_for_non_component_priority_dicts(self):
+    @pytest.mark.parametrize(
+        "base_name", sorted(NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES)
+    )
+    def test_getwithbase_for_non_component_priority_dicts(self, base_name: str) -> None:
         settings = BaseSettings()
-        for base_name in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES:
-            base_value = getattr(scrapy_default_settings, base_name)
-            settings[base_name] = BaseSettings(base_value)
-            assert len(base_value) >= 2
-            keys = list(base_value)
-            values = list(base_value.values())
-            override = {keys[0]: values[1]}
-            expected = dict(base_value)
-            expected[keys[0]] = values[1]
-            name = base_name[: -len("_BASE")]
-            settings[name] = BaseSettings(override)
-            value = settings.getwithbase(name)
-            assert isinstance(value, BaseSettings)
-            assert dict(value) == expected
+        base_value = getattr(scrapy_default_settings, base_name)
+        settings[base_name] = BaseSettings(base_value)
+        assert len(base_value) >= 2
+        keys = list(base_value)
+        values = list(base_value.values())
+        override = {keys[0]: values[1]}
+        expected = dict(base_value)
+        expected[keys[0]] = values[1]
+        name = base_name[: -len("_BASE")]
+        settings[name] = BaseSettings(override)
+        value = settings.getwithbase(name)
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == expected
 
     def test_get_component_priority_dict_with_base_warns_on_duplicate_import_paths(
         self, caplog
@@ -770,6 +775,46 @@ def test_default_settings_all():
         for name in vars(scrapy_default_settings)
         if name.isupper() and name not in deprecated
     )
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "DEFAULT_REQUEST_HEADERS",
+        "DOWNLOADER_MIDDLEWARES_BASE",
+        "DOWNLOAD_HANDLERS_BASE",
+        "EXTENSIONS_BASE",
+        "FEED_EXPORTERS_BASE",
+        "FEED_STORAGES_BASE",
+        "LOG_VERSIONS",
+        "RETRY_EXCEPTIONS",
+        "RETRY_HTTP_CODES",
+        "SPIDER_CONTRACTS_BASE",
+        "SPIDER_MIDDLEWARES_BASE",
+    ],
+)
+def test_documented_default(name: str) -> None:
+    # In the section of the setting, captures either the inline literal of
+    # "Default: ``...``" or the indented block of the code-block directive
+    # that follows "Default:".
+    pattern = re.compile(
+        rf"^\.\. setting:: {name}\n"
+        r"(?:(?!^\.\. setting::).)*?"
+        r"^Default:(?: ``([^`\n]+)``|\n\n\.\. code-block:: python\n\n"
+        r"((?: {4}[^\n]*\n|\n)+))",
+        re.DOTALL | re.MULTILINE,
+    )
+    docs_dir = Path(__file__).parents[2] / "docs"
+    matches = [
+        match
+        for path in docs_dir.glob("**/*.rst")
+        if (match := pattern.search(path.read_text(encoding="utf-8")))
+    ]
+    assert len(matches) == 1
+    inline, block = matches[0].groups()
+    # plain eval() because of OSError in RETRY_EXCEPTIONS
+    documented = eval(inline or textwrap.dedent(block), {})
+    assert documented == getattr(scrapy_default_settings, name)
 
 
 def test_deprecated_dns_resolver_setting():

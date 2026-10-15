@@ -73,7 +73,7 @@ def _get_response_rough_size(settings: BaseSettings, max_active_size: int) -> in
     return max_active_size // (4 * concurrency)
 
 
-class DownloaderMiddlewareManager(MiddlewareManager):
+class DownloaderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstract-method
     component_name = "downloader middleware"
 
     def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:

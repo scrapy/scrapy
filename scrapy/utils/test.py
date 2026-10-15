@@ -50,7 +50,8 @@ def get_reactor_settings() -> dict[str, Any]:
         # last one from them.
         settings["TWISTED_REACTOR_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
-            "ftp": None,
+            "ftp": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+            "ftps": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
             "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
             "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         }
@@ -69,6 +70,7 @@ def get_crawler(
     # When needed, useful settings can be added here, e.g. ones that prevent
     # deprecation warnings.
     settings: dict[str, Any] = {
+        "FEED_MODE": "overwrite",
         "REMOTE_CONTROL_ENABLED": False,
         "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),
@@ -118,4 +120,4 @@ def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:  # pragma: no co
     from twisted.internet import reactor
 
     agent = Agent(reactor)
-    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))
+    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode()))

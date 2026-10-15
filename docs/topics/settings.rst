@@ -401,12 +401,13 @@ is ``True``.
 Logging settings
 ----------------
 
-**Logging settings** are settings that configure the global root logging
-handler installed by :func:`~scrapy.utils.log.configure_logging`.
+**Logging settings** are settings that configure logging process-wide, mostly
+through the global root logging handler installed by
+:func:`~scrapy.utils.log.configure_logging`.
 
-These settings can be defined from a spider. However, because only 1 root
-logging handler is active per process, these settings cannot use a different
-value per spider when :ref:`running multiple spiders in the same process
+These settings can be defined from a spider. However, because logging
+configuration is global, these settings cannot use a different value per
+spider when :ref:`running multiple spiders in the same process
 <run-multiple-spiders>`.
 
 These settings are:
@@ -420,6 +421,7 @@ These settings are:
 -   :setting:`LOG_FORMAT`
 -   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
+-   :setting:`LOG_LEVELS`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -1120,7 +1122,8 @@ Default:
         "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
-        "ftp": None,
+        "ftp": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
+        "ftps": "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler",
     }
 
 (when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
@@ -1141,6 +1144,19 @@ handler (without replacement), place this in your ``settings.py``:
 
 .. seealso:: :ref:`security-unencrypted-protocols` and
     :ref:`security-local-resources`
+
+
+.. setting:: DOWNLOAD_HANDLERS_BY_NAME
+
+DOWNLOAD_HANDLERS_BY_NAME
+-------------------------
+
+.. versionadded:: VERSION
+
+Default: ``{}``
+
+A dict mapping names to :ref:`download handlers <topics-download-handlers>`
+that requests can ask for by name. See :ref:`download-handler-ids`.
 
 
 .. reqmeta:: download_slot
@@ -1241,7 +1257,8 @@ Use ``0`` to disable this limit.
 .. note::
 
     This limit can be set per-request using the :reqmeta:`download_warnsize`
-    :attr:`.Request.meta` key.
+    :attr:`.Request.meta` key. Requests that set :reqmeta:`download_maxsize`
+    but not :reqmeta:`download_warnsize` log no warning.
 
 .. note::
 
@@ -1282,15 +1299,6 @@ Optionally, this can be set on a per-request basis by using the
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers.
 
-.. warning::
-
-    This setting is ignored by the
-    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    :ref:`download handler <topics-download-handlers>`. In case of a data loss
-    error, the corresponding HTTP/2 connection may be corrupted, affecting other
-    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
-    failure is always raised for every request that was using that connection.
-
 .. setting:: DOWNLOAD_VERIFY_CERTIFICATES
 
 DOWNLOAD_VERIFY_CERTIFICATES
@@ -1322,6 +1330,10 @@ The class used to detect and filter duplicate requests.
 
 The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters based on the
 :setting:`REQUEST_FINGERPRINTER_CLASS` setting.
+
+On crawls large enough for the memory that
+:class:`~scrapy.dupefilters.RFPDupeFilter` uses to become a problem, set this
+setting to :class:`~scrapy.dupefilters.DiskDupeFilter` instead.
 
 To change how duplicates are checked, you can point :setting:`DUPEFILTER_CLASS`
 to a custom subclass of :class:`~scrapy.dupefilters.RFPDupeFilter` that
@@ -1395,6 +1407,8 @@ interface:
 
 .. autoclass:: scrapy.dupefilters.RFPDupeFilter
 
+.. autoclass:: scrapy.dupefilters.DiskDupeFilter
+
 
 .. setting:: DUPEFILTER_DEBUG
 
@@ -1416,6 +1430,22 @@ Default: ``vi`` (on Unix systems) or the IDLE editor (on Windows)
 The editor to use for editing spiders with the :command:`edit` command.
 Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
 command will prefer it over the default setting.
+
+.. setting:: EVENT_LOOP_LAG_THRESHOLD
+
+EVENT_LOOP_LAG_THRESHOLD
+------------------------
+
+Default: ``10.0``
+
+The number of seconds that the event loop may be blocked before a warning is
+logged. CPU-bound code running in a callback, such as a spider callback,
+blocks the event loop and delays every other pending callback and I/O
+operation, including downloads, for as long as it runs.
+
+Set to ``0`` to disable the warning.
+
+See :ref:`event-loop-lag`.
 
 .. setting:: EXTENSIONS
 
@@ -1448,6 +1478,7 @@ Default:
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
         "scrapy.extensions.remote_control.RemoteControl": 0,
+        "scrapy.extensions.event_loop_lag.EventLoopLagMonitor": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -1667,9 +1698,10 @@ so that a crawl killed before it can stop cleanly resumes from its latest
 state. Higher values trade some of that safety for fewer writes, which matters
 in broad crawls, where the state grows with the number of active domains.
 
-Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`.
-For a killed crawl to resume, the scheduler queues must survive the kill too,
-which requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
+Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`
+and to the database of :class:`~scrapy.dupefilters.DiskDupeFilter`. For a
+killed crawl to resume, the scheduler queues must survive the kill too, which
+requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
 :setting:`SCHEDULER_START_DISK_QUEUE`.
 
 
@@ -1799,6 +1831,30 @@ Default: ``'DEBUG'``
 
 Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
 INFO, DEBUG. For more info see :ref:`topics-logging`.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
+.. setting:: LOG_LEVELS
+
+LOG_LEVELS
+----------
+
+Default: ``{}``
+
+.. versionadded:: VERSION
+
+Minimum level to log for specific loggers.
+
+It takes precedence over the levels that Scrapy sets by default::
+
+    {
+        "filelock": "ERROR",
+        "hpack": "ERROR",
+        "httpcore": "ERROR",
+        "httpx": "WARNING",
+        "scrapy": "DEBUG",
+        "twisted": "ERROR",
+    }
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
@@ -2226,6 +2282,10 @@ Default:
         "scrapy.contracts.default.UrlContract": 1,
         "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
         "scrapy.contracts.default.MetadataContract": 1,
+        "scrapy.contracts.default.MethodContract": 1,
+        "scrapy.contracts.default.BodyContract": 1,
+        "scrapy.contracts.default.HeaderContract": 1,
+        "scrapy.contracts.default.CookieContract": 1,
         "scrapy.contracts.default.ReturnsContract": 2,
         "scrapy.contracts.default.ScrapesContract": 3,
     }

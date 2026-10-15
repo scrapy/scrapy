@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from subprocess import PIPE, Popen
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from twisted.internet import defer
 from twisted.names import dns, error
@@ -15,9 +15,6 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 _Answers = tuple[list[dns.RRHeader], list[dns.RRHeader], list[dns.RRHeader]]
