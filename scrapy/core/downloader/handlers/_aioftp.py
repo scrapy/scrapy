@@ -269,6 +269,10 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
     def _is_dataloss_exception(exc: Exception) -> bool:
         return isinstance(exc, aioftp.StatusCodeError)
 
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, TimeoutError)
+
     def _log_tls_info(self, response: _AioftpResponse, request: Request) -> None:
         if ssl_object := response.control.writer.get_extra_info("ssl_object"):
             _log_sslobj_debug_info(ssl_object)
