@@ -102,13 +102,29 @@ Disallow: /some/randome/page.html
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
         )
-        d1 = deferred_from_coro(
-            middleware.process_request(Request("http://site.local/allowed1"))
+        await maybe_deferred_to_future(
+            DeferredList(
+                [
+                    deferred_from_coro(
+                        self.assertNotIgnored(
+                            Request("http://site.local/allowed"), middleware
+                        )
+                    ),
+                    deferred_from_coro(
+                        self.assertIgnored(
+                            Request("http://site.local/admin/main"), middleware
+                        )
+                    ),
+                    deferred_from_coro(
+                        self.assertIgnored(
+                            Request("http://site.local/static/"), middleware
+                        )
+                    ),
+                ],
+                fireOnOneErrback=True,
+            )
         )
-        d2 = deferred_from_coro(
-            middleware.process_request(Request("http://site.local/allowed2"))
-        )
-        await maybe_deferred_to_future(DeferredList([d1, d2], fireOnOneErrback=True))
+        assert self.crawler.engine.download_async.call_count == 1
 
     @pytest.mark.only_asyncio
     @coroutine_test
@@ -116,9 +132,12 @@ Disallow: /some/randome/page.html
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
         )
-        c1 = middleware.process_request(Request("http://site.local/allowed1"))
-        c2 = middleware.process_request(Request("http://site.local/allowed2"))
-        await asyncio.gather(c1, c2)
+        await asyncio.gather(
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware),
+            self.assertIgnored(Request("http://site.local/admin/main"), middleware),
+            self.assertIgnored(Request("http://site.local/static/"), middleware),
+        )
+        assert self.crawler.engine.download_async.call_count == 1
 
     @coroutine_test
     async def test_robotstxt_ready_parser(self):
@@ -221,6 +240,62 @@ Disallow: /some/randome/page.html
 
         middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
         await self.assertNotIgnored(Request("http://site.local"), middleware)
+
+    @coroutine_test
+    async def test_robotstxt_error_multiple_reqs(self) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        err = CannotResolveHostError("Robotstxt address not found")
+
+        async def return_failure(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.errback, failure.Failure(err))
+            return await maybe_deferred_to_future(deferred)
+
+        self.crawler.engine.download_async.side_effect = return_failure
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        await maybe_deferred_to_future(
+            DeferredList(
+                [
+                    deferred_from_coro(
+                        self.assertNotIgnored(
+                            Request("http://site.local/allowed"), middleware
+                        )
+                    ),
+                    deferred_from_coro(
+                        self.assertNotIgnored(
+                            Request("http://site.local/admin/main"), middleware
+                        )
+                    ),
+                    deferred_from_coro(
+                        self.assertNotIgnored(
+                            Request("http://site.local/static/"), middleware
+                        )
+                    ),
+                ],
+                fireOnOneErrback=True,
+            )
+        )
+        assert self.crawler.engine.download_async.call_count == 1
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_error_multiple_reqs_asyncio(self) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        err = CannotResolveHostError("Robotstxt address not found")
+
+        async def return_failure(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.errback, failure.Failure(err))
+            return await maybe_deferred_to_future(deferred)
+
+        self.crawler.engine.download_async.side_effect = return_failure
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        await asyncio.gather(
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware),
+            self.assertNotIgnored(Request("http://site.local/admin/main"), middleware),
+            self.assertNotIgnored(Request("http://site.local/static/"), middleware),
+        )
+        assert self.crawler.engine.download_async.call_count == 1
 
     @coroutine_test
     async def test_robotstxt_request_download_error(

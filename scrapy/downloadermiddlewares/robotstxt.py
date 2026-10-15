@@ -205,7 +205,13 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            # Every request for this host waits on the same Deferred, and
+            # awaiting it passes the result to one callback. The parsed
+            # robots.txt, or None when it could not be retrieved, is stored
+            # before that Deferred fires.
+            await maybe_deferred_to_future(parser)
+            parser = self._parsers[netloc]
+            assert not isinstance(parser, Deferred)
         return parser
 
     async def _parse_robots(
