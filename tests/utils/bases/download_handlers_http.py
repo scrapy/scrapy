@@ -70,13 +70,9 @@ class TestHttpBase(ABC):
     http2: bool = False
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
-    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
-    # stream error (of type PROTOCOL_ERROR) so the client will send
-    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
-    # connection (see handling of ProtocolError in
-    # h2.connection.H2Connection.receive_data()), thus closing all streams that
-    # were using it, and we handle this as a normal exception.
-    handler_supports_http2_dataloss: bool = True
+    # whether the handler can return the body received so far, instead of
+    # erroring out, when a request times out mid-response
+    handler_supports_partial_response_on_timeout: bool = False
     # whether the handler sends a request Content-Length header as is, instead
     # of building its own (https://github.com/scrapy/scrapy/issues/4919)
     handler_supports_custom_content_length: bool = True
@@ -441,6 +437,25 @@ class TestHttpBase(ABC):
             d = deferred_from_coro(download_handler.download_request(request))
             with pytest.raises(DownloadTimeoutError):
                 await maybe_deferred_to_future(d)
+
+    @coroutine_test
+    async def test_timeout_download_from_spider_server_hangs_partial_response(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.handler_supports_partial_response_on_timeout:
+            pytest.skip("This handler doesn't support partial responses on timeout")
+        # client connects, server sends headers and some body bytes but hangs;
+        # with dataloss failures disabled the body received so far is
+        # returned instead of raising a timeout error
+        meta = {"download_timeout": 0.5, "download_fail_on_dataloss": False}
+        request = Request(
+            mockserver.url("/hang-after-headers", is_secure=self.is_secure), meta=meta
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.body == b"some bytes"
+        assert response.flags == ["dataloss"]
 
     @pytest.mark.parametrize("send_header", [True, False])
     @coroutine_test
@@ -862,8 +877,6 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_download_cause_data_loss(self, mockserver: MockServer) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -873,8 +886,6 @@ class TestHttpBase(ABC):
     async def test_download_cause_data_loss_double_warning(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -890,8 +901,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_broken(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(
             mockserver.url("/broken", is_secure=self.is_secure),
             meta={"download_fail_on_dataloss": False},
@@ -920,8 +929,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_via_setting(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOAD_FAIL_ON_DATALOSS": False}

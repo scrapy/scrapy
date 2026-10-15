@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Self
 from unittest import mock
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, fail, inlineCallbacks
 from twisted.internet.interfaces import IReadDescriptor
 from twisted.internet.task import Cooperator
 from zope.interface import implementer
@@ -147,7 +147,7 @@ class _ReadTracker:
 
     def __enter__(self) -> Self:
         if is_asyncio_available():
-            asyncio.get_event_loop().add_reader(self._rx, self._read)
+            asyncio.get_running_loop().add_reader(self._rx, self._read)
         else:
             from twisted.internet import reactor
 
@@ -157,7 +157,7 @@ class _ReadTracker:
 
     def __exit__(self, *exc_info: object) -> None:
         if is_asyncio_available():
-            asyncio.get_event_loop().remove_reader(self._rx)
+            asyncio.get_running_loop().remove_reader(self._rx)
         else:
             from twisted.internet import reactor
 
@@ -309,6 +309,24 @@ class TestParallelAsync:
         # One task per item, plus the one that finds no more work.
         assert coiterate.call_count <= 4
 
+    @pytest.mark.parametrize("count", [1, 2])
+    @inline_callbacks_test
+    def test_callable_error(
+        self, count: int, caplog: pytest.LogCaptureFixture
+    ) -> Generator[Deferred[Any], Any, None]:
+        results: list[int] = []
+
+        def callable_(o: int) -> Deferred[None] | None:
+            if o == 1:
+                return fail(ValueError("Bad item"))
+            results.append(o)
+            return None
+
+        yield parallel_async(self.get_async_iterable(4), count, callable_)
+        assert sorted(results) == [0, 2, 3]
+        assert "Error processing an item" in caplog.text
+        assert "Bad item" in caplog.text
+
 
 class TestDeferredFromCoro:
     def test_deferred(self):
@@ -425,6 +443,17 @@ class TestDeferredToFuture:
         assert isinstance(result, Future)
         future_result = await result
         assert future_result == 42
+
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_thread_without_loop(self):
+        # No loop runs in the other thread, so the future gets the loop of the
+        # installed reactor.
+        d: Deferred[int] = Deferred()
+        result = await asyncio.to_thread(deferred_to_future, d)
+        assert result.get_loop() is asyncio.get_running_loop()
+        d.callback(42)
+        assert await result == 42
 
 
 @pytest.mark.only_not_asyncio

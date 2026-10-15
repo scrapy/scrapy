@@ -11,6 +11,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from scrapy import Spider
     from scrapy.crawler import Crawler
 
@@ -71,6 +73,15 @@ class RobotParser(metaclass=ABCMeta):
         """
         return None
 
+    def sitemaps(self) -> Iterable[str]:
+        """Return the sitemap URLs declared through the ``Sitemap`` directive
+        of the robots.txt file, or an empty iterable if there are none or the
+        backend does not support reading them.
+
+        .. versionadded:: VERSION
+        """
+        return ()
+
 
 class PythonRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
@@ -117,6 +128,9 @@ class RerpRobotParser(RobotParser):
         delay = self.rp.get_crawl_delay(to_unicode(user_agent))
         return None if delay is None else float(delay)
 
+    def sitemaps(self) -> Iterable[str]:
+        return cast("Iterable[str]", self.rp.sitemaps)
+
 
 class ProtegoRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
@@ -137,3 +151,6 @@ class ProtegoRobotParser(RobotParser):
     def crawl_delay(self, user_agent: str | bytes) -> float | None:
         delay = self.rp.crawl_delay(to_unicode(user_agent))
         return None if delay is None else float(delay)
+
+    def sitemaps(self) -> Iterable[str]:
+        return self.rp.sitemaps

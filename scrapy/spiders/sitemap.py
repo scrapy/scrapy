@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import logging
 import re
+import warnings
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, Literal, Self, cast
 from urllib.parse import urljoin
 
+from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -17,10 +20,12 @@ from scrapy.utils._compression import (
     gzip_magic_number,
 )
 from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
+    from scrapy.robotstxt import RobotParser
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +71,10 @@ class SitemapSpider(Spider):
     """
 
     sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
-    """Regexes of sitemaps that should be followed. This is only for sites that
-    use `sitemap index files <https://www.sitemaps.org/protocol.html#index>`_
-    that point to other sitemap files.
+    """Regexes of sitemap URLs that should be followed: those linked from
+    `sitemap index files <https://www.sitemaps.org/protocol.html#index>`_, and
+    those declared through the ``Sitemap`` directive of a :file:`robots.txt`
+    file.
 
     By default, all sitemaps are followed.
     """
@@ -93,6 +99,7 @@ class SitemapSpider(Spider):
 
     _max_size: int
     _warn_size: int
+    _obey_robotstxt: bool
 
     @classmethod
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
@@ -103,6 +110,9 @@ class SitemapSpider(Spider):
         spider._warn_size = getattr(
             spider, "download_warnsize", spider.settings.getint("DOWNLOAD_WARNSIZE")
         )
+        spider._obey_robotstxt = crawler.settings.getbool("ROBOTSTXT_OBEY")
+        if spider._obey_robotstxt:
+            crawler.signals.connect(spider._robots_parsed, signals.robots_parsed)
         return spider
 
     def __init__(self, *a: Any, **kw: Any):
@@ -113,9 +123,52 @@ class SitemapSpider(Spider):
                 c = cast("CallbackT", getattr(self, c))  # noqa: PLW2901
             self._cbs.append((regex(r), c))
         self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
+        self._robots_sitemaps: dict[str, list[str]] = {}
+        self._signal_only_netlocs: set[str] = set()
+
+    def _robots_parsed(
+        self, robotparser: RobotParser, request: Request, response: Response
+    ) -> None:
+        netloc = urlparse_cached(request).netloc
+        urls = [urljoin(request.url, url) for url in robotparser.sitemaps()]
+        if netloc in self._signal_only_netlocs:
+            # No request for this host's robots.txt was sent from start(), so
+            # _parse_sitemap() will never run for it; schedule its sitemaps
+            # directly instead of stashing them for a response that never arrives.
+            self._signal_only_netlocs.discard(netloc)
+            for url in urls:
+                if any(x.search(url) for x in self._follow):
+                    self.crawler.engine.crawl(
+                        self.sitemap_request(
+                            url,
+                            self._parse_sitemap,
+                            {"loc": url},
+                            source="robotstxt",
+                            response=response,
+                        )
+                    )
+        else:
+            self._robots_sitemaps[netloc] = urls
 
     async def start(self) -> AsyncIterator[Any]:
+        sitemap_netlocs = {
+            urlparse_cached(url).netloc
+            for url in self.sitemap_urls
+            if not url.endswith("/robots.txt")
+        }
         for url in self.sitemap_urls:
+            netloc = urlparse_cached(url).netloc
+            if (
+                self._obey_robotstxt
+                and url.endswith("/robots.txt")
+                and netloc in sitemap_netlocs
+            ):
+                # RobotsTxtMiddleware will fetch and parse this robots.txt
+                # anyway, to check the other sitemap_urls requests to the same
+                # host, so rely on the robots_parsed signal for it instead of
+                # requesting it a second time here.
+                self._signal_only_netlocs.add(netloc)
+                continue
             yield Request(url, self._parse_sitemap)
 
     def sitemap_filter(
@@ -172,10 +225,63 @@ class SitemapSpider(Spider):
         """
         yield from entries
 
+    def sitemap_request(
+        self,
+        loc: str,
+        callback: CallbackT,
+        entry: dict[str, Any],
+        *,
+        source: Literal["robotstxt", "sitemapindex", "urlset"],
+        response: Response,
+    ) -> Request:
+        """Return the request for the *loc* URL of the sitemap *entry*, to be
+        parsed with *callback*.
+
+        .. versionadded:: VERSION
+
+        Override this method to build those requests differently, e.g. to
+        carry sitemap data and request metadata over to *callback*:
+
+        .. code-block:: python
+
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                meta = {
+                    "lastmod": entry.get("lastmod"),
+                    "site": response.meta.get("site"),
+                }
+                return Request(loc, callback, meta=meta)
+
+        *entry* is the sitemap entry that *loc* comes from, as described in
+        :meth:`sitemap_filter`. When :attr:`sitemap_alternate_links` is
+        enabled, the same entry is used for every alternate URL.
+
+        *source* tells where *loc* comes from: ``"urlset"`` for a URL to
+        crawl, ``"sitemapindex"`` for a sitemap linked from a sitemap index,
+        and ``"robotstxt"`` for a sitemap linked from a :file:`robots.txt`
+        file, where *entry* only has ``loc``.
+
+        *response* is the response that *entry* was read from.
+        """
+        return Request(loc, callback=callback)
+
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
-            return (Request(url, callback=self._parse_sitemap) for url in urls)
+            netloc = urlparse_cached(response).netloc
+            for url in self._robots_sitemaps.pop(netloc, ()):
+                if url not in urls:
+                    urls.append(url)
+            return (
+                self.sitemap_request(
+                    url,
+                    self._parse_sitemap,
+                    {"loc": url},
+                    source="robotstxt",
+                    response=response,
+                )
+                for url in urls
+                if any(x.search(url) for x in self._follow)
+            )
 
         body = self._get_sitemap_body(response)
         if not body:
@@ -189,18 +295,30 @@ class SitemapSpider(Spider):
         s = Sitemap(body)
 
         if s.type == "sitemapindex":
-            urls = list(
+            index_entries = list(
                 self._get_urls_from_sitemapindex(self.sitemap_filter(s), response.url)
             )
-            return (Request(loc, callback=self._parse_sitemap) for loc in urls)
+            return (
+                self.sitemap_request(
+                    loc,
+                    self._parse_sitemap,
+                    entry,
+                    source="sitemapindex",
+                    response=response,
+                )
+                for loc, entry in index_entries
+            )
 
         if s.type == "urlset":
-            url_callback_pairs = list(
+            urlset_entries = list(
                 self._get_urls_and_callbacks_from_urlset(
                     self.sitemap_filter(s), response.url
                 )
             )
-            return (Request(loc, callback=c) for loc, c in url_callback_pairs)
+            return (
+                self.sitemap_request(loc, c, entry, source="urlset", response=response)
+                for loc, c, entry in urlset_entries
+            )
 
         logger.warning(
             "Ignoring invalid sitemap: %(response)s",
@@ -212,20 +330,20 @@ class SitemapSpider(Spider):
 
     def _get_urls_from_sitemapindex(
         self, it: Iterable[dict[str, Any]], base_url: str
-    ) -> Iterable[str]:
-        for loc in iterloc(it, self.sitemap_alternate_links):
+    ) -> Iterable[tuple[str, dict[str, Any]]]:
+        for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
             loc = urljoin(base_url, loc)  # noqa: PLW2901
             if any(x.search(loc) for x in self._follow):
-                yield loc
+                yield loc, entry
 
     def _get_urls_and_callbacks_from_urlset(
         self, it: Iterable[dict[str, Any]], base_url: str
-    ) -> Iterable[tuple[str, CallbackT]]:
-        for loc in iterloc(it, self.sitemap_alternate_links):
+    ) -> Iterable[tuple[str, CallbackT, dict[str, Any]]]:
+        for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
             loc = urljoin(base_url, loc)  # noqa: PLW2901
             for r, c in self._cbs:
                 if r.search(loc):
-                    yield loc, c
+                    yield loc, c, entry
                     break
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
@@ -281,10 +399,22 @@ def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
 
 
 def iterloc(it: Iterable[dict[str, Any]], alt: bool = False) -> Iterable[str]:
+    warnings.warn(
+        "scrapy.spiders.sitemap.iterloc() is deprecated.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return (loc for loc, _ in _iterlocs(it, alt))
+
+
+def _iterlocs(
+    it: Iterable[dict[str, Any]], alt: bool = False
+) -> Iterable[tuple[str, dict[str, Any]]]:
     for d in it:
         if loc := d["loc"]:
-            yield loc
+            yield loc, d
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
         if alt and (alt_list := d.get("alternate")):
-            yield from alt_list
+            for loc in alt_list:
+                yield loc, d

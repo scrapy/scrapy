@@ -130,6 +130,75 @@ class TestParallelAsyncio:
         assert results == [0, 1, 2]
         assert max(task_counts) < 100
 
+    @pytest.mark.parametrize("count", [1, 2])
+    @coroutine_test
+    async def test_callable_error(
+        self, count: int, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        results: list[int] = []
+
+        async def callable_(o: int) -> None:
+            if o == 1:
+                raise ValueError("Bad item")
+            results.append(o)
+
+        await _parallel_asyncio(range(4), count, callable_)
+        assert sorted(results) == [0, 2, 3]
+        assert "Error processing an item" in caplog.text
+        assert "Bad item" in caplog.text
+
+    @coroutine_test
+    async def test_cancelled(self) -> None:
+        """Cancelling the coroutine cancels the calls in progress."""
+        started: list[int] = []
+        cancelled: list[int] = []
+        all_started = asyncio.Event()
+
+        async def callable_(o: int) -> None:
+            started.append(o)
+            if len(started) == 3:
+                all_started.set()
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelled.append(o)
+                raise
+
+        task = asyncio.create_task(_parallel_asyncio(range(3), 3, callable_))
+        await all_started.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert sorted(cancelled) == [0, 1, 2]
+
+    @coroutine_test
+    async def test_iteration_error(self) -> None:
+        """An exception raised while iterating is propagated in an exception
+        group, and the calls in progress are cancelled."""
+        started: list[int] = []
+        cancelled: list[int] = []
+        all_started = asyncio.Event()
+
+        async def iterable() -> AsyncGenerator[int, None]:
+            yield 0
+            yield 1
+            await all_started.wait()
+            raise ValueError("Bad iterable")
+
+        async def callable_(o: int) -> None:
+            started.append(o)
+            if len(started) == 2:
+                all_started.set()
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelled.append(o)
+                raise
+
+        with pytest.RaisesGroup(pytest.RaisesExc(ValueError, match="Bad iterable")):
+            await _parallel_asyncio(iterable(), 3, callable_)
+        assert sorted(cancelled) == [0, 1]
+
 
 _real_sleep = asyncio.sleep
 
@@ -259,3 +328,10 @@ class TestAsyncioLoopingCall:
             await _wait_for(lambda: len(calls) >= 3)
             looping_call.stop()
         assert calls == [1, 4, 5]
+
+
+@pytest.mark.only_not_asyncio
+def test_looping_call_no_asyncio() -> None:
+    looping_call = AsyncioLoopingCall(lambda: None)
+    with pytest.raises(RuntimeError, match="no running asyncio event loop"):
+        looping_call.start(1, now=False)

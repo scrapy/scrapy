@@ -216,11 +216,26 @@ class DiskDupeFilter(RFPDupeFilter):
             "CREATE TABLE IF NOT EXISTS seen (fingerprint BLOB PRIMARY KEY)"
             " WITHOUT ROWID"
         )
+        self._sync_every = 0
+        self._changes = 0
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        dupefilter = super().from_crawler(crawler)
+        dupefilter._sync_every = crawler.settings.getint("JOBDIR_SYNC_EVERY")
+        return dupefilter
 
     def request_seen(self, request: Request) -> bool:
         fp = self._fingerprint(request)
         cursor = self._db.execute("INSERT OR IGNORE INTO seen VALUES (?)", (fp,))
-        return not cursor.rowcount
+        if not cursor.rowcount:
+            return True
+        if self._sync_every:
+            self._changes += 1
+            if self._changes >= self._sync_every:
+                self._changes = 0
+                self._db.commit()
+        return False
 
     def close(self, reason: str) -> None:
         self._db.commit()
