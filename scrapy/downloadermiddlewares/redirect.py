@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseRedirectMiddleware:
-    enabled_setting: str = "REDIRECT_ENABLED"
     crawler: Crawler
+    enabled_setting: str = "REDIRECT_ENABLED"
 
     def __init__(self, settings: BaseSettings):
         if not settings.getbool(self.enabled_setting):
@@ -105,9 +105,15 @@ class BaseRedirectMiddleware:
                 reason,
             ]
             assert self.crawler.request_fingerprinter is not None
-            redirected.meta["redirect_fingerprints"] = request.meta.get(
-                "redirect_fingerprints", set()
-            ) | {self.crawler.request_fingerprinter.fingerprint(request)}
+            fingerprint = self.crawler.request_fingerprinter.fingerprint
+            fingerprints = request.meta.get("_redirect_fingerprints", set()) | {
+                fingerprint(request)
+            }
+            redirected.meta["_redirect_fingerprints"] = fingerprints
+            # The dupefilter saw every fingerprint of the chain already, so a
+            # redirect back to one of them would otherwise be filtered out.
+            if fingerprint(redirected) in fingerprints:
+                redirected.meta["skip_dupefilter_once"] = True
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug(
