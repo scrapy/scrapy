@@ -7,7 +7,7 @@ See documentation in docs/topics/downloader-middleware.rst
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from w3lib.http import basic_auth_header
 
@@ -18,9 +18,6 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http import Response
 
@@ -77,12 +74,12 @@ class HttpAuthMiddleware:
         pwd = request.meta.get("http_pass", "")
         if usr or pwd:
             domain = request.meta.get("http_auth_domain")
-            if not domain or url_is_from_any_domain(request.url, [domain]):
+            if not domain or url_is_from_any_domain(request, [domain]):
                 request.headers[b"Authorization"] = basic_auth_header(usr, pwd)
             return None
         # Middleware-level auth
         if self._auth and (
-            not self._domain or url_is_from_any_domain(request.url, [self._domain])
+            not self._domain or url_is_from_any_domain(request, [self._domain])
         ):
             request.headers[b"Authorization"] = self._auth
         return None

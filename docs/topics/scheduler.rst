@@ -37,8 +37,10 @@ Default scheduler
 Priority queues
 ===============
 
+.. autoclass:: scrapy.pqueues.PriorityQueueProtocol
+    :members: from_crawler, push, pop, close, changed, next_priority, state
+    :special-members: __len__
+
 .. autoclass:: scrapy.pqueues.DownloaderAwarePriorityQueue
-    :members: changed, state
 
 .. autoclass:: scrapy.pqueues.ScrapyPriorityQueue
-    :members: changed, state

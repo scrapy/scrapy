@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
-class DownloaderMiddlewareManager(MiddlewareManager):
+class DownloaderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstract-method
     component_name = "downloader middleware"
 
     def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
