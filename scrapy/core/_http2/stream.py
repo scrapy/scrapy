@@ -10,7 +10,6 @@ from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectionClosed
-from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
 from scrapy import signals
@@ -477,9 +476,8 @@ class Stream:
             self._deferred_response.errback(
                 ResponseFailed(
                     [
-                        Failure(
-                            f"Remote peer {self._protocol.metadata['ip_address']} sent RST_STREAM",
-                            ProtocolError,
+                        ProtocolError(
+                            f"Remote peer {self._protocol.metadata['ip_address']} sent RST_STREAM"
                         )
                     ]
                 )

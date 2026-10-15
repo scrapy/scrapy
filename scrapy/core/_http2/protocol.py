@@ -358,7 +358,8 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         # Cancel the timeout if not done yet
         self.setTimeout(None)  # type: ignore[no-untyped-call]
 
-        self._conn_lost_errors.append(reason)
+        assert reason.value is not None
+        self._conn_lost_errors.append(reason.value)
 
         # Notify the connection pool instance such that no new requests are
         # sent over current connection
