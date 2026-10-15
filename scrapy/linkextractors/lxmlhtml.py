@@ -10,7 +10,7 @@ import re
 from collections.abc import Callable, Iterable
 from functools import partial
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from lxml import etree
 from parsel.csstranslator import HTMLTranslator
@@ -18,11 +18,12 @@ from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
-from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches
+from scrapy.linkextractors import IGNORED_EXTENSIONS, SUPPORTED_SCHEMES, _matches
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
-from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
+from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
     from lxml.html import HtmlElement
@@ -55,6 +56,18 @@ def _identity(x: Any) -> Any:
 
 def _canonicalize_link_url(link: Link) -> str:
     return canonicalize_url(link.url, keep_fragments=True)
+
+
+def _has_extension(path: str, extensions: set[str]) -> bool:
+    """Return whether *path* ends with any of *extensions*, which all start
+    with a dot and are lowercase, ignoring case.
+    """
+    dot = path.rfind(".")
+    while dot != -1:
+        if path[dot:].lower() in extensions:
+            return True
+        dot = path.rfind(".", 0, dot)
+    return False
 
 
 def _name_matches(allowed: set[str], denied: set[str], name: str) -> bool:
@@ -202,6 +215,14 @@ class LxmlLinkExtractor:
         :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
     :type deny_extensions: list
 
+    :param schemes: a single value or list of strings containing the URL
+        schemes that extracted links may use. If not given, it will default to
+        :data:`scrapy.linkextractors.SUPPORTED_SCHEMES`. Use ``()`` to extract
+        links regardless of their scheme.
+
+        .. versionadded:: VERSION
+    :type schemes: str or list
+
     :param restrict_xpaths: an XPath (or list of XPaths) that defines regions
         inside the response where links should be extracted. If given, only the
         text selected by those XPaths will be scanned for links.
@@ -320,6 +341,7 @@ class LxmlLinkExtractor:
         restrict_text: _RegexOrSeveral | None = None,
         deny_tags: str | Iterable[str] = (),
         deny_attrs: str | Iterable[str] = (),
+        schemes: str | Iterable[str] | None = None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         deny_tags, deny_attrs = (
@@ -347,8 +369,11 @@ class LxmlLinkExtractor:
 
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS
+        if schemes is None:
+            schemes = SUPPORTED_SCHEMES
         self.canonicalize: bool = canonicalize
         self.deny_extensions: set[str] = {"." + e for e in arg_to_iter(deny_extensions)}
+        self.schemes: set[str] = set(arg_to_iter(schemes))
         self.restrict_text: list[re.Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
@@ -359,21 +384,21 @@ class LxmlLinkExtractor:
         ]
 
     def _link_allowed(self, link: Link) -> bool:
-        if not _is_valid_url(link.url):
+        parsed_url = urlparse_cached(link.url)
+        if self.schemes and parsed_url.scheme not in self.schemes:
             return False
         if self.allow_res and not _matches(link.url, self.allow_res):
             return False
         if self.deny_res and _matches(link.url, self.deny_res):
             return False
-        parsed_url = urlparse(link.url)
         if self.allow_domains and not url_is_from_any_domain(
             parsed_url, self.allow_domains
         ):
             return False
         if self.deny_domains and url_is_from_any_domain(parsed_url, self.deny_domains):
             return False
-        if self.deny_extensions and url_has_any_extension(
-            parsed_url, self.deny_extensions
+        if self.deny_extensions and _has_extension(
+            parsed_url.path, self.deny_extensions
         ):
             return False
         return not self.restrict_text or _matches(link.text, self.restrict_text)
@@ -397,7 +422,8 @@ class LxmlLinkExtractor:
         if self.canonicalize:
             for link in links:
                 link.url = canonicalize_url(link.url)
-        return self.link_extractor._process_links(links)
+            return self.link_extractor._process_links(links)
+        return links
 
     def _extract_links(self, *args: Any, **kwargs: Any) -> list[Link]:
         return self.link_extractor._extract_links(*args, **kwargs)
@@ -423,6 +449,6 @@ class LxmlLinkExtractor:
         for doc in docs:
             links = self._extract_links(doc, response.url, response.encoding, base_url)
             all_links.extend(self._process_links(links))
-        if self.link_extractor.unique:
+        if self.link_extractor.unique and len(docs) > 1:
             return unique_list(all_links, key=self.link_extractor.link_key)
         return all_links

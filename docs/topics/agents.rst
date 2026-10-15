@@ -45,5 +45,9 @@ possible thanks to it:
   expensive or impossible to restart without losing data and that cannot be
   fixed in any other way.
 
+.. youtube:: AP17jPrlAzY
+    :privacy_mode:
+    :width: 100%
+
 .. _agent plugin: https://github.com/scrapy/scrapy-agent-plugin
 .. _Scrapy MCP server: https://github.com/scrapy/scrapy-mcp-official

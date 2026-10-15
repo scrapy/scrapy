@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import ipaddress
 import ssl
 from contextlib import asynccontextmanager
@@ -78,10 +77,12 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @asynccontextmanager
     async def _make_request(
-        self, request: Request, timeout: float
+        self,
+        request: Request,
+        timeout: float,  # noqa: ASYNC109
     ) -> AsyncIterator[_ClientResponse]:
         proxy = self._extract_proxy_url_with_creds(request)
-        headers = self._request_headers(request).to_tuple_list()
+        headers = self._utf8_request_headers(request)
         url: str | yarl.URL = request.url
         if request.meta.get("verbatim_url"):
             # encoded=True disables the percent-encoding normalization that
@@ -99,7 +100,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
                 proxy=proxy,
             ) as response:
                 yield cast("_ClientResponse", response)
-        except (TimeoutError, asyncio.TimeoutError) as e:
+        except TimeoutError as e:
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
             ) from e
@@ -117,7 +118,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @staticmethod
     def _extract_headers(response: _ClientResponse) -> Headers:
-        return Headers(list(response.headers.items()))
+        return Headers(response.raw_headers)
 
     @staticmethod
     def _build_base_response_args(

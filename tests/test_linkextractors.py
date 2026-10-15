@@ -4,6 +4,7 @@ import pickle
 import re
 from typing import Any
 
+import pytest
 from w3lib.url import canonicalize_url
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
@@ -348,6 +349,22 @@ class TestLxmlLinkExtractor:
             Link(url="http://example.org/photo.jpg"),
         ]
 
+    @pytest.mark.parametrize(
+        ("path", "denied"),
+        [
+            ("/file.tar.gz", True),
+            ("/FILE.TAR.GZ", True),
+            ("/file.gz", False),
+            ("/file.tar.gz/page", False),
+            ("/file", False),
+        ],
+    )
+    def test_ignored_multi_part_extension(self, path: str, denied: bool) -> None:
+        html = f'<a href="{path}">x</a>'.encode()
+        response = HtmlResponse("http://example.org/", body=html)
+        lx = LxmlLinkExtractor(deny_extensions=["tar.gz"])
+        assert (not lx.extract_links(response)) is denied
+
     def test_process_value(self):
         """Test restrict_xpaths with encodings"""
         html = b"""
@@ -682,6 +699,33 @@ class TestLxmlLinkExtractor:
                 fragment="",
                 nofollow=False,
             ),
+        ]
+
+    def test_schemes(self):
+        body = b"""
+        <html><body>
+        <a href="page.html">Page</a>
+        <a href="data:text/plain,Data">Data</a>
+        <a href="mailto:someone@example.com">Mail</a>
+        </body></html>"""
+        response = HtmlResponse("http://www.example.com/index.html", body=body)
+
+        lx = LxmlLinkExtractor()
+        assert lx.extract_links(response) == [
+            Link(url="http://www.example.com/page.html", text="Page"),
+            Link(url="data:text/plain,Data", text="Data"),
+        ]
+
+        lx = LxmlLinkExtractor(schemes="mailto")
+        assert lx.extract_links(response) == [
+            Link(url="mailto:someone@example.com", text="Mail"),
+        ]
+
+        lx = LxmlLinkExtractor(schemes=())
+        assert lx.extract_links(response) == [
+            Link(url="http://www.example.com/page.html", text="Page"),
+            Link(url="data:text/plain,Data", text="Data"),
+            Link(url="mailto:someone@example.com", text="Mail"),
         ]
 
     def test_pickle_extractor(self):

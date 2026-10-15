@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import random
 import warnings
 from collections import deque
@@ -8,7 +9,6 @@ from time import monotonic, time
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
-from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -351,12 +351,16 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, queue_dfd = slot.queue.popleft()
+            # Do this immediately so that following free_transfer_slots() calls
+            # account for this request.
+            slot.transferring.add(request)
             download_dfd = deferred_from_coro(
                 self._wait_for_download(slot, request, queue_dfd)
             )
             assert isinstance(download_dfd, Deferred)
             self._download_tasks[request] = download_dfd
             download_dfd.addBoth(self._download_task_done, request)
+            download_dfd.addBoth(self._release_unstarted, slot, request, queue_dfd)
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)
@@ -366,13 +370,26 @@ class Downloader:
         self._download_tasks.pop(request, None)
         return result
 
+    def _release_unstarted(
+        self, result: Any, slot: Slot, request: Request, queue_dfd: Deferred[Response]
+    ) -> Any:
+        # Runs when the download task finishes. The task itself normally ends
+        # the transfer (in _download()) and fires queue_dfd (in
+        # _wait_for_download()). But a task that is cancelled before it starts
+        # running, e.g. by stop(), never runs any of its code, so this does
+        # both instead.
+        if request in slot.transferring:
+            self._end_transfer(slot, request)
+        if not queue_dfd.called:
+            queue_dfd.errback(result)
+        return result
+
     def _latercall(self, slot: Slot) -> None:
         slot.latercall = None
         self._process_queue(slot)
 
     async def _download(self, slot: Slot, request: Request) -> Response:
         # The order is very important for the following logic. Do not change!
-        slot.transferring.add(request)
         try:
             # 1. Download the response
             response: Response = await self.handlers.download_request_async(request)
@@ -393,22 +410,25 @@ class Downloader:
             # state to free up the transferring slot so it can be used by the
             # following requests (perhaps those which came from the downloader
             # middleware itself)
-            slot.transferring.remove(request)
-            self._process_queue(slot)
-            self.signals.send_catch_log(
-                signal=signals.request_left_downloader,
-                request=request,
-                spider=self.crawler.spider,
-            )
+            self._end_transfer(slot, request)
+
+    def _end_transfer(self, slot: Slot, request: Request) -> None:
+        slot.transferring.remove(request)
+        self._process_queue(slot)
+        self.signals.send_catch_log(
+            signal=signals.request_left_downloader,
+            request=request,
+            spider=self.crawler.spider,
+        )
 
     async def _wait_for_download(
         self, slot: Slot, request: Request, queue_dfd: Deferred[Response]
     ) -> None:
         try:
             response = await self._download(slot, request)
-        except Exception:
+        except (Exception, asyncio.CancelledError) as exc:
             if not queue_dfd.called:
-                queue_dfd.errback(Failure())
+                queue_dfd.errback(exc)
         else:
             queue_dfd.callback(response)  # awaited in _enqueue_request()
 
@@ -424,10 +444,8 @@ class Downloader:
                 dropped_count += 1
                 if not queue_dfd.called:
                     queue_dfd.errback(
-                        Failure(
-                            DownloadCancelledError(
-                                "Request dropped due to fast downloader shutdown"
-                            )
+                        DownloadCancelledError(
+                            "Request dropped due to fast downloader shutdown"
                         )
                     )
                 self.signals.send_catch_log(

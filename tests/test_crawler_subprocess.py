@@ -48,7 +48,7 @@ class ScriptRunnerMixin(ABC):
             stderr=subprocess.PIPE,
         )
         _, stderr = p.communicate()
-        return stderr.decode("utf-8")
+        return stderr.decode()
 
 
 class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
@@ -371,6 +371,11 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
+    def test_asyncio_enabled_reactor_loop_not_current(self) -> None:
+        log = self.run_script("asyncio_enabled_reactor_loop_not_current.py")
+        assert "Spider closed (finished)" in log
+        assert "ERROR: " not in log
+
 
 class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     @property
@@ -524,6 +529,21 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+
+    def test_custom_loop_closespider_timeout_no_item(self) -> None:
+        log = self.run_script("closespider_timeout_no_item.py")
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
+
+    @pytest.mark.requires_uvloop
+    def test_uvloop_closespider_timeout_no_item(self) -> None:
+        # uvloop has a different clock resolution
+        log = self.run_script("closespider_timeout_no_item.py", "uvloop.Loop")
+        assert "Using asyncio event loop: uvloop.Loop" in log
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
 
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
