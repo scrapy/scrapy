@@ -1,5 +1,3 @@
-"""Tests for scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler."""
-
 from __future__ import annotations
 
 import sys
@@ -7,11 +5,19 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from twisted.internet.error import ConnectionClosed
+from twisted.internet.defer import CancelledError
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.error import ConnectingCancelledError, ConnectionClosed
 from twisted.internet.protocol import Factory, Protocol
+from twisted.internet.testing import MemoryReactorClock, StringTransport
+from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
-from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler, TunnelError
+from scrapy.core.downloader.handlers.http11 import (
+    HTTP11DownloadHandler,
+    TunnelError,
+    _TunnelEndpoint,
+)
 from scrapy.crawler import Crawler
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -43,6 +49,8 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
+    from twisted.internet.interfaces import IProtocol
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
@@ -63,11 +71,67 @@ class HTTP11DownloadHandlerMixin:
             }
         }
 
+    handler_supports_custom_content_length = False
+
 
 def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         build_from_crawler(HTTP11DownloadHandler, crawler)
+
+
+def _tunnel_endpoint(reactor: MemoryReactorClock) -> _TunnelEndpoint:
+    return _TunnelEndpoint(
+        TCP4ClientEndpoint(reactor, "127.0.0.1", 8080),
+        host=b"example.com",
+        port=443,
+        proxyHost="127.0.0.1",
+        proxyPort=8080,
+    )
+
+
+def test_tunneling_cancelled_before_connected() -> None:
+    """Cancelling a tunneled download before the connection to the proxy is
+    established stops the connection attempt.
+
+    A download cannot reach this scenario, because the connection timeout of
+    the endpoint, which uses the same value as the download timeout, always
+    fires earlier than the cancellation. See also
+    ``test_download_with_proxy_stalled_connect``, which covers cancelling once
+    the connection to the proxy is established.
+    """
+    reactor = MemoryReactorClock()
+    results: list[IProtocol | Failure] = []
+    d = _tunnel_endpoint(reactor).connect(Factory.forProtocol(Protocol))
+    d.addBoth(results.append)
+
+    d.cancel()
+
+    assert reactor.connectors[0].stoppedConnecting
+    assert isinstance(results[0], Failure)
+    assert isinstance(results[0].value, ConnectingCancelledError)
+
+
+def test_tunneling_cancelled_before_connect_response() -> None:
+    """A CONNECT response received after cancelling the tunnel, but before the
+    connection to the proxy is closed, is ignored."""
+    reactor = MemoryReactorClock()
+    results: list[IProtocol | Failure] = []
+    d = _tunnel_endpoint(reactor).connect(Factory.forProtocol(Protocol))
+    d.addBoth(results.append)
+    factory = reactor.tcpClients[0][2]
+    protocol = factory.buildProtocol(None)
+    assert protocol is not None
+    transport = StringTransport()
+    protocol.makeConnection(transport)
+
+    d.cancel()
+    protocol.dataReceived(b"HTTP/1.1 200 OK\r\n\r\n")
+
+    assert transport.disconnecting
+    assert len(results) == 1
+    assert isinstance(results[0], Failure)
+    assert isinstance(results[0].value, CancelledError)
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):

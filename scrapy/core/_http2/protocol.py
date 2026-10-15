@@ -4,7 +4,7 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -108,7 +108,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._conn_lost_deferred: Deferred[None] = conn_lost_deferred
         self._tls_verbose_logging: bool = tls_verbose_logging
 
-        config = H2Configuration(client_side=True, header_encoding="utf-8")
+        config = H2Configuration(client_side=True)
         self.conn = H2Connection(config=config)
 
         # ID of the next request stream
@@ -358,7 +358,8 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         # Cancel the timeout if not done yet
         self.setTimeout(None)  # type: ignore[no-untyped-call]
 
-        self._conn_lost_errors.append(reason)
+        assert reason.value is not None
+        self._conn_lost_errors.append(reason.value)
 
         # Notify the connection pool instance such that no new requests are
         # sent over current connection
@@ -421,7 +422,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         except KeyError:
             pass  # We ignore server-initiated events
         else:
-            stream.receive_headers(cast("list[tuple[str, str]]", event.headers))
+            stream.receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata["settings_acknowledged"] = True

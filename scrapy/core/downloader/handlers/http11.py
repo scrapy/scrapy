@@ -9,15 +9,14 @@ from contextlib import suppress
 from functools import partial
 from io import BytesIO
 from time import monotonic
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
-from urllib.parse import urldefrag, urlparse
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
+from urllib.parse import urldefrag
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint, wrapClientTLS
 from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.protocol import ClientFactory, Factory, Protocol, connectionDone
-from twisted.python.failure import Failure
 from twisted.web._newclient import (
     HEADER,
     STATUS,
@@ -53,6 +52,7 @@ from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
+    get_warnsize,
     get_warnsize_msg,
     make_response,
     normalize_bind_address,
@@ -62,18 +62,15 @@ from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.url import add_http_if_no_scheme
+from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer, IProtocol
+    from twisted.python.failure import Failure
     from twisted.web._newclient import Request as TxRequest
-
-    # typing.NotRequired requires Python 3.11
-    from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
 
@@ -225,6 +222,9 @@ class _TunnelProtocol(Protocol):
         if self._tunnelReady:
             self._wrappedProtocol.dataReceived(data)
             return
+        if self._connectedDeferred.called:
+            # The tunnel was cancelled while waiting for the CONNECT response.
+            return
         self._connectBuffer += data
         # make sure that enough (all) bytes are consumed
         # and that we've got all HTTP headers (ending with a blank line)
@@ -342,7 +342,24 @@ class _TunnelEndpoint:
         self._proxyAuthHeader = proxyAuthHeader
 
     def connect(self, protocolFactory: Factory) -> Deferred[IProtocol]:
-        connectedDeferred: Deferred[IProtocol] = Deferred()
+        proxyProtocol: IProtocol | None = None
+
+        def proxyConnected(protocol: IProtocol) -> None:
+            nonlocal proxyProtocol
+            proxyProtocol = protocol
+
+        def cancel(_: Deferred[IProtocol]) -> None:
+            # Tear down the connection to the proxy, e.g. on a download timeout.
+            if proxyProtocol is None:
+                # Still connecting to the proxy. This errbacks
+                # connectedDeferred through _connectFailed().
+                proxyDeferred.cancel()
+            else:
+                assert isinstance(proxyProtocol, _TunnelProtocol)
+                assert proxyProtocol.transport
+                proxyProtocol.transport.loseConnection()
+
+        connectedDeferred: Deferred[IProtocol] = Deferred(cancel)
         tunnelFactory = _TunnelFactory(
             connectedDeferred,
             protocolFactory,
@@ -352,8 +369,10 @@ class _TunnelEndpoint:
             self._proxyPort,
             self._proxyAuthHeader,
         )
-        d = self._wrappedEndpoint.connect(tunnelFactory)
-        d.addErrback(self._connectFailed, connectedDeferred)
+        proxyDeferred = self._wrappedEndpoint.connect(tunnelFactory)
+        proxyDeferred.addCallbacks(
+            proxyConnected, self._connectFailed, errbackArgs=(connectedDeferred,)
+        )
         return connectedDeferred
 
     @staticmethod
@@ -366,20 +385,17 @@ class _TunnelEndpoint:
 
 
 def _tunnel_request_data(
-    host: str | bytes, port: int | str, proxy_auth_header: bytes | None = None
+    host: bytes, port: int, proxy_auth_header: bytes | None = None
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
 
-    >>> from scrapy.utils.python import to_unicode as s
-    >>> s(_tunnel_request_data("example.com", 8080))
+    >>> _tunnel_request_data(b"example.com", 8080).decode()
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
-    >>> s(_tunnel_request_data("example.com", 8080, b"123"))
+    >>> _tunnel_request_data(b"example.com", 8080, b"123").decode()
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
-    >>> s(_tunnel_request_data(b"example.com", "8090"))
-    'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
     """
-    host_value = to_bytes(host, encoding="ascii") + b":" + to_bytes(str(port))
+    host_value = host + b":" + str(port).encode()
     tunnel_req = b"CONNECT " + host_value + b" HTTP/1.1\r\n"
     tunnel_req += b"Host: " + host_value + b"\r\n"
     if proxy_auth_header:
@@ -459,7 +475,7 @@ class _TunnelingAgent(_BindAddressAgent):
             # Set up TLS with the proxy itself, so that the CONNECT request and
             # the tunneled traffic are sent over it (TLS-in-TLS).
             proxyCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                to_bytes(proxyHost, encoding="ascii"),  # type: ignore[arg-type]
+                proxyHost.encode("ascii"),  # type: ignore[arg-type]
                 proxyPort,
             )
             endpoint = wrapClientTLS(proxyCreator, endpoint)
@@ -572,8 +588,8 @@ class _ScrapyAgent:
         bindaddress = normalize_bind_address(bindaddress)
         proxy = request.meta.get("proxy")
         if proxy:
-            proxy = add_http_if_no_scheme(proxy)
-            proxy_parsed = urlparse(proxy)
+            proxy = _add_http_if_no_scheme(proxy)
+            proxy_parsed = urlparse_cached(proxy)
             proxy_host = proxy_parsed.hostname
             proxy_port = proxy_parsed.port
             if not proxy_port:
@@ -597,7 +613,7 @@ class _ScrapyAgent:
                 )
             return _ScrapyProxyAgent(
                 reactor=reactor,
-                proxyURI=to_bytes(proxy, encoding="ascii"),
+                proxyURI=proxy.encode("ascii"),
                 contextFactory=self._contextFactory,
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
@@ -620,7 +636,7 @@ class _ScrapyAgent:
 
         # request details
         url = urldefrag(request.url)[0]
-        method = to_bytes(request.method)
+        method = request.method.encode()
         headers = TxHeaders(request.headers)
         if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
@@ -628,7 +644,7 @@ class _ScrapyAgent:
         start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
-            to_bytes(url, encoding="ascii"),
+            url.encode("ascii"),
             headers,
             cast("IBodyProducer", bodyproducer),
         )
@@ -691,7 +707,7 @@ class _ScrapyAgent:
             }
 
         maxsize = request.meta.get("download_maxsize", self._maxsize)
-        warnsize = request.meta.get("download_warnsize", self._warnsize)
+        warnsize = get_warnsize(request.meta, self._warnsize)
         expected_size = (
             cast("int", txresponse.length)
             if txresponse.length != UNKNOWN_LENGTH
@@ -744,7 +760,7 @@ class _ScrapyAgent:
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
         version = result["txresponse"].version
-        protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
+        protocol = f"{version[0].decode()}/{version[1]}.{version[2]}"
         return make_response(
             url=url,
             status=int(result["txresponse"].code),
@@ -895,8 +911,7 @@ class _ResponseReader(Protocol):
 
         exc = ResponseDataLossError()
         exc.__cause__ = reason.value
-        reason = Failure(exc)
-        self._finished.errback(reason)
+        self._finished.errback(exc)
 
 
 class _LenientHTTPClientParser(HTTPClientParser):

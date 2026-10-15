@@ -197,6 +197,21 @@ class MySpider(scrapy.Spider):
         assert "Spider closed (closespider_errorcount)" in err
         assert returncode != 0
 
+    def test_start_error_exit_code(self, tmp_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.runspider(tmp_path, spider_code)
+        assert "Spider closed (start_error)" in err
+        assert returncode == 1
+
     def test_asyncio_enabled_true(self, tmp_path: Path) -> None:
         log = self.get_log(
             tmp_path,
@@ -311,7 +326,7 @@ class MySpider(scrapy.Spider):
         args = ["-O", "example.json"]
         log = self.get_log(tmp_path, spider_code, args=args)
         assert (
-            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
+            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "mode": "overwrite"}}'
             in log
         )
         with (tmp_path / "example.json").open(encoding="utf-8") as f2:

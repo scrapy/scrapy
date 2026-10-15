@@ -165,6 +165,11 @@ Can I use Basic HTTP Authentication in my spiders?
 
 Yes, see :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`.
 
+Can I sign my requests with OAuth?
+----------------------------------
+
+Yes, see :ref:`mw-oauth`.
+
 Why does Scrapy download pages in English instead of my native language?
 ------------------------------------------------------------------------
 
