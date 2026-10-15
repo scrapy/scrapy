@@ -15,11 +15,20 @@ import time
 import warnings
 from collections import defaultdict
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, ClassVar, NoReturn, Protocol, TypedDict, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    NoReturn,
+    Protocol,
+    Self,
+    TypedDict,
+    cast,
+)
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -35,24 +44,22 @@ from scrapy.pipelines.media import (
     MediaPipeline,
     _MediaRequestFiltered,
 )
+from scrapy.utils._datatypes import CaseInsensitiveDict
 from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.boto import _get_max_pool_connections, is_botocore_available
-from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
+from scrapy.utils.misc import load_object
+from scrapy.utils.python import without_none_values
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Callable
     from os import PathLike
 
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
@@ -65,21 +72,10 @@ def _to_string(path: str | PathLike[str]) -> str:
     return str(path)  # convert a Path object to string
 
 
-def _md5sum(file: IO[bytes]) -> str:
-    """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory.
-
-    >>> from io import BytesIO
-    >>> _md5sum(BytesIO(b'file content to hash'))
-    '784406af91dd5a54fbb9c84c2236595a'
-    """
-    m = hashlib.md5()  # noqa: S324
-    while True:
-        d = file.read(8096)
-        if not d:
-            break
-        m.update(d)
-    return m.hexdigest()
+def _checksum_algorithm(settings: BaseSettings, key: str) -> str:
+    algorithm: str = settings.get(key, "md5")
+    hashlib.new(algorithm)  # fail early on an unsupported algorithm
+    return algorithm
 
 
 class StatInfo(TypedDict, total=False):
@@ -88,7 +84,14 @@ class StatInfo(TypedDict, total=False):
 
 
 class FilesStoreProtocol(Protocol):
-    def __init__(self, basedir: str): ...
+    checksum_algorithm: str
+    """Name of the :mod:`hashlib` algorithm that :meth:`stat_file` must use for
+    the checksums that it calculates itself.
+
+    It is assigned by the pipeline.
+    """
+
+    def __init__(self, uri: str, /): ...
 
     def persist_file(
         self,
@@ -105,15 +108,17 @@ class FilesStoreProtocol(Protocol):
 
 
 class FSFilesStore:
+    checksum_algorithm: str = "md5"
+
     def __init__(self, basedir: str | PathLike[str]):
         basedir = _to_string(basedir)
         if "://" in basedir:
             basedir = basedir.split("://", 1)[1]
         self.basedir: str = basedir
-        self._mkdir(Path(self.basedir))
         self.created_directories: defaultdict[MediaPipeline.SpiderInfo, set[str]] = (
             defaultdict(set)
         )
+        self._mkdir(Path(self.basedir))
 
     def persist_file(
         self,
@@ -137,7 +142,7 @@ class FSFilesStore:
             return {}
 
         with absolute_path.open("rb") as f:
-            checksum = _md5sum(f)
+            checksum = hashlib.file_digest(f, self.checksum_algorithm).hexdigest()
 
         return {"last_modified": last_modified, "checksum": checksum}
 
@@ -156,6 +161,11 @@ class FSFilesStore:
 
 
 class S3FilesStore:
+    # Amazon S3 cannot hash a stored object on demand. It reports the ETag,
+    # which is an MD5 hash for the objects that persist_file() uploads, and the
+    # checksums that were requested when the object was uploaded.
+    checksum_algorithm: str = "md5"
+
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
     AWS_SESSION_TOKEN = None
@@ -163,17 +173,41 @@ class S3FilesStore:
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
-    # Overridden from settings.AWS_MAX_POOL_CONNECTIONS in
-    # FilesPipeline.from_crawler(); None means the botocore default
+    # None means the botocore default
     AWS_MAX_POOL_CONNECTIONS: int | None = None
     UPLOAD_TIMEOUT: float | None = None
 
-    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
+    POLICY = "private"
     HEADERS: ClassVar[dict[str, str]] = {
         "Cache-Control": "max-age=172800",
     }
 
-    def __init__(self, uri: str):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
+    ) -> Self:
+        return cls(uri, **cls._get_config(crawler, get_setting_name))
+
+    @staticmethod
+    def _get_config(
+        crawler: Crawler, get_setting_name: Callable[[str], str]
+    ) -> dict[str, Any]:
+        settings = crawler.settings
+        return {
+            "AWS_ACCESS_KEY_ID": settings["AWS_ACCESS_KEY_ID"],
+            "AWS_SECRET_ACCESS_KEY": settings["AWS_SECRET_ACCESS_KEY"],
+            "AWS_SESSION_TOKEN": settings["AWS_SESSION_TOKEN"],
+            "AWS_ENDPOINT_URL": settings["AWS_ENDPOINT_URL"],
+            "AWS_REGION_NAME": settings["AWS_REGION_NAME"],
+            "AWS_USE_SSL": settings["AWS_USE_SSL"],
+            "AWS_VERIFY": settings["AWS_VERIFY"],
+            "AWS_MAX_POOL_CONNECTIONS": _get_max_pool_connections(settings),
+            "POLICY": settings[get_setting_name("S3_ACL")],
+            "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
+        }
+
+    def __init__(self, uri: str, **config: Any):
+        self.__dict__.update(config)
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
         import botocore.session  # noqa: PLC0415
@@ -200,11 +234,12 @@ class S3FilesStore:
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split("/", 1)
 
-    @staticmethod
-    def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
-        checksum = boto_key["ETag"].strip('"')
+    def _onsuccess(self, boto_key: dict[str, Any]) -> StatInfo:
         last_modified = boto_key["LastModified"]
         modified_stamp = last_modified.timestamp()
+        if self.checksum_algorithm != "md5":
+            return {"last_modified": modified_stamp}
+        checksum = boto_key["ETag"].strip('"')
         return {"checksum": checksum, "last_modified": modified_stamp}
 
     def stat_file(
@@ -237,50 +272,38 @@ class S3FilesStore:
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
+        kwargs: dict[str, Any] = {
+            "Metadata": {k: str(v) for k, v in meta.items()} if meta else {},
+            "ACL": self.POLICY,
+            **extra,
+        }
         return deferred_from_coro(
             run_in_thread(
                 self.s3_client.put_object,  # type: ignore[attr-defined]
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in meta.items()} if meta else {},
-                ACL=self.POLICY,
-                **extra,
+                **kwargs,
             )
+        )
+
+    @functools.cached_property
+    def _botocore_header_kwargs(self) -> CaseInsensitiveDict:
+        input_shape = self.s3_client.meta.service_model.operation_model(
+            "PutObject"
+        ).input_shape
+        assert input_shape is not None
+        return CaseInsensitiveDict(
+            {
+                shape.serialization["name"]: name
+                for name, shape in input_shape.members.items()
+                if shape.serialization.get("location") == "header"
+            }
         )
 
     def _headers_to_botocore_kwargs(self, headers: dict[str, str]) -> dict[str, str]:
         """Convert headers to botocore keyword arguments."""
-        # This is required while we need to support both boto and botocore.
-        mapping = CaseInsensitiveDict(
-            {
-                "Content-Type": "ContentType",
-                "Cache-Control": "CacheControl",
-                "Content-Disposition": "ContentDisposition",
-                "Content-Encoding": "ContentEncoding",
-                "Content-Language": "ContentLanguage",
-                "Content-Length": "ContentLength",
-                "Content-MD5": "ContentMD5",
-                "Expires": "Expires",
-                "X-Amz-Grant-Full-Control": "GrantFullControl",
-                "X-Amz-Grant-Read": "GrantRead",
-                "X-Amz-Grant-Read-ACP": "GrantReadACP",
-                "X-Amz-Grant-Write-ACP": "GrantWriteACP",
-                "X-Amz-Object-Lock-Legal-Hold": "ObjectLockLegalHoldStatus",
-                "X-Amz-Object-Lock-Mode": "ObjectLockMode",
-                "X-Amz-Object-Lock-Retain-Until-Date": "ObjectLockRetainUntilDate",
-                "X-Amz-Request-Payer": "RequestPayer",
-                "X-Amz-Server-Side-Encryption": "ServerSideEncryption",
-                "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": "SSEKMSKeyId",
-                "X-Amz-Server-Side-Encryption-Context": "SSEKMSEncryptionContext",
-                "X-Amz-Server-Side-Encryption-Customer-Algorithm": "SSECustomerAlgorithm",
-                "X-Amz-Server-Side-Encryption-Customer-Key": "SSECustomerKey",
-                "X-Amz-Server-Side-Encryption-Customer-Key-Md5": "SSECustomerKeyMD5",
-                "X-Amz-Storage-Class": "StorageClass",
-                "X-Amz-Tagging": "Tagging",
-                "X-Amz-Website-Redirect-Location": "WebsiteRedirectLocation",
-            }
-        )
+        mapping = self._botocore_header_kwargs
         extra: dict[str, Any] = {}
         for key, value in headers.items():
             try:
@@ -294,16 +317,37 @@ class S3FilesStore:
 
 
 class GCSFilesStore:
+    # Google Cloud Storage cannot hash a stored object on demand. It reports an
+    # MD5 hash and a CRC32C checksum.
+    checksum_algorithm: str = "md5"
+
     GCS_PROJECT_ID = None
     UPLOAD_TIMEOUT: float | None = None
 
     CACHE_CONTROL = "max-age=172800"
 
     # The bucket's default object ACL will be applied to the object.
-    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_crawler().
     POLICY = None
 
-    def __init__(self, uri: str):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
+    ) -> Self:
+        return cls(uri, **cls._get_config(crawler, get_setting_name))
+
+    @staticmethod
+    def _get_config(
+        crawler: Crawler, get_setting_name: Callable[[str], str]
+    ) -> dict[str, Any]:
+        settings = crawler.settings
+        return {
+            "GCS_PROJECT_ID": settings["GCS_PROJECT_ID"],
+            "POLICY": settings[get_setting_name("GCS_ACL")] or None,
+            "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
+        }
+
+    def __init__(self, uri: str, **config: Any):
+        self.__dict__.update(config)
         from google.cloud import storage  # noqa: PLC0415
 
         client = storage.Client(project=self.GCS_PROJECT_ID)
@@ -325,13 +369,14 @@ class GCSFilesStore:
                 {"bucket": bucket},
             )
 
-    @staticmethod
-    def _onsuccess(blob: Any) -> StatInfo:
-        if blob:
-            checksum = base64.b64decode(blob.md5_hash).hex()
-            last_modified = blob.updated.timestamp()
-            return {"checksum": checksum, "last_modified": last_modified}
-        return {}
+    def _onsuccess(self, blob: Any) -> StatInfo:
+        if not blob:
+            return {}
+        last_modified = blob.updated.timestamp()
+        if self.checksum_algorithm != "md5":
+            return {"last_modified": last_modified}
+        checksum = base64.b64decode(blob.md5_hash).hex()
+        return {"checksum": checksum, "last_modified": last_modified}
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
@@ -377,12 +422,33 @@ class GCSFilesStore:
 
 
 class FTPFilesStore:
+    checksum_algorithm: str = "md5"
+
     FTP_USERNAME: str | None = None
     FTP_PASSWORD: str | None = None
     USE_ACTIVE_MODE: bool | None = None
     UPLOAD_TIMEOUT: float | None = None
 
-    def __init__(self, uri: str):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, uri: str, *, get_setting_name: Callable[[str], str]
+    ) -> Self:
+        return cls(uri, **cls._get_config(crawler, get_setting_name))
+
+    @staticmethod
+    def _get_config(
+        crawler: Crawler, get_setting_name: Callable[[str], str]
+    ) -> dict[str, Any]:
+        settings = crawler.settings
+        return {
+            "FTP_USERNAME": settings["FTP_USER"],
+            "FTP_PASSWORD": settings["FTP_PASSWORD"],
+            "USE_ACTIVE_MODE": settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
+            "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
+        }
+
+    def __init__(self, uri: str, **config: Any):
+        self.__dict__.update(config)
         if not uri.startswith("ftp://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 'ftp'")
         u = urlparse(uri)
@@ -432,10 +498,10 @@ class FTPFilesStore:
                 time_format = "%Y%m%d%H%M%S.%f" if "." in modified else "%Y%m%d%H%M%S"
                 last_modified = (
                     datetime.strptime(modified, time_format)
-                    .replace(tzinfo=timezone.utc)
+                    .replace(tzinfo=UTC)
                     .timestamp()
                 )
-                m = hashlib.md5()  # noqa: S324
+                m = hashlib.new(self.checksum_algorithm)
                 ftp.retrbinary(f"RETR {file_path}", m.update)
             return {"last_modified": last_modified, "checksum": m.hexdigest()}
         # The file doesn't exist
@@ -446,6 +512,58 @@ class FTPFilesStore:
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
         return deferred_from_coro(run_in_thread(self._stat_file, path))
+
+
+_STORE_SCHEMES_DEPRECATION = (
+    "FilesPipeline.STORE_SCHEMES is deprecated, use the MEDIA_STORAGES setting instead."
+)
+_BUILTIN_STORE_SCHEMES: dict[str, type[FilesStoreProtocol]] = {
+    "": FSFilesStore,
+    "file": FSFilesStore,
+    "s3": S3FilesStore,
+    "gs": GCSFilesStore,
+    "ftp": FTPFilesStore,
+}
+
+
+class _DeprecatedStoreSchemes:
+    def __init__(self) -> None:
+        self.value: dict[str, type[FilesStoreProtocol]] = dict(_BUILTIN_STORE_SCHEMES)
+
+    def __get__(
+        self, instance: Any, owner: type
+    ) -> dict[str, type[FilesStoreProtocol]]:
+        warnings.warn(
+            _STORE_SCHEMES_DEPRECATION,
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.value
+
+
+def _store_scheme_overrides(
+    pipeline: FilesPipeline,
+) -> dict[str, type[FilesStoreProtocol] | None]:
+    """Return the schemes that the ``STORE_SCHEMES`` attribute of *pipeline*
+    adds or replaces, and the built-in schemes that it removes, mapped to
+    ``None``.
+    """
+    owner = next(
+        obj
+        for obj in (pipeline, *type(pipeline).__mro__)
+        if "STORE_SCHEMES" in vars(obj)
+    )
+    schemes = vars(owner)["STORE_SCHEMES"]
+    if isinstance(schemes, _DeprecatedStoreSchemes):
+        schemes = schemes.value
+    overrides: dict[str, type[FilesStoreProtocol] | None] = {
+        scheme: store
+        for scheme, store in schemes.items()
+        if _BUILTIN_STORE_SCHEMES.get(scheme) is not store
+    }
+    for scheme in _BUILTIN_STORE_SCHEMES.keys() - schemes.keys():
+        overrides[scheme] = None
+    return overrides
 
 
 class FilesPipeline(MediaPipeline):
@@ -469,15 +587,14 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME: str = "file"
     EXPIRES: int = 90
-    STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]] = {
-        "": FSFilesStore,
-        "file": FSFilesStore,
-        "s3": S3FilesStore,
-        "gs": GCSFilesStore,
-        "ftp": FTPFilesStore,
-    }
+    if TYPE_CHECKING:
+        STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]]
+    else:
+        STORE_SCHEMES = _DeprecatedStoreSchemes()
     DEFAULT_FILES_URLS_FIELD: str = "file_urls"
     DEFAULT_FILES_RESULT_FIELD: str = "files"
+
+    _checksum_warned: bool = False
 
     def __init__(
         self,
@@ -505,11 +622,27 @@ class FilesPipeline(MediaPipeline):
                 f"to enable {self.__class__.__name__}."
             )
 
+        super().__init__(crawler=crawler)
+
         settings = crawler.settings
         cls_name = "FilesPipeline"
+        storages = dict(settings.getwithbase("MEDIA_STORAGES"))
+        overrides = _store_scheme_overrides(self)
+        if overrides:
+            warnings.warn(
+                _STORE_SCHEMES_DEPRECATION,
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            storages.update(overrides)
+        self._storages: dict[str, Any] = without_none_values(storages)
+        self._legacy_schemes: set[str] = set(overrides)
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
             self._key_for_pipe, base_class_name=cls_name, settings=settings
+        )
+        self.store.checksum_algorithm = _checksum_algorithm(
+            settings, resolve("FILES_CHECKSUM_ALGORITHM")
         )
         self.expires: int = settings.getint(resolve("FILES_EXPIRES"), self.EXPIRES)
         if not hasattr(self, "FILES_URLS_FIELD"):
@@ -523,53 +656,37 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(crawler=crawler)
-
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        settings = crawler.settings
-        cls._update_stores(settings)
-        store_uri = settings["FILES_STORE"]
-        return cls(store_uri, crawler=crawler)
+        return cls(crawler.settings["FILES_STORE"], crawler=crawler)
 
-    @classmethod
-    def _update_stores(cls, settings: BaseSettings) -> None:
-        upload_timeout: float | None = settings.getfloat("UPLOAD_TIMEOUT") or None
-
-        s3store: type[S3FilesStore] = cast(
-            "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
+    def _get_store_setting_name(self, name: str) -> str:
+        return self._key_for_pipe(
+            f"FILES_STORE_{name}", "FilesPipeline", self.crawler.settings
         )
-        s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
-        s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
-        s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
-        s3store.AWS_ENDPOINT_URL = settings["AWS_ENDPOINT_URL"]
-        s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
-        s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
-        s3store.AWS_VERIFY = settings["AWS_VERIFY"]
-        s3store.AWS_MAX_POOL_CONNECTIONS = _get_max_pool_connections(settings)
-        s3store.POLICY = settings["FILES_STORE_S3_ACL"]
-        s3store.UPLOAD_TIMEOUT = upload_timeout
-
-        gcs_store: type[GCSFilesStore] = cast(
-            "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
-        )
-        gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
-        gcs_store.POLICY = settings["FILES_STORE_GCS_ACL"] or None
-        gcs_store.UPLOAD_TIMEOUT = upload_timeout
-
-        ftp_store: type[FTPFilesStore] = cast(
-            "type[FTPFilesStore]", cls.STORE_SCHEMES["ftp"]
-        )
-        ftp_store.FTP_USERNAME = settings["FTP_USER"]
-        ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
-        ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
-        ftp_store.UPLOAD_TIMEOUT = upload_timeout
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
         # to support win32 paths like: C:\\some\dir
         scheme = "file" if Path(uri).is_absolute() else urlparse(uri).scheme
-        store_cls = self.STORE_SCHEMES[scheme]
-        return store_cls(uri)
+        store_cls = load_object(self._storages[scheme])
+        if scheme in self._legacy_schemes:
+            # Storages from STORE_SCHEMES get the configuration of the
+            # built-in storage of their scheme as class attributes, and are
+            # built with the URI alone.
+            builtin = _BUILTIN_STORE_SCHEMES.get(scheme)
+            if get_config := getattr(builtin, "_get_config", None):
+                config = get_config(self.crawler, self._get_store_setting_name)
+                for name, value in config.items():
+                    setattr(store_cls, name, value)
+            return cast("FilesStoreProtocol", store_cls(uri))
+        if hasattr(store_cls, "from_crawler"):
+            return cast(
+                "FilesStoreProtocol",
+                store_cls.from_crawler(
+                    self.crawler, uri, get_setting_name=self._get_store_setting_name
+                ),
+            )
+        return cast("FilesStoreProtocol", store_cls(uri))
 
     def _onsuccess(
         self,
@@ -587,7 +704,7 @@ class FilesPipeline(MediaPipeline):
 
         age_seconds = time.time() - last_modified
         age_days = age_seconds / 60 / 60 / 24
-        if self.expires >= 0 and age_days > self.expires:
+        if 0 <= self.expires < age_days:
             return None  # returning None force download
 
         referer = referer_str(request)
@@ -600,6 +717,15 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats("uptodate")
 
         checksum = result.get("checksum", None)
+        if checksum is None and not self._checksum_warned:
+            self._checksum_warned = True
+            logger.warning(
+                f"{self.store.__class__.__name__} does not report "
+                f"{self.store.checksum_algorithm} checksums of stored files, so "
+                f"files that are not downloaded again, because they have not "
+                f"expired yet, get no checksum.",
+                extra={"spider": info.spider},
+            )
         return {
             "url": request.url,
             "path": path,
@@ -727,7 +853,7 @@ class FilesPipeline(MediaPipeline):
     ) -> str:
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
-        checksum = _md5sum(buf)
+        checksum = hashlib.file_digest(buf, self.store.checksum_algorithm).hexdigest()
         buf.seek(0)
         await ensure_awaitable(self.store.persist_file(path, buf, info))
         return checksum
@@ -768,7 +894,7 @@ class FilesPipeline(MediaPipeline):
         *,
         item: Any = None,
     ) -> str:
-        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
+        media_guid = hashlib.sha1(request.url.encode()).hexdigest()  # noqa: S324
 
         # clean it up and look at the path first
         parsed_url = urlparse_cached(request)

@@ -71,7 +71,7 @@ class TestInthread:
     @coroutine_test
     async def test_returns_deferred_with_result(self):
         @inthread
-        def multiply(a, b):
+        def multiply(a: int, b: int) -> int:
             return a * b
 
         deferred = multiply(6, 7)

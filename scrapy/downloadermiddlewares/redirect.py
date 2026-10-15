@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -14,9 +14,6 @@ from scrapy.utils.response import get_meta_refresh
 from scrapy.utils.url import _redirect_url
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings

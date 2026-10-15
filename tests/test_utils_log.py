@@ -32,6 +32,7 @@ from tests.spiders import LogSpider
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, MutableMapping
+    from pathlib import Path
 
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatterResult
@@ -78,7 +79,8 @@ class TestTopLevelFormatter:
 
 
 class TestSpiderPlaceholderInLogFormat:
-    def _log(self, log_format: str, extra: dict[str, Any] | None) -> str:
+    @staticmethod
+    def _log(log_format: str, extra: dict[str, Any] | None) -> str:
         stream = StringIO()
         settings = Settings({"LOG_FORMAT": log_format})
         handler = _get_handler(settings)
@@ -217,7 +219,7 @@ class TestGetFormatter:
         formatter = _get_formatter(handler, self._settings(LOG_COLOR=False))
         assert type(formatter) is logging.Formatter
 
-    def test_plain_for_file_handler(self, tmp_path: Any) -> None:
+    def test_plain_for_file_handler(self, tmp_path: Path) -> None:
         handler = logging.FileHandler(tmp_path / "log.txt")
         try:
             formatter = _get_formatter(handler, self._settings())
@@ -326,6 +328,31 @@ def test_spider_logger_adapter_process(
     assert result_kwargs == expected_extra
 
 
+class TestLogLevels:
+    @pytest.fixture(autouse=True)
+    def restore_levels(self) -> Generator[None]:
+        yield
+        for name in ("httpx", "boto3"):
+            logging.getLogger(name).setLevel(logging.NOTSET)
+
+    def test_defaults(self) -> None:
+        configure_logging({"LOG_INSTALL_ROOT_HANDLER": False})
+
+        assert logging.getLogger("httpx").level == logging.WARNING
+        assert logging.getLogger("boto3").level == logging.NOTSET
+
+    def test_override(self) -> None:
+        configure_logging(
+            {
+                "LOG_LEVELS": {"httpx": "DEBUG", "boto3": "ERROR"},
+                "LOG_INSTALL_ROOT_HANDLER": False,
+            }
+        )
+
+        assert logging.getLogger("httpx").level == logging.DEBUG
+        assert logging.getLogger("boto3").level == logging.ERROR
+
+
 class TestLogging:
     @pytest.fixture
     def log_stream(self) -> StringIO:
@@ -342,9 +369,10 @@ class TestLogging:
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
 
-        yield logger
-
-        logger.removeHandler(handler)
+        try:
+            yield logger
+        finally:
+            logger.removeHandler(handler)
 
     def test_debug_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo message"
@@ -401,10 +429,10 @@ class TestLoggingWithExtra:
         logger = logging.getLogger("log_spider")
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
-
-        yield logger
-
-        logger.removeHandler(handler)
+        try:
+            yield logger
+        finally:
+            logger.removeHandler(handler)
 
     def test_debug_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo message"

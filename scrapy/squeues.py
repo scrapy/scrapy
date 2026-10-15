@@ -7,7 +7,7 @@ from __future__ import annotations
 import marshal
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from queuelib import queue
 
@@ -16,9 +16,6 @@ from scrapy.utils.request import request_from_dict
 if TYPE_CHECKING:
     from collections.abc import Callable
     from os import PathLike
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request
     from scrapy.crawler import Crawler
