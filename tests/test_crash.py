@@ -83,3 +83,15 @@ def test_resume_after_kill(tmp_path: Path) -> None:
     assert log.count("Parsed data:,") == pending
     assert "Spider closed (finished)" in log
     assert _active_json(tmp_path) == {}
+
+
+def test_seen_requests_survive_kill(tmp_path: Path) -> None:
+    dupefilter = "DUPEFILTER_CLASS=scrapy.dupefilters.DiskDupeFilter"
+    log = run(tmp_path, "-a", "kill_at=10", "-s", "DOWNLOAD_DELAY=5", "-s", dupefilter)
+    # Without resume, the spider sends all its start requests again, and only
+    # those that did not reach the scheduler before the kill must get through.
+    log += run(tmp_path, "-s", dupefilter)
+    parsed = re.findall(r"Parsed (data:,\d+)", log)
+    assert len(parsed) == len(set(parsed))
+    # The request being downloaded when the spider dies is lost.
+    assert len(parsed) >= 19

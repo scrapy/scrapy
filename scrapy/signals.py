@@ -29,6 +29,9 @@ item_dropped = _NamedSignal("item_dropped")
 item_error = _NamedSignal("item_error")
 feed_slot_closed = _NamedSignal("feed_slot_closed")
 feed_exporter_closed = _NamedSignal("feed_exporter_closed")
+feed_slots_initialized = _NamedSignal("feed_slots_initialized")
+spider_state_loaded = _NamedSignal("spider_state_loaded")
+spider_state_saving = _NamedSignal("spider_state_saving")
 
 _signal_args: dict[object, frozenset[str]] = {
     engine_started: frozenset(),
@@ -53,6 +56,9 @@ _signal_args: dict[object, frozenset[str]] = {
     item_error: frozenset({"item", "response", "spider", "failure"}),
     feed_slot_closed: frozenset({"slot"}),
     feed_exporter_closed: frozenset(),
+    feed_slots_initialized: frozenset({"slots"}),
+    spider_state_loaded: frozenset({"state"}),
+    spider_state_saving: frozenset({"state"}),
 }
 """Arguments that each signal sends, used to catch handlers that declare an
 argument their signal never sends. ``signal`` and ``sender`` are omitted

@@ -117,27 +117,25 @@ async def _parallel_asyncio(
     Tasks are created on demand, one per item, so that a *count* much larger
     than the amount of work does not cost anything.
 
-    This function is only used in
-    :meth:`scrapy.core.scraper.Scraper.handle_spider_output_async` and so it
-    assumes that neither *callable* nor iterating *iterable* will raise an
-    exception.
+    Exceptions raised by *callable_* are logged. If this coroutine is
+    cancelled, or iterating *iterable* raises an exception, the calls in
+    progress are cancelled; an exception from *iterable* is raised in an
+    :exc:`ExceptionGroup`.
     """
     semaphore = asyncio.Semaphore(count)
-    tasks: set[asyncio.Task[None]] = set()
 
     async def work(item: _T) -> None:
         try:
             await callable_(item, *args, **kwargs)
+        except Exception:
+            logger.exception("Error processing an item")
         finally:
             semaphore.release()
 
-    async for item in as_async_generator(iterable):
-        await semaphore.acquire()
-        task = asyncio.create_task(work(item))
-        tasks.add(task)
-        task.add_done_callback(tasks.discard)
-    if tasks:
-        await asyncio.wait(tasks)
+    async with asyncio.TaskGroup() as tg:
+        async for item in as_async_generator(iterable):
+            await semaphore.acquire()
+            tg.create_task(work(item))
 
 
 class AsyncioLoopingCall(Generic[_P, _T]):
