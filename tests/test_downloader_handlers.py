@@ -146,6 +146,26 @@ class TestLoad:
         assert "scheme" not in dh._notconfigured
 
 
+class AwaitRequestDH:
+    lazy = False
+
+    async def download_request(self, request):
+        return await Request(request.url)
+
+
+class TestDownloadHandlerAwaitProhibited:
+    @coroutine_test
+    async def test_await_request_prohibited(self) -> None:
+        crawler = get_crawler(
+            settings_dict={"DOWNLOAD_HANDLERS": {"scheme": AwaitRequestDH}}
+        )
+        crawler.spider = crawler._create_spider()
+        dh = DownloadHandlers(crawler)
+        request = Request("scheme://example.com")
+        with pytest.raises(RuntimeError, match="download handler"):
+            await dh.download_request_async(request)
+
+
 class TestHandlerID:
     @staticmethod
     def _get_dh() -> DownloadHandlers:
