@@ -61,6 +61,8 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
             limit=self._pool_size_total,
             # hard limit on simultaneous connections per host
             limit_per_host=self._pool_size_per_host,
+            keepalive_timeout=self._keepalive_timeout or None,
+            force_close=not self._keepalive_timeout,
         )
         self._session: aiohttp.ClientSession = aiohttp.ClientSession(
             connector=connector,
