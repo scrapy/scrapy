@@ -422,6 +422,7 @@ These settings are:
 -   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_LEVELS`
+-   :setting:`LOG_ROOT_FORMATTER`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -1834,35 +1835,6 @@ Default: ``True``
 
 If ``False``, the log file specified with :setting:`LOG_FILE` will be
 overwritten (discarding the output from previous runs, if any).
-
-.. note:: This is a :ref:`logging setting <logging-settings>`.
-
-.. setting:: LOG_FORMAT
-
-LOG_FORMAT
-----------
-
-Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
-
-String for formatting log messages. Refer to the
-:ref:`Python logging documentation <logrecord-attributes>` for the whole
-list of available placeholders, plus ``%(spider)s`` for the name of the
-spider that triggered the log message, or ``"-"`` for messages not tied to
-a spider (see :ref:`topics-logging-from-spiders`).
-
-.. note:: This is a :ref:`logging setting <logging-settings>`.
-
-.. setting:: LOG_DATEFORMAT
-
-LOG_DATEFORMAT
---------------
-
-Default: ``'%Y-%m-%d %H:%M:%S'``
-
-String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
-in :setting:`LOG_FORMAT`. Refer to the
-:ref:`Python datetime documentation <strftime-strptime-behavior>` for the
-whole list of available directives.
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
