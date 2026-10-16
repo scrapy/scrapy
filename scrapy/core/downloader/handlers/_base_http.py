@@ -27,3 +27,6 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
         self._fail_on_dataloss_warned: bool = False
+        self._keepalive_timeout: float = crawler.settings.getfloat(
+            "CONNECTION_KEEPALIVE_TIMEOUT"
+        )

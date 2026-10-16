@@ -46,6 +46,7 @@ __all__ = [
     "CONCURRENT_ITEMS",
     "CONCURRENT_REQUESTS",
     "CONCURRENT_REQUESTS_PER_DOMAIN",
+    "CONNECTION_KEEPALIVE_TIMEOUT",
     "COOKIES_DEBUG",
     "COOKIES_ENABLED",
     "CRAWLSPIDER_FOLLOW_LINKS",
@@ -280,6 +281,8 @@ CONCURRENT_ITEMS = 100
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
 
+CONNECTION_KEEPALIVE_TIMEOUT = 240.0
+
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
@@ -350,6 +353,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
+    "scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware": 200,
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
     "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,

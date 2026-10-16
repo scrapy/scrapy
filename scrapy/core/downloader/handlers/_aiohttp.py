@@ -62,6 +62,7 @@ class _ClientResponse(aiohttp.ClientResponse):
 
 class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     experimental: ClassVar[bool] = True
+    lazy = True
 
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
@@ -72,6 +73,8 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
             limit=self._pool_size_total,
             # hard limit on simultaneous connections per host
             limit_per_host=self._pool_size_per_host,
+            keepalive_timeout=self._keepalive_timeout or None,
+            force_close=not self._keepalive_timeout,
         )
         # aiohttp limits the size of each line of the response head; the size
         # of the head as a whole is checked in _check_headers_size() once it

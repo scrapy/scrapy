@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import codecs
 import gc
-import platform
 import weakref
 from typing import cast
 from unittest import mock
@@ -272,10 +271,6 @@ class TestTextResponse(TestResponseBase):
         assert response.selector.css("title::text").getall() == ["Some page"]
         assert response.selector.re("Some (.*)</title>") == ["page"]
 
-    @pytest.mark.skipif(
-        platform.python_implementation() != "CPython",
-        reason="Relies on reference counting",
-    )
     def test_selector_response_refcounting(self):
         response = self.response_class("http://www.example.com", body=b"<a>b</a>")
         selector = response.selector
@@ -344,6 +339,18 @@ class TestTextResponse(TestResponseBase):
         )
         absolute = "http://www.example.com/elsewhere/test"
         assert joined == absolute
+
+    def test_follow_redirect_ignores_base_url(self):
+        """The Location header is resolved against the response URL, not against
+        the base URL of the document, which only applies to its own links."""
+        body = b'<html><body><base href="https://example.net"></body></html>'
+        response = self.response_class(
+            "http://www.example.com/dir/index",
+            body=body,
+            headers={"Location": "/test"},
+        )
+        assert response.urljoin("/test") == "https://example.net/test"
+        assert response.follow_redirect().url == "http://www.example.com/test"
 
     def test_follow_selector(self):
         resp = self._links_response()
