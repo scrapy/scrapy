@@ -228,10 +228,11 @@ async def test_connection_lost() -> None:
 
 
 def _fake_ftp(
-    retr_reply: bytes, data: bytes = b""
+    retr_reply: bytes | None, data: bytes = b""
 ) -> Callable[[asyncio.StreamReader, asyncio.StreamWriter], Any]:
     """Return a minimal FTP server connection handler that sends *data*, if
-    any, and then answers RETR with *retr_reply*."""
+    any, and then answers RETR with *retr_reply*, or hangs if *retr_reply* is
+    ``None``."""
 
     async def handle(
         reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -263,8 +264,12 @@ def _fake_ftp(
                 if data:
                     writer.write(b"150 Sending\r\n")
                     w.write(data)
+                if retr_reply is None:
+                    await reader.read()
                 w.close()
                 data_server.close()
+                if retr_reply is None:
+                    break
                 writer.write(retr_reply)
             await writer.drain()
         writer.close()
@@ -282,6 +287,7 @@ async def _serve(
         yield f"ftp://127.0.0.1:{port}/file.txt"
     finally:
         server.close()
+        await server.wait_closed()
 
 
 @coroutine_test
@@ -312,6 +318,19 @@ async def test_dataloss_allowed() -> None:
 
 
 @coroutine_test
+async def test_timeout_partial_response() -> None:
+    async with _serve(_fake_ftp(None, data=b"partial")) as url:
+        response = await _download(
+            Request(
+                url,
+                meta={"download_timeout": 0.5, "download_fail_on_dataloss": False},
+            )
+        )
+    assert response.body == b"partial"
+    assert response.flags == ["dataloss"]
+
+
+@coroutine_test
 async def test_local_filename(ftp_server: MockFTPServer, tmp_path: Path) -> None:
     local_filename = str(tmp_path / "file.txt").encode()
     request = Request(
@@ -335,7 +354,7 @@ requires_socks = pytest.mark.skipif(
 @requires_socks
 @pytest.mark.parametrize("scheme", ["socks4", "socks5"])
 @coroutine_test
-async def testsocks_proxy(ftp_server: MockFTPServer, scheme: str) -> None:
+async def test_socks_proxy(ftp_server: MockFTPServer, scheme: str) -> None:
     async with socks_proxy() as proxy:
         request = Request(
             ftp_server.url("file.txt"), meta={"proxy": f"{scheme}://{proxy}"}

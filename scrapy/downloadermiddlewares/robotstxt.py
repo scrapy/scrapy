@@ -220,6 +220,7 @@ class RobotsTxtMiddleware:
             signal=signals.robots_parsed,
             robotparser=rp,
             request=request,
+            response=response,
         )
         rp_dfd = self._parsers[netloc]
         assert isinstance(rp_dfd, Deferred)

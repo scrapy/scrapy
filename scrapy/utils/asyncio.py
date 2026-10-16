@@ -104,6 +104,33 @@ def is_asyncio_available() -> bool:
     return _is_asyncio_reactor_installed()
 
 
+def _get_running_or_installed_loop() -> asyncio.AbstractEventLoop:
+    """Return the event loop to use, even if it isn't running yet.
+
+    This is the loop running in the current thread or, if there is none, the
+    loop of the installed asyncio Twisted reactor, which exists before the
+    reactor starts. If there is neither, raise :exc:`RuntimeError`.
+
+    Unlike :func:`asyncio.get_event_loop`, this doesn't use the current event
+    loop of the calling thread, which can be a different loop or none.
+    """
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+
+    if not is_reactor_installed() or not _is_asyncio_reactor_installed():
+        raise RuntimeError(
+            "There is no running asyncio event loop and no installed asyncio"
+            " Twisted reactor."
+        )
+
+    from twisted.internet import reactor
+
+    loop: asyncio.AbstractEventLoop = reactor._asyncioEventloop
+    return loop
+
+
 async def _parallel_asyncio(
     iterable: Iterable[_T] | AsyncIterator[_T],
     count: int,
@@ -183,7 +210,7 @@ class AsyncioLoopingCall(Generic[_P, _T]):
         self._start_time = start_time = time.monotonic()
         if now:
             self._call()
-        loop = asyncio.get_event_loop()
+        loop = _get_running_or_installed_loop()
         self._task = loop.create_task(self._loop(start_time))
 
     def _next_boundary(self, boundary: float) -> float:
@@ -259,7 +286,7 @@ def call_later(
     .. versionadded:: 2.14.0
     """
     if is_asyncio_available():
-        loop = asyncio.get_event_loop()
+        loop = _get_running_or_installed_loop()
         return CallLaterResult.from_asyncio(loop.call_later(delay, func, *args))
 
     from twisted.internet import reactor
