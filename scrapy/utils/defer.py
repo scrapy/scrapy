@@ -30,7 +30,11 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import is_asyncio_available, sleep
+from scrapy.utils.asyncio import (
+    _get_running_or_installed_loop,
+    is_asyncio_available,
+    sleep,
+)
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
@@ -493,7 +497,9 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
             # that use asyncio, e.g. "await asyncio.sleep(1)"
             return Deferred.fromCoroutine(cast("Coroutine[Deferred[Any], Any, _T]", o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
-        return Deferred.fromFuture(asyncio.ensure_future(o))
+        return Deferred.fromFuture(
+            asyncio.ensure_future(o, loop=_get_running_or_installed_loop())
+        )
     return o
 
 
@@ -590,7 +596,7 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
             "deferred_to_future() requires an installed asyncio reactor"
             " or a running asyncio event loop."
         )
-    return d.asFuture(asyncio.get_event_loop())
+    return d.asFuture(_get_running_or_installed_loop())
 
 
 def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:

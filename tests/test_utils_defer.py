@@ -444,6 +444,17 @@ class TestDeferredToFuture:
         future_result = await result
         assert future_result == 42
 
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_thread_without_loop(self):
+        # No loop runs in the other thread, so the future gets the loop of the
+        # installed reactor.
+        d: Deferred[int] = Deferred()
+        result = await asyncio.to_thread(deferred_to_future, d)
+        assert result.get_loop() is asyncio.get_running_loop()
+        d.callback(42)
+        assert await result == 42
+
 
 @pytest.mark.only_not_asyncio
 class TestDeferredToFutureNotAsyncio:
