@@ -41,11 +41,11 @@ def _origin(request: Request) -> str:
 
 
 def _setdefault_auth_origin(request: Request) -> str:
-    origin: str | None = request.meta.get("auth_origin")
+    origin: str | None = request.meta.get("_auth_origin")
     if origin:
         return origin
     origin = _origin(request)
-    request.meta["auth_origin"] = origin
+    request.meta["_auth_origin"] = origin
     return origin
 
 

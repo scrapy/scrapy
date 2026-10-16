@@ -37,156 +37,34 @@ scrapy.Spider
 
 .. autoclass:: scrapy.Spider
 
-   .. attribute:: name
+    .. autoattribute:: name
 
-       A string which defines the name for this spider. The spider name is how
-       the spider is located (and instantiated) by Scrapy, so it must be
-       unique. However, nothing prevents you from instantiating more than one
-       instance of the same spider. This is the most important spider attribute
-       and it's required.
+    .. autoattribute:: allowed_domains
 
-       If the spider scrapes a single domain, a common practice is to name the
-       spider after the domain, with or without the `TLD`_. So, for example, a
-       spider that crawls ``mywebsite.com`` would often be called
-       ``mywebsite``.
+    .. autoattribute:: start_urls
 
-   .. attribute:: allowed_domains
+    .. autoattribute:: custom_settings
 
-       An optional list of strings containing domains that this spider is
-       allowed to crawl. Requests for URLs not belonging to the domain names
-       specified in this list (or their subdomains) won't be followed if
-       :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
-       enabled.
+    .. autoattribute:: crawler
 
-       .. versionchanged:: 2.18.0
-          Changes to this attribute during a crawl are now taken into account.
+    .. autoattribute:: settings
 
-       Let's say your target URL is ``https://www.example.com/1.html``,
-       then add ``'example.com'`` to the list.
+    .. autoattribute:: logger
 
-       You may modify this attribute while the spider runs, e.g. to allow
-       domains that you only learn about from an earlier response. The change
-       affects requests scheduled after it.
+    .. autoattribute:: state
 
-   .. autoattribute:: start_urls
+    .. automethod:: update_settings
 
-   .. attribute:: custom_settings
+    .. automethod:: from_crawler
 
-      A dictionary of settings that will be overridden from the project wide
-      configuration when running this spider. It must be defined as a class
-      attribute since the settings are updated before instantiation.
+    .. automethod:: start
 
-      For a list of available built-in settings see:
-      :ref:`topics-settings-ref`.
+    .. automethod:: parse
 
-   .. attribute:: crawler
+    .. method:: closed(reason)
 
-      This attribute is set by the :meth:`from_crawler` class method after
-      initializing the class, and links to the
-      :class:`~scrapy.crawler.Crawler` object to which this spider instance is
-      bound.
-
-      Crawlers encapsulate a lot of components in the project for single-entry
-      access (such as extensions, middlewares, signal managers, etc).
-      See :ref:`topics-api-crawler` to know more about them.
-
-   .. attribute:: settings
-
-      Configuration for running this spider. This is a
-      :class:`~scrapy.settings.Settings` instance, see the
-      :ref:`topics-settings` topic for a detailed introduction on this subject.
-
-   .. attribute:: logger
-
-      Python logger created with the Spider's :attr:`name`. You can use it to
-      send log messages through it as described on
-      :ref:`topics-logging-from-spiders`.
-
-   .. attribute:: state
-
-      A dict you can use to persist some spider state between batches.
-      See :ref:`topics-keeping-persistent-state-between-batches` to know more about it.
-
-   .. method:: from_crawler(crawler, *args, **kwargs)
-
-       This is the class method used by Scrapy to create your spiders.
-
-       You probably won't need to override this directly because the default
-       implementation acts as a proxy to the :meth:`__init__` method, calling
-       it with the given arguments ``args`` and named arguments ``kwargs``.
-
-       Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
-       attributes in the new instance so they can be accessed later inside the
-       spider's code.
-
-       The settings in ``crawler.settings`` can be modified in this method,
-       which is handy if you want to modify them based on arguments. As a
-       consequence, these settings aren't the final values as they can be
-       modified later by e.g. :ref:`add-ons <topics-addons>`. For the same
-       reason, most of the :class:`~scrapy.crawler.Crawler` attributes aren't
-       initialized at this point.
-
-       The final settings and the initialized :class:`~scrapy.crawler.Crawler`
-       attributes are available in the :meth:`start` method, handlers of the
-       :signal:`engine_started` signal and later.
-
-       :param crawler: crawler to which the spider will be bound
-       :type crawler: :class:`~scrapy.crawler.Crawler` instance
-
-       :param args: arguments passed to the :meth:`__init__` method
-       :type args: list
-
-       :param kwargs: keyword arguments passed to the :meth:`__init__` method
-       :type kwargs: dict
-
-   .. classmethod:: update_settings(settings)
-
-       The ``update_settings()`` method is used to modify the spider's settings
-       and is called during initialization of a spider instance.
-
-       It takes a :class:`~scrapy.settings.Settings` object as a parameter and
-       can add or update the spider's configuration values. This method is a
-       class method, meaning that it is called on the :class:`~scrapy.Spider`
-       class and allows all instances of the spider to share the same
-       configuration.
-
-       While per-spider settings can be set in
-       :attr:`~scrapy.Spider.custom_settings`, using ``update_settings()``
-       allows you to dynamically add, remove or change settings based on other
-       settings, spider attributes or other factors and use setting priorities
-       other than ``'spider'``. Also, it's easy to extend ``update_settings()``
-       in a subclass by overriding it, while doing the same with
-       :attr:`~scrapy.Spider.custom_settings` can be hard.
-
-       For example, suppose a spider needs to modify :setting:`FEEDS`:
-
-       .. code-block:: python
-
-           import scrapy
-
-
-           class MySpider(scrapy.Spider):
-               name = "myspider"
-               custom_feed = {
-                   "/home/user/documents/items.json": {
-                       "format": "json",
-                       "indent": 4,
-                   }
-               }
-
-               @classmethod
-               def update_settings(cls, settings):
-                   super().update_settings(settings)
-                   settings.setdefault("FEEDS", {}).update(cls.custom_feed)
-
-   .. automethod:: start
-
-   .. automethod:: parse
-
-   .. method:: closed(reason)
-
-       Called when the spider closes. This method provides a shortcut to
-       signals.connect() for the :signal:`spider_closed` signal.
+        Called when the spider closes. This method provides a shortcut to
+        signals.connect() for the :signal:`spider_closed` signal.
 
 Let's see an example:
 
@@ -610,7 +488,7 @@ SitemapSpider
 
 .. autoclass:: SitemapSpider
     :members:
-    :exclude-members: start
+    :exclude-members: from_crawler, start
 
 
 SitemapSpider examples
@@ -700,5 +578,4 @@ Combine SitemapSpider with other sources of urls:
 .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _robots.txt: https://www.robotstxt.org/
-.. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/

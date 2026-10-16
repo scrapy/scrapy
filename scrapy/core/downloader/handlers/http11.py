@@ -16,6 +16,7 @@ from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory, Protocol, connectionDone
+from twisted.python.failure import Failure
 from twisted.web._newclient import (
     HEADER,
     STATUS,
@@ -68,7 +69,6 @@ from ._base_http import BaseHttpDownloadHandler
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
-    from twisted.python.failure import Failure
     from twisted.web._newclient import Request as TxRequest
 
     from scrapy.crawler import Crawler
@@ -205,11 +205,22 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectBuffer: bytearray = bytearray()
 
+    @staticmethod
+    def _format_host(host: bytes) -> bytes:
+        """Return *host* as it goes into the authority of the CONNECT request,
+        i.e. with square brackets around IPv6 literals.
+        """
+        # URI.host strips the brackets of IPv6 literals, and only those contain
+        # colons.
+        return b"[" + host + b"]" if b":" in host else host
+
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""
         assert protocol.transport
         tunnelReq = _tunnel_request_data(
-            self._tunneledHost, self._tunneledPort, self._proxyAuthHeader
+            self._format_host(self._tunneledHost),
+            self._tunneledPort,
+            self._proxyAuthHeader,
         )
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived

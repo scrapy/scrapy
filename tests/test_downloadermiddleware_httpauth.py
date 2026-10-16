@@ -140,35 +140,35 @@ def _build_mw(settings: dict[str, Any], spider: Spider) -> HttpAuthMiddleware:
         # Without http_auth_domain, credentials from Request.meta are limited
         # to the origin of the request where they were first seen.
         #
-        # Note: auth_origin is not meant to be set by users, it is set the
+        # Note: _auth_origin is not meant to be set by users, it is set the
         # first time a request is processed by the middleware. See
         # test_origin_setdefault.
         (
-            {"meta": {"auth_origin": "https://a.example", "http_user": "mu"}},
+            {"meta": {"_auth_origin": "https://a.example", "http_user": "mu"}},
             b"Basic bXU6",
         ),
         (
             {
                 "url": "https://a.example:443",
-                "meta": {"auth_origin": "https://a.example", "http_user": "mu"},
+                "meta": {"_auth_origin": "https://a.example", "http_user": "mu"},
             },
             b"Basic bXU6",
         ),
         (
             {
                 "url": "https://s.a.example",
-                "meta": {"auth_origin": "https://a.example", "http_user": "mu"},
+                "meta": {"_auth_origin": "https://a.example", "http_user": "mu"},
             },
             None,
         ),
-        ({"meta": {"auth_origin": "http://a.example", "http_user": "mu"}}, None),
-        ({"meta": {"auth_origin": "https://a.example:1", "http_user": "mu"}}, None),
-        ({"meta": {"auth_origin": "https://b.example", "http_user": "mu"}}, None),
-        # http_auth_domain takes priority over auth_origin.
+        ({"meta": {"_auth_origin": "http://a.example", "http_user": "mu"}}, None),
+        ({"meta": {"_auth_origin": "https://a.example:1", "http_user": "mu"}}, None),
+        ({"meta": {"_auth_origin": "https://b.example", "http_user": "mu"}}, None),
+        # http_auth_domain takes priority over _auth_origin.
         (
             {
                 "meta": {
-                    "auth_origin": "https://b.example",
+                    "_auth_origin": "https://b.example",
                     "http_user": "mu",
                     "http_auth_domain": "a.example",
                 }
@@ -260,7 +260,7 @@ def test_main(config: dict[str, Any], expected: bytes | type[Exception] | None) 
     ("meta", "url", "output_value"),
     [
         ({}, "https://example.com/a", None),
-        ({"http_user": "a", "auth_origin": "foo"}, "https://example.com/a", "foo"),
+        ({"http_user": "a", "_auth_origin": "foo"}, "https://example.com/a", "foo"),
         ({"http_user": "a"}, "https://example.com/a", "https://example.com"),
         ({"http_user": "a"}, "http://example.com/a", "http://example.com"),
         ({"http_user": "a"}, "https://example.com:443/a", "https://example.com"),
@@ -280,12 +280,12 @@ def test_main(config: dict[str, Any], expected: bytes | type[Exception] | None) 
 def test_origin_setdefault(
     meta: dict[str, Any], url: str, output_value: str | None
 ) -> None:
-    """When request.meta is used for authorization, an auth_origin meta key is
+    """When request.meta is used for authorization, an _auth_origin meta key is
     defined on the request if not defined already."""
     mw = build_from_crawler(HttpAuthMiddleware, get_crawler())
     request = Request(url, meta=meta)
     assert mw.process_request(request) is None
     if output_value is None:
-        assert "auth_origin" not in request.meta
+        assert "_auth_origin" not in request.meta
     else:
-        assert request.meta["auth_origin"] == output_value
+        assert request.meta["_auth_origin"] == output_value
