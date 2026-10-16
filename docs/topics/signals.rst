@@ -275,10 +275,13 @@ spider_closed
 ~~~~~~~~~~~~~
 
 .. signal:: spider_closed
-.. function:: spider_closed(spider, reason)
+.. function:: spider_closed(spider, reason, error)
 
     Sent after a spider has been closed. This can be used to release per-spider
     resources reserved on :signal:`spider_opened`.
+
+    .. versionchanged:: VERSION
+       Added the *error* argument.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
@@ -293,6 +296,10 @@ spider_closed
         ``'cancelled'``). If the engine was shut down (for example, by hitting
         Ctrl-C to stop it) the reason will be ``'shutdown'``.
     :type reason: str
+
+    :param error: whether the crawl failed, see the
+        :stat:`finish_reason_error` stat
+    :type error: bool
 
 spider_opened
 ~~~~~~~~~~~~~

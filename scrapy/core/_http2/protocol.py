@@ -196,7 +196,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.metadata["active_streams"] -= 1
         self._send_pending_requests()
         if not self._idle_timeout and not self.metadata["active_streams"]:
-            self.close_idle()
+            self._close_idle()
         return stream
 
     def _new_stream(self, request: Request, spider: Spider) -> Stream:
@@ -277,8 +277,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         assert self.transport is not None  # typing
         self.transport.loseConnection()
 
-    def close_idle(self) -> None:
-        """Close a connection that is not serving any stream."""
+    def _close_idle(self) -> None:
         self.conn.close_connection(error_code=ErrorCodes.NO_ERROR)
         self._write_to_transport()
         self._lose_connection_with_error([])

@@ -78,12 +78,8 @@ class H2ConnectionPool:
         )
         conn_d = endpoint.connect(factory)
         d = self._pending_request(key)
-        conn_d.addCallbacks(
-            self.put_connection,
-            self._connection_failed,
-            callbackArgs=(key, conn_lost_deferred),
-            errbackArgs=(key,),
-        )
+        conn_d.addCallback(self.put_connection, key, conn_lost_deferred)
+        conn_d.addErrback(self._connection_failed, key)
         return d
 
     def _pending_request(self, key: ConnectionKey) -> Deferred[H2ClientProtocol]:
@@ -116,7 +112,7 @@ class H2ConnectionPool:
             if conn.metadata["active_streams"]:
                 continue
             del self._connections[key]
-            conn.close_idle()
+            conn._close_idle()
             surplus -= 1
 
     def put_connection(
