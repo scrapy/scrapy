@@ -5,7 +5,9 @@ Helper functions for dealing with Twisted deferreds
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import inspect
+import logging
 import sys
 import warnings
 from asyncio import Future
@@ -18,6 +20,7 @@ from typing import (
     Concatenate,
     Generic,
     ParamSpec,
+    Protocol,
     TypeVar,
     cast,
     overload,
@@ -28,7 +31,11 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import is_asyncio_available, sleep
+from scrapy.utils.asyncio import (
+    _get_running_or_installed_loop,
+    is_asyncio_available,
+    sleep,
+)
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
@@ -36,6 +43,18 @@ if TYPE_CHECKING:
 
     from twisted.python.failure import Failure
 
+    from scrapy.http.request import Request
+
+    class FailureWithRequest(Protocol):
+        """A :class:`~twisted.python.failure.Failure` that has had a
+        *request* attribute attached, identifying the request whose
+        processing raised it.
+        """
+
+        request: Request
+
+
+logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
@@ -178,24 +197,77 @@ def mustbe_deferred(
     return defer_result(result)
 
 
+class _ParallelTasks:
+    """Consumes *work* with no more than *count* concurrent cooperative tasks.
+
+    Tasks are started on demand: :meth:`start` must be called every time a new
+    item becomes available, so that a *count* much larger than the amount of
+    work does not cost anything.
+
+    :attr:`finished` fires once *work* is exhausted and every task is done.
+    """
+
+    def __init__(self, work: Iterator[Any], count: int):
+        self._coop = Cooperator()
+        self._work = work
+        self._count = count
+        self._running = 0
+        self.finished: Deferred[None] = Deferred()
+
+    def start(self) -> None:
+        if self._running >= self._count:
+            return
+        self._running += 1
+        self._coop.coiterate(self._work).addBoth(self._task_done)
+
+    def _task_done(self, result: Any) -> None:
+        self._running -= 1
+        if isinstance(result, failure.Failure):
+            # circular import
+            from scrapy.utils.log import failure_to_exc_info  # noqa: PLC0415
+
+            logger.error(
+                "Error processing an item",
+                exc_info=failure_to_exc_info(result),
+            )
+            # A failed task stops consuming work, which may not be exhausted
+            # yet, so another one takes over.
+            self.start()
+            return
+        # Only a running task can start another one, so once none is left no
+        # more work can come.
+        if not self._running:
+            self.finished.callback(None)
+
+
 def parallel(
     iterable: Iterable[_T],
     count: int,
     callable: Callable[Concatenate[_T, _P], _T2],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[list[tuple[bool, Iterator[_T2]]]]:
+) -> Deferred[None]:  # pragma: no cover
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
-
-    Taken from: https://jcalderone.livejournal.com/24285.html
     """
-    coop = Cooperator()
-    work: Iterator[_T2] = (callable(elem, *args, **named) for elem in iterable)
-    return DeferredList([coop.coiterate(work) for _ in range(count)])
+
+    def work() -> Iterator[_T2]:
+        for elem in iterable:
+            tasks.start()
+            yield callable(elem, *args, **named)
+
+    warnings.warn(
+        "scrapy.utils.defer.parallel() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
+    tasks = _ParallelTasks(work(), count)
+    tasks.start()
+    return tasks.finished
 
 
-class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
+class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
     """A class that wraps an async iterable into a normal iterator suitable
     for using in Cooperator.coiterate(). As it's only needed for parallel_async(),
     it calls the callable directly in the callback, instead of providing a more
@@ -255,14 +327,22 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
         self.finished: bool = False
         self.waiting_deferreds: deque[Deferred[Any]] = deque()
         self.anext_deferred: Deferred[_T] | None = None
+        # Cooperator ticks are scheduled through the reactor, which does not
+        # preserve contextvars, so both anext() and the callable run in the
+        # context captured here.
+        self._context: contextvars.Context = contextvars.copy_context()
+        # Called whenever aiterator produces a value, so that parallel_async()
+        # can start a task for it.
+        self.on_value: Callable[[], None] = lambda: None
 
     def _callback(self, result: _T) -> None:
         # This gets called when the result from aiterator.__anext__() is available.
         # It calls the callable on it and sends the result to the oldest waiting Deferred
         # (by chaining if the result is a Deferred too or by firing if not).
         self.anext_deferred = None
-        callable_result = self.callable(
-            result, *self.callable_args, **self.callable_kwargs
+        self.on_value()
+        callable_result = self._context.run(
+            self.callable, result, *self.callable_args, **self.callable_kwargs
         )
         d = self.waiting_deferreds.popleft()
         if isinstance(callable_result, Deferred):
@@ -284,7 +364,9 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(anext(self.aiterator))
+        self.anext_deferred = self._context.run(
+            deferred_from_coro, anext(self.aiterator)
+        )
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred[Any]:
@@ -305,16 +387,13 @@ def parallel_async(
     callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]]:
+) -> Deferred[None]:
     """Like ``parallel`` but for async iterators"""
-    coop = Cooperator()
-    work: Iterator[Deferred[Any]] = _AsyncCooperatorAdapter(
-        async_iterable, callable, *args, **named
-    )
-    dl: Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]] = DeferredList(
-        [coop.coiterate(work) for _ in range(count)]
-    )
-    return dl
+    work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
+    tasks = _ParallelTasks(work, count)
+    work.on_value = tasks.start
+    tasks.start()
+    return tasks.finished
 
 
 def process_chain(
@@ -369,10 +448,15 @@ def iter_errback(
     errback: Callable[Concatenate[Failure, _P], Any],
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Iterable[_T]:
+) -> Iterable[_T]:  # pragma: no cover
     """Wrap an iterable calling an errback if an error is caught while
     iterating it.
     """
+    warnings.warn(
+        "scrapy.utils.defer.iter_errback() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     it = iter(iterable)
     while True:
         try:
@@ -383,15 +467,14 @@ def iter_errback(
             errback(failure.Failure(), *a, **kw)
 
 
-async def aiter_errback(
+async def _aiter_errback(
     aiterable: AsyncIterator[_T],
     errback: Callable[Concatenate[Failure, _P], Any],
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> AsyncIterator[_T]:
     """Wrap an async iterable calling an errback if an error is caught while
-    iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
-    """
+    iterating it."""
     it = aiter(aiterable)
     while True:
         try:
@@ -400,6 +483,23 @@ async def aiter_errback(
             break
         except Exception:
             errback(failure.Failure(), *a, **kw)
+
+
+async def aiter_errback(
+    aiterable: AsyncIterator[_T],
+    errback: Callable[Concatenate[Failure, _P], Any],
+    *a: _P.args,
+    **kw: _P.kwargs,
+) -> AsyncIterator[_T]:  # pragma: no cover
+    """Wrap an async iterable calling an errback if an error is caught while
+    iterating it."""
+    warnings.warn(
+        "scrapy.utils.defer.aiter_errback() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    async for item in _aiter_errback(aiterable, errback, *a, **kw):
+        yield item
 
 
 @overload
@@ -421,7 +521,9 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
             # that use asyncio, e.g. "await asyncio.sleep(1)"
             return Deferred.fromCoroutine(cast("Coroutine[Deferred[Any], Any, _T]", o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
-        return Deferred.fromFuture(asyncio.ensure_future(o))
+        return Deferred.fromFuture(
+            asyncio.ensure_future(o, loop=_get_running_or_installed_loop())
+        )
     return o
 
 
@@ -518,7 +620,7 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
             "deferred_to_future() requires an installed asyncio reactor"
             " or a running asyncio event loop."
         )
-    return d.asFuture(asyncio.get_event_loop())
+    return d.asFuture(_get_running_or_installed_loop())
 
 
 def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
@@ -563,8 +665,7 @@ def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
     if not is_asyncio_available():
         Deferred.fromCoroutine(coro)
         return
-    loop = asyncio.get_event_loop()
-    loop.create_task(coro)  # noqa: RUF006
+    asyncio.create_task(coro)  # noqa: RUF006
 
 
 @overload

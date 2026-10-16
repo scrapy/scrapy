@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, TypeAlias
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
 from twisted.web.error import SchemeNotSupported
 
@@ -15,6 +14,7 @@ from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFac
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.endpoints import HostnameEndpoint
+    from twisted.python.failure import Failure
 
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
@@ -46,15 +46,11 @@ class H2ConnectionPool:
     ) -> Deferred[H2ClientProtocol]:
         if key in self._pending_requests:
             # Received a request while connecting to remote
-            # Create a deferred which will fire with the H2ClientProtocol
-            # instance
-            d: Deferred[H2ClientProtocol] = Deferred()
-            self._pending_requests[key].append(d)
-            return d
+            return self._pending_request(key)
 
         # Check if we already have a connection to the remote
         conn = self._connections.get(key, None)
-        if conn:
+        if conn and not conn.closing:
             # Return this connection instance wrapped inside a deferred
             return defer.succeed(conn)
 
@@ -67,7 +63,6 @@ class H2ConnectionPool:
         self._pending_requests[key] = deque()
 
         conn_lost_deferred: Deferred[None] = Deferred()
-        conn_lost_deferred.addCallback(self._remove_connection, key)
 
         factory = H2ClientFactory(
             uri,
@@ -76,16 +71,32 @@ class H2ConnectionPool:
             tls_verbose_logging=self._tls_verbose_logging,
         )
         conn_d = endpoint.connect(factory)
-        conn_d.addCallback(self.put_connection, key)
+        d = self._pending_request(key)
+        conn_d.addCallback(self.put_connection, key, conn_lost_deferred)
+        conn_d.addErrback(self._connection_failed, key)
+        return d
 
-        d: Deferred[H2ClientProtocol] = Deferred()
-        self._pending_requests[key].append(d)
+    def _pending_request(self, key: ConnectionKey) -> Deferred[H2ClientProtocol]:
+        """Return a deferred that fires with the connection being established
+        for *key*.
+
+        Cancelling it takes it out of the queue, so that the connection, once
+        established or found unreachable, only fires the deferreds of the
+        requests that are still waiting for it.
+        """
+        pending_requests = self._pending_requests[key]
+        d: Deferred[H2ClientProtocol] = Deferred(pending_requests.remove)
+        pending_requests.append(d)
         return d
 
     def put_connection(
-        self, conn: H2ClientProtocol, key: ConnectionKey
+        self,
+        conn: H2ClientProtocol,
+        key: ConnectionKey,
+        conn_lost_deferred: Deferred[None],
     ) -> H2ClientProtocol:
         self._connections[key] = conn
+        conn_lost_deferred.addCallback(self._remove_connection, key, conn)
 
         # Now as we have established a proper HTTP/2 connection
         # we fire all the deferred's with the connection instance
@@ -96,8 +107,20 @@ class H2ConnectionPool:
 
         return conn
 
-    def _remove_connection(self, _: None, key: ConnectionKey) -> None:
-        self._connections.pop(key)
+    def _connection_failed(self, failure: Failure, key: ConnectionKey) -> None:
+        """Fail the requests waiting for a connection that could not be
+        established, and let a later request try to connect again."""
+        pending_requests = self._pending_requests.pop(key)
+        while pending_requests:
+            d = pending_requests.popleft()
+            d.errback(failure)
+
+    def _remove_connection(
+        self, _: None, key: ConnectionKey, conn: H2ClientProtocol
+    ) -> None:
+        # a newer connection may have taken over the key already
+        if self._connections.get(key) is conn:
+            del self._connections[key]
 
     def close_connections(self) -> None:
         """Close all the HTTP/2 connections and remove them from pool."""
@@ -138,8 +161,8 @@ class H2Agent:
         uri = URI.fromBytes(bytes(request.url, encoding="utf-8"))
         try:
             endpoint = self.get_endpoint(uri)
-        except SchemeNotSupported:
-            return defer.fail(Failure())
+        except SchemeNotSupported as exc:
+            return defer.fail(exc)
 
         key = self.get_key(uri)
         d: Deferred[H2ClientProtocol] = self._pool.get_connection(key, uri, endpoint)

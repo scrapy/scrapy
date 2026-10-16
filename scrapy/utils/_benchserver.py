@@ -30,6 +30,7 @@ class Root(Resource):
 def _getarg(
     request: Request, name: bytes, default: Any = None, type_: type = str
 ) -> Any:
+    assert request.args is not None
     return type_(request.args[name][0]) if name in request.args else default
 
 
@@ -41,7 +42,7 @@ def main() -> None:  # pragma: no cover
     from twisted.internet import reactor
 
     root = Root()  # type: ignore[no-untyped-call]
-    httpPort = reactor.listenTCP(8998, Site(root))
+    httpPort = reactor.listenTCP(0, Site(root))
 
     def _print_listening() -> None:
         httpHost = httpPort.getHost()

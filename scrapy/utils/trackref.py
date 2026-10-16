@@ -5,11 +5,6 @@ If you want live objects for a particular class to be tracked, you only have to
 subclass from object_ref (instead of object).
 
 This library has a minimal performance impact.
-
-.. note:: PyPy uses a tracing garbage collector, so objects may
-    remain in the ``live_refs`` longer than expected, even after they
-    go out of scope. If deterministic behavior is required, you may need
-    to explicitly trigger garbage collection or call ``trackref.live_refs.clear()``.
 """
 
 from __future__ import annotations
@@ -17,14 +12,11 @@ from __future__ import annotations
 from operator import itemgetter
 from time import monotonic_ns
 from types import NoneType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from weakref import WeakKeyDictionary
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 live_refs: WeakKeyDictionary[type, WeakKeyDictionary[object, float]] = (
@@ -48,8 +40,9 @@ class object_ref:
         return obj
 
 
-# using Any as it's hard to type type(None)
-def format_live_refs(ignore: Any = NoneType) -> str:
+def format_live_refs(
+    ignore: type[Any] | tuple[type[Any], ...] = NoneType,
+) -> str:
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
     now_ns = monotonic_ns()
@@ -63,14 +56,16 @@ def format_live_refs(ignore: Any = NoneType) -> str:
     return s
 
 
-def print_live_refs(*a: Any, **kw: Any) -> None:
+def print_live_refs(
+    ignore: type[Any] | tuple[type[Any], ...] = NoneType,
+) -> None:
     """Print a report of live references, grouped by class name.
 
     :param ignore: if given, all objects from the specified class (or tuple of
         classes) will be ignored.
     :type ignore: type or tuple
     """
-    print(format_live_refs(*a, **kw))
+    print(format_live_refs(ignore))
 
 
 def get_oldest(class_name: str) -> Any:

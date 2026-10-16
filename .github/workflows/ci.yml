@@ -21,10 +21,9 @@ env:
   UV_PYTHON_PREFERENCE: only-system
 
 jobs:
-  # pre-commit and the static checks gate the test jobs except the slowest
-  # ones, so that a pull request that fails them costs a couple of minutes of
-  # CI instead of dozens of test jobs. The gated jobs still finish well before
-  # the ungated ones, so the gate does not lengthen the overall CI time.
+  # pre-commit and the static checks gate the test jobs, so that a pull request
+  # that fails them costs a couple of minutes of CI instead of dozens of test
+  # jobs.
   pre-commit:
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
@@ -52,13 +51,13 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: pylint
-        - python-version: "3.10"
+        - python-version: "3.11"
           env:
             TOXENV: mypy
-        - python-version: "3.10"
+        - python-version: "3.11"
           env:
             TOXENV: mypy-tests
-        # Keep in sync with pyproject.toml tool.sphinx-scrapy.python-version.
+        # Keep in sync with .readthedocs.yml.
         - python-version: "3.14"
           env:
             TOXENV: docs
@@ -80,7 +79,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Set up uv
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
         cache-dependency-glob: |
           docs/requirements.txt
@@ -99,88 +98,19 @@ jobs:
         echo "::error::$message"
         echo "$message" >> "$GITHUB_STEP_SUMMARY"
 
-  # PyPy is the slowest test job, so it runs without waiting for the gate to
-  # keep the overall CI time unchanged.
-  pypy:
-    if: github.event.action != 'closed'
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        # pinned due to https://github.com/pypy/pypy/issues/5388
-        - python-version: pypy3.11-7.3.20
-          env:
-            TOXENV: min-pypy3
-        - python-version: pypy3.11-7.3.20
-          env:
-            TOXENV: pypy3-extra-deps
-          coverage: true
-
-    steps: &test-steps
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install system libraries
-      if: runner.os == 'Linux' && (contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'min'))
-      run: |
-        sudo apt-get update
-        sudo apt-get install libxml2-dev libxslt-dev
-
-    - name: Set up uv
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-      with:
-        cache-dependency-glob: |
-          pyproject.toml
-          tox.ini
-
-    - name: Install mitmproxy
-      env:
-        # mitmproxy needs a newer Python than the oldest matrix entries, so let
-        # uv download one where no system interpreter is new enough.
-        UV_PYTHON_PREFERENCE: system
-      # mitmproxy has no PyPy wheels, so run it on CPython regardless of the
-      # interpreter under test.
-      run: uv tool install --python cpython mitmproxy
-
-    - name: Run tests
-      env: ${{ matrix.env }}
-      run: uvx --with tox-uv tox
-
-    - name: Upload coverage report
-      if: ${{ matrix.coverage }}
-      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
-
-    - name: Upload test results
-      if: ${{ !cancelled() }}
-      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
-      with:
-        report_type: test_results
-
   ubuntu:
     needs: [pre-commit, checks]
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    name: tests (ubuntu, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
+      # A hanging test would otherwise keep the job running until GitHub kills
+      # it, without telling which test hung.
+      PYTEST_ADDOPTS: --timeout=120 ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.10"
-          env:
-            TOXENV: py
         - python-version: "3.11"
           env:
             TOXENV: py
@@ -204,19 +134,19 @@ jobs:
           coverage: true
 
         # min deps
-        - python-version: "3.10.19"
+        - python-version: "3.11.17"
           env:
             TOXENV: min
           coverage: true
-        - python-version: "3.10.19"
+        - python-version: "3.11.17"
           env:
             TOXENV: min-default-reactor
           coverage: true
-        - python-version: "3.10.19"
+        - python-version: "3.11.17"
           env:
             TOXENV: min-extra-deps
           coverage: true
-        - python-version: "3.10.19"
+        - python-version: "3.11.17"
           env:
             TOXENV: min-botocore
           coverage: true
@@ -245,11 +175,53 @@ jobs:
           env:
             TOXENV: no-reactor
 
-    steps: *test-steps
+    steps: &test-steps
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system libraries
+      if: runner.os == 'Linux' && contains(matrix.env.TOXENV, 'min')
+      run: |
+        sudo apt-get update
+        sudo apt-get install libxml2-dev libxslt-dev
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      with:
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+
+    - name: Install mitmproxy
+      env:
+        # mitmproxy needs a newer Python than the oldest matrix entries, so let
+        # uv download one where no system interpreter is new enough.
+        UV_PYTHON_PREFERENCE: system
+      run: uv tool install --python cpython mitmproxy
+
+    - name: Run tests
+      env: ${{ matrix.env }}
+      run: uvx --with tox-uv tox
+
+    - name: Upload coverage report
+      if: ${{ matrix.coverage }}
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+      with:
+        report_type: test_results
 
   windows:
     needs: [pre-commit, checks]
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    name: tests (windows, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
     timeout-minutes: 60
     env:
@@ -258,7 +230,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.10"
+        - python-version: "3.11"
           env:
             TOXENV: py
         - python-version: "3.14"
@@ -270,10 +242,10 @@ jobs:
             TOXENV: no-reactor
 
         # min deps
-        - python-version: "3.10.11"
+        - python-version: "3.11.9"
           env:
             TOXENV: min
-        - python-version: "3.10.11"
+        - python-version: "3.11.9"
           env:
             TOXENV: min-extra-deps
 
@@ -296,7 +268,7 @@ jobs:
 
   macos:
     needs: [pre-commit, checks]
-    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
+    name: tests (macos, ${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: macos-latest
     timeout-minutes: 60
     env:
@@ -305,7 +277,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.10"
+        - python-version: "3.11"
           env:
             TOXENV: py
         - python-version: "3.14"

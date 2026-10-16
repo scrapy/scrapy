@@ -149,6 +149,31 @@ If you decide to work on something without an open issue, please:
     test coverage, tests should be written for real scenarios, with minimum
     mocking. We usually prefer end-to-end tests.
 
+.. _dev-setup:
+
+Setting up a development environment
+====================================
+
+Before you can write a patch, you need a local copy of the Scrapy code base
+that you can run and modify:
+
+#.  Follow GitHub’s `contributing to a project`_ guide to fork the Scrapy
+    repository, clone your fork and create a branch for your changes.
+
+#.  Install your clone, ideally inside :ref:`a virtual environment
+    <intro-using-virtualenv>`, so that ``scrapy`` runs your code:
+
+    .. code-block:: bash
+
+        pip install -e .
+
+#.  Set up :ref:`pre-commit <scrapy-pre-commit>`, and install :doc:`tox
+    <tox:index>`, which is what :ref:`runs the tests <running-tests>`:
+
+    .. code-block:: bash
+
+        pip install tox
+
 .. _writing-patches:
 
 Writing patches
@@ -342,15 +367,15 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
 To run the tests on a specific :doc:`tox <tox:index>` environment, use
 ``-e <name>`` with an environment name from ``tox.ini``. For example, to run
-the tests with Python 3.10 use::
+the tests with Python 3.14 use::
 
-    tox -e py310
+    tox -e py314
 
 You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py39,py310 -p auto
+    tox -e py313,py314 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the
@@ -360,9 +385,9 @@ default positional arguments (``scrapy tests``) after ``--`` as well::
     tox -- scrapy tests -x  # stop after first failure
 
 You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
-the Python 3.10 :doc:`tox <tox:index>` environment using all your CPU cores::
+the Python 3.14 :doc:`tox <tox:index>` environment using all your CPU cores::
 
-    tox -e py310 -- scrapy tests -n auto
+    tox -e py314 -- scrapy tests -n auto
 
 To see coverage report install :doc:`coverage <coverage:index>`
 (``pip install coverage``) and run:
@@ -404,6 +429,7 @@ And their unit-tests are in::
     tests/test_loader.py
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
+.. _contributing to a project: https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests

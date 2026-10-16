@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.extensions.feedexport import FeedExporter
+from scrapy.http import Request
+from scrapy.spiderloader import get_spider_loader
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
@@ -30,6 +32,27 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _add_curl_option(parser: argparse.ArgumentParser) -> None:
+    """Register the ``--curl`` option on commands that accept a URL."""
+    parser.add_argument(
+        "--curl",
+        metavar="COMMAND",
+        default=None,
+        help="build the request from a curl command, e.g. "
+        "--curl 'curl -d a=1 https://example.com'; cannot be combined "
+        "with a URL argument",
+    )
+
+
+def _request_from_curl(curl_command: str, **kwargs: Any) -> Request:
+    """Build a :class:`~scrapy.Request` from a curl command, reporting parsing
+    errors as :exc:`~scrapy.exceptions.UsageError`."""
+    try:
+        return Request.from_curl(curl_command, **kwargs)
+    except ValueError as e:
+        raise UsageError(str(e), print_help=False) from e
 
 
 class _PdbHandler(logging.Handler):
@@ -138,6 +161,39 @@ class ScrapyCommand(ABC):
             help="enable pdb on failure (uses ipdb if installed)",
         )
 
+    def complete_argument(self, args: list[str]) -> Iterable[str]:
+        """Return shell completion candidates for the positional argument
+        being typed, where *args* are the positional arguments typed before
+        it.
+
+        .. versionadded:: VERSION
+
+        See :ref:`completion`.
+        """
+        return ()
+
+    def complete_option(self, dest: str) -> Iterable[str]:
+        """Return shell completion candidates for the value of the option
+        being typed, identified by *dest*, i.e. the name under which its value
+        is available in the ``opts`` parameter of ``run()``.
+
+        .. versionadded:: VERSION
+
+        See :ref:`completion`.
+        """
+        if dest == "loglevel":
+            return ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
+        return ()
+
+    def _spider_names(self) -> list[str]:
+        assert self.settings is not None
+        try:
+            return sorted(get_spider_loader(self.settings).list())
+        except Exception:
+            # Completion runs on incomplete command lines and outside
+            # projects, where loading spiders is expected to fail.
+            return []
+
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         """Set settings based on the command line options."""
         assert self.settings is not None
@@ -179,7 +235,7 @@ class ScrapyCommand(ABC):
         raise NotImplementedError
 
 
-class BaseRunSpiderCommand(ScrapyCommand):
+class BaseRunSpiderCommand(ScrapyCommand, ABC):
     """
     Common class used to share functionality between the crawl, parse and runspider commands
     """
@@ -243,9 +299,8 @@ class BaseRunSpiderCommand(ScrapyCommand):
         crawler = self._create_crawler(spidercls)
         self.crawler_process.crawl(crawler, **opts.spargs)
         self.crawler_process.start()
-        if (
-            self.crawler_process.bootstrap_failed
-            or crawler.stats.get_value("finish_reason") == "closespider_errorcount"
+        if self.crawler_process.bootstrap_failed or crawler.stats.get_value(
+            "finish_reason_error", False
         ):
             self.exitcode = 1
 

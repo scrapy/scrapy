@@ -15,7 +15,6 @@ from scrapy.core.downloader.handlers._httpx import (  # type: ignore[attr-define
     HttpxDownloadHandler,
     httpx,
 )
-from scrapy.exceptions import DownloadFailedError
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests import IDNA_REJECTED_HOSTNAMES
@@ -63,6 +62,8 @@ else:
 
 
 class HttpxDownloadHandlerMixin:
+    handler_supports_partial_response_on_timeout = True
+
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HttpxDownloadHandler
@@ -114,7 +115,6 @@ class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
 @pytest.mark.skipif(not HAS_HTTP2, reason="No HTTP/2 support in HttpxDownloadHandler")
 class TestHttp2(TestHttps):
     http2 = True
-    handler_supports_http2_dataloss = False
 
     default_handler_settings: ClassVar[dict[str, Any]] = {
         "HTTPX_HTTP2_ENABLED": True,
@@ -126,13 +126,6 @@ class TestHttp2(TestHttps):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.protocol == "HTTP/2"
-
-    @coroutine_test
-    async def test_data_loss_handling(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
-        async with self.get_dh() as download_handler:
-            with pytest.raises(DownloadFailedError):
-                await download_handler.download_request(request)
 
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):
@@ -200,6 +193,10 @@ class TestHttpsProxy(TestHttpProxy):
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
     handler_supports_socks = HAS_SOCKS
+    # httpx sends an unbracketed IPv6 authority to the proxy, so the proxy
+    # answers 400; reproducible with httpx alone, without Scrapy involved.
+    # https://github.com/pydantic/httpx2/pull/1091
+    handler_supports_ipv6_destination = False
 
 
 @pytest.mark.requires_internet
@@ -219,17 +216,22 @@ async def test_pool_limits(concurrency: int, expected: int | None) -> None:
         await handler.close()
 
 
-@coroutine_test
-async def test_experimental_warning(caplog: pytest.LogCaptureFixture) -> None:
-    class StableHandler(HttpxDownloadHandler):
-        experimental = False
+class StableHandler(HttpxDownloadHandler):
+    experimental = False
 
-    crawler = get_crawler()
-    for handler_cls, expected in ((HttpxDownloadHandler, True), (StableHandler, False)):
-        caplog.clear()
-        handler = build_from_crawler(handler_cls, crawler)
-        await handler.close()
-        assert ("is experimental" in caplog.text) is expected
+
+@pytest.mark.parametrize(
+    ("handler_cls", "expected"), [(HttpxDownloadHandler, True), (StableHandler, False)]
+)
+@coroutine_test
+async def test_experimental_warning(
+    handler_cls: type[HttpxDownloadHandler],
+    expected: bool,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    handler = build_from_crawler(handler_cls, get_crawler())
+    await handler.close()
+    assert ("is experimental" in caplog.text) is expected
 
 
 @coroutine_test
