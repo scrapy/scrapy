@@ -186,7 +186,7 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
         if not _HAS_SOCKS:  # pragma: no cover
             raise ValueError(
                 f"SOCKS proxy support in {type(self).__name__} requires the"
-                f" 'ftp-socks' extra to be installed."
+                f" 'socks' extra to be installed."
             )
         assert parts.hostname
         return Proxy(
