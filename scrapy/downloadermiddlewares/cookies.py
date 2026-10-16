@@ -82,11 +82,71 @@ class CookiesMiddleware:
         cookies = self._get_request_cookies(jar, request)
         self._process_cookies(cookies, jar=jar, request=request)
 
+        header_cookies = self._get_header_cookies(request)
+
         # set Cookie header
         request.headers.pop("Cookie", None)
         jar.add_cookie_header(request)
+        if header_cookies:
+            self._merge_header_cookies(request, header_cookies)
         self._debug_cookie(request)
         return None
+
+    def _get_header_cookies(self, request: Request) -> list[tuple[str, str]]:
+        """Return the cookies set in the ``Cookie`` header of *request* as
+        ``(name, value)`` pairs, in header order.
+
+        If a name appears more than once, only its last value is kept.
+        """
+        cookies: dict[str, str] = {}
+        for header in request.headers.getlist("Cookie"):
+            for segment in header.split(b";"):
+                name, _, value = segment.strip().partition(b"=")
+                if not name:
+                    continue
+                cookies[self._decode_header_part(name)] = self._decode_header_part(
+                    value.strip()
+                )
+        return list(cookies.items())
+
+    @staticmethod
+    def _decode_header_part(part: bytes) -> str:
+        try:
+            return part.decode("utf-8")
+        except UnicodeDecodeError:
+            return part.decode("latin-1")
+
+    def _merge_header_cookies(
+        self, request: Request, header_cookies: list[tuple[str, str]]
+    ) -> None:
+        """Add *header_cookies* to the ``Cookie`` header of *request*.
+
+        Cookies already in the header, which come from the cookie jar, take
+        precedence over header cookies with the same name. Header cookies are
+        not stored in the cookie jar, so a stale header copied onto a new
+        request (e.g. by a redirect) cannot overwrite fresher cookies set
+        through a ``Set-Cookie`` response header.
+        """
+        pairs: list[tuple[str, str]] = []
+        current = request.headers.get("Cookie")
+        if current is not None:
+            for segment in current.split(b";"):
+                name, _, value = segment.strip().partition(b"=")
+                if name:
+                    pairs.append(
+                        (
+                            self._decode_header_part(name),
+                            self._decode_header_part(value.strip()),
+                        )
+                    )
+        jar_names = {name for name, _ in pairs}
+        pairs.extend(
+            (name, value) for name, value in header_cookies if name not in jar_names
+        )
+        if pairs:
+            request.headers["Cookie"] = "; ".join(
+                f"{name}={value}" for name, value in pairs
+            ).encode("utf-8")
 
     @_warn_spider_arg
     def process_response(

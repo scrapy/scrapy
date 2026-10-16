@@ -48,9 +48,11 @@ Or as a list of dicts, which also lets you set cookie attributes:
 Setting attributes is only useful if the cookies are stored for later requests,
 i.e. if :reqmeta:`dont_merge_cookies` is not enabled.
 
-.. caution:: Cookies set through the ``Cookie`` header are not handled by
-    :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware`, which
-    drops that header.
+Cookies can also be set through the ``Cookie`` request header, e.g. through
+the :setting:`DEFAULT_REQUEST_HEADERS` setting. Those cookies are sent with
+that request only and are not stored in the cookie jar. If a cookie from the
+jar and a cookie from the ``Cookie`` header share a name, the cookie from the
+jar is sent.
 
 .. caution:: When a cookie name or value is a byte sequence that is not UTF-8
     encoded, the cookie is dropped and a warning is logged. See

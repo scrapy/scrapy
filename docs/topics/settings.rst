@@ -682,10 +682,6 @@ Default:
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
-.. caution:: Cookies set via the ``Cookie`` header are not considered by the
-    :ref:`cookie middleware <cookies>`. If you need to set cookies for a
-    request, use the :class:`Request.cookies <scrapy.Request>` parameter.
-
 .. caution:: A ``Referer`` header defined here only reaches requests for which
     :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` does not set
     one, such as start requests. To send it on every request, set

@@ -673,7 +673,6 @@ class TestCookiesMiddleware:
         assert self.mw.process_request(request) is None
         assert request.headers.get("Cookie") == b"currencyCookie=USD"
 
-    @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_keep_cookie_from_default_request_headers_middleware(self):
         DEFAULT_REQUEST_HEADERS = {"Cookie": "default=value; asdf=qwerty"}
         mw_default_headers = DefaultHeadersMiddleware(DEFAULT_REQUEST_HEADERS.items())
@@ -692,7 +691,6 @@ class TestCookiesMiddleware:
             req2.headers["Cookie"], b"default=value; a=b; asdf=qwerty"
         )
 
-    @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_keep_cookie_header(self):
         # keep only cookies from 'Cookie' request header
         req1 = Request("http://scrapytest.org", headers={"Cookie": "a=b; c=d"})
@@ -712,6 +710,31 @@ class TestCookiesMiddleware:
         )
         assert self.mw.process_request(req3) is None
         self.assertCookieValEqual(req3.headers["Cookie"], "a=new; c=d; e=f")
+
+    def test_cookie_header_not_stored_in_jar(self):
+        # cookies from the 'Cookie' header apply only to their own request
+        req1 = Request("http://scrapytest.org", headers={"Cookie": "a=b"})
+        assert self.mw.process_request(req1) is None
+        assert req1.headers.get("Cookie") == b"a=b"
+
+        req2 = Request("http://scrapytest.org")
+        assert self.mw.process_request(req2) is None
+        assert "Cookie" not in req2.headers
+
+        # a stale 'Cookie' header, e.g. one copied onto a redirected request,
+        # does not overwrite a fresher cookie stored from Set-Cookie
+        req3 = Request("http://scrapytest.org", headers={"Cookie": "session=old"})
+        assert self.mw.process_request(req3) is None
+        res = Response(
+            "http://scrapytest.org",
+            headers={"Set-Cookie": "session=new; path=/"},
+            request=req3,
+        )
+        assert self.mw.process_response(req3, res) is res
+
+        req4 = Request("http://scrapytest.org", headers={"Cookie": "session=old"})
+        assert self.mw.process_request(req4) is None
+        self.assertCookieValEqual(req4.headers["Cookie"], b"session=new")
 
     @pytest.mark.parametrize(
         "cookies",
@@ -733,7 +756,6 @@ class TestCookiesMiddleware:
         assert self.mw.process_request(req) is None
         self.assertCookieValEqual(req.headers["Cookie"], b"a=\xc3\xa1")
 
-    @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_request_headers_cookie_encoding(self):
         # 1) UTF8-encoded bytes
         req1 = Request("http://example.org", headers={"Cookie": "a=á".encode()})
