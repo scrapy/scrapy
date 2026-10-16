@@ -14,7 +14,6 @@ from scrapy.utils._datatypes import (
     LocalWeakReferencedCache,
     SequenceExclude,
 )
-from scrapy.utils.python import garbage_collect
 
 
 class TestCaseInsensitiveDict:
@@ -366,10 +365,6 @@ class TestLocalWeakReferencedCache:
         assert cache[r2] == 2
         assert cache[r3] == 3
         del r2
-
-        # PyPy takes longer to collect dead references
-        garbage_collect()
-
         assert len(cache) == 1
 
     def test_cache_non_weak_referenceable_objects(self):
@@ -401,9 +396,6 @@ class TestLocalWeakReferencedCache:
         # delete half of the objects, make sure that is reflected in the cache
         for _ in range(maximum // 2):
             refs.pop()
-
-        # PyPy takes longer to collect dead references
-        garbage_collect()
 
         assert len(cache) == maximum // 2
         for i, r in enumerate(refs):

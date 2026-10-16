@@ -49,7 +49,6 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -313,8 +312,7 @@ filterwarnings = [
     # ResourceWarning, re-emitted by pytest.warns() with the outer filters
     # applied, when GC instead runs while a pytest.warns() block for an
     # unrelated warning is active, failing that unrelated test. The message
-    # wording varies across Python implementations and versions (PyPy leaves
-    # the prefix empty), so match on the object repr.
+    # wording varies across Python versions, so match on the object repr.
     "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
     "ignore:unclosed <socket\\.socket fd=:ResourceWarning",
     "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",

@@ -12,6 +12,7 @@ from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.downloader import Downloader
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.engine import EngineState, ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import (
@@ -20,7 +21,7 @@ from scrapy.exceptions import (
     DownloadCancelledError,
     IgnoreRequest,
 )
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import (
@@ -31,6 +32,7 @@ from scrapy.utils.defer import (
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+from tests.spiders import SingleRequestSpider
 from tests.utils.bases.engine import TestEngineBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 from tests.utils.engine import (
@@ -530,6 +532,76 @@ class TestSpiderIdle:
         crawler.signals.connect(spider_idle, signals.spider_idle)
         await crawler.crawl_async()
         assert crawler.stats.get_value("downloader/request_count") == 1
+
+    @coroutine_test
+    async def test_request_not_in_downloader(self) -> None:
+        """The spider is not idle while a request taken from the scheduler is
+        not in the downloader yet."""
+
+        class SlowFetchDownloader(Downloader):
+            def fetch(self, request: Request) -> Deferred[Response | Request]:  # type: ignore[override]
+                return deferred_from_coro(self._slow_fetch(request))
+
+            async def _slow_fetch(self, request: Request) -> Response | Request:
+                await sleep(0.1)
+                return await maybe_deferred_to_future(super().fetch(request))
+
+        events: list[str] = []
+
+        def response_received() -> None:
+            events.append("response_received")
+
+        def spider_idle() -> None:
+            events.append("spider_idle")
+
+        crawler = get_crawler(SingleRequestSpider, {"DOWNLOADER": SlowFetchDownloader})
+        crawler.signals.connect(response_received, signals.response_received)
+        crawler.signals.connect(spider_idle, signals.spider_idle)
+        await crawler.crawl_async(seed="data:,")
+        assert events == ["response_received", "spider_idle"]
+
+    @coroutine_test
+    async def test_request_only_in_downloader(self) -> None:
+        """The spider is not idle while the downloader has a request that was
+        not sent through the engine."""
+
+        class SlowDownloadHandler(BaseDownloadHandler):
+            async def download_request(self, request: Request) -> Response:
+                await sleep(0.1)
+                return Response(request.url)
+
+        events: list[str] = []
+
+        class DirectFetchSpider(Spider):
+            name = "direct_fetch"
+
+            async def start(self) -> AsyncIterator[Any]:
+                yield Request("data:,")
+
+            def parse(self, response: Response) -> None:
+                assert self.crawler.engine is not None
+                d = self.crawler.engine.downloader.fetch(Request("slow://example.com"))
+                d.addCallback(self.fetched)
+
+            def fetched(self, result: Response | Request) -> None:
+                events.append("fetched")
+                # Schedule a request so that the engine loops again soon
+                # instead of waiting for the slot heartbeat.
+                assert self.crawler.engine is not None
+                self.crawler.engine.crawl(Request("data:,b", callback=self.noop))
+
+            def noop(self, response: Response) -> None:
+                pass
+
+        def spider_idle() -> None:
+            events.append("spider_idle")
+
+        crawler = get_crawler(
+            DirectFetchSpider, {"DOWNLOAD_HANDLERS": {"slow": SlowDownloadHandler}}
+        )
+        crawler.signals.connect(spider_idle, signals.spider_idle)
+        await crawler.crawl_async()
+        assert events == ["fetched", "spider_idle"]
 
 
 @coroutine_test
