@@ -422,6 +422,7 @@ These settings are:
 -   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_LEVELS`
+-   :setting:`LOG_ROOT_FORMATTER`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -1193,8 +1194,13 @@ to a specific slot instead, set the name of the slot as the ``download_slot``
 :attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
 slot, that key holds the name of the slot.
 
-Since that key is kept on redirects, a redirected request stays in the slot of
-the request it comes from, even when it points to a different domain.
+Redirects and retries are assigned to a slot based on their own URL domain,
+unless the slot of their original request was set through the ``download_slot``
+key, in which case they keep that slot.
+
+.. versionchanged:: VERSION
+   In earlier versions, redirects and retries always kept the slot of their
+   original request, even when they pointed to a different domain.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1769,35 +1775,6 @@ Default: ``True``
 
 If ``False``, the log file specified with :setting:`LOG_FILE` will be
 overwritten (discarding the output from previous runs, if any).
-
-.. note:: This is a :ref:`logging setting <logging-settings>`.
-
-.. setting:: LOG_FORMAT
-
-LOG_FORMAT
-----------
-
-Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
-
-String for formatting log messages. Refer to the
-:ref:`Python logging documentation <logrecord-attributes>` for the whole
-list of available placeholders, plus ``%(spider)s`` for the name of the
-spider that triggered the log message, or ``"-"`` for messages not tied to
-a spider (see :ref:`topics-logging-from-spiders`).
-
-.. note:: This is a :ref:`logging setting <logging-settings>`.
-
-.. setting:: LOG_DATEFORMAT
-
-LOG_DATEFORMAT
---------------
-
-Default: ``'%Y-%m-%d %H:%M:%S'``
-
-String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
-in :setting:`LOG_FORMAT`. Refer to the
-:ref:`Python datetime documentation <strftime-strptime-behavior>` for the
-whole list of available directives.
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 

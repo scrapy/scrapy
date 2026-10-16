@@ -177,3 +177,64 @@ class TestHttpAuthMiddlewareMeta:
         )
         mw.process_request(req)
         assert req.headers["Authorization"] == b"Digest 123"
+
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("https://example.com/b", True),
+            ("https://example.com:443/b", True),
+            ("http://example.com/a", False),
+            ("https://example.com:8443/a", False),
+            ("https://sub.example.com/a", False),
+            ("https://other.example/a", False),
+        ],
+    )
+    def test_meta_auth_origin(self, url: str, expected: bool):
+        mw = make_mw()
+        req = Request(
+            "https://example.com/a", meta={"http_user": "u", "http_pass": "p"}
+        )
+        mw.process_request(req)
+        assert req.headers["Authorization"] == basic_auth_header("u", "p")
+        redirected = req.replace(url=url, headers={})
+        mw.process_request(redirected)
+        assert ("Authorization" in redirected.headers) is expected
+
+    def test_meta_auth_domain_ignores_origin(self):
+        mw = make_mw()
+        meta = {"http_user": "u", "http_pass": "p", "http_auth_domain": "example.com"}
+        req = Request("https://example.com/a", meta=meta)
+        mw.process_request(req)
+        redirected = req.replace(url="http://sub.example.com/a", headers={})
+        mw.process_request(redirected)
+        assert redirected.headers["Authorization"] == basic_auth_header("u", "p")
+
+
+@pytest.mark.parametrize(
+    ("mw_kwargs", "meta"),
+    [
+        ({"user": "foo", "passwd": "bar", "domain": None}, {}),
+        ({}, {"http_user": "u", "http_pass": "p"}),
+    ],
+)
+@pytest.mark.parametrize("url", ["ws://example.com/a", "wss://example.com/a"])
+def test_websocket(mw_kwargs: dict[str, Any], meta: dict[str, Any], url: str):
+    mw = make_mw(**mw_kwargs)
+    req = Request(url, meta=meta)
+    mw.process_request(req)
+    assert "Authorization" in req.headers
+
+
+@pytest.mark.parametrize(
+    ("mw_kwargs", "meta"),
+    [
+        ({"user": "foo", "passwd": "bar", "domain": None}, {}),
+        ({}, {"http_user": "u", "http_pass": "p"}),
+    ],
+)
+@pytest.mark.parametrize("url", ["ftp://example.com/a", "s3://example.com/a"])
+def test_non_http(mw_kwargs: dict[str, Any], meta: dict[str, Any], url: str):
+    mw = make_mw(**mw_kwargs)
+    req = Request(url, meta=meta)
+    mw.process_request(req)
+    assert "Authorization" not in req.headers

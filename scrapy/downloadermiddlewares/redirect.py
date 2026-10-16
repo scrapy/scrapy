@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, Any, Self, cast
-from urllib.parse import urljoin
-
-from w3lib.url import safe_url_string
 
 from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -14,6 +11,7 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import get_meta_refresh
+from scrapy.utils.url import _redirect_url
 
 if TYPE_CHECKING:
     from scrapy import Request, Spider
@@ -219,20 +217,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         }:
             return response
 
-        location_header = response.headers["Location"]
-        assert location_header is not None
-        location = safe_url_string(location_header)
-        if location_header.startswith(b"//"):
-            request_scheme = urlparse_cached(request).scheme
-            location = request_scheme + "://" + location.lstrip("/")
-
-        redirected_url = urljoin(request.url, location)
-
-        # A percent-encoded number sign is URI data, not a fragment delimiter.
-        if b"#" not in location_header:
-            fragment = urlparse_cached(request).fragment
-            if fragment:
-                redirected_url = urljoin(redirected_url, f"#{fragment}")
+        assert response.headers["Location"] is not None
+        redirected_url = _redirect_url(request.url, response.headers["Location"])
 
         redirected = self._build_redirect_request(request, response, url=redirected_url)
         # A redirect may not take a request out of its protocol family, so that
