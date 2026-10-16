@@ -52,6 +52,10 @@ Before you start scraping, you will have to set up a new Scrapy project. Enter a
 directory where you'd like to store your code and run::
 
     scrapy startproject tutorial
+.. note::
+   On Windows, if the ``scrapy`` command is not recognized, you can run
+   Scrapy as a Python module instead, for example
+   ``python -m scrapy startproject tutorial``.
 
 This will create a ``tutorial`` directory with the following contents::
 
