@@ -447,6 +447,20 @@ class TestFilesPipeline:
         assert path.read_bytes() == b"data"
 
     @coroutine_test
+    async def test_file_created(self) -> None:
+        item_url = "http://example.com/created.pdf"
+        item = _create_item_with_files(item_url)
+        with mock.patch.object(
+            FilesPipeline,
+            "get_media_requests",
+            return_value=[_prepare_request_object(item_url, status=201)],
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        path = Path(self.tempdir) / result["files"][0]["path"]
+        assert path.read_bytes() == b"data"
+
+    @coroutine_test
     async def test_checksum_algorithm(self) -> None:
         pipeline = self._create_pipeline(
             FilesPipeline, {"FILES_CHECKSUM_ALGORITHM": "sha256"}
@@ -1596,12 +1610,13 @@ def _prepare_request_object(
     item_url: str,
     flags: list[str] | None = None,
     headers: dict[str, str] | None = None,
+    status: int = 200,
 ) -> Request:
     return Request(
         item_url,
         meta={
             "response": Response(
-                item_url, status=200, body=b"data", flags=flags, headers=headers
+                item_url, status=status, body=b"data", flags=flags, headers=headers
             )
         },
     )
