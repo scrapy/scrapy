@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from email.utils import formatdate
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from twisted.internet.error import ConnectError, ConnectionDone, ConnectionLost
 
@@ -18,9 +18,6 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http.request import Request
     from scrapy.http.response import Response

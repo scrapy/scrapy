@@ -129,6 +129,20 @@ def get_maxsize_msg(size: int, limit: int, request: Request, *, expected: bool) 
     )
 
 
+def get_warnsize(meta: dict[str, Any], default: int) -> int:
+    """Return the download warn size for a request with the given *meta*.
+
+    A request-specific ``download_maxsize`` disables the *default* warn size,
+    since a user who sets a request-specific size limit expects that size.
+    """
+    if "download_warnsize" in meta:
+        warnsize: int = meta["download_warnsize"]
+        return warnsize
+    if "download_maxsize" in meta:
+        return 0
+    return default
+
+
 def get_warnsize_msg(size: int, limit: int, request: Request, *, expected: bool) -> str:
     prefix = "Expected to receive" if expected else "Received"
     return (

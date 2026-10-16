@@ -80,9 +80,13 @@ class TestUpdateClassPath:
             output = update_classpath("scrapy.unmatched.Path")
         assert output == "scrapy.unmatched.Path"
 
-    def test_returns_nonstring(self):
-        for notastring in [None, True, [1, 2, 3], object()]:
-            assert update_classpath(notastring) == notastring
+    @pytest.mark.parametrize(
+        "notastring",
+        [None, True, [1, 2, 3], object()],
+        ids=["None", "bool", "list", "object"],
+    )
+    def test_returns_nonstring(self, notastring: object) -> None:
+        assert update_classpath(notastring) == notastring
 
 
 class TestAttribute:

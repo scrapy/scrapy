@@ -108,6 +108,9 @@ use :func:`twisted.internet.task.react` to start and stop the reactor, though
 it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess` or
 :class:`~scrapy.crawler.CrawlerProcess` instead.
 
+Exceptions that interrupt a crawl reach the code that awaits that task or that
+adds callbacks to that Deferred, which is where you should handle them.
+
 Here's an example of using :class:`~scrapy.crawler.AsyncCrawlerRunner` together
 with simple reactor management code:
 

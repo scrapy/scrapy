@@ -11,6 +11,7 @@ import pytest
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
+from scrapy import LogRootFormatter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.log import (
@@ -32,6 +33,7 @@ from tests.spiders import LogSpider
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, MutableMapping
+    from pathlib import Path
 
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatterResult
@@ -78,7 +80,8 @@ class TestTopLevelFormatter:
 
 
 class TestSpiderPlaceholderInLogFormat:
-    def _log(self, log_format: str, extra: dict[str, Any] | None) -> str:
+    @staticmethod
+    def _log(log_format: str, extra: dict[str, Any] | None) -> str:
         stream = StringIO()
         settings = Settings({"LOG_FORMAT": log_format})
         handler = _get_handler(settings)
@@ -174,6 +177,14 @@ class _TTYStringIO(StringIO):
         return True
 
 
+class _UpperFormatter(logging.Formatter):
+    def __init__(self, settings: Settings):
+        super().__init__(settings["LOG_FORMAT"])
+
+    def format(self, record: logging.LogRecord) -> str:
+        return super().format(record).upper()
+
+
 class TestGetFormatter:
     @staticmethod
     def _settings(**overrides: Any) -> Settings:
@@ -192,22 +203,33 @@ class TestGetFormatter:
         monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         stream = _TTYStringIO()
         handler = logging.StreamHandler(stream)
-        handler.setFormatter(_get_formatter(handler, self._settings()))
+        settings = self._settings(LOG_ROOT_FORMATTER=_UpperFormatter)
+        handler.setFormatter(_get_formatter(handler, settings))
         logger = logging.getLogger("test_get_formatter_colored")
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
         try:
-            logger.error("boom")
+            try:
+                raise ValueError("bar")
+            except ValueError:
+                logger.exception("boom")
         finally:
             logger.removeHandler(handler)
         output = stream.getvalue()
         assert "\x1b[" in output
-        assert "boom" in output
+        assert "ERROR: BOOM" in output
+        assert output.count("VALUEERROR: BAR") == 1
 
     def test_plain_when_not_a_tty(self) -> None:
         handler = logging.StreamHandler(StringIO())
         formatter = _get_formatter(handler, self._settings())
-        assert type(formatter) is logging.Formatter
+        assert type(formatter) is LogRootFormatter
+
+    def test_custom_root_formatter(self) -> None:
+        handler = logging.StreamHandler(StringIO())
+        settings = self._settings(LOG_ROOT_FORMATTER=_UpperFormatter)
+        formatter = _get_formatter(handler, settings)
+        assert type(formatter) is _UpperFormatter
 
     def test_plain_when_log_color_disabled(
         self, monkeypatch: pytest.MonkeyPatch
@@ -215,15 +237,15 @@ class TestGetFormatter:
         monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         handler = logging.StreamHandler(_TTYStringIO())
         formatter = _get_formatter(handler, self._settings(LOG_COLOR=False))
-        assert type(formatter) is logging.Formatter
+        assert type(formatter) is LogRootFormatter
 
-    def test_plain_for_file_handler(self, tmp_path: Any) -> None:
+    def test_plain_for_file_handler(self, tmp_path: Path) -> None:
         handler = logging.FileHandler(tmp_path / "log.txt")
         try:
             formatter = _get_formatter(handler, self._settings())
         finally:
             handler.close()
-        assert type(formatter) is logging.Formatter
+        assert type(formatter) is LogRootFormatter
 
     def test_plain_when_colorlog_not_installed(
         self, monkeypatch: pytest.MonkeyPatch
@@ -232,7 +254,7 @@ class TestGetFormatter:
         monkeypatch.setitem(sys.modules, "colorlog", None)
         handler = logging.StreamHandler(_TTYStringIO())
         formatter = _get_formatter(handler, self._settings())
-        assert type(formatter) is logging.Formatter
+        assert type(formatter) is LogRootFormatter
 
 
 class TestConfigureLogging:
@@ -326,6 +348,31 @@ def test_spider_logger_adapter_process(
     assert result_kwargs == expected_extra
 
 
+class TestLogLevels:
+    @pytest.fixture(autouse=True)
+    def restore_levels(self) -> Generator[None]:
+        yield
+        for name in ("httpx", "boto3"):
+            logging.getLogger(name).setLevel(logging.NOTSET)
+
+    def test_defaults(self) -> None:
+        configure_logging({"LOG_INSTALL_ROOT_HANDLER": False})
+
+        assert logging.getLogger("httpx").level == logging.WARNING
+        assert logging.getLogger("boto3").level == logging.NOTSET
+
+    def test_override(self) -> None:
+        configure_logging(
+            {
+                "LOG_LEVELS": {"httpx": "DEBUG", "boto3": "ERROR"},
+                "LOG_INSTALL_ROOT_HANDLER": False,
+            }
+        )
+
+        assert logging.getLogger("httpx").level == logging.DEBUG
+        assert logging.getLogger("boto3").level == logging.ERROR
+
+
 class TestLogging:
     @pytest.fixture
     def log_stream(self) -> StringIO:
@@ -342,9 +389,10 @@ class TestLogging:
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
 
-        yield logger
-
-        logger.removeHandler(handler)
+        try:
+            yield logger
+        finally:
+            logger.removeHandler(handler)
 
     def test_debug_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo message"
@@ -401,10 +449,10 @@ class TestLoggingWithExtra:
         logger = logging.getLogger("log_spider")
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
-
-        yield logger
-
-        logger.removeHandler(handler)
+        try:
+            yield logger
+        finally:
+            logger.removeHandler(handler)
 
     def test_debug_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo message"

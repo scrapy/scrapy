@@ -8,7 +8,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from scrapy.exceptions import NotSupported, ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
@@ -43,7 +43,7 @@ class XMLFeedSpider(Spider):
        defining :meth:`~scrapy.Spider.parse` is not enough.
     """
 
-    iterator: str = "iternodes"
+    iterator: Literal["iternodes", "html", "xml"] = "iternodes"
     """The iterator to use. It can be either:
 
     -   ``'iternodes'`` - a fast iterator based on ``lxml``

@@ -7,7 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Self, TypeVar, overload
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -15,15 +15,13 @@ from scrapy.http.headers import Headers
 from scrapy.http.request import Request
 from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
+from scrapy.utils.url import _redirect_url
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
     from ipaddress import IPv4Address, IPv6Address
 
     from twisted.python.failure import Failure
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.http.request import CallbackT, CookiesT
     from scrapy.selector import SelectorList
@@ -207,7 +205,7 @@ class Response(object_ref):
         so subclasses only need to override this method, and :meth:`from_dict`,
         if some of their attributes cannot be stored as is.
         """
-        d: dict[str, Any] = {"headers": dict(self.headers)}
+        d: dict[str, Any] = {"headers": {k: list(v) for k, v in self.headers.items()}}
         for attr in self.attributes:
             if attr in {"request", "certificate"}:
                 continue
@@ -306,7 +304,32 @@ class Response(object_ref):
             errback=errback,
             cb_kwargs=cb_kwargs,
             flags=flags,
+            parent_id=self.request.id if self.request else None,
         )
+
+    def follow_redirect(self, **kwargs: Any) -> Request:
+        """Return a :class:`~.Request` instance to follow the ``Location``
+        header of this response.
+
+        .. versionadded:: VERSION
+
+        It accepts the same arguments as :meth:`follow`, except ``url``, which
+        comes from the ``Location`` header. Unlike in :meth:`follow`, that URL is
+        always resolved against :attr:`url`, never against the base URL of an
+        HTML document, as the HTTP standard mandates for the ``Location``
+        header.
+
+        It raises :exc:`ValueError` if this response has no ``Location`` header.
+
+        The resulting request uses the GET method and has no body unless you
+        specify otherwise, even for 307 and 308 responses, for which
+        :class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware`
+        keeps the method and body of the original request.
+        """
+        location = self.headers.get("Location")
+        if location is None:
+            raise ValueError(f"{self} has no Location header")
+        return self.follow(_redirect_url(self.url, location), **kwargs)
 
     def follow_all(
         self,

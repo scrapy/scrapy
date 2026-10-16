@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from formerly import deprecated_class
 from OpenSSL import SSL
@@ -33,9 +33,6 @@ from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings

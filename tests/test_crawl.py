@@ -24,7 +24,6 @@ from scrapy.utils.engine import (
     get_engine_status,
     print_engine_status,
 )
-from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.spiders import (
@@ -69,12 +68,12 @@ if TYPE_CHECKING:
 
 class CloseSpiderProcessRequestMiddleware:
     def process_request(self, request):
-        raise CloseSpider("my_reason")
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
 
 
 class CloseSpiderProcessResponseMiddleware:
     def process_response(self, request, response):
-        raise CloseSpider("my_reason")
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
 
 
 class TestCrawl:
@@ -361,16 +360,16 @@ with multiples lines
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
         # start() doesn't set Referer header
-        echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][0].body))
+        echo0 = json.loads(crawler.spider.meta["responses"][0].body.decode())
         assert "Referer" not in echo0["headers"]
         # following request sets Referer to the source request url
-        echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
+        echo1 = json.loads(crawler.spider.meta["responses"][1].body.decode())
         assert echo1["headers"].get("Referer") == [req0.url]
         # next request avoids Referer header
-        echo2 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
+        echo2 = json.loads(crawler.spider.meta["responses"][2].body.decode())
         assert "Referer" not in echo2["headers"]
         # last request explicitly sets a Referer header
-        echo3 = json.loads(to_unicode(crawler.spider.meta["responses"][3].body))
+        echo3 = json.loads(crawler.spider.meta["responses"][3].body.decode())
         assert echo3["headers"].get("Referer") == ["http://example.com"]
 
     @coroutine_test
@@ -1040,17 +1039,21 @@ class TestCrawlSpider:
         "middleware",
         [CloseSpiderProcessRequestMiddleware, CloseSpiderProcessResponseMiddleware],
     )
+    @pytest.mark.parametrize("error", [False, True])
     @coroutine_test
     async def test_raise_closespider_downloader_middleware(
         self,
         caplog: pytest.LogCaptureFixture,
         mockserver: MockServer,
         middleware: type,
+        error: bool,
     ) -> None:
         crawler = get_crawler(
             SingleRequestSpider, {"DOWNLOADER_MIDDLEWARES": {middleware: 1}}
         )
+        seed = Request(mockserver.url("/"), meta={"close_error": error})
         with caplog.at_level(logging.INFO):
-            await crawler.crawl_async(seed=mockserver.url("/"))
+            await crawler.crawl_async(seed=seed)
         assert "Closing spider (my_reason)" in caplog.text
         assert "Error downloading" not in caplog.text
+        assert crawler.stats.get_value("finish_reason_error") is error

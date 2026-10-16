@@ -18,6 +18,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils._colorize import tty_supports_color
 from scrapy.utils._versions import get_versions
+from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -79,7 +80,7 @@ class _SpiderRecordDefaultFilter(logging.Filter):
         return True
 
 
-DEFAULT_LOGGING = {
+DEFAULT_LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "loggers": {
@@ -126,7 +127,8 @@ def configure_logging(
     This function does:
 
     - Route warnings and twisted logging through Python standard logging
-    - Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively
+    - Set log levels for the Scrapy, Twisted and third-party loggers, which
+      :setting:`LOG_LEVELS` can override
     - Route stdout to log if LOG_STDOUT setting is True
 
     When installing a root logging handler, this function also creates a
@@ -155,13 +157,20 @@ def configure_logging(
     observer = twisted_log.PythonLoggingObserver("twisted")
     observer.start()
 
-    dictConfig(DEFAULT_LOGGING)
+    _configure_logger_levels(settings)
 
     if settings.getbool("LOG_STDOUT"):
         sys.stdout = StreamLogger(logging.getLogger("stdout"))
 
     if install_root_handler:
         install_scrapy_root_handler(settings)
+
+
+def _configure_logger_levels(settings: Settings) -> None:
+    loggers = DEFAULT_LOGGING["loggers"] | {
+        name: {"level": level} for name, level in settings.getdict("LOG_LEVELS").items()
+    }
+    dictConfig(DEFAULT_LOGGING | {"loggers": loggers})
 
 
 _scrapy_root_handler: logging.Handler | None = None
@@ -192,9 +201,32 @@ def get_scrapy_root_handler() -> logging.Handler | None:
     return _scrapy_root_handler
 
 
+class _ColoredFormatter(logging.Formatter):
+    """Colorizes the output of *formatter* by log level with *colorizer*, a
+    :class:`colorlog.ColoredFormatter` that only renders the message.
+    """
+
+    def __init__(self, formatter: logging.Formatter, colorizer: logging.Formatter):
+        super().__init__()
+        self._formatter = formatter
+        self._colorizer = colorizer
+
+    def format(self, record: logging.LogRecord) -> str:
+        formatted = logging.makeLogRecord(
+            {
+                **record.__dict__,
+                "msg": self._formatter.format(record),
+                "args": None,
+                "exc_info": None,
+                "exc_text": None,
+                "stack_info": None,
+            }
+        )
+        return self._colorizer.format(formatted)
+
+
 def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Formatter:
-    fmt = settings.get("LOG_FORMAT")
-    datefmt = settings.get("LOG_DATEFORMAT")
+    formatter: logging.Formatter = load_object(settings["LOG_ROOT_FORMATTER"])(settings)
     if (
         isinstance(handler, logging.StreamHandler)
         and not isinstance(handler, logging.FileHandler)
@@ -207,8 +239,9 @@ def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Form
         except ImportError:
             pass
         else:
-            return ColoredFormatter(fmt=f"%(log_color)s{fmt}", datefmt=datefmt)
-    return logging.Formatter(fmt=fmt, datefmt=datefmt)
+            colorizer = ColoredFormatter("%(log_color)s%(message)s")
+            return _ColoredFormatter(formatter, colorizer)
+    return formatter
 
 
 def _get_handler(settings: Settings) -> logging.Handler:
@@ -327,8 +360,7 @@ def logformatter_adapter(
     return (level, message, args)
 
 
-# LoggerAdapter is only parameterized since Python 3.11
-class SpiderLoggerAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
+class SpiderLoggerAdapter(logging.LoggerAdapter[logging.Logger]):
     def process(
         self, msg: str, kwargs: MutableMapping[str, Any]
     ) -> tuple[str, MutableMapping[str, Any]]:

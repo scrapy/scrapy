@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-import pytest
+from typing import Any
+from urllib.parse import urlparse
 
+import pytest
+import w3lib.url
+
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http import Request, Response
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
 from scrapy.utils.url import (
+    _add_http_if_no_scheme,
     _is_filesystem_path,
     add_http_if_no_scheme,
     guess_scheme,
@@ -38,6 +45,22 @@ def test_url_is_from_any_domain():
     )
     assert not url_is_from_any_domain(url, ["testdomain.com"])
     assert not url_is_from_any_domain(url + ".testdomain.com", ["testdomain.com"])
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://www.example.com/page",
+        b"https://www.example.com/page",
+        urlparse("https://www.example.com/page"),
+        Request("https://www.example.com/page"),
+        Response("https://www.example.com/page"),
+    ],
+    ids=["str", "bytes", "ParseResult", "Request", "Response"],
+)
+def test_url_is_from_any_domain_input_types(url: Any) -> None:
+    assert url_is_from_any_domain(url, ["example.com"])
+    assert not url_is_from_any_domain(url, ["example.org"])
 
 
 def test_url_is_from_spider():
@@ -80,7 +103,7 @@ def test_url_is_from_spider_with_allowed_domains_property():
         name = "myspider"
 
         @property
-        def allowed_domains(self):
+        def allowed_domains(self):  # type: ignore[override]
             return ["example.org"]
 
     with pytest.warns(UserWarning, match="allowed_domains is a property"):
@@ -162,7 +185,22 @@ def test_url_has_any_extension(url: str, expected: bool) -> None:
     ],
 )
 def test_add_http_if_no_scheme(url: str, expected: str) -> None:
-    assert add_http_if_no_scheme(url) == expected
+    assert _add_http_if_no_scheme(url) == expected
+
+
+def test_add_http_if_no_scheme_deprecated(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        w3lib.url, "add_http_if_no_scheme", lambda url: url, raising=False
+    )
+    with pytest.warns(
+        ScrapyDeprecationWarning, match="use w3lib.url.add_http_if_no_scheme"
+    ):
+        assert add_http_if_no_scheme("www.example.com") == "http://www.example.com"
+
+
+def test_add_http_if_no_scheme_not_deprecated(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delattr(w3lib.url, "add_http_if_no_scheme", raising=False)
+    assert add_http_if_no_scheme("www.example.com") == "http://www.example.com"
 
 
 @pytest.mark.parametrize(

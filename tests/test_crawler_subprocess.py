@@ -20,9 +20,8 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
-# Guards against a hung subprocess. Generous, because starting a script is
-# slow on PyPy, slower still with coverage measurement on.
-SCRIPT_TIMEOUT = 60
+# Guards against a hung subprocess.
+SCRIPT_TIMEOUT = 10
 
 
 class ScriptRunnerMixin(ABC):
@@ -48,7 +47,7 @@ class ScriptRunnerMixin(ABC):
             stderr=subprocess.PIPE,
         )
         _, stderr = p.communicate()
-        return stderr.decode("utf-8")
+        return stderr.decode()
 
 
 class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
@@ -218,6 +217,11 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             "setting (uvloop.Loop)"
         ) in log
 
+    def test_asyncio_enabled_reactor_loop_not_current(self) -> None:
+        log = self.run_script("asyncio_enabled_reactor_loop_not_current.py")
+        assert "Spider closed (finished)" in log
+        assert "ERROR: " not in log
+
     def test_default_loop_asyncio_deferred_signal(self) -> None:
         log = self.run_script("asyncio_deferred_signal.py")
         assert "Spider closed (finished)" in log
@@ -253,20 +257,22 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined,unused-ignore]
         args = self.get_script_args(script, "10")
         p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
-        p.expect_exact("Spider opened")
-        p.expect_exact("Crawled (200)")
-        p.kill(sig)
-        p.expect_exact("shutting down gracefully")
-        # Sending a new signal too fast often causes problems, e.g. on
-        # Windows, where signal delivery is slower and more variable than on
-        # POSIX.
-        await sleep(0.1)
-        p.kill(sig)
-        p.expect_exact("dropping downloader requests")
-        await sleep(0.1)
-        p.kill(sig)
-        p.expect_exact("forcing unclean shutdown", timeout=20)
-        stop_spawn(p)
+        try:
+            p.expect_exact("Spider opened")
+            p.expect_exact("Crawled (200)")
+            p.kill(sig)
+            p.expect_exact("shutting down gracefully")
+            # Sending a new signal too fast often causes problems, e.g. on
+            # Windows, where signal delivery is slower and more variable than
+            # on POSIX.
+            await sleep(0.1)
+            p.kill(sig)
+            p.expect_exact("dropping downloader requests")
+            await sleep(0.1)
+            p.kill(sig)
+            p.expect_exact("forcing unclean shutdown", timeout=20)
+        finally:
+            stop_spawn(p)
 
     @coroutine_test
     async def test_shutdown_forced(self) -> None:
@@ -411,8 +417,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 2
+        assert "WARNING: " not in log
 
     def test_reactorless_custom_settings(self) -> None:
         """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
@@ -433,8 +438,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "{'data': 'foo'}" in log
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
-        assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 2
+        assert "WARNING: " not in log
 
     def test_reactorless_import_hook(self) -> None:
         log = self.run_script("reactorless_import_hook.py")
@@ -524,6 +528,21 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+
+    def test_custom_loop_closespider_timeout_no_item(self) -> None:
+        log = self.run_script("closespider_timeout_no_item.py")
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
+
+    @pytest.mark.requires_uvloop
+    def test_uvloop_closespider_timeout_no_item(self) -> None:
+        # uvloop has a different clock resolution
+        log = self.run_script("closespider_timeout_no_item.py", "uvloop.Loop")
+        assert "Using asyncio event loop: uvloop.Loop" in log
+        assert "Closing spider since no items were produced" not in log
+        assert "Spider closed (finished)" in log
+        assert "'item_scraped_count': 30" in log
 
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
@@ -649,8 +668,15 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 2
+        assert "WARNING: " not in log
+
+    def test_reactorless_loop_not_running(self) -> None:
+        log = self.run_script("reactorless_loop_not_running.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Calling AsyncCrawlerRunner.crawl() without a running asyncio event"
+            " loop when TWISTED_REACTOR_ENABLED is False is deprecated"
+        ) in log
 
     def test_reactorless_custom_settings(self) -> None:
         """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
@@ -668,8 +694,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "{'data': 'foo'}" in log
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
-        assert log.count("WARNING: AiohttpDownloadHandler is experimental") == 2
-        assert log.count("WARNING: ") == 2
+        assert "WARNING: " not in log
 
     def test_reactorless_reactor(self) -> None:
         log = self.run_script("reactorless_reactor.py")

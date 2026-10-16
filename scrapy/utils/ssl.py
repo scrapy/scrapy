@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import OpenSSL._util as pyOpenSSLutil
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._versions import _get_openssl_version as get_openssl_version
-from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from OpenSSL.crypto import X509Name
@@ -21,7 +20,7 @@ def get_temp_key_info(ssl_object: Any) -> str | None:
 
 
 def ffi_buf_to_string(buf: Any) -> str:
-    return to_unicode(pyOpenSSLutil.ffi.string(buf))
+    return cast("str", pyOpenSSLutil.ffi.string(buf).decode())
 
 
 def x509name_to_string(x509name: X509Name) -> str:

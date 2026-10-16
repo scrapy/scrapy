@@ -13,7 +13,9 @@ import weakref
 from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, Self, TypeVar, overload
+
+from formerly import deprecated_class
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
@@ -21,9 +23,6 @@ from scrapy.utils.asyncgen import as_async_generator
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from re import Pattern
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 _T = TypeVar("_T")
@@ -167,8 +166,11 @@ def memoizemethod_noargs(
 
 
 _BINARYCHARS = {
-    i for i in range(32) if to_bytes(chr(i)) not in {b"\0", b"\t", b"\n", b"\r"}
+    i for i in range(32) if chr(i).encode() not in {b"\0", b"\t", b"\n", b"\r"}
 }
+# Matching the characters above with a compiled pattern lets binary_is_text()
+# scan the data in C, instead of iterating over every byte in Python.
+_BINARYCHARS_RE = re.compile(b"[" + re.escape(bytes(sorted(_BINARYCHARS))) + b"]")
 
 
 def binary_is_text(data: bytes) -> bool:
@@ -177,7 +179,7 @@ def binary_is_text(data: bytes) -> bool:
     """
     if not isinstance(data, bytes):
         raise TypeError(f"data must be bytes, got '{type(data).__name__}'")
-    return all(c not in _BINARYCHARS for c in data)
+    return _BINARYCHARS_RE.search(data) is None
 
 
 # PEP 649 (Python 3.14+) made annotation evaluation lazy, so inspect.signature()
@@ -308,7 +310,7 @@ def global_object_name(obj: Any) -> str:
     return f"{obj.__module__}.{obj.__qualname__}"
 
 
-if hasattr(sys, "pypy_version_info"):
+if hasattr(sys, "pypy_version_info"):  # pragma: no cover
 
     def garbage_collect() -> None:
         # Collecting weakreferences can take two collections on PyPy.
@@ -348,11 +350,7 @@ async def _async_chain(
             yield o
 
 
-class MutableAsyncChain(AsyncIterator[_T]):
-    """
-    Similar to MutableChain but for async iterables
-    """
-
+class _MutableAsyncChain(AsyncIterator[_T]):
     def __init__(self, *args: Iterable[_T] | AsyncIterator[_T]):
         self.data: AsyncIterator[_T] = _async_chain(*args)
 
@@ -364,6 +362,15 @@ class MutableAsyncChain(AsyncIterator[_T]):
 
     async def __anext__(self) -> _T:
         return await anext(self.data)
+
+
+MutableAsyncChain = deprecated_class(
+    "MutableAsyncChain",
+    _MutableAsyncChain,
+    category=ScrapyDeprecationWarning,
+    subclass_message="{old} is deprecated.",
+    instance_message="{cls} is deprecated.",
+)
 
 
 def _looks_like_import_path(value: str) -> bool:

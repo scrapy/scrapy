@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import ipaddress
 import ssl
 from contextlib import asynccontextmanager
@@ -52,6 +51,7 @@ class _ClientResponse(aiohttp.ClientResponse):
 
 class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     experimental: ClassVar[bool] = True
+    lazy = True
 
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
@@ -62,6 +62,8 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
             limit=self._pool_size_total,
             # hard limit on simultaneous connections per host
             limit_per_host=self._pool_size_per_host,
+            keepalive_timeout=self._keepalive_timeout or None,
+            force_close=not self._keepalive_timeout,
         )
         self._session: aiohttp.ClientSession = aiohttp.ClientSession(
             connector=connector,
@@ -78,10 +80,12 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @asynccontextmanager
     async def _make_request(
-        self, request: Request, timeout: float
+        self,
+        request: Request,
+        timeout: float,  # noqa: ASYNC109
     ) -> AsyncIterator[_ClientResponse]:
         proxy = self._extract_proxy_url_with_creds(request)
-        headers = self._request_headers(request).to_tuple_list()
+        headers = self._utf8_request_headers(request)
         url: str | yarl.URL = request.url
         if request.meta.get("verbatim_url"):
             # encoded=True disables the percent-encoding normalization that
@@ -99,7 +103,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
                 proxy=proxy,
             ) as response:
                 yield cast("_ClientResponse", response)
-        except (TimeoutError, asyncio.TimeoutError) as e:
+        except TimeoutError as e:
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
             ) from e
@@ -117,7 +121,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @staticmethod
     def _extract_headers(response: _ClientResponse) -> Headers:
-        return Headers(list(response.headers.items()))
+        return Headers(response.raw_headers)
 
     @staticmethod
     def _build_base_response_args(
@@ -155,6 +159,10 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     @staticmethod
     def _is_dataloss_exception(exc: Exception) -> bool:
         return isinstance(exc, aiohttp.ClientPayloadError)
+
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, TimeoutError)
 
     async def close(self) -> None:
         await self._session.close()
