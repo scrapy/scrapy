@@ -1459,7 +1459,7 @@ class TestGCSFilesStore:
         stat = await maybe_deferred_to_future(
             store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
         )
-        assert stat == {"last_modified": time.mktime(updated.timetuple())}
+        assert stat == {"last_modified": updated.timestamp()}
 
     @coroutine_test
     async def test_stat_missing_blob(self) -> None:
