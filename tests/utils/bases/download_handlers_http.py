@@ -121,6 +121,26 @@ class TestHttpBase(ABC):
         finally:
             await dh.close()
 
+    async def _connection_ids(
+        self, url: str, settings_dict: dict[str, Any]
+    ) -> set[str]:
+        """Request *url* twice in a row and return the identifiers of the
+        connections that the server used to serve them."""
+        async with self.get_dh(settings_dict) as dh:
+            responses = [await dh.download_request(Request(url)) for _ in range(2)]
+        return {response.text for response in responses}
+
+    @coroutine_test
+    async def test_keepalive(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        assert len(await self._connection_ids(url, {})) == 1
+
+    @coroutine_test
+    async def test_no_keepalive(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        settings_dict = {"CONNECTION_KEEPALIVE_TIMEOUT": 0}
+        assert len(await self._connection_ids(url, settings_dict)) == 2
+
     @coroutine_test
     async def test_unsupported_scheme(self) -> None:
         request = Request("unsupp://unsupported.scheme")

@@ -99,7 +99,10 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
+        self._pool: HTTPConnectionPool = HTTPConnectionPool(
+            reactor, persistent=bool(self._keepalive_timeout)
+        )
+        self._pool.cachedConnectionTimeout = self._keepalive_timeout  # type: ignore[assignment]
         self._pool.maxPersistentPerHost = crawler.settings.getint(
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
