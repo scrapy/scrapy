@@ -1,6 +1,5 @@
 import asyncio
 import gc
-import platform
 import warnings
 from typing import Any
 
@@ -441,11 +440,8 @@ class TestRequestBackout:
     @staticmethod
     async def _crawl_without_automatic_gc(crawler) -> None:
         # Leave the forced collection as the only one that can free responses
-        # in a cycle. On PyPy, gc.disable() would also disable the finalizers
-        # that discount freed responses.
-        disable_gc = platform.python_implementation() == "CPython"
-        if disable_gc:
-            gc.disable()
+        # in a cycle.
+        gc.disable()
         try:
             crawl_deferred = crawler.crawl()
             # A stall would otherwise hang the test.
@@ -455,8 +451,7 @@ class TestRequestBackout:
             finally:
                 timeout.cancel()
         finally:
-            if disable_gc:
-                gc.enable()
+            gc.enable()
 
     @coroutine_test
     async def test_response_max_active_size_gc(self, monkeypatch):
@@ -484,12 +479,8 @@ class TestRequestBackout:
         assert crawler.stats.get_value("response_received_count") == 3
         assert 0 < len(collections) <= 3
 
-    @pytest.mark.skipif(
-        platform.python_implementation() != "CPython",
-        reason="Relies on reference counting",
-    )
     @coroutine_test
-    async def test_response_max_active_size_gc_default_cpython(self, monkeypatch):
+    async def test_response_max_active_size_gc_default(self, monkeypatch):
         collections = self._count_garbage_collections(monkeypatch)
 
         class TestSpider(Spider):

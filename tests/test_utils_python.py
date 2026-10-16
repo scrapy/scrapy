@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import functools
 import operator
-import platform
 import sys
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import pytest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import aiter_errback
+from scrapy.utils.defer import _aiter_errback
 from scrapy.utils.python import (
     _looks_like_import_path,
     _MutableAsyncChain,
@@ -70,7 +69,7 @@ class TestMutableAsyncChain:
         m.extend(self.g4())
         m.extend(self.g3())
 
-        results = await collect_asyncgen(aiter_errback(m, lambda _: None))
+        results = await collect_asyncgen(_aiter_errback(m, lambda _: None))
         assert results == list(range(5))
 
 
@@ -188,7 +187,7 @@ def test_get_func_args():
     assert get_func_args(str.split, stripself=True) == ["sep", "maxsplit"]
     assert get_func_args(" ".join, stripself=True) == ["iterable"]
 
-    if sys.version_info >= (3, 13) or platform.python_implementation() == "PyPy":
+    if sys.version_info >= (3, 13):
         assert get_func_args(operator.itemgetter(2), stripself=True) == ["obj"]
     else:
         # The interpreter returns a wrong signature
@@ -199,8 +198,7 @@ def test_get_func_args():
 
     # inspect.signature() fails for these
     assert get_func_args(type) == []
-    if platform.python_implementation() != "PyPy":
-        assert get_func_args(max) == []
+    assert get_func_args(max) == []
 
 
 @pytest.mark.skipif(
