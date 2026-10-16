@@ -267,10 +267,7 @@ class ClosingSpider(scrapy.Spider):
 
 
 class TestInteractiveShell:
-    # Starting an interactive shell involves an interpreter start-up, Scrapy
-    # imports and shell imports, which on PyPy with coverage enabled can take
-    # well over 10 seconds.
-    TIMEOUT = 60
+    TIMEOUT = 10
 
     def test_fetch(self, mockserver: MockServer) -> None:
         args = (
