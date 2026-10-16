@@ -30,9 +30,9 @@ def _path_safe(text: str) -> str:
     True
     """
     pathable_slot = "".join([c if c.isalnum() or c in "-._" else "_" for c in text])
-    # as we replace some letters we can get collision for different slots
-    # add we add unique part
-    unique_slot = hashlib.md5(text.encode()).hexdigest()  # noqa: S324
+    # Replacing characters can make different inputs collapse to the same
+    # prefix, so a hash of the original text keeps the result unique.
+    unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()  # noqa: S324
     return f"{pathable_slot}-{unique_slot}"
 
 
@@ -415,28 +415,17 @@ class DownloaderAwarePriorityQueue:
                 self._collect_change(self.pqueues[slot])
 
     def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
+        # Lexicographic on (active, slot): the least-loaded slot, and the
+        # lowest-named one among ties.
+        min_active, slot = min(stats)
         last = self._last_selected_slot
-        min_active: int | None = None
-        best_slot: str | None = None
-        best_slot_after_last: str | None = None
-        for active, slot in stats:
-            if min_active is None or active < min_active:
-                min_active = active
-                best_slot = slot
-                best_slot_after_last = None
-                if last is not None and slot > last:
-                    best_slot_after_last = slot
-            elif active == min_active:
-                if best_slot is None or slot < best_slot:
-                    best_slot = slot
-                if (
-                    last is not None
-                    and slot > last
-                    and (best_slot_after_last is None or slot < best_slot_after_last)
-                ):
-                    best_slot_after_last = slot
-        assert best_slot is not None
-        slot = best_slot_after_last if best_slot_after_last is not None else best_slot
+        if last is not None:
+            # Round-robin among the tied slots: the first one after the last
+            # selected, so that equally-loaded slots take turns.
+            slot = min(
+                (s for active, s in stats if active == min_active and s > last),
+                default=slot,
+            )
         if update_state:
             self._last_selected_slot = slot
         return slot
