@@ -18,6 +18,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils._colorize import tty_supports_color
 from scrapy.utils._versions import get_versions
+from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -200,9 +201,32 @@ def get_scrapy_root_handler() -> logging.Handler | None:
     return _scrapy_root_handler
 
 
+class _ColoredFormatter(logging.Formatter):
+    """Colorizes the output of *formatter* by log level with *colorizer*, a
+    :class:`colorlog.ColoredFormatter` that only renders the message.
+    """
+
+    def __init__(self, formatter: logging.Formatter, colorizer: logging.Formatter):
+        super().__init__()
+        self._formatter = formatter
+        self._colorizer = colorizer
+
+    def format(self, record: logging.LogRecord) -> str:
+        formatted = logging.makeLogRecord(
+            {
+                **record.__dict__,
+                "msg": self._formatter.format(record),
+                "args": None,
+                "exc_info": None,
+                "exc_text": None,
+                "stack_info": None,
+            }
+        )
+        return self._colorizer.format(formatted)
+
+
 def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Formatter:
-    fmt = settings.get("LOG_FORMAT")
-    datefmt = settings.get("LOG_DATEFORMAT")
+    formatter: logging.Formatter = load_object(settings["LOG_ROOT_FORMATTER"])(settings)
     if (
         isinstance(handler, logging.StreamHandler)
         and not isinstance(handler, logging.FileHandler)
@@ -215,8 +239,9 @@ def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Form
         except ImportError:
             pass
         else:
-            return ColoredFormatter(fmt=f"%(log_color)s{fmt}", datefmt=datefmt)
-    return logging.Formatter(fmt=fmt, datefmt=datefmt)
+            colorizer = ColoredFormatter("%(log_color)s%(message)s")
+            return _ColoredFormatter(formatter, colorizer)
+    return formatter
 
 
 def _get_handler(settings: Settings) -> logging.Handler:
