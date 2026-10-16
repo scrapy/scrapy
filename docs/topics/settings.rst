@@ -1189,8 +1189,13 @@ to a specific slot instead, set the name of the slot as the ``download_slot``
 :attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
 slot, that key holds the name of the slot.
 
-Since that key is kept on redirects, a redirected request stays in the slot of
-the request it comes from, even when it points to a different domain.
+Redirects and retries are assigned to a slot based on their own URL domain,
+unless the slot of their original request was set through the ``download_slot``
+key, in which case they keep that slot.
+
+.. versionchanged:: VERSION
+   In earlier versions, redirects and retries always kept the slot of their
+   original request, even when they pointed to a different domain.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
