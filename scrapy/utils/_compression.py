@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 try:
     import brotli
-except ImportError:
+except ImportError:  # pragma: no cover
     import brotlicffi as brotli
 
 if sys.version_info >= (3, 14):

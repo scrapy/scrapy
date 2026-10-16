@@ -307,7 +307,7 @@ def global_object_name(obj: Any) -> str:
     return f"{obj.__module__}.{obj.__qualname__}"
 
 
-if hasattr(sys, "pypy_version_info"):
+if hasattr(sys, "pypy_version_info"):  # pragma: no cover
 
     def garbage_collect() -> None:
         # Collecting weakreferences can take two collections on PyPy.

@@ -38,6 +38,9 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
             crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         )
         self._proxy_auth_encoding: str = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
+        self._keepalive_timeout: float = crawler.settings.getfloat(
+            "CONNECTION_KEEPALIVE_TIMEOUT"
+        )
 
     @staticmethod
     def _request_headers(request: Request) -> Headers:
