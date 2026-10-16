@@ -480,6 +480,39 @@ class TestRequestBackout:
         assert 0 < len(collections) <= 3
 
     @coroutine_test
+    async def test_response_max_active_size_gc_in_flight(self, monkeypatch):
+        """While a download is in flight, collections are throttled."""
+        collections = self._count_garbage_collections(monkeypatch)
+
+        class SlowDown:
+            async def process_request(self, request):
+                if request.url == "data:,slow":
+                    await sleep(0.3)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,slow", "data:,a", "data:,b"]
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {SlowDown: 0},
+                "RESPONSE_MAX_ACTIVE_SIZE": 2,
+                "RESPONSE_MAX_ACTIVE_SIZE_GC": True,
+            }
+            kept: list[Response] = []
+
+            def parse(self, response):
+                if response.url == "data:,slow":
+                    self.kept.clear()
+                else:
+                    self.kept.append(response)
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 3
+        assert len(collections) == 1
+
+    @coroutine_test
     async def test_response_max_active_size_gc_default(self, monkeypatch):
         collections = self._count_garbage_collections(monkeypatch)
 
