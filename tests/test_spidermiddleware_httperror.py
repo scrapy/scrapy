@@ -9,7 +9,7 @@ import pytest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.httperror import HttpError, HttpErrorMiddleware
-from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils._datatypes import SequenceExclude
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler

@@ -47,7 +47,7 @@ def normalize(value: Any) -> HandledCodes:
     strings are parsed as they come from the command line or the environment,
     and sequences have their items coerced to integers. Any other container is
     returned untouched, so that objects such as
-    :class:`~scrapy.utils.datatypes.SequenceExclude` keep working.
+    :class:`~scrapy.utils._datatypes.SequenceExclude` keep working.
     """
     if isinstance(value, bool):
         return value
