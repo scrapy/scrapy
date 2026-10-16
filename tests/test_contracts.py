@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+from unittest import TestCase as _TestCase
+from unittest import TestResult as _TestResult
 from unittest import TextTestResult
 
 import pytest
@@ -25,13 +27,12 @@ from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-    from unittest import TestResult
 
     from scrapy.http.request import CallbackT
 
 
 def _request(
-    conman: ContractsManager, method: CallbackT, results: TestResult
+    conman: ContractsManager, method: CallbackT, results: _TestResult
 ) -> Request:
     requests = conman.from_method(method, results)
     assert len(requests) == 1
@@ -865,11 +866,19 @@ class PostProcessErrorContract(Contract):
         raise ValueError("post-process error")
 
 
+class _TrackingTestResult(_TestResult):
+    def __init__(self) -> None:
+        super().__init__()
+        self.stopped_tests: list[_TestCase] = []
+
+    def stopTest(self, test: _TestCase) -> None:
+        self.stopped_tests.append(test)
+        super().stopTest(test)
+
+
 class TestCustomContractPrePostProcess:
     def setup_method(self):
-        self.results = TextTestResult(  # type: ignore[type-var]
-            stream=None, descriptions=False, verbosity=0
-        )
+        self.results = _TrackingTestResult()
 
     def test_pre_hook_keyboard_interrupt(self):
         spider = DemoSpider()
@@ -884,6 +893,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
 
     def test_post_hook_keyboard_interrupt(self):
         spider = DemoSpider()
@@ -898,6 +908,9 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert any(
+            test is contract.testcase_post for test in self.results.stopped_tests
+        )
 
     def test_pre_hook_success(self):
         spider = DemoSpider()
@@ -911,6 +924,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
 
     def test_pre_hook_assertion_failure(self):
         spider = DemoSpider()
@@ -924,6 +938,7 @@ class TestCustomContractPrePostProcess:
 
         assert self.results.failures
         assert not self.results.errors
+        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
 
     def test_pre_hook_error(self):
         spider = DemoSpider()
@@ -936,6 +951,7 @@ class TestCustomContractPrePostProcess:
         _call(request, response)
 
         assert self.results.errors
+        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
 
     @coroutine_test
     async def test_pre_hook_async_callback(self):
@@ -990,6 +1006,9 @@ class TestCustomContractPrePostProcess:
         _call(request, response)
 
         assert self.results.errors
+        assert any(
+            test is contract.testcase_post for test in self.results.stopped_tests
+        )
 
 
 class LegacyHookContract(Contract):
