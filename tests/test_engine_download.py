@@ -17,10 +17,11 @@ from tests.utils.decorators import coroutine_test
 @pytest.fixture
 def engine() -> ExecutionEngine:
     crawler = get_crawler(DefaultSpider)
-    engine = ExecutionEngine(crawler, lambda _: None)
+    engine = ExecutionEngine(crawler)
     engine.downloader.close()
     engine.downloader = Mock()
     engine._slot = Mock()
+    engine._slot.closing = None
     engine._slot.inprogress = set()
     return engine
 

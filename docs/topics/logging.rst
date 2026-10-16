@@ -118,8 +118,18 @@ instance, which can be accessed and used like this:
         def parse(self, response):
             self.logger.info("Parse function called on %s", response.url)
 
-That logger is created using the Spider's name, but you can use any custom
-Python logger you want. For example:
+That logger is created using the Spider's name, and every message logged
+through it, as well as most messages logged by Scrapy itself while crawling,
+carries a reference to the spider that triggered it. This is useful to tell
+spiders apart when :ref:`running several of them in the same process
+<run-multiple-spiders>`: add ``%(spider)s`` to :setting:`LOG_FORMAT` to
+include the spider name in every log message, e.g.:
+
+.. code-block:: python
+
+    LOG_FORMAT = "%(asctime)s [%(name)s] %(spider)s %(levelname)s: %(message)s"
+
+You can use any custom Python logger you want too. For example:
 
 .. code-block:: python
 
@@ -154,22 +164,7 @@ the settings below.
 Logging settings
 ----------------
 
-These settings can be used to configure the logging:
-
-* :setting:`LOG_FILE`
-* :setting:`LOG_FILE_APPEND`
-* :setting:`LOG_COLOR`
-* :setting:`LOG_ENABLED`
-* :setting:`LOG_ENCODING`
-* :setting:`LOG_LEVEL`
-* :setting:`LOG_FORMAT`
-* :setting:`LOG_DATEFORMAT`
-* :setting:`LOG_STDOUT`
-* :setting:`LOG_SHORT_NAMES`
-* :setting:`LOG_INSTALL_ROOT_HANDLER`
-
-The first couple of settings define a destination for log messages. If
-:setting:`LOG_FILE` is set, messages sent through the root logger will be
+If :setting:`LOG_FILE` is set, messages sent through the root logger will be
 redirected to a file named :setting:`LOG_FILE` with encoding
 :setting:`LOG_ENCODING`. If unset and :setting:`LOG_ENABLED` is ``True``, log
 messages will be displayed on the standard error. If :setting:`LOG_FILE` is set
@@ -185,18 +180,33 @@ logger yourself.
 messages with lower severity will be filtered out. It ranges through the
 possible levels listed in :ref:`topics-logging-levels`.
 
-:setting:`LOG_FORMAT` and :setting:`LOG_DATEFORMAT` specify formatting strings
-used as layouts for all messages. Those strings can contain any placeholders
-listed in :ref:`logging's logrecord attributes docs <logrecord-attributes>` and
-:ref:`datetime's strftime and strptime directives <strftime-strptime-behavior>`
-respectively.
-
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
 
 When logging to a terminal, :setting:`LOG_COLOR` colorizes messages by log
 level.
+
+With the default :setting:`LOG_ROOT_FORMATTER`, :setting:`LOG_FORMAT` and
+:setting:`LOG_DATEFORMAT` specify formatting strings used as layouts for all
+messages. Those strings can contain any placeholders listed in :ref:`logging's
+logrecord attributes docs <logrecord-attributes>` and :ref:`datetime's strftime
+and strptime directives <strftime-strptime-behavior>` respectively.
+
+LOG_ROOT_FORMATTER
+~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+.. setting:: LOG_ROOT_FORMATTER
+
+Default: :class:`~scrapy.LogRootFormatter`
+
+:ref:`Formatter <formatter-objects>` of the root log handler that
+:func:`~scrapy.utils.log.configure_logging` installs. It implements
+:class:`~scrapy.LogRootFormatterProtocol`.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 Rotating log files
 ------------------
@@ -214,6 +224,7 @@ For example, to rotate the log file every day:
     import logging
     from logging.handlers import TimedRotatingFileHandler
 
+    from scrapy import LogRootFormatter
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
 
@@ -229,9 +240,7 @@ For example, to rotate the log file every day:
         backupCount=7,
         encoding=settings.get("LOG_ENCODING"),
     )
-    handler.setFormatter(
-        logging.Formatter(settings.get("LOG_FORMAT"), settings.get("LOG_DATEFORMAT"))
-    )
+    handler.setFormatter(LogRootFormatter(settings))
 
     root_logger = logging.getLogger()
     root_logger.setLevel(settings.get("LOG_LEVEL"))
@@ -267,10 +276,6 @@ Custom Log Formats
 A custom log format can be set for different actions by extending
 :class:`~scrapy.logformatter.LogFormatter` class and making
 :setting:`LOG_FORMATTER` point to your new class.
-
-.. autoclass:: scrapy.logformatter.LogFormatter
-   :members:
-
 
 .. _topics-logging-advanced-customization:
 
@@ -392,3 +397,14 @@ scrapy.utils.log module
 
     Refer to :ref:`run-from-script` for more details about using Scrapy this
     way.
+
+API reference
+=============
+
+.. autoclass:: scrapy.LogRootFormatterProtocol
+    :members: __init__
+
+.. autoclass:: scrapy.LogRootFormatter
+
+.. autoclass:: scrapy.logformatter.LogFormatter
+    :members:

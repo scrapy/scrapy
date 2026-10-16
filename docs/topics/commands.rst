@@ -217,6 +217,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`genrequest`
 * :command:`bench`
 
 Project-only commands:
@@ -329,9 +330,10 @@ Supported options:
 
 * ``-a NAME=VALUE``: set a spider argument (may be repeated)
 
-* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE
-  (use ``-`` for stdout). To define the output format, add a colon at the end
-  of the output URI (for example, ``-o FILE:FORMAT``)
+* ``--output FILE`` or ``-o FILE``: dump scraped items into FILE (use ``-`` for
+  stdout), handling an existing FILE as the :setting:`FEED_MODE` setting
+  indicates. To define the output format, add a colon at the end of the output
+  URI (for example, ``-o FILE:FORMAT``)
 
 * ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE,
   overwriting any existing file. To define the output format, add a colon at
@@ -460,9 +462,19 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument, taking the URL, HTTP method, headers, cookies and body from the
+  command (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It cannot
+  be combined with a URL argument.
+
+  .. versionadded:: VERSION
+
 Usage examples::
 
     $ scrapy fetch --nolog http://www.example.com/some/page.html
+    [ ... html content here ... ]
+
+    $ scrapy fetch --nolog --curl 'curl -d title=hello https://httpbin.org/post'
     [ ... html content here ... ]
 
     $ scrapy fetch --nolog --headers http://www.example.com/
@@ -498,6 +510,12 @@ Supported options:
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
+
 Usage example::
 
     $ scrapy view http://www.example.com/some/page.html
@@ -525,6 +543,12 @@ Supported options:
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them);
   this only affects the URL you may pass as argument on the command line;
   once you are inside the shell, ``fetch(url)`` will still follow HTTP redirects by default.
+
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
 
 Usage example::
 
@@ -563,6 +587,12 @@ Supported options:
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
+
+* ``--curl=COMMAND``: build the request from a `cURL`_ command instead of from a
+  URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
+  cannot be combined with a URL argument.
+
+  .. versionadded:: VERSION
 
 * ``--meta`` or ``-m``: additional request meta that will be passed to the
   callback request. This must be a valid JSON string. Example:
@@ -630,6 +660,17 @@ Example usage::
     $ scrapy settings --get DOWNLOAD_DELAY
     0
 
+The settings of enabled :ref:`add-ons <topics-addons>` are taken into account.
+:ref:`Spider settings <spider-settings>` are only taken into account if you name
+a spider with ``--spider``::
+
+    $ scrapy settings --get DOWNLOAD_DELAY --spider myspider
+    2.0
+
+.. versionchanged:: VERSION
+   Add-on settings are now taken into account, and the ``--spider`` option was
+   added.
+
 .. command:: runspider
 
 runspider
@@ -658,6 +699,27 @@ version
 Prints the Scrapy version. If used with ``-v`` it also prints Python, Twisted
 and Platform info, which is useful for bug reports.
 
+.. command:: genrequest
+
+genrequest
+----------
+
+* Syntax: ``scrapy genrequest [curl command]``
+* Requires project: *no*
+
+.. versionadded:: VERSION
+
+Print the Python code of a :class:`~scrapy.Request` object equivalent to a
+`cURL <https://curl.se/>`_ command. If the curl command is not given as an
+argument, it is read from the system clipboard, which requires the
+``clipboard`` :ref:`extra <extras>`. If `ruff`_ is installed, it is used to
+format the output.
+
+Usage example::
+
+    $ scrapy genrequest 'curl -d title=hello https://httpbin.org/post'
+    Request(method="POST", url="https://httpbin.org/post", body="title=hello")
+
 .. command:: bench
 
 bench
@@ -667,6 +729,50 @@ bench
 * Requires project: *no*
 
 Run a quick benchmark test. :ref:`benchmarking`.
+
+.. command:: complete
+
+complete
+--------
+
+* Syntax: ``scrapy complete <bash|fish|zsh>``
+* Requires project: *no*
+
+.. versionadded:: VERSION
+
+Print a shell completion script. See :ref:`completion`.
+
+.. _completion:
+
+Shell completion
+================
+
+.. versionadded:: VERSION
+
+The :command:`complete` command prints a completion script for Bash, fish or
+Zsh.
+
+For Bash, add the following to your ``~/.bashrc``:
+
+.. code-block:: bash
+
+    eval "$(scrapy complete bash)"
+
+For Zsh, add the following to your ``~/.zshrc``, after ``compinit`` is called:
+
+.. code-block:: bash
+
+    eval "$(scrapy complete zsh)"
+
+For fish:
+
+.. code-block:: bash
+
+    scrapy complete fish > ~/.config/fish/completions/scrapy.fish
+
+Completion candidates are computed by Scrapy every time you press :kbd:`Tab`,
+so they cover the spiders, settings and templates of the project you are in, as
+well as any :ref:`custom command <custom-commands>`.
 
 .. _topics-commands-crawlerprocess:
 
@@ -794,6 +900,31 @@ For real examples, see the built-in Scrapy commands in the `scrapy/commands`_ di
 
 .. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
 
+To make a command support :ref:`shell completion <completion>`, override
+:meth:`~scrapy.commands.ScrapyCommand.complete_argument`,
+:meth:`~scrapy.commands.ScrapyCommand.complete_option` or both:
+
+.. code-block:: python
+
+    from collections.abc import Iterable
+
+    from scrapy.commands import ScrapyCommand
+
+
+    class Command(ScrapyCommand):
+        def complete_argument(self, args: list[str]) -> Iterable[str]:
+            return ["report", "summary"] if not args else []
+
+        def complete_option(self, dest: str) -> Iterable[str]:
+            if dest == "format":
+                return ["csv", "json"]
+            return super().complete_option(dest)
+
+Candidates are filtered by the word being typed, and options that define
+``choices`` are completed without any code on your side.
+
+.. _ruff: https://docs.astral.sh/ruff/
+
 .. autoclass:: scrapy.commands.ScrapyCommand
    :members:
    :undoc-members:
@@ -841,3 +972,5 @@ Example:
 .. code-block:: python
 
     COMMANDS_MODULE = "mybot.commands"
+
+.. _cURL: https://curl.se/

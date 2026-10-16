@@ -13,6 +13,7 @@ from scrapy.spiderloader import get_spider_loader
 
 if TYPE_CHECKING:
     import argparse
+    from collections.abc import Iterable
 
 
 def _edit_file(editor: str, file_path: str | os.PathLike[str]) -> int:
@@ -42,6 +43,9 @@ class Command(ScrapyCommand):
             " variable or else the EDITOR setting"
         )
 
+    def complete_argument(self, args: list[str]) -> Iterable[str]:
+        return () if args else self._spider_names()
+
     def _err(self, msg: str) -> None:
         sys.stderr.write(msg + os.linesep)
         self.exitcode = 1
@@ -51,7 +55,7 @@ class Command(ScrapyCommand):
             raise UsageError
 
         assert self.settings is not None
-        editor = self.settings["EDITOR"]
+        editor = self.settings["EDITOR"]  # pylint: disable=unsubscriptable-object
         spider_loader = get_spider_loader(self.settings)
         try:
             spidercls = spider_loader.load(args[0])
