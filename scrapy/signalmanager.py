@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import inspect
 import warnings
 from typing import TYPE_CHECKING, Any
 
 from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
 
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -34,6 +37,7 @@ class SignalManager:
         :param signal: the signal to connect to
         :type signal: object
         """
+        _warn_unknown_args(receiver, signal)
         kwargs.setdefault("sender", self.sender)
         dispatcher.connect(receiver, signal, **kwargs)
 
@@ -123,3 +127,34 @@ class SignalManager:
 
         self.connect(handle, signal)
         await maybe_deferred_to_future(d)
+
+
+def _warn_unknown_args(receiver: Callable[..., Any], signal: object) -> None:
+    sent = signals._signal_args.get(signal)
+    if sent is None:
+        return
+    try:
+        parameters = inspect.signature(receiver).parameters.values()
+    except (TypeError, ValueError):
+        return
+    if any(p.kind is p.VAR_KEYWORD for p in parameters):
+        return
+    unknown = {
+        p.name
+        for p in parameters
+        if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
+        and p.name not in sent
+        and p.name not in {"signal", "sender"}
+    }
+    if not unknown:
+        return
+    try:
+        receiver_name = global_object_name(receiver)
+    except AttributeError:
+        receiver_name = repr(receiver)
+    signal_name = next(k for k, v in vars(signals).items() if v is signal)
+    warnings.warn(
+        f"Signal handler {receiver_name} declares {', '.join(sorted(unknown))},"
+        f" which scrapy.signals.{signal_name} does not send.",
+        stacklevel=3,
+    )

@@ -5,6 +5,7 @@ Helper functions for dealing with Twisted deferreds
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import inspect
 import logging
 import sys
@@ -330,6 +331,10 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         self.finished: bool = False
         self.waiting_deferreds: deque[Deferred[Any]] = deque()
         self.anext_deferred: Deferred[_T] | None = None
+        # Cooperator ticks are scheduled through the reactor, which does not
+        # preserve contextvars, so both anext() and the callable run in the
+        # context captured here.
+        self._context: contextvars.Context = contextvars.copy_context()
         # Called whenever aiterator produces a value, so that parallel_async()
         # can start a task for it.
         self.on_value: Callable[[], None] = lambda: None
@@ -340,8 +345,8 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         # (by chaining if the result is a Deferred too or by firing if not).
         self.anext_deferred = None
         self.on_value()
-        callable_result = self.callable(
-            result, *self.callable_args, **self.callable_kwargs
+        callable_result = self._context.run(
+            self.callable, result, *self.callable_args, **self.callable_kwargs
         )
         d = self.waiting_deferreds.popleft()
         if isinstance(callable_result, Deferred):
@@ -363,7 +368,9 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(anext(self.aiterator))
+        self.anext_deferred = self._context.run(
+            deferred_from_coro, anext(self.aiterator)
+        )
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred[Any]:

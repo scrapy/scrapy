@@ -599,6 +599,7 @@ class Scraper:
             )
         finally:
             self.slot.itemproc_size -= 1
+            self._check_if_closing()
 
 
 def __getattr__(name: str) -> Any:
