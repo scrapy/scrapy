@@ -226,27 +226,22 @@ class _TunnelingEndpoint:
         self._tunneledHost: bytes = host
         self._tunneledPort: int = port
         self._contextFactory: IPolicyForHTTPS = contextFactory
-        self._formattedTunneledHost: bytes = self._format_host(host)
         self._connectBuffer: bytearray = bytearray()
 
     @staticmethod
     def _format_host(host: bytes) -> bytes:
+        """Return *host* as it goes into the authority of the CONNECT request,
+        i.e. with square brackets around IPv6 literals.
         """
-        Format the target host for use in the CONNECT request authority.
-
-        Literal IPv6 addresses are wrapped in square brackets, as required for
-        both the request target and the Host header. Hostnames and IPv4
-        addresses are returned unchanged.
-        """
-        # Twisted passes URI.host through, which is bytes with the brackets of
-        # an IPv6 literal already stripped.
-        return b"[" + host + b"]" if _is_ipv6_literal(host.decode()) else host
+        # URI.host strips the brackets of IPv6 literals, and only those contain
+        # colons.
+        return b"[" + host + b"]" if b":" in host else host
 
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""
         assert protocol.transport
         tunnelReq = _tunnel_request_data(
-            self._formattedTunneledHost,
+            self._format_host(self._tunneledHost),
             self._tunneledPort,
             self._proxyAuthHeader,
         )

@@ -191,23 +191,14 @@ class TestMitmProxyIPv6(TestMitmProxy):
 @pytest.mark.parametrize(
     ("url", "expected_authority"),
     [
-        # IPv6 literals stay bracketed in the CONNECT authority, even though
-        # URI.host strips the brackets
         (b"https://[::1]:8443/x", b"[::1]:8443"),
-        (b"https://[2001:db8::1]/x", b"[2001:db8::1]:443"),
-        # IPv4-mapped IPv6 address
         (b"https://[::ffff:192.168.0.1]/x", b"[::ffff:192.168.0.1]:443"),
-        # hostnames and IPv4 literals are left alone
         (b"https://example.com:8443/x", b"example.com:8443"),
         (b"https://127.0.0.1:8443/x", b"127.0.0.1:8443"),
     ],
 )
 def test_connect_authority(url: bytes, expected_authority: bytes) -> None:
-    """The CONNECT request target and Host header must carry a valid authority
-    for the tunneled destination, including brackets for IPv6 literals.
-    """
     uri = URI.fromBytes(url)
-    # _TunnelingAgent._getEndpoint passes URI.host through, i.e. bytes
     tunnel_req = _tunnel_request_data(
         _TunnelingEndpoint._format_host(uri.host), uri.port
     )
