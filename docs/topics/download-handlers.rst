@@ -217,23 +217,15 @@ individual handler docs for more differences:
      - Yes, except through a proxy
      - As written
 
-About the IPv6 column: the Twisted-based handlers reach every host, including
-hosts given as an IPv6 address literal such as ``https://[::1]/``, through the
-resolver configured with :setting:`TWISTED_DNS_RESOLVER`. Its default value
-only returns IPv4 addresses, so IPv6 requires setting it to
-``scrapy.resolver.CachingHostnameResolver``. That applies to proxy hosts as
-well as to target hosts.
-
-The asyncio-based handlers do not use the Twisted resolver, so they need no
-setting for IPv6. However, with
-:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, IPv6
-address literals `do not work through a proxy
-<https://github.com/pydantic/httpx2/pull/1091>`__.
-
 Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
 bad header lines, like web browsers do, still parse the header lines that follow
 them; other handlers also lose those, or cannot download such responses at all.
+
+Handlers that require a reactor resolve hosts, including proxy hosts and IPv6
+address literals such as ``https://[::1]/``, with the resolver set in
+:setting:`TWISTED_DNS_RESOLVER`, whose default value only supports IPv4. To use
+IPv6 with them, set it to ``scrapy.resolver.CachingHostnameResolver``.
 
 Because HTTP/2 requires lowercase header names, handlers only keep the case of
 your header names over HTTP/1.1.
@@ -507,7 +499,7 @@ the plain-text output of the FTP ``NLST`` command, one file or directory name
 per line.
 
 It supports SOCKS4 and SOCKS5 :reqmeta:`proxies <proxy>` if you install the
-:ref:`ftp-socks <extras>` extra.
+:ref:`socks <extras>` extra.
 
 .. warning::
 

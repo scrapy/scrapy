@@ -1189,8 +1189,13 @@ to a specific slot instead, set the name of the slot as the ``download_slot``
 :attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
 slot, that key holds the name of the slot.
 
-Since that key is kept on redirects, a redirected request stays in the slot of
-the request it comes from, even when it points to a different domain.
+Redirects and retries are assigned to a slot based on their own URL domain,
+unless the slot of their original request was set through the ``download_slot``
+key, in which case they keep that slot.
+
+.. versionchanged:: VERSION
+   In earlier versions, redirects and retries always kept the slot of their
+   original request, even when they pointed to a different domain.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1298,15 +1303,6 @@ Optionally, this can be set on a per-request basis by using the
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers.
-
-.. warning::
-
-    This setting is ignored by the
-    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    :ref:`download handler <topics-download-handlers>`. In case of a data loss
-    error, the corresponding HTTP/2 connection may be corrupted, affecting other
-    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
-    failure is always raised for every request that was using that connection.
 
 .. setting:: DOWNLOAD_VERIFY_CERTIFICATES
 
@@ -1440,6 +1436,22 @@ The editor to use for editing spiders with the :command:`edit` command.
 Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
 command will prefer it over the default setting.
 
+.. setting:: EVENT_LOOP_LAG_THRESHOLD
+
+EVENT_LOOP_LAG_THRESHOLD
+------------------------
+
+Default: ``10.0``
+
+The number of seconds that the event loop may be blocked before a warning is
+logged. CPU-bound code running in a callback, such as a spider callback,
+blocks the event loop and delays every other pending callback and I/O
+operation, including downloads, for as long as it runs.
+
+Set to ``0`` to disable the warning.
+
+See :ref:`event-loop-lag`.
+
 .. setting:: EXTENSIONS
 
 EXTENSIONS
@@ -1471,6 +1483,7 @@ Default:
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
         "scrapy.extensions.remote_control.RemoteControl": 0,
+        "scrapy.extensions.event_loop_lag.EventLoopLagMonitor": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -1690,9 +1703,10 @@ so that a crawl killed before it can stop cleanly resumes from its latest
 state. Higher values trade some of that safety for fewer writes, which matters
 in broad crawls, where the state grows with the number of active domains.
 
-Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`.
-For a killed crawl to resume, the scheduler queues must survive the kill too,
-which requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
+Applies to the ``active.json`` file of the :ref:`scheduler <topics-scheduler>`
+and to the database of :class:`~scrapy.dupefilters.DiskDupeFilter`. For a
+killed crawl to resume, the scheduler queues must survive the kill too, which
+requires the SQLite types of :setting:`SCHEDULER_DISK_QUEUE` and
 :setting:`SCHEDULER_START_DISK_QUEUE`.
 
 

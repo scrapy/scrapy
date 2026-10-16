@@ -9,7 +9,6 @@ from time import monotonic
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
-from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -177,6 +176,9 @@ def _slot_jitter(slot_settings: dict[str, Any], default: float) -> float:
     return default
 
 
+_STAMPED_SLOT_META_KEY = "_download_slot_stamp"
+
+
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
@@ -256,7 +258,9 @@ class Downloader:
 
     def get_slot_key(self, request: Request) -> str:
         meta_slot: str | None = request.meta.get(self.DOWNLOAD_SLOT)
-        if meta_slot is not None:
+        if meta_slot is not None and meta_slot != request.meta.get(
+            _STAMPED_SLOT_META_KEY
+        ):
             return meta_slot
 
         key = urlparse_cached(request).hostname or ""
@@ -272,6 +276,13 @@ class Downloader:
                 "The downloader is shutting down and not accepting new requests"
             )
         key, slot = self._get_slot(request)
+        # Requests derived from this one (redirects, retries) copy its meta.
+        # The stamp tells a slot the downloader assigned, which they must
+        # resolve again for their own URL, from one set by the user, which
+        # they keep.
+        previous: str | None = request.meta.get(self.DOWNLOAD_SLOT)
+        if previous is None or previous == request.meta.get(_STAMPED_SLOT_META_KEY):
+            request.meta[_STAMPED_SLOT_META_KEY] = key
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
         self.signals.send_catch_log(
@@ -380,9 +391,9 @@ class Downloader:
     ) -> None:
         try:
             response = await self._download(slot, request)
-        except (Exception, asyncio.CancelledError):
+        except (Exception, asyncio.CancelledError) as exc:
             if not queue_dfd.called:
-                queue_dfd.errback(Failure())
+                queue_dfd.errback(exc)
         else:
             queue_dfd.callback(response)  # awaited in _enqueue_request()
 
@@ -398,10 +409,8 @@ class Downloader:
                 dropped_count += 1
                 if not queue_dfd.called:
                     queue_dfd.errback(
-                        Failure(
-                            DownloadCancelledError(
-                                "Request dropped due to fast downloader shutdown"
-                            )
+                        DownloadCancelledError(
+                            "Request dropped due to fast downloader shutdown"
                         )
                     )
                 self.signals.send_catch_log(

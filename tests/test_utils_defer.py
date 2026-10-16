@@ -147,7 +147,7 @@ class _ReadTracker:
 
     def __enter__(self) -> Self:
         if is_asyncio_available():
-            asyncio.get_event_loop().add_reader(self._rx, self._read)
+            asyncio.get_running_loop().add_reader(self._rx, self._read)
         else:
             from twisted.internet import reactor
 
@@ -157,7 +157,7 @@ class _ReadTracker:
 
     def __exit__(self, *exc_info: object) -> None:
         if is_asyncio_available():
-            asyncio.get_event_loop().remove_reader(self._rx)
+            asyncio.get_running_loop().remove_reader(self._rx)
         else:
             from twisted.internet import reactor
 
@@ -443,6 +443,17 @@ class TestDeferredToFuture:
         assert isinstance(result, Future)
         future_result = await result
         assert future_result == 42
+
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_thread_without_loop(self):
+        # No loop runs in the other thread, so the future gets the loop of the
+        # installed reactor.
+        d: Deferred[int] = Deferred()
+        result = await asyncio.to_thread(deferred_to_future, d)
+        assert result.get_loop() is asyncio.get_running_loop()
+        d.callback(42)
+        assert await result == 42
 
 
 @pytest.mark.only_not_asyncio
