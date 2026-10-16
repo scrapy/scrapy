@@ -480,7 +480,7 @@ the plain-text output of the FTP ``NLST`` command, one file or directory name
 per line.
 
 It supports SOCKS4 and SOCKS5 :reqmeta:`proxies <proxy>` if you install the
-:ref:`ftp-socks <extras>` extra.
+:ref:`socks <extras>` extra.
 
 .. warning::
 
