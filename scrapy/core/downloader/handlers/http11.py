@@ -14,7 +14,11 @@ from urllib.parse import urldefrag
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.endpoints import TCP4ClientEndpoint, wrapClientTLS
+from twisted.internet.endpoints import (
+    HostnameEndpoint,
+    TCP6ClientEndpoint,
+    wrapClientTLS,
+)
 from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.protocol import ClientFactory, Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
@@ -99,7 +103,10 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
+        self._pool: HTTPConnectionPool = HTTPConnectionPool(
+            reactor, persistent=bool(self._keepalive_timeout)
+        )
+        self._pool.cachedConnectionTimeout = self._keepalive_timeout  # type: ignore[assignment]
         self._pool.maxPersistentPerHost = crawler.settings.getint(
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
@@ -169,6 +176,13 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
 class TunnelError(Exception):
     """An HTTP CONNECT tunnel could not be established by the proxy."""
+
+
+def _is_ipv6_literal(host: str) -> bool:
+    try:
+        return isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address)
+    except ValueError:  # a hostname
+        return False
 
 
 class _TunnelProtocol(Protocol):
@@ -433,7 +447,7 @@ class _BindAddressAgent(Agent):
     def _requestWithEndpoint(
         self,
         key: tuple[Any, ...],
-        endpoint: TCP4ClientEndpoint,
+        endpoint: IStreamClientEndpoint,
         method: bytes,
         parsedURI: URI,
         headers: TxHeaders | None,
@@ -475,12 +489,26 @@ class _TunnelingAgent(_BindAddressAgent):
 
     def _getEndpoint(self, uri: URI) -> IStreamClientEndpoint:
         proxyHost, proxyPort, proxyAuthHeader, proxyTLS = self._proxyConf
-        endpoint: IStreamClientEndpoint = TCP4ClientEndpoint(
-            self._reactor,
-            proxyHost,
-            proxyPort,
-            timeout=self._endpointFactory._connectTimeout,
-            bindAddress=self._endpointFactory._bindAddress,
+        timeout = self._endpointFactory._connectTimeout
+        bindAddress = self._endpointFactory._bindAddress
+        # Reach a proxy given as a name through a HostnameEndpoint, the same
+        # endpoint Twisted's Agent uses: it resolves the name with
+        # reactor.nameResolver and picks the address family from the result, so
+        # proxies that only have AAAA records work, given an IPv6-capable
+        # TWISTED_DNS_RESOLVER. A literal IPv6 address skips name resolution
+        # instead, as the default resolver would fail to resolve it.
+        endpoint: IStreamClientEndpoint = (
+            TCP6ClientEndpoint(
+                self._reactor, proxyHost, proxyPort, timeout, bindAddress
+            )
+            if _is_ipv6_literal(proxyHost)
+            else HostnameEndpoint(
+                self._reactor,
+                proxyHost,
+                proxyPort,
+                timeout=timeout,
+                bindAddress=bindAddress,
+            )
         )
         if proxyTLS:
             # Set up TLS with the proxy itself, so that the CONNECT request and
