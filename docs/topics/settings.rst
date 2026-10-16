@@ -2263,6 +2263,26 @@ The class that will be used for loading spiders, which must implement the
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
+.. setting:: SPIDER_LOADER_REQUIRE_NAME
+
+SPIDER_LOADER_REQUIRE_NAME
+--------------------------
+
+.. versionadded:: VERSION
+
+Default: ``True``
+
+Whether the default spider loader ignores :class:`~scrapy.Spider` subclasses
+without a non-empty :attr:`~scrapy.Spider.name`.
+
+When ``False``, those subclasses are loaded with their class name as name, so
+mark your :ref:`base spiders <base-spiders>` with
+:func:`~scrapy.spiders.ignore_spider`.
+
+``False`` will become the only supported value in a future version of Scrapy.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
+
 .. setting:: SPIDER_LOADER_WARN_ONLY
 
 SPIDER_LOADER_WARN_ONLY

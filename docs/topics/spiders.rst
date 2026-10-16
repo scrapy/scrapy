@@ -135,6 +135,32 @@ objects:
             for href in response.xpath("//a/@href").getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
+.. _base-spiders:
+
+Base spiders
+============
+
+Base spiders are :class:`~scrapy.spiders.Spider` subclasses that are not meant
+to be run by Scrapy. They are only meant to be subclassed to create regular
+spiders or other base spiders. They are one way to share code between two or
+more spiders.
+
+Use the :func:`~scrapy.spiders.ignore_spider` decorator to mark any base spider
+class:
+
+.. autodecorator:: scrapy.spiders.ignore_spider
+
+For example::
+
+    from scrapy.spiders import ignore_spider, Spider
+
+    @ignore_spider
+    class MyBaseSpider(Spider):
+        pass
+
+If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), spiders
+without a :attr:`~scrapy.Spider.name` are also ignored.
+
 .. _spiderargs:
 
 Spider arguments

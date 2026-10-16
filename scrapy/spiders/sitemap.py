@@ -13,7 +13,7 @@ from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.spiders import Spider
+from scrapy.spiders import Spider, ignore_spider
 from scrapy.utils._compression import (
     _DecompressionMaxSizeExceeded,
     gunzip,
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@ignore_spider
 class SitemapSpider(Spider):
     """Spider that crawls a site by discovering its URLs using `sitemaps
     <https://www.sitemaps.org/index.html>`_.

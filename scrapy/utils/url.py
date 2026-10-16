@@ -42,7 +42,10 @@ def url_is_from_any_domain(
 
 
 def _spider_domains(spider: type[Spider]) -> Iterable[str]:
-    yield spider.name
+    # Spiders without a class-level name are named after their class, which
+    # is never a domain.
+    if name := getattr(spider, "name", None):
+        yield name
     allowed_domains = getattr(spider, "allowed_domains", None)
     if isinstance(allowed_domains, property):
         warnings.warn(

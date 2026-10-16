@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -27,6 +27,21 @@ if TYPE_CHECKING:
     from scrapy.utils.log import SpiderLoggerAdapter
 
 
+_SpiderT = TypeVar("_SpiderT", bound="type[Spider]")
+
+
+def ignore_spider(cls: _SpiderT) -> _SpiderT:
+    """Mark a :class:`~scrapy.spiders.Spider` subclass to be ignored.
+
+    Marked spider classes are not available to the :command:`crawl`,
+    :command:`list` and :command:`runspider` commands. Only the decorated
+    class is marked; its subclasses are unaffected.
+    """
+    cls._ignore_spider = True
+    return cls
+
+
+@ignore_spider
 class Spider(object_ref):
     """Base class that any spider must subclass.
 
@@ -42,30 +57,31 @@ class Spider(object_ref):
     """
 
     name: str
-    """The name of this spider.
+    """The name of this spider. Defaults to the name of the spider class.
 
-    Every spider needs one: :class:`Spider` raises :exc:`ValueError` on
-    initialization if it has no name. You usually define it as a class
-    attribute, but you can also pass it at initialization time instead, e.g.
-    ``CrawlerProcess.crawl(MySpider, name="myspider")`` when :ref:`running
-    Scrapy from a script <run-from-script>`.
+    You usually define it as a class attribute, but you can also pass it at
+    initialization time instead, e.g. ``CrawlerProcess.crawl(MySpider,
+    name="myspider")`` when :ref:`running Scrapy from a script
+    <run-from-script>`.
 
     The name is also how Scrapy locates a spider: the default :ref:`spider
     loader <topics-api-spiderloader>` indexes the spiders of your project by
-    name, which is what allows the :command:`crawl` command to find them, and
-    the :command:`runspider` command ignores spider classes that have no name.
-    Names should hence be unique within a project; the default spider loader
-    warns about duplicates and keeps only one of the matching spider classes.
-    Nothing prevents you from running more than one instance of the same
-    spider, though, and a custom spider loader (see
-    :setting:`SPIDER_LOADER_CLASS`) may map names to spider classes in a
-    completely different way.
+    name, which is what allows the :command:`crawl` command to find them.
+    Spiders without a name of their own are only indexed if
+    :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``False``. Names should hence be
+    unique within a project; the default spider loader warns about duplicates
+    and keeps only one of the matching spider classes. Nothing prevents you
+    from running more than one instance of the same spider, though, and a
+    custom spider loader (see :setting:`SPIDER_LOADER_CLASS`) may map names to
+    spider classes in a completely different way.
 
     If the spider scrapes a single domain, a common practice is to name the
     spider after that domain, replacing dots with underscores. For example, a
     spider that crawls ``books.toscrape.com`` would often be called
     ``books_toscrape_com``.
     """
+
+    _ignore_spider: bool
 
     custom_settings: dict[str, Any] | None = None
     """Settings that override the project-wide configuration when running this
@@ -128,10 +144,22 @@ class Spider(object_ref):
         if name is not None:
             self.name: str = name
         elif not getattr(self, "name", None):
-            raise ValueError(f"{type(self).__name__} must have a name")
+            self.name = type(self)._default_name()
         self.__dict__.update(kwargs)
         if not hasattr(self, "start_urls"):
             self.start_urls: list[str] = []
+
+    @classmethod
+    def _default_name(cls) -> str:
+        """Return the name under which spider loaders and commands know this
+        spider class, which falls back to its class name."""
+        return getattr(cls, "name", None) or cls.__name__
+
+    @classmethod
+    def _is_ignored(cls) -> bool:
+        # The mark set by ignore_spider() is read from the class __dict__ so
+        # that subclasses do not inherit it.
+        return "_ignore_spider" in cls.__dict__
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
