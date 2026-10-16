@@ -186,7 +186,7 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
         if not _HAS_SOCKS:  # pragma: no cover
             raise ValueError(
                 f"SOCKS proxy support in {type(self).__name__} requires the"
-                f" 'ftp-socks' extra to be installed."
+                f" 'socks' extra to be installed."
             )
         assert parts.hostname
         return Proxy(
@@ -268,6 +268,10 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
     @staticmethod
     def _is_dataloss_exception(exc: Exception) -> bool:
         return isinstance(exc, aioftp.StatusCodeError)
+
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, TimeoutError)
 
     def _log_tls_info(self, response: _AioftpResponse, request: Request) -> None:
         if ssl_object := response.control.writer.get_extra_info("ssl_object"):

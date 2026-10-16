@@ -446,7 +446,9 @@ The following built-in Scrapy components have such restrictions:
     :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
     the following directory structure is created:
 
-    -   :attr:`.Spider.name`
+    -   the partition that :setting:`HTTPCACHE_SCOPE` selects, i.e.
+        :attr:`.Spider.name` or the request host, and no folder at all with
+        ``'none'``
 
         -   first byte of a request fingerprint as hexadecimal
 
@@ -953,6 +955,10 @@ http_auth_domain
 .. versionadded:: 2.17.0
 
 Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
+
+If this key is not set, :reqmeta:`http_user` and :reqmeta:`http_pass` are only
+sent to the origin (scheme, host and port) of the request where they were first
+used, e.g. they are not sent after a cross-origin redirect.
 
 .. reqmeta:: http_pass
 

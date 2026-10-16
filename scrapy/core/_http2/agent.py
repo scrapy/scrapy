@@ -14,6 +14,7 @@ from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFac
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.endpoints import HostnameEndpoint
+    from twisted.python.failure import Failure
 
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
@@ -45,11 +46,7 @@ class H2ConnectionPool:
     ) -> Deferred[H2ClientProtocol]:
         if key in self._pending_requests:
             # Received a request while connecting to remote
-            # Create a deferred which will fire with the H2ClientProtocol
-            # instance
-            d: Deferred[H2ClientProtocol] = Deferred()
-            self._pending_requests[key].append(d)
-            return d
+            return self._pending_request(key)
 
         # Check if we already have a connection to the remote
         conn = self._connections.get(key, None)
@@ -75,10 +72,22 @@ class H2ConnectionPool:
             tls_verbose_logging=self._tls_verbose_logging,
         )
         conn_d = endpoint.connect(factory)
+        d = self._pending_request(key)
         conn_d.addCallback(self.put_connection, key)
+        conn_d.addErrback(self._connection_failed, key)
+        return d
 
-        d: Deferred[H2ClientProtocol] = Deferred()
-        self._pending_requests[key].append(d)
+    def _pending_request(self, key: ConnectionKey) -> Deferred[H2ClientProtocol]:
+        """Return a deferred that fires with the connection being established
+        for *key*.
+
+        Cancelling it takes it out of the queue, so that the connection, once
+        established or found unreachable, only fires the deferreds of the
+        requests that are still waiting for it.
+        """
+        pending_requests = self._pending_requests[key]
+        d: Deferred[H2ClientProtocol] = Deferred(pending_requests.remove)
+        pending_requests.append(d)
         return d
 
     def put_connection(
@@ -94,6 +103,14 @@ class H2ConnectionPool:
             d.callback(conn)
 
         return conn
+
+    def _connection_failed(self, failure: Failure, key: ConnectionKey) -> None:
+        """Fail the requests waiting for a connection that could not be
+        established, and let a later request try to connect again."""
+        pending_requests = self._pending_requests.pop(key)
+        while pending_requests:
+            d = pending_requests.popleft()
+            d.errback(failure)
 
     def _remove_connection(self, _: None, key: ConnectionKey) -> None:
         self._connections.pop(key)

@@ -448,7 +448,6 @@ class TestFilesPipeline:
 
     @coroutine_test
     async def test_file_created(self) -> None:
-        """A 201 response with the file in its body is a successful download."""
         item_url = "http://example.com/created.pdf"
         item = _create_item_with_files(item_url)
         with mock.patch.object(
@@ -1628,9 +1627,9 @@ def _create_item_with_files(*files: str) -> ItemWithFiles:
 def _prepare_request_object(
     item_url: str,
     flags: list[str] | None = None,
+    headers: dict[str, str] | None = None,
     status: int = 200,
     body: bytes = b"data",
-    headers: dict[str, str] | None = None,
 ) -> Request:
     return Request(
         item_url,

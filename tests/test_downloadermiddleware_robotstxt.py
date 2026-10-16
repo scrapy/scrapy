@@ -96,6 +96,7 @@ Disallow: /some/randome/page.html
         assert len(calls) == 1
         assert calls[0]["request"] is request
         assert calls[0]["robotparser"] is not None
+        assert calls[0]["response"].url == "http://site.local/robots.txt"
 
     @coroutine_test
     async def test_robotstxt_multiple_reqs(self) -> None:
