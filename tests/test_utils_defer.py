@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import random
 import socket
 import warnings
@@ -326,6 +327,24 @@ class TestParallelAsync:
         assert sorted(results) == [0, 2, 3]
         assert "Error processing an item" in caplog.text
         assert "Bad item" in caplog.text
+
+    @coroutine_test
+    async def test_context(self) -> None:
+        var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+            "var", default=None
+        )
+        var.set("hello")
+        seen: list[str | None] = []
+
+        async def aiterable() -> AsyncGenerator[int, None]:
+            for i in range(3):
+                seen.append(var.get())
+                yield i
+
+        await maybe_deferred_to_future(
+            parallel_async(aiterable(), 1, lambda _: seen.append(var.get()))
+        )
+        assert seen == ["hello"] * 6
 
 
 class TestDeferredFromCoro:
