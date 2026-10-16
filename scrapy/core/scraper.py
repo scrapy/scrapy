@@ -283,7 +283,9 @@ class Scraper:
             exc = result.value
             assert isinstance(exc, CloseSpider)  # typing
             _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+                self.crawler.engine.close_spider_async(
+                    reason=exc.reason or "cancelled", error=exc.error
+                )
             )
             return
 
