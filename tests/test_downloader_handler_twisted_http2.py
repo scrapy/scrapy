@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import sys
 from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock
 
 import pytest
+from twisted.internet.defer import Deferred
 from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
@@ -17,6 +19,7 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Request
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
@@ -71,6 +74,19 @@ def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         build_from_crawler(H2DownloadHandler, crawler)
+
+
+def test_pool_keeps_newer_connection() -> None:
+    from scrapy.core._http2.agent import H2ConnectionPool  # noqa: PLC0415
+
+    pool = H2ConnectionPool(get_crawler())
+    key = (b"https", b"example.com", 443, None)
+    old, new = Mock(), Mock()
+    old_lost: Deferred[None] = Deferred()
+    pool.put_connection(old, key, old_lost)
+    pool.put_connection(new, key, Deferred())
+    old_lost.callback(None)
+    assert pool._connections[key] is new
 
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
