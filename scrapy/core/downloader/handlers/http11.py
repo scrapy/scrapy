@@ -208,6 +208,15 @@ class _TunnelProtocol(Protocol):
         self._connectBuffer: bytearray = bytearray()
         self._tunnelReady = False
 
+    @staticmethod
+    def _format_host(host: bytes) -> bytes:
+        """Return *host* as it goes into the authority of the CONNECT request,
+        i.e. with square brackets around IPv6 literals.
+        """
+        # URI.host strips the brackets of IPv6 literals, and only those contain
+        # colons.
+        return b"[" + host + b"]" if b":" in host else host
+
     def logPrefix(self) -> str:
         return type(self._wrappedProtocol).__name__
 
@@ -215,7 +224,9 @@ class _TunnelProtocol(Protocol):
         """Asks the proxy to open a tunnel."""
         assert self.transport
         self.transport.write(
-            _tunnel_request_data(self._host, self._port, self._proxyAuthHeader)
+            _tunnel_request_data(
+                self._format_host(self._host), self._port, self._proxyAuthHeader
+            )
         )
 
     def dataReceived(self, data: bytes) -> None:

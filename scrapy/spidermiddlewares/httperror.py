@@ -25,10 +25,13 @@ logger = logging.getLogger(__name__)
 
 
 class HttpError(IgnoreRequest):
-    """A non-2xx response was filtered"""
+    """Raised by :class:`HttpErrorMiddleware` for a response whose status code
+    is not successful and that the spider does not handle itself.
+    """
 
     def __init__(self, response: Response, *args: object, **kwargs: object):
-        self.response = response
+        self.response: Response = response
+        """The response that was filtered out."""
         super().__init__(*args, **kwargs)
 
 
