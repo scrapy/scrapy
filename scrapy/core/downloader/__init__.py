@@ -5,10 +5,12 @@ import random
 import warnings
 from collections import deque
 from dataclasses import dataclass, field
+from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
+from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -32,7 +34,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     from twisted.internet.task import LoopingCall
 
@@ -131,6 +133,21 @@ class Slot:
         )
 
 
+def _release_when_closed(
+    result: Response | Request | None, release: Callable[[], None]
+) -> None:
+    """Call *release* right away, or, for a response that keeps a connection
+    open, such as :class:`~scrapy.http.WebSocketResponse`, once that connection
+    is closed."""
+    connection_closed: Deferred[None] | None = getattr(
+        result, "_connection_closed", None
+    )
+    if connection_closed is None:
+        release()
+    else:
+        connection_closed.addBoth(lambda _: release())
+
+
 def _default_jitter(settings: BaseSettings) -> float:
     """Return the magnitude of the random variation to apply to the delay of
     slots that do not set their own ``jitter``: :setting:`DOWNLOAD_DELAY_JITTER`,
@@ -225,15 +242,16 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
+        result: Response | Request | None = None
         try:
-            result: Response | Request = yield (
+            result = yield (
                 deferred_from_coro(
                     self.middleware.download_async(self._enqueue_request, request)
                 )
             )
             return result
         finally:
-            self.active.remove(request)
+            _release_when_closed(result, partial(self.active.discard, request))
 
     def needs_backout(self) -> bool:
         # A total concurrency of 0 means no limit.
@@ -293,10 +311,13 @@ class Downloader:
         d: Deferred[Response] = Deferred()
         slot.queue.append((request, d))
         self._process_queue(slot)
+        response: Response | None = None
         try:
-            return await maybe_deferred_to_future(d)  # fired in _wait_for_download()
+            # d is fired in _wait_for_download()
+            response = await maybe_deferred_to_future(d)
+            return response
         finally:
-            slot.active.remove(request)
+            _release_when_closed(response, partial(slot.active.discard, request))
 
     def _process_queue(self, slot: Slot) -> None:
         if slot.latercall:
@@ -342,8 +363,9 @@ class Downloader:
         # the transfer (in _download()) and fires queue_dfd (in
         # _wait_for_download()). But a task that is cancelled before it starts
         # running, e.g. by stop(), never runs any of its code, so this does
-        # both instead.
-        if request in slot.transferring:
+        # both instead. A task that did run returns None, and may have left
+        # the transfer for _release_when_closed() to end.
+        if isinstance(result, Failure) and request in slot.transferring:
             self._end_transfer(slot, request)
         if not queue_dfd.called:
             queue_dfd.errback(result)
@@ -355,9 +377,10 @@ class Downloader:
 
     async def _download(self, slot: Slot, request: Request) -> Response:
         # The order is very important for the following logic. Do not change!
+        response: Response | None = None
         try:
             # 1. Download the response
-            response: Response = await self.handlers.download_request_async(request)
+            response = await self.handlers.download_request_async(request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
             self.signals.send_catch_log(
@@ -375,10 +398,10 @@ class Downloader:
             # state to free up the transferring slot so it can be used by the
             # following requests (perhaps those which came from the downloader
             # middleware itself)
-            self._end_transfer(slot, request)
+            _release_when_closed(response, partial(self._end_transfer, slot, request))
 
     def _end_transfer(self, slot: Slot, request: Request) -> None:
-        slot.transferring.remove(request)
+        slot.transferring.discard(request)
         self._process_queue(slot)
         self.signals.send_catch_log(
             signal=signals.request_left_downloader,

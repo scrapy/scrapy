@@ -23,12 +23,8 @@ from scrapy.http import HtmlResponse, Request, TextResponse
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
+from tests.mockserver.socks import HAS_SIOSOCKS, socks_proxy
 from tests.utils.decorators import coroutine_test
-
-try:
-    from siosocks.io.asyncio import socks_server_handler
-except ImportError:
-    socks_server_handler = None
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Generator
@@ -349,20 +345,8 @@ async def test_local_filename(ftp_server: MockFTPServer, tmp_path: Path) -> None
     assert (tmp_path / "file.txt").read_bytes() == FILES["file.txt"]
 
 
-@asynccontextmanager
-async def _socks_proxy(**kwargs: Any) -> AsyncGenerator[str]:
-    server = await asyncio.start_server(
-        lambda r, w: socks_server_handler(r, w, **kwargs), "127.0.0.1", 0
-    )
-    port = server.sockets[0].getsockname()[1]
-    try:
-        yield f"127.0.0.1:{port}"
-    finally:
-        server.close()
-
-
 requires_socks = pytest.mark.skipif(
-    not _HAS_SOCKS or socks_server_handler is None,
+    not _HAS_SOCKS or not HAS_SIOSOCKS,
     reason="Requires python-socks and siosocks",
 )
 
@@ -371,7 +355,7 @@ requires_socks = pytest.mark.skipif(
 @pytest.mark.parametrize("scheme", ["socks4", "socks5"])
 @coroutine_test
 async def test_socks_proxy(ftp_server: MockFTPServer, scheme: str) -> None:
-    async with _socks_proxy() as proxy:
+    async with socks_proxy() as proxy:
         request = Request(
             ftp_server.url("file.txt"), meta={"proxy": f"{scheme}://{proxy}"}
         )
@@ -382,7 +366,7 @@ async def test_socks_proxy(ftp_server: MockFTPServer, scheme: str) -> None:
 @requires_socks
 @coroutine_test
 async def test_socks_proxy_credentials(ftp_server: MockFTPServer) -> None:
-    async with _socks_proxy(
+    async with socks_proxy(
         allowed_versions={5}, username="user", password="pass"
     ) as proxy:
         request = Request(
@@ -397,7 +381,7 @@ async def test_socks_proxy_credentials(ftp_server: MockFTPServer) -> None:
 @requires_socks
 @coroutine_test
 async def test_socks_proxy_wrong_credentials(ftp_server: MockFTPServer) -> None:
-    async with _socks_proxy(
+    async with socks_proxy(
         allowed_versions={5}, username="user", password="pass"
     ) as proxy:
         request = Request(
@@ -412,7 +396,7 @@ async def test_socks_proxy_wrong_credentials(ftp_server: MockFTPServer) -> None:
 @requires_socks
 @coroutine_test
 async def test_socks_proxy_ftps(ftps_server: MockFTPServer) -> None:
-    async with _socks_proxy() as proxy:
+    async with socks_proxy() as proxy:
         request = Request(
             ftps_server.url("file.txt"), meta={"proxy": f"socks5://{proxy}"}
         )

@@ -80,6 +80,7 @@ Basic concepts
    topics/feed-exports
    topics/request-response
    topics/cookies
+   topics/websockets
    topics/link-extractors
    topics/settings
    topics/exceptions
@@ -116,6 +117,9 @@ Basic concepts
 
 :doc:`topics/cookies`
     Send and receive cookies.
+
+:doc:`topics/websockets`
+    Send and receive messages over WebSocket connections.
 
 :doc:`topics/link-extractors`
     Convenient classes to extract links to follow from pages.

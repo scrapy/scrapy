@@ -137,11 +137,14 @@ The following extras are available:
        :ref:`media pipelines <media-pipelines-s3>`, and
        :ref:`S3 downloads <s3-handler>`
    * - ``socks``
-     - SOCKS proxy support in :ref:`aioftp-handler`
+     - SOCKS proxy support in :ref:`aioftp-handler` and
+       :ref:`websocket-handler`
    * - ``twisted-http2``
      - :ref:`twisted-http2-handler`
    * - ``uvloop``
      - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
+   * - ``websockets``
+     - :ref:`websockets`
 
 
 .. _intro-install-platform-notes:

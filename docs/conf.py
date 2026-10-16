@@ -173,6 +173,7 @@ scrapy_intersphinx_enable = [
     "twisted",
     "twistedapi",
     "w3lib",
+    "websockets",
 ]
 
 # -- Other options ------------------------------------------------------------
