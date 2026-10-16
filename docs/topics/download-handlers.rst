@@ -245,10 +245,13 @@ AiohttpDownloadHandler
 
 .. versionadded:: 2.19.0
 
+.. versionchanged:: VERSION
+    In earlier versions, the handler was not lazy.
+
 .. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
 
 | Supported schemes: ``http``, ``https``.
-| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
 | :ref:`Requires asyncio support <using-asyncio>`: yes.
 | :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
