@@ -45,8 +45,8 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.only_asyncio
 
-if find_spec("httpx2") is None and find_spec("httpx") is None:
-    pytest.skip("Neither httpx2 nor httpx are installed", allow_module_level=True)
+if find_spec("httpx2") is None:
+    pytest.skip("httpx2 is not installed", allow_module_level=True)
 
 # httpx2 < 2.4.0 reads URL.host through idna.decode() without display=True when
 # building the Host header, which raises for punycode labels that IDNA 2008
@@ -204,14 +204,24 @@ class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
 
 
-@pytest.mark.parametrize(("concurrency", "expected"), [(16, 16), (0, None)])
+@pytest.mark.parametrize(("limit", "expected"), [(16, 16), (0, None)])
 @coroutine_test
-async def test_pool_limits(concurrency: int, expected: int | None) -> None:
-    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+async def test_pool_limits(limit: int, expected: int | None) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_CONNECTIONS_PER_HANDLER": limit})
     handler = build_from_crawler(HttpxDownloadHandler, crawler)
     try:
         assert handler._limits.max_connections == expected
         assert handler._limits.max_keepalive_connections == expected
+    finally:
+        await handler.close()
+
+
+@coroutine_test
+async def test_keepalive_timeout() -> None:
+    crawler = get_crawler(settings_dict={"CONNECTION_KEEPALIVE_TIMEOUT": 5})
+    handler = build_from_crawler(HttpxDownloadHandler, crawler)
+    try:
+        assert handler._limits.keepalive_expiry == 5
     finally:
         await handler.close()
 
