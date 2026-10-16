@@ -8,7 +8,6 @@ import pytest
 from scrapy.http import Request, Response
 from scrapy.utils import httpobj
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import garbage_collect
 
 
 def test_urlparse_cached() -> None:
@@ -54,7 +53,6 @@ def test_urlparse_cached_lifetime(url_first: bool, holders: list[str]) -> None:
     while objects:
         assert urlparse_cached(Request(url)) is parsed
         objects.pop(0)
-        garbage_collect()
     assert urlparse_cached(Request(url)) is not parsed
 
 

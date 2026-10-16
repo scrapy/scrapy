@@ -9,8 +9,7 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.11+, either the CPython implementation (default) or
-the PyPy implementation (see :ref:`python:implementations`).
+Scrapy requires Python 3.11+.
 
 .. _intro-install-scrapy:
 
@@ -265,29 +264,6 @@ solutions:
 After any of these workarounds, you should be able to install Scrapy::
 
   pip install Scrapy
-
-
-PyPy
-----
-
-We recommend using the latest PyPy version.
-For PyPy3, only Linux installation was tested.
-
-Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.
-This means that these dependencies will be built during installation. On macOS,
-you are likely to face an issue with building the Cryptography dependency. The
-solution to this problem is described `here
-<https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
-that is to ``brew install openssl`` and then export the flags that this command
-recommends (only needed when installing Scrapy). Installing Scrapy on Linux has
-no special issues beyond installing the build dependencies. Installing Scrapy
-with PyPy on Windows has not been tested.
-
-You can check that Scrapy is installed correctly by running ``scrapy bench``.
-If this command gives errors such as
-``TypeError: ... got 2 unexpected keyword arguments``, this means
-that the ``PyPyDispatcher`` dependency wasn't installed. To fix this issue, run
-``pip install 'PyPyDispatcher>=2.1.0'``.
 
 
 .. _intro-install-troubleshooting:

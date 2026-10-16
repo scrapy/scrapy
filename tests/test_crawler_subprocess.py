@@ -20,9 +20,8 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
-# Guards against a hung subprocess. Generous, because starting a script is
-# slow on PyPy, slower still with coverage measurement on.
-SCRIPT_TIMEOUT = 60
+# Guards against a hung subprocess.
+SCRIPT_TIMEOUT = 10
 
 
 class ScriptRunnerMixin(ABC):
