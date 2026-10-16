@@ -75,6 +75,8 @@ __all__ = [
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
     "DOWNLOAD_HANDLERS_BY_NAME",
+    "DOWNLOAD_HEADERS_MAXSIZE",
+    "DOWNLOAD_HEADERS_WARNSIZE",
     "DOWNLOAD_MAXSIZE",
     "DOWNLOAD_SLOTS",
     "DOWNLOAD_TIMEOUT",
@@ -321,6 +323,11 @@ DOWNLOAD_HANDLERS_BASE = {
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
 DOWNLOAD_HANDLERS_BY_NAME: dict[str, str] = {}
+
+# Firefox, the most lenient of the reference web browsers, allows 384k.
+DOWNLOAD_HEADERS_MAXSIZE = 384 * 1024  # 384k
+# Chromium, the least lenient of the reference web browsers, allows 256k.
+DOWNLOAD_HEADERS_WARNSIZE = 256 * 1024  # 256k
 
 DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024  # 1024m
 DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
