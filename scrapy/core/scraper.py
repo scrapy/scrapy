@@ -26,9 +26,9 @@ from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
+    _aiter_errback,
     _process_pending_io_before_callback,
     _schedule_coro,
-    aiter_errback,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
@@ -451,7 +451,7 @@ class Scraper:
                 stacklevel=2,
             )
             result = as_async_generator(result)
-        it = aiter_errback(result, self.handle_spider_error, request, response)
+        it = _aiter_errback(result, self.handle_spider_error, request, response)
         if is_asyncio_available():
             await _parallel_asyncio(
                 it, self.concurrent_items, self._process_spidermw_output_async, response
