@@ -71,12 +71,12 @@ if TYPE_CHECKING:
 
 class CloseSpiderProcessRequestMiddleware:
     def process_request(self, request):
-        raise CloseSpider("my_reason")
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
 
 
 class CloseSpiderProcessResponseMiddleware:
     def process_response(self, request, response):
-        raise CloseSpider("my_reason")
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
 
 
 class BodyFileSpider(Spider):
@@ -1069,17 +1069,21 @@ class TestCrawlSpider:
         "middleware",
         [CloseSpiderProcessRequestMiddleware, CloseSpiderProcessResponseMiddleware],
     )
+    @pytest.mark.parametrize("error", [False, True])
     @coroutine_test
     async def test_raise_closespider_downloader_middleware(
         self,
         caplog: pytest.LogCaptureFixture,
         mockserver: MockServer,
         middleware: type,
+        error: bool,
     ) -> None:
         crawler = get_crawler(
             SingleRequestSpider, {"DOWNLOADER_MIDDLEWARES": {middleware: 1}}
         )
+        seed = Request(mockserver.url("/"), meta={"close_error": error})
         with caplog.at_level(logging.INFO):
-            await crawler.crawl_async(seed=mockserver.url("/"))
+            await crawler.crawl_async(seed=seed)
         assert "Closing spider (my_reason)" in caplog.text
         assert "Error downloading" not in caplog.text
+        assert crawler.stats.get_value("finish_reason_error") is error

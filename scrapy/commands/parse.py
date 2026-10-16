@@ -15,7 +15,7 @@ from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
 from scrapy.utils import _colorize
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import _schedule_coro, aiter_errback, deferred_from_coro
+from scrapy.utils.defer import _aiter_errback, _schedule_coro, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
@@ -153,7 +153,7 @@ class Command(BaseRunSpiderCommand):
         d: Deferred[Any]
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
-                collect_asyncgen(aiter_errback(result, self.handle_exception))
+                collect_asyncgen(_aiter_errback(result, self.handle_exception))
             )
             return d.addCallback(self.iterate_spider_output)
         d = deferred_from_coro(result)

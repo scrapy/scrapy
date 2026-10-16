@@ -7,6 +7,7 @@ import warnings
 from importlib.resources import files
 
 # Declare top-level shortcuts
+from scrapy._logging import LogRootFormatter, LogRootFormatterProtocol
 from scrapy.http import FormRequest, Request
 from scrapy.item import Field, Item
 from scrapy.selector import Selector
@@ -16,6 +17,8 @@ __all__ = [
     "Field",
     "FormRequest",
     "Item",
+    "LogRootFormatter",
+    "LogRootFormatterProtocol",
     "Request",
     "Selector",
     "Spider",

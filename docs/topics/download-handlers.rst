@@ -182,6 +182,7 @@ individual handler docs for more differences:
      - Proxies
      - Bad headers
      - TLS
+     - IPv6
      - Header case
    * - :class:`Aiohttp <scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler>`
      - asyncio
@@ -189,6 +190,7 @@ individual handler docs for more differences:
      - HTTP
      - Fail
      - Stdlib ``ssl``
+     - Yes
      - As written
    * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
      - Reactor, :ref:`twisted-http2 <extras>` extra
@@ -196,6 +198,7 @@ individual handler docs for more differences:
      - None
      - Not applicable
      - ``cryptography``
+     - Needs a setting
      - Lowercase
    * - :class:`HTTP11 <scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler>`
      - Reactor
@@ -203,6 +206,7 @@ individual handler docs for more differences:
      - HTTP
      - Skip bad
      - ``cryptography``
+     - Needs a setting
      - Capitalized
    * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
      - asyncio, :ref:`httpx <extras>` extra
@@ -210,12 +214,18 @@ individual handler docs for more differences:
      - HTTP, SOCKS
      - Fail
      - Stdlib ``ssl``
+     - Yes, except through a proxy
      - As written
 
 Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
 bad header lines, like web browsers do, still parse the header lines that follow
 them; other handlers also lose those, or cannot download such responses at all.
+
+Handlers that require a reactor resolve hosts, including proxy hosts and IPv6
+address literals such as ``https://[::1]/``, with the resolver set in
+:setting:`TWISTED_DNS_RESOLVER`, whose default value only supports IPv4. To use
+IPv6 with them, set it to ``scrapy.resolver.CachingHostnameResolver``.
 
 Because HTTP/2 requires lowercase header names, handlers only keep the case of
 your header names over HTTP/1.1.
@@ -235,10 +245,13 @@ AiohttpDownloadHandler
 
 .. versionadded:: 2.19.0
 
+.. versionchanged:: VERSION
+    In earlier versions, the handler was not lazy.
+
 .. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
 
 | Supported schemes: ``http``, ``https``.
-| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
 | :ref:`Requires asyncio support <using-asyncio>`: yes.
 | :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
@@ -440,6 +453,15 @@ Other limitations:
     limitations of ``httpx``) which may lead to higher resource usage when
     using proxy rotation.
 
+-   Requests to a URL with an IPv6 address literal, such as
+    ``https://[::1]/``, `do not work through a proxy
+    <https://github.com/pydantic/httpx2/pull/1091>`__.
+
+Unlike the Twisted-based handlers, this handler does not use the resolver
+configured with :setting:`TWISTED_DNS_RESOLVER`, so it resolves IPv6 hosts
+without needing that setting changed, and it is not affected by
+:setting:`DNS_TIMEOUT` or by the :setting:`DNSCACHE_ENABLED` cache.
+
 .. setting:: HTTPX_HTTP2_ENABLED
 
 HTTPX_HTTP2_ENABLED
@@ -484,7 +506,7 @@ the plain-text output of the FTP ``NLST`` command, one file or directory name
 per line.
 
 It supports SOCKS4 and SOCKS5 :reqmeta:`proxies <proxy>` if you install the
-:ref:`ftp-socks <extras>` extra.
+:ref:`socks <extras>` extra.
 
 .. warning::
 

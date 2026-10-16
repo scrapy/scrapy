@@ -30,22 +30,33 @@ _P = ParamSpec("_P")
 
 def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
     """Like reactor.listenTCP but tries different ports in a range."""
-    from twisted.internet import reactor
-
     if len(portrange) > 2:
         raise ValueError(f"invalid portrange: {portrange}")
     if len(portrange) == 2 and portrange[0] > portrange[1]:
         raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
-        return reactor.listenTCP(0, factory, interface=host)  # type: ignore[no-any-return]
+        return _listen_tcp(0, host, factory)
     for x in range(portrange[0], portrange[-1]):
         try:
-            return reactor.listenTCP(x, factory, interface=host)  # type: ignore[no-any-return]
+            return _listen_tcp(x, host, factory)
         except error.CannotListenError:
             pass
     # The last port of the range is tried outside the loop so that its
     # CannotListenError propagates to the caller.
-    return reactor.listenTCP(portrange[-1], factory, interface=host)  # type: ignore[no-any-return]
+    return _listen_tcp(portrange[-1], host, factory)
+
+
+def _listen_tcp(port: int, host: str, factory: ServerFactory) -> Port:
+    from twisted.internet import reactor
+
+    try:
+        return reactor.listenTCP(port, factory, interface=host)  # type: ignore[no-any-return]
+    except OSError as e:
+        # Twisted raises CannotListenError for bind() errors but lets listen()
+        # errors through. With SO_REUSEADDR, which Twisted sets on POSIX,
+        # several processes can bind the same port, and all but the first to
+        # call listen() on it get EADDRINUSE.
+        raise error.CannotListenError(host, port, e) from e
 
 
 class CallLaterOnce(Generic[_P, _T]):
@@ -103,7 +114,7 @@ def set_asyncio_event_loop_policy() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=r"'asyncio\.(get_event_loop_policy|WindowsSelectorEventLoopPolicy)' is deprecated",
+            message=r"'asyncio\.(get_event_loop_policy|set_event_loop_policy|WindowsSelectorEventLoopPolicy)' is deprecated",
             category=DeprecationWarning,
         )
         policy = asyncio.get_event_loop_policy()

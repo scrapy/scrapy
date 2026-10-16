@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import logging
 import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from io import BytesIO
 from pathlib import Path
 from typing import (
@@ -66,7 +66,7 @@ class _BaseResponseArgs(TypedDict):
     body_file: NotRequired[str | os.PathLike[str] | None]
 
 
-class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_ResponseT]):
+class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT]):
     """A base class for HTTP download handlers that follow the streaming logic flow."""
 
     _DEFAULT_CONNECT_TIMEOUT: ClassVar[float] = 10
