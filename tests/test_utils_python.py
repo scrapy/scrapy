@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 import pytest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import aiter_errback
+from scrapy.utils.defer import _aiter_errback
 from scrapy.utils.python import (
     _looks_like_import_path,
     _MutableAsyncChain,
@@ -70,7 +70,7 @@ class TestMutableAsyncChain:
         m.extend(self.g4())
         m.extend(self.g3())
 
-        results = await collect_asyncgen(aiter_errback(m, lambda _: None))
+        results = await collect_asyncgen(_aiter_errback(m, lambda _: None))
         assert results == list(range(5))
 
 

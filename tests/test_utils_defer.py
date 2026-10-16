@@ -17,8 +17,8 @@ from zope.interface import implementer
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
+    _aiter_errback,
     _process_pending_io,
-    aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
     deferred_to_future,
@@ -83,7 +83,7 @@ class TestAiterErrback:
                 yield x
 
         errors: list[Failure] = []
-        out = await collect_asyncgen(aiter_errback(itergood(), errors.append))
+        out = await collect_asyncgen(_aiter_errback(itergood(), errors.append))
         assert out == list(range(10))
         assert not errors
 
@@ -96,7 +96,7 @@ class TestAiterErrback:
                 yield x
 
         errors: list[Failure] = []
-        out = await collect_asyncgen(aiter_errback(iterbad(), errors.append))
+        out = await collect_asyncgen(_aiter_errback(iterbad(), errors.append))
         assert out == [0, 1, 2, 3, 4]
         assert len(errors) == 1
         assert isinstance(errors[0].value, ZeroDivisionError)

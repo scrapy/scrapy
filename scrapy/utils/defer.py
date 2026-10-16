@@ -460,7 +460,7 @@ def iter_errback(
             errback(failure.Failure(), *a, **kw)
 
 
-async def aiter_errback(
+async def _aiter_errback(
     aiterable: AsyncIterator[_T],
     errback: Callable[Concatenate[Failure, _P], Any],
     *a: _P.args,
@@ -476,6 +476,23 @@ async def aiter_errback(
             break
         except Exception:
             errback(failure.Failure(), *a, **kw)
+
+
+async def aiter_errback(
+    aiterable: AsyncIterator[_T],
+    errback: Callable[Concatenate[Failure, _P], Any],
+    *a: _P.args,
+    **kw: _P.kwargs,
+) -> AsyncIterator[_T]:  # pragma: no cover
+    """Wrap an async iterable calling an errback if an error is caught while
+    iterating it."""
+    warnings.warn(
+        "scrapy.utils.defer.aiter_errback() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    async for item in _aiter_errback(aiterable, errback, *a, **kw):
+        yield item
 
 
 @overload
