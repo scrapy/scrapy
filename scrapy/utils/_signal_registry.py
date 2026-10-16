@@ -128,8 +128,12 @@ def _warn_unknown_args(receiver: TypingAny, signal: TypingAny) -> None:
     if not unknown:
         return
     names = ", ".join(sorted(unknown))
+    try:
+        receiver_name = global_object_name(receiver)
+    except AttributeError:
+        receiver_name = repr(receiver)
     warnings.warn(
-        f"Signal handler {global_object_name(receiver)} declares"
+        f"Signal handler {receiver_name} declares"
         f" {names}, which {_signal_name(signal)} does not send. Handlers"
         f" only receive the arguments of their signal, so those arguments always"
         f" get their default value.",

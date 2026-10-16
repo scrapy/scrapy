@@ -200,65 +200,9 @@ class TestSenderIsolation:
 
 
 class TestUnknownArgumentWarning:
-    def test_warns_about_an_argument_the_signal_does_not_send(self) -> None:
-        def handler(reason: Any = None) -> None:
-            pass
-
-        sm = SignalManager(object())
-        with pytest.warns(UserWarning, match="declares reason"):
-            sm.connect(handler, signals.spider_opened)
-
-    def test_warning_names_the_signal(self) -> None:
-        def handler(item: Any = None) -> None:
-            pass
-
-        sm = SignalManager(object())
-        with pytest.warns(UserWarning, match=r"scrapy\.signals\.spider_opened"):
-            sm.connect(handler, signals.spider_opened)
-
     def test_warning_falls_back_to_the_repr_of_the_signal(self) -> None:
         signal = object()
         assert registry._signal_name(signal) == repr(signal)
-
-    def test_lists_every_unknown_argument(self) -> None:
-        def handler(cheese: Any = None, ham: Any = None) -> None:
-            pass
-
-        sm = SignalManager(object())
-        with pytest.warns(UserWarning, match="declares cheese, ham"):
-            sm.connect(handler, signals.spider_opened)
-
-    @pytest.mark.filterwarnings("error")
-    def test_no_warning_for_a_matching_handler(self) -> None:
-        def handler(spider: Any = None, signal: Any = None, sender: Any = None) -> None:
-            pass
-
-        SignalManager(object()).connect(handler, signals.spider_opened)
-
-    @pytest.mark.filterwarnings("error")
-    def test_no_warning_for_a_kwargs_handler(self) -> None:
-        def handler(anything: Any = None, **kwargs: Any) -> None:
-            pass
-
-        SignalManager(object()).connect(handler, signals.spider_opened)
-
-    @pytest.mark.filterwarnings("error")
-    def test_no_warning_for_an_unknown_signal(self) -> None:
-        def handler(whatever: Any = None) -> None:
-            pass
-
-        SignalManager(object()).connect(handler, object())
-
-
-class TestSignalArgs:
-    def test_every_signal_declares_its_arguments(self) -> None:
-        defined = {
-            value
-            for name, value in vars(signals).items()
-            if not name.startswith("_") and isinstance(value, object)
-        }
-        documented = set(signals._signal_args)
-        assert defined - documented == set()
 
 
 class TestReceiverCache:

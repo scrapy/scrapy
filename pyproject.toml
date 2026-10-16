@@ -72,7 +72,6 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 bpython = ["bpython>=0.7.1"]
 clipboard = ["pyperclip>=1.8.0"]
 color = ["colorlog>=6.6.0"]
-ftp-socks = ["python-socks[asyncio]>=2.6.0"]
 gcs = ["google-cloud-storage>=1.30.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=9.2.0"]
@@ -81,6 +80,7 @@ memusage = ["psutil>=5.9.0"]
 ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
 s3 = ["boto3>=1.35.2"]
+socks = ["python-socks[asyncio]>=2.6.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.17.0; platform_system != 'Windows' and implementation_name != 'pypy'",

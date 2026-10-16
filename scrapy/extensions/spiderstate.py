@@ -35,9 +35,9 @@ class SpiderState:
     def _load_state(self, spider: Spider) -> None:
         if Path(self.statefn).exists():
             with Path(self.statefn).open("rb") as f:
-                spider.state = pickle.load(f)  # type: ignore[attr-defined]  # noqa: S301
+                spider.state = pickle.load(f)  # noqa: S301
         else:
-            spider.state = {}  # type: ignore[attr-defined]
+            spider.state = {}
 
     def _persist_state(self, spider: Spider) -> None:
         with Path(self.statefn).open("wb") as f:
@@ -49,14 +49,14 @@ class SpiderState:
         assert self.crawler is not None
         await self.crawler.signals.send_catch_log_async(
             signals.spider_state_loaded,
-            state=spider.state,  # type: ignore[attr-defined]
+            state=spider.state,
         )
 
     async def _spider_closed(self, spider: Spider) -> None:
         assert self.crawler is not None
         await self.crawler.signals.send_catch_log_async(
             signals.spider_state_saving,
-            state=spider.state,  # type: ignore[attr-defined]
+            state=spider.state,
         )
         self._persist_state(spider)
 
@@ -71,7 +71,7 @@ class SpiderState:
         assert self.crawler is not None
         self.crawler.signals.send_catch_log(
             signals.spider_state_loaded,
-            state=spider.state,  # type: ignore[attr-defined]
+            state=spider.state,
         )
 
     def spider_closed(self, spider: Spider) -> None:
@@ -84,7 +84,7 @@ class SpiderState:
         assert self.crawler is not None
         self.crawler.signals.send_catch_log(
             signals.spider_state_saving,
-            state=spider.state,  # type: ignore[attr-defined]
+            state=spider.state,
         )
         self._persist_state(spider)
 

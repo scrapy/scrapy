@@ -50,7 +50,7 @@ _signal_args: dict[object, frozenset[str]] = {
     response_downloaded: frozenset({"response", "request", "spider"}),
     headers_received: frozenset({"headers", "body_length", "request", "spider"}),
     bytes_received: frozenset({"data", "request", "spider"}),
-    robots_parsed: frozenset({"robotparser", "request"}),
+    robots_parsed: frozenset({"robotparser", "request", "response"}),
     item_scraped: frozenset({"item", "response", "spider"}),
     item_dropped: frozenset({"item", "response", "spider", "exception"}),
     item_error: frozenset({"item", "response", "spider", "failure"}),
