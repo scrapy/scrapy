@@ -128,6 +128,7 @@ __all__ = [
     "HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS",
     "HTTPCACHE_IGNORE_SCHEMES",
     "HTTPCACHE_POLICY",
+    "HTTPCACHE_SCOPE",
     "HTTPCACHE_STORAGE",
     "HTTPERROR_ALLOWED_CODES",
     "HTTPERROR_ALLOW_ALL",
@@ -155,6 +156,7 @@ __all__ = [
     "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
     "LOG_LEVELS",
+    "LOG_ROOT_FORMATTER",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
     "LOG_VERSIONS",
@@ -450,6 +452,7 @@ HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS: list[str] = []
 HTTPCACHE_IGNORE_SCHEMES = ["file"]
 HTTPCACHE_POLICY = "scrapy.extensions.httpcache.DummyPolicy"
+HTTPCACHE_SCOPE = "spider"
 HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 HTTPERROR_ALLOW_ALL = False
@@ -485,6 +488,7 @@ LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
 LOG_LEVELS: dict[str, str] = {}
+LOG_ROOT_FORMATTER = "scrapy.LogRootFormatter"
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
 LOG_VERSIONS = [

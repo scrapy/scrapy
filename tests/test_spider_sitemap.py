@@ -12,8 +12,10 @@ from unittest import mock
 import pytest
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import SitemapSpider
+from scrapy.spiders.sitemap import iterloc
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
 from tests.spiders import RawResponseSpider
@@ -164,6 +166,7 @@ Sitemap: /sitemap-relative-url.xml
             signal=signals.robots_parsed,
             robotparser=FakeRobotParser(),
             request=Request("http://www.example.com/robots.txt"),
+            response=TextResponse("http://www.example.com/robots.txt"),
         )
 
         robots = b"Sitemap: http://example.com/sitemap.xml\n"
@@ -181,13 +184,23 @@ Sitemap: /sitemap-relative-url.xml
             signal=signals.robots_parsed,
             robotparser=None,
             request=Request("http://www.example.com/robots.txt"),
+            response=TextResponse("http://www.example.com/robots.txt"),
         )
 
         assert spider._robots_sitemaps == {}
 
     def test_robots_parsed_signal_schedules_sitemaps_for_skipped_netloc(self):
-        crawler = get_crawler(self.spider_class, settings_dict={"ROBOTSTXT_OBEY": True})
-        spider = self.spider_class.from_crawler(crawler, "example.com")
+        calls = []
+
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                calls.append((loc, entry, source, response))
+                return super().sitemap_request(
+                    loc, callback, entry, source=source, response=response
+                )
+
+        crawler = get_crawler(_Spider, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = _Spider.from_crawler(crawler, "example.com")
         crawler.engine = mock.MagicMock()
         spider._signal_only_netlocs.add("www.example.com")
 
@@ -195,20 +208,48 @@ Sitemap: /sitemap-relative-url.xml
             def sitemaps(self):
                 return ["/sitemap.xml"]
 
+        robots_response = TextResponse("http://www.example.com/robots.txt")
         # request is whatever other request to that host triggered the fetch,
         # not necessarily a request for robots.txt itself.
         crawler.signals.send_catch_log(
             signal=signals.robots_parsed,
             robotparser=FakeRobotParser(),
             request=Request("http://www.example.com/some/page"),
+            response=robots_response,
         )
 
         crawler.engine.crawl.assert_called_once()
         scheduled = crawler.engine.crawl.call_args[0][0]
         assert scheduled.url == "http://www.example.com/sitemap.xml"
         assert scheduled.callback == spider._parse_sitemap  # pylint: disable=comparison-with-callable
+        url = "http://www.example.com/sitemap.xml"
+        assert calls == [(url, {"loc": url}, "robotstxt", robots_response)]
         assert spider._signal_only_netlocs == set()
         assert spider._robots_sitemaps == {}
+
+    def test_sitemap_follow_robots_parsed_signal(self):
+        class _FollowSpider(self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_follow = [r"1\.xml"]
+
+        crawler = get_crawler(_FollowSpider, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = _FollowSpider.from_crawler(crawler, "example.com")
+        crawler.engine = mock.MagicMock()
+        spider._signal_only_netlocs.add("www.example.com")
+
+        class FakeRobotParser:
+            def sitemaps(self):
+                return ["/sitemap1.xml", "/sitemap2.xml"]
+
+        crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=FakeRobotParser(),
+            request=Request("http://www.example.com/some/page"),
+            response=TextResponse("http://www.example.com/robots.txt"),
+        )
+
+        crawler.engine.crawl.assert_called_once()
+        scheduled = crawler.engine.crawl.call_args[0][0]
+        assert scheduled.url == "http://www.example.com/sitemap1.xml"
 
     def test_alternate_url_locs(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -561,6 +602,154 @@ Sitemap: /sitemap-relative-url.xml
         urls = [req.url for req in spider._parse_sitemap(r)]
         assert urls == result
 
+    @pytest.mark.parametrize(
+        ("follow", "result"),
+        [
+            (r"1.xml", ["http://www.example.com/sitemap1.xml"]),
+            (re.compile(r"sitemap\d"), ["http://www.example.com/sitemap1.xml"]),
+            (r"nonexistent", []),
+        ],
+    )
+    def test_sitemap_follow_robotstxt(self, follow, result):
+        robots = b"Sitemap: http://www.example.com/sitemap1.xml\n"
+        r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
+
+        class _FollowSpider(self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_follow = [follow]
+
+        spider = _FollowSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == result
+
+    @coroutine_test
+    async def test_sitemap_request(self, mockserver: MockServer):
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                return Request(loc, callback, meta={"lastmod": entry["lastmod"]})
+
+            def parse(self, response):
+                yield {"url": response.url, "lastmod": response.meta["lastmod"]}
+
+            def raw_body(self):
+                assert self.mockserver
+                loc = self.mockserver.url("/text")
+                return (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    f"<url><loc>{loc}</loc><lastmod>2005-01-01</lastmod></url>"
+                    "</urlset>"
+                )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"url": mockserver.url("/text"), "lastmod": "2005-01-01"}]
+
+    @pytest.mark.parametrize(
+        ("url", "body", "expected"),
+        [
+            (
+                "http://www.example.com/robots.txt",
+                b"Sitemap: http://www.example.com/sitemap1.xml",
+                [
+                    (
+                        "http://www.example.com/sitemap1.xml",
+                        "_parse_sitemap",
+                        {"loc": "http://www.example.com/sitemap1.xml"},
+                        "robotstxt",
+                    )
+                ],
+            ),
+            (
+                "http://www.example.com/sitemap.xml",
+                b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <sitemap>
+            <loc>http://www.example.com/sitemap1.xml</loc>
+            <lastmod>2005-01-01</lastmod>
+        </sitemap>
+    </sitemapindex>""",
+                [
+                    (
+                        "http://www.example.com/sitemap1.xml",
+                        "_parse_sitemap",
+                        {
+                            "loc": "http://www.example.com/sitemap1.xml",
+                            "lastmod": "2005-01-01",
+                        },
+                        "sitemapindex",
+                    )
+                ],
+            ),
+            (
+                "http://www.example.com/sitemap.xml",
+                b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <lastmod>2005-01-01</lastmod>
+        </url>
+    </urlset>""",
+                [
+                    (
+                        "http://www.example.com/english/",
+                        "parse",
+                        {
+                            "loc": "http://www.example.com/english/",
+                            "lastmod": "2005-01-01",
+                        },
+                        "urlset",
+                    )
+                ],
+            ),
+        ],
+        ids=["robotstxt", "sitemapindex", "urlset"],
+    )
+    def test_sitemap_request_source(
+        self,
+        url: str,
+        body: bytes,
+        expected: list[tuple[str, str, dict[str, str], str]],
+    ):
+        response = TextResponse(url=url, body=body)
+        calls = []
+
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                calls.append((loc, callback.__name__, entry, source, response))
+                return super().sitemap_request(
+                    loc, callback, entry, source=source, response=response
+                )
+
+        spider = _Spider("example.com")
+        requests = list(spider._parse_sitemap(response))
+
+        assert [request.url for request in requests] == [loc for loc, *_ in expected]
+        assert calls == [(*item, response) for item in expected]
+
+    def test_sitemap_request_for_alternate_links(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+            xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <xhtml:link rel="alternate" hreflang="de" href="http://www.example.com/deutsch/"/>
+        </url>
+    </urlset>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_alternate_links = True
+
+            def sitemap_request(self, loc, callback, entry, *, source, response):
+                return Request(loc, callback, meta={"entry_loc": entry["loc"]})
+
+        spider = _Spider("example.com")
+        requests = list(spider._parse_sitemap(r))
+
+        assert [request.meta["entry_loc"] for request in requests] == [
+            "http://www.example.com/english/",
+            "http://www.example.com/english/",
+        ]
+
     def test_compression_bomb_setting(self):
         settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
         crawler = get_crawler(settings_dict=settings)
@@ -706,3 +895,12 @@ Sitemap: /sitemap-relative-url.xml
         assert request.url == "https://toscrape.com/sitemap.xml"
         assert request.dont_filter is False
         assert request.callback == spider._parse_sitemap  # pylint: disable=comparison-with-callable
+
+
+def test_iterloc_deprecated():
+    entries = [{"loc": "http://www.example.com/"}]
+
+    with pytest.warns(ScrapyDeprecationWarning, match="iterloc"):
+        locs = list(iterloc(entries))
+
+    assert locs == ["http://www.example.com/"]

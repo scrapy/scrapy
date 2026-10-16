@@ -291,6 +291,12 @@ For more information see: `HTTP Status Code Definitions`_.
 
 .. _HTTP Status Code Definitions: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
+Responses whose status code your spider does not handle reach your errback as
+an :exc:`~scrapy.spidermiddlewares.httperror.HttpError` exception:
+
+.. autoexception:: scrapy.spidermiddlewares.httperror.HttpError
+   :members:
+
 HttpErrorMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

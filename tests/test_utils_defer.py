@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import random
 import socket
 import warnings
@@ -327,6 +328,24 @@ class TestParallelAsync:
         assert "Error processing an item" in caplog.text
         assert "Bad item" in caplog.text
 
+    @coroutine_test
+    async def test_context(self) -> None:
+        var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+            "var", default=None
+        )
+        var.set("hello")
+        seen: list[str | None] = []
+
+        async def aiterable() -> AsyncGenerator[int, None]:
+            for i in range(3):
+                seen.append(var.get())
+                yield i
+
+        await maybe_deferred_to_future(
+            parallel_async(aiterable(), 1, lambda _: seen.append(var.get()))
+        )
+        assert seen == ["hello"] * 6
+
 
 class TestDeferredFromCoro:
     def test_deferred(self):
@@ -443,6 +462,17 @@ class TestDeferredToFuture:
         assert isinstance(result, Future)
         future_result = await result
         assert future_result == 42
+
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_thread_without_loop(self):
+        # No loop runs in the other thread, so the future gets the loop of the
+        # installed reactor.
+        d: Deferred[int] = Deferred()
+        result = await asyncio.to_thread(deferred_to_future, d)
+        assert result.get_loop() is asyncio.get_running_loop()
+        d.callback(42)
+        assert await result == 42
 
 
 @pytest.mark.only_not_asyncio
