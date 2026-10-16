@@ -17,6 +17,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers
+from scrapy.utils._download_handlers import get_proxy_headers
 from scrapy.utils._ssl import _log_sslobj_debug_info, _make_ssl_context
 
 from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
@@ -85,7 +86,13 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
         timeout: float,  # noqa: ASYNC109
     ) -> AsyncIterator[_ClientResponse]:
         proxy = self._extract_proxy_url_with_creds(request)
+        proxy_headers = get_proxy_headers(request)
         headers = self._utf8_request_headers(request)
+        if proxy_headers and not request.url.startswith("https:"):
+            # without a tunnel the proxy reads the request headers, so the
+            # headers meant for it travel among them, and it is up to the proxy
+            # not to pass them on to the target server
+            headers.extend(proxy_headers)
         url: str | yarl.URL = request.url
         if request.meta.get("verbatim_url"):
             # encoded=True disables the percent-encoding normalization that
@@ -101,6 +108,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
                 ssl=self._ssl_context,
                 allow_redirects=False,
                 proxy=proxy,
+                proxy_headers=dict(proxy_headers) or None,
             ) as response:
                 yield cast("_ClientResponse", response)
         except TimeoutError as e:
