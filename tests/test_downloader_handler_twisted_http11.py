@@ -9,6 +9,7 @@ from twisted.internet.error import ConnectingCancelledError
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet.testing import MemoryReactorClock
 from twisted.python.failure import Failure
+from twisted.web.client import URI
 
 try:
     import resource
@@ -21,6 +22,7 @@ from scrapy.core.downloader.handlers._base_http import _auto_connection_limit
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
     TunnelError,
+    _tunnel_request_data,
     _TunnelingTCP4ClientEndpoint,
 )
 from scrapy.crawler import Crawler
@@ -62,6 +64,8 @@ pytestmark = pytest.mark.requires_reactor  # HTTP11DownloadHandler requires a re
 
 
 class HTTP11DownloadHandlerMixin:
+    handler_supports_partial_response_on_timeout = True
+
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP11DownloadHandler
@@ -226,6 +230,26 @@ class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
 class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
     # not implemented
     handler_supports_tls_in_tls = False
+
+
+@pytest.mark.parametrize(
+    ("url", "expected_authority"),
+    [
+        (b"https://[::1]:8443/x", b"[::1]:8443"),
+        (b"https://[::ffff:192.168.0.1]/x", b"[::ffff:192.168.0.1]:443"),
+        (b"https://example.com:8443/x", b"example.com:8443"),
+        (b"https://127.0.0.1:8443/x", b"127.0.0.1:8443"),
+    ],
+)
+def test_connect_authority(url: bytes, expected_authority: bytes) -> None:
+    uri = URI.fromBytes(url)
+    tunnel_req = _tunnel_request_data(
+        _TunnelingTCP4ClientEndpoint._format_host(uri.host), uri.port
+    )
+    assert tunnel_req == (
+        b"CONNECT " + expected_authority + b" HTTP/1.1\r\n"
+        b"Host: " + expected_authority + b"\r\n\r\n"
+    )
 
 
 @pytest.mark.requires_internet

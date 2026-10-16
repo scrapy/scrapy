@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from twisted.python.failure import Failure
 
     from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -71,12 +72,25 @@ def _to_string(path: str | PathLike[str]) -> str:
     return str(path)  # convert a Path object to string
 
 
+def _checksum_algorithm(settings: BaseSettings, key: str) -> str:
+    algorithm: str = settings.get(key, "md5")
+    hashlib.new(algorithm)  # fail early on an unsupported algorithm
+    return algorithm
+
+
 class StatInfo(TypedDict, total=False):
     checksum: str
     last_modified: float
 
 
 class FilesStoreProtocol(Protocol):
+    checksum_algorithm: str
+    """Name of the :mod:`hashlib` algorithm that :meth:`stat_file` must use for
+    the checksums that it calculates itself.
+
+    It is assigned by the pipeline.
+    """
+
     def __init__(self, uri: str, /): ...
 
     def persist_file(
@@ -94,6 +108,8 @@ class FilesStoreProtocol(Protocol):
 
 
 class FSFilesStore:
+    checksum_algorithm: str = "md5"
+
     def __init__(self, basedir: str | PathLike[str]):
         basedir = _to_string(basedir)
         if "://" in basedir:
@@ -126,7 +142,7 @@ class FSFilesStore:
             return {}
 
         with absolute_path.open("rb") as f:
-            checksum = hashlib.file_digest(f, "md5").hexdigest()
+            checksum = hashlib.file_digest(f, self.checksum_algorithm).hexdigest()
 
         return {"last_modified": last_modified, "checksum": checksum}
 
@@ -145,6 +161,11 @@ class FSFilesStore:
 
 
 class S3FilesStore:
+    # Amazon S3 cannot hash a stored object on demand. It reports the ETag,
+    # which is an MD5 hash for the objects that persist_file() uploads, and the
+    # checksums that were requested when the object was uploaded.
+    checksum_algorithm: str = "md5"
+
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
     AWS_SESSION_TOKEN = None
@@ -213,11 +234,12 @@ class S3FilesStore:
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split("/", 1)
 
-    @staticmethod
-    def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
-        checksum = boto_key["ETag"].strip('"')
+    def _onsuccess(self, boto_key: dict[str, Any]) -> StatInfo:
         last_modified = boto_key["LastModified"]
         modified_stamp = last_modified.timestamp()
+        if self.checksum_algorithm != "md5":
+            return {"last_modified": modified_stamp}
+        checksum = boto_key["ETag"].strip('"')
         return {"checksum": checksum, "last_modified": modified_stamp}
 
     def stat_file(
@@ -295,6 +317,10 @@ class S3FilesStore:
 
 
 class GCSFilesStore:
+    # Google Cloud Storage cannot hash a stored object on demand. It reports an
+    # MD5 hash and a CRC32C checksum.
+    checksum_algorithm: str = "md5"
+
     GCS_PROJECT_ID = None
     UPLOAD_TIMEOUT: float | None = None
 
@@ -343,13 +369,14 @@ class GCSFilesStore:
                 {"bucket": bucket},
             )
 
-    @staticmethod
-    def _onsuccess(blob: Any) -> StatInfo:
-        if blob:
-            checksum = base64.b64decode(blob.md5_hash).hex()
-            last_modified = blob.updated.timestamp()
-            return {"checksum": checksum, "last_modified": last_modified}
-        return {}
+    def _onsuccess(self, blob: Any) -> StatInfo:
+        if not blob:
+            return {}
+        last_modified = blob.updated.timestamp()
+        if self.checksum_algorithm != "md5":
+            return {"last_modified": last_modified}
+        checksum = base64.b64decode(blob.md5_hash).hex()
+        return {"checksum": checksum, "last_modified": last_modified}
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
@@ -395,6 +422,8 @@ class GCSFilesStore:
 
 
 class FTPFilesStore:
+    checksum_algorithm: str = "md5"
+
     FTP_USERNAME: str | None = None
     FTP_PASSWORD: str | None = None
     USE_ACTIVE_MODE: bool | None = None
@@ -472,7 +501,7 @@ class FTPFilesStore:
                     .replace(tzinfo=UTC)
                     .timestamp()
                 )
-                m = hashlib.md5()  # noqa: S324
+                m = hashlib.new(self.checksum_algorithm)
                 ftp.retrbinary(f"RETR {file_path}", m.update)
             return {"last_modified": last_modified, "checksum": m.hexdigest()}
         # The file doesn't exist
@@ -565,6 +594,8 @@ class FilesPipeline(MediaPipeline):
     DEFAULT_FILES_URLS_FIELD: str = "file_urls"
     DEFAULT_FILES_RESULT_FIELD: str = "files"
 
+    _checksum_warned: bool = False
+
     def __init__(
         self,
         store_uri: str | PathLike[str],
@@ -609,6 +640,9 @@ class FilesPipeline(MediaPipeline):
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
             self._key_for_pipe, base_class_name=cls_name, settings=settings
+        )
+        self.store.checksum_algorithm = _checksum_algorithm(
+            settings, resolve("FILES_CHECKSUM_ALGORITHM")
         )
         self.expires: int = settings.getint(resolve("FILES_EXPIRES"), self.EXPIRES)
         if not hasattr(self, "FILES_URLS_FIELD"):
@@ -683,6 +717,15 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats("uptodate")
 
         checksum = result.get("checksum", None)
+        if checksum is None and not self._checksum_warned:
+            self._checksum_warned = True
+            logger.warning(
+                f"{self.store.__class__.__name__} does not report "
+                f"{self.store.checksum_algorithm} checksums of stored files, so "
+                f"files that are not downloaded again, because they have not "
+                f"expired yet, get no checksum.",
+                extra={"spider": info.spider},
+            )
         return {
             "url": request.url,
             "path": path,
@@ -738,7 +781,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status not in {200, 201}:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -810,7 +853,7 @@ class FilesPipeline(MediaPipeline):
     ) -> str:
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
-        checksum = hashlib.file_digest(buf, "md5").hexdigest()
+        checksum = hashlib.file_digest(buf, self.store.checksum_algorithm).hexdigest()
         buf.seek(0)
         await ensure_awaitable(self.store.persist_file(path, buf, info))
         return checksum
