@@ -20,8 +20,9 @@ from scrapy.exceptions import (
     DownloadCancelledError,
     IgnoreRequest,
 )
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.spiders import Spider
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -30,6 +31,7 @@ from scrapy.utils.defer import (
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+from tests.spiders import SingleRequestSpider
 from tests.utils.bases.engine import TestEngineBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 from tests.utils.engine import (
@@ -460,6 +462,29 @@ async def test_start_without_spider() -> None:
 
 
 @coroutine_test
+async def test_stop_while_item_in_pipelines() -> None:
+    """A stop that starts while an item is going through the item pipelines
+    completes once that item is done."""
+
+    class StoppingPipeline:
+        async def process_item(self, item: Any) -> Any:
+            _schedule_coro(crawler.stop_async())
+            await sleep(0.1)
+            return item
+
+    class ItemSpider(Spider):
+        name = "item"
+
+        async def start(self) -> AsyncIterator[Any]:
+            yield {"a": "b"}
+
+    crawler = get_crawler(ItemSpider, {"ITEM_PIPELINES": {StoppingPipeline: 1}})
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("item_scraped_count") == 1
+    assert crawler.stats.get_value("finish_reason") == "shutdown"
+
+
+@coroutine_test
 async def test_pause_unpause() -> None:
     engine = ExecutionEngine(get_crawler(DefaultSpider))
     try:
@@ -506,6 +531,33 @@ class TestSpiderIdle:
         crawler.signals.connect(spider_idle, signals.spider_idle)
         await crawler.crawl_async()
         assert crawler.stats.get_value("downloader/request_count") == 1
+
+    @coroutine_test
+    async def test_request_not_in_downloader(self) -> None:
+        """The spider is not idle while a request taken from the scheduler is
+        not in the downloader yet."""
+
+        class SlowFetchDownloader(Downloader):
+            def fetch(self, request: Request) -> Deferred[Response | Request]:  # type: ignore[override]
+                return deferred_from_coro(self._slow_fetch(request))
+
+            async def _slow_fetch(self, request: Request) -> Response | Request:
+                await sleep(0.1)
+                return await maybe_deferred_to_future(super().fetch(request))
+
+        events: list[str] = []
+
+        def response_received() -> None:
+            events.append("response_received")
+
+        def spider_idle() -> None:
+            events.append("spider_idle")
+
+        crawler = get_crawler(SingleRequestSpider, {"DOWNLOADER": SlowFetchDownloader})
+        crawler.signals.connect(response_received, signals.response_received)
+        crawler.signals.connect(spider_idle, signals.spider_idle)
+        await crawler.crawl_async(seed="data:,")
+        assert events == ["response_received", "spider_idle"]
 
 
 @coroutine_test

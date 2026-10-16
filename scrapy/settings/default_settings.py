@@ -156,6 +156,7 @@ __all__ = [
     "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
     "LOG_LEVELS",
+    "LOG_ROOT_FORMATTER",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
     "LOG_VERSIONS",
@@ -342,6 +343,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
+    "scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware": 200,
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
     "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
@@ -487,6 +489,7 @@ LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
 LOG_LEVELS: dict[str, str] = {}
+LOG_ROOT_FORMATTER = "scrapy.LogRootFormatter"
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
 LOG_VERSIONS = [
