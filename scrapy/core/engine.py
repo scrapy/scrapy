@@ -277,6 +277,14 @@ class ExecutionEngine:
         return self._state
 
     @property
+    def response_active_size(self) -> int:
+        """Size, in bytes, that counts toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`.
+
+        .. versionadded:: VERSION
+        """
+        return self.downloader.middleware._total_active_size
+
+    @property
     def running(self) -> bool:
         """Whether the engine is in the :attr:`EngineState.RUNNING` state.
 
@@ -507,7 +515,6 @@ class ExecutionEngine:
             or not self._slot
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
-            or self.scraper.slot.needs_backout()
         )
 
     def _remove_request(self, _: Any, request: Request) -> None:
