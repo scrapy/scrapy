@@ -144,11 +144,15 @@ def mockserver() -> Generator[MockServer]:
 
 @pytest.fixture(scope="session")
 def mockserver_ipv6() -> Generator[MockServer]:
-    """A mockserver reachable only over the IPv6 loopback.
+    """A mockserver addressed by the IPv6 loopback.
 
     Tests using this must skip when :func:`ipv6_loopback_available` is False.
     """
-    with MockServer("::1") as mockserver:
+    # Where IPv6 sockets also accept IPv4, binding the IPv6 wildcard keeps
+    # IPv4 servers from getting the same port numbers. Otherwise a client
+    # resolving localhost to ::1 first would reach this server instead of
+    # an IPv4 one.
+    with MockServer("::") as mockserver:
         yield mockserver
 
 
