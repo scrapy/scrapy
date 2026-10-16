@@ -29,3 +29,6 @@ PYOPENSSL_SET_CIPHER_LIST_TMP_CONN = PYOPENSSL_VERSION < Version("25.2.0")
 W3LIB_VERSION = Version(W3LIB_VERSION_STRING)
 # max_scan and bytes input in get_base_url() and get_meta_refresh()
 W3LIB_HTML_MAX_SCAN = W3LIB_VERSION >= Version("2.5.0")
+# safe_url_string() drops the brackets of an IPv6 address literal in the
+# netloc, https://github.com/scrapy/w3lib/pull/253
+W3LIB_STRIPS_IPV6_BRACKETS = Version("2.0.0") <= W3LIB_VERSION < Version("2.4.1")

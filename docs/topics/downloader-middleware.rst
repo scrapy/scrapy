@@ -329,7 +329,10 @@ HttpAuthMiddleware
                 "HTTPAUTH_DOMAIN": "intranet.example.com",
             }
 
-            # .. rest of the spider code omitted ...
+    You can also let
+    :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`
+    fill :reqmeta:`http_user` and :reqmeta:`http_pass` from the credentials in
+    the request URL.
 
     Example using per-request meta:
 
@@ -523,9 +526,10 @@ Filesystem storage backend (default)
     The directory name is made from the request fingerprint (see
     ``scrapy.utils.request.fingerprint``), and one level of subdirectories is
     used to avoid creating too many files into the same directory (which is
-    inefficient in many file systems). An example directory could be::
+    inefficient in many file systems). Those directories live inside the
+    folder that :setting:`HTTPCACHE_SCOPE` selects, ``my_spider`` below::
 
-        /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
+        /path/to/cache/dir/my_spider/72/72811f648e718090f041317756c03adb0ada46c7
 
 .. _httpcache-storage-dbm:
 
@@ -640,9 +644,40 @@ HTTPCACHE_DIR
 
 Default: ``'httpcache'``
 
-The directory to use for storing the (low-level) HTTP cache. If empty, the HTTP
-cache will be disabled. If a relative path is given, is taken relative to the
-project data dir. For more info see: :ref:`topics-project-structure`.
+The directory to use for storing the (low-level) HTTP cache. If a relative path
+is given, is taken relative to the project data dir. For more info see:
+:ref:`topics-project-structure`.
+
+.. setting:: HTTPCACHE_SCOPE
+
+HTTPCACHE_SCOPE
+^^^^^^^^^^^^^^^
+
+Default: ``'spider'``
+
+.. versionadded:: VERSION
+
+How to partition the cache within :setting:`HTTPCACHE_DIR`:
+
+``'spider'``
+    One cache per spider. Spiders never reuse each other's cached responses.
+
+``'none'``
+    A single cache, shared by every spider.
+
+``'domain'``
+    One cache per request host, shared by every spider. Only
+    :class:`~scrapy.extensions.httpcache.FilesystemCacheStorage` supports this
+    value; it allows removing the cached responses of a single website by
+    deleting its directory.
+
+Changing this setting makes existing cached responses unreachable, since
+nothing looks for them in their old location. Delete
+:setting:`HTTPCACHE_DIR` to reclaim their disk space.
+
+With :class:`~scrapy.extensions.httpcache.DbmCacheStorage`, ``'none'`` makes
+every spider use the same database file, which most DBM implementations open
+for exclusive writing. Spiders that share a cache must then run one at a time.
 
 .. warning:: Treat the cache directory with the same security care as your
     Scrapy project source code. Do not point :setting:`HTTPCACHE_DIR` to a
@@ -1304,6 +1339,15 @@ DownloaderStats
 
    To use this middleware you must enable the :setting:`DOWNLOADER_STATS`
    setting.
+
+
+UriUserInfoMiddleware
+---------------------
+
+.. module:: scrapy.downloadermiddlewares.uriuserinfo
+
+.. autoclass:: UriUserInfoMiddleware
+
 
 UserAgentMiddleware
 -------------------

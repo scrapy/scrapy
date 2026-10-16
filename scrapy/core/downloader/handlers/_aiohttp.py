@@ -51,6 +51,7 @@ class _ClientResponse(aiohttp.ClientResponse):
 
 class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     experimental: ClassVar[bool] = True
+    lazy = True
 
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
@@ -61,6 +62,8 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
             limit=self._pool_size_total,
             # hard limit on simultaneous connections per host
             limit_per_host=self._pool_size_per_host,
+            keepalive_timeout=self._keepalive_timeout or None,
+            force_close=not self._keepalive_timeout,
         )
         self._session: aiohttp.ClientSession = aiohttp.ClientSession(
             connector=connector,
@@ -156,6 +159,10 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     @staticmethod
     def _is_dataloss_exception(exc: Exception) -> bool:
         return isinstance(exc, aiohttp.ClientPayloadError)
+
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, TimeoutError)
 
     async def close(self) -> None:
         await self._session.close()

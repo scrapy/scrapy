@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import codecs
 import gc
-import platform
 import weakref
 from typing import cast
 from unittest import mock
@@ -248,11 +247,7 @@ class TestTextResponse(TestResponseBase):
             encoding="utf-8",
             body=b"PREFIX\xe3\xabSUFFIX",
         )
-        # XXX: Policy for replacing invalid chars may suffer minor variations
-        # but it should always contain the unicode replacement char ('\ufffd')
-        assert "\ufffd" in r.text, repr(r.text)
-        assert "PREFIX" in r.text, repr(r.text)
-        assert "SUFFIX" in r.text, repr(r.text)
+        assert r.text == "PREFIX\ufffdSUFFIX"
 
         # Do not destroy html tags due to encoding bugs
         r = self.response_class(
@@ -261,10 +256,6 @@ class TestTextResponse(TestResponseBase):
             body=b"\xf0<span>value</span>",
         )
         assert "<span>value</span>" in r.text, repr(r.text)
-
-        # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
-        # r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
-        # assert '\ufffd' in r.text, repr(r.text)
 
     def test_selector(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
@@ -280,10 +271,6 @@ class TestTextResponse(TestResponseBase):
         assert response.selector.css("title::text").getall() == ["Some page"]
         assert response.selector.re("Some (.*)</title>") == ["page"]
 
-    @pytest.mark.skipif(
-        platform.python_implementation() != "CPython",
-        reason="Relies on reference counting",
-    )
     def test_selector_response_refcounting(self):
         response = self.response_class("http://www.example.com", body=b"<a>b</a>")
         selector = response.selector
@@ -352,6 +339,18 @@ class TestTextResponse(TestResponseBase):
         )
         absolute = "http://www.example.com/elsewhere/test"
         assert joined == absolute
+
+    def test_follow_redirect_ignores_base_url(self):
+        """The Location header is resolved against the response URL, not against
+        the base URL of the document, which only applies to its own links."""
+        body = b'<html><body><base href="https://example.net"></body></html>'
+        response = self.response_class(
+            "http://www.example.com/dir/index",
+            body=body,
+            headers={"Location": "/test"},
+        )
+        assert response.urljoin("/test") == "https://example.net/test"
+        assert response.follow_redirect().url == "http://www.example.com/test"
 
     def test_follow_selector(self):
         resp = self._links_response()

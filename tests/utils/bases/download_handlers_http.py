@@ -32,7 +32,10 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
+from scrapy.utils._deps_compat import (
+    TWISTED_TLS_LIMITS_OFFBY1,
+    W3LIB_STRIPS_IPV6_BRACKETS,
+)
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.reactor import is_reactor_installed
@@ -51,6 +54,7 @@ from tests.spiders import (
     SimpleSpider,
     SingleRequestSpider,
 )
+from tests.utils import ipv6_loopback_available
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -70,13 +74,9 @@ class TestHttpBase(ABC):
     http2: bool = False
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
-    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
-    # stream error (of type PROTOCOL_ERROR) so the client will send
-    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
-    # connection (see handling of ProtocolError in
-    # h2.connection.H2Connection.receive_data()), thus closing all streams that
-    # were using it, and we handle this as a normal exception.
-    handler_supports_http2_dataloss: bool = True
+    # whether the handler can return the body received so far, instead of
+    # erroring out, when a request times out mid-response
+    handler_supports_partial_response_on_timeout: bool = False
     # whether the handler sends a request Content-Length header as is, instead
     # of building its own (https://github.com/scrapy/scrapy/issues/4919)
     handler_supports_custom_content_length: bool = True
@@ -121,6 +121,26 @@ class TestHttpBase(ABC):
         finally:
             await dh.close()
 
+    async def _connection_ids(
+        self, url: str, settings_dict: dict[str, Any]
+    ) -> set[str]:
+        """Request *url* twice in a row and return the identifiers of the
+        connections that the server used to serve them."""
+        async with self.get_dh(settings_dict) as dh:
+            responses = [await dh.download_request(Request(url)) for _ in range(2)]
+        return {response.text for response in responses}
+
+    @coroutine_test
+    async def test_keepalive(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        assert len(await self._connection_ids(url, {})) == 1
+
+    @coroutine_test
+    async def test_no_keepalive(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        settings_dict = {"CONNECTION_KEEPALIVE_TIMEOUT": 0}
+        assert len(await self._connection_ids(url, settings_dict)) == 2
+
     @coroutine_test
     async def test_unsupported_scheme(self) -> None:
         request = Request("unsupp://unsupported.scheme")
@@ -131,6 +151,20 @@ class TestHttpBase(ABC):
     @coroutine_test
     async def test_download(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+
+    @pytest.mark.skipif(
+        not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+    )
+    @pytest.mark.skipif(
+        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
+    )
+    @coroutine_test
+    async def test_download_ipv6_literal(self, mockserver_ipv6: MockServer) -> None:
+        """Download from a URL whose host is an IPv6 address literal."""
+        request = Request(mockserver_ipv6.url("/text", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == b"Works"
@@ -441,6 +475,25 @@ class TestHttpBase(ABC):
             d = deferred_from_coro(download_handler.download_request(request))
             with pytest.raises(DownloadTimeoutError):
                 await maybe_deferred_to_future(d)
+
+    @coroutine_test
+    async def test_timeout_download_from_spider_server_hangs_partial_response(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.handler_supports_partial_response_on_timeout:
+            pytest.skip("This handler doesn't support partial responses on timeout")
+        # client connects, server sends headers and some body bytes but hangs;
+        # with dataloss failures disabled the body received so far is
+        # returned instead of raising a timeout error
+        meta = {"download_timeout": 0.5, "download_fail_on_dataloss": False}
+        request = Request(
+            mockserver.url("/hang-after-headers", is_secure=self.is_secure), meta=meta
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.body == b"some bytes"
+        assert response.flags == ["dataloss"]
 
     @pytest.mark.parametrize("send_header", [True, False])
     @coroutine_test
@@ -862,8 +915,6 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_download_cause_data_loss(self, mockserver: MockServer) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -873,8 +924,6 @@ class TestHttpBase(ABC):
     async def test_download_cause_data_loss_double_warning(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -890,8 +939,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_broken(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(
             mockserver.url("/broken", is_secure=self.is_secure),
             meta={"download_fail_on_dataloss": False},
@@ -920,8 +967,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_via_setting(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOAD_FAIL_ON_DATALOSS": False}
@@ -1717,6 +1762,10 @@ PROXY_KINDS = ["http", "https", "socks5"]
 
 class TestMitmProxyBase(ABC):
     handler_supports_socks: bool = False
+    # whether the handler supports proxying to an IPv6 literal destination
+    handler_supports_ipv6_destination: bool = True
+    # address the proxy listens on, read by the proxy_server fixture
+    proxy_host: str = "127.0.0.1"
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
 
@@ -1842,6 +1891,41 @@ class TestMitmProxyBase(ABC):
         assert responses[0].url == mockserver.url("/redirected", is_secure=https_dest)
         self._assert_got_response_code(200, caplog.text)
         self._assert_headers(responses[0].headers, https_dest)
+
+    @pytest.mark.skipif(
+        not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+    )
+    @pytest.mark.skipif(
+        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
+    )
+    @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_proxy_ipv6_destination(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        proxy_server: str,
+        mockserver_ipv6: MockServer,
+        https_dest: bool,
+    ) -> None:
+        """HTTP/HTTPS/SOCKS5 proxy, destination addressed by an IPv6 literal.
+
+        For an HTTPS destination this needs the CONNECT authority to bracket the
+        address, otherwise the proxy sees a malformed ``CONNECT ::1:port``.
+        """
+        if not self.handler_supports_ipv6_destination:
+            pytest.skip("IPv6 literal destinations are not supported behind a proxy")
+        self._maybe_skip(proxy_server, https_dest)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver_ipv6.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
 
     @staticmethod
     def _assert_headers(headers: Headers, https_dest: bool) -> None:
