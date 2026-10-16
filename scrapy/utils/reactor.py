@@ -103,7 +103,7 @@ def set_asyncio_event_loop_policy() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=r"'asyncio\.(get_event_loop_policy|WindowsSelectorEventLoopPolicy)' is deprecated",
+            message=r"'asyncio\.(get_event_loop_policy|set_event_loop_policy|WindowsSelectorEventLoopPolicy)' is deprecated",
             category=DeprecationWarning,
         )
         policy = asyncio.get_event_loop_policy()
