@@ -22,6 +22,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# Status codes for which the HTTP standard defines redirection handling. Other
+# status codes from REDIRECT_HTTP_CODES get conservative handling, see
+# RedirectMiddleware.
+_STANDARD_HTTP_CODES = frozenset({301, 302, 303, 307, 308})
+
+
 class BaseRedirectMiddleware:
     crawler: Crawler
     enabled_setting: str = "REDIRECT_ENABLED"
@@ -195,6 +201,28 @@ class BaseRedirectMiddleware:
 class RedirectMiddleware(BaseRedirectMiddleware):
     """Handle redirection of requests based on response status."""
 
+    def __init__(self, settings: BaseSettings):
+        super().__init__(settings)
+        self.redirect_http_codes: set[int] = {
+            int(x) for x in settings.getlist("REDIRECT_HTTP_CODES")
+        }
+
+    def _is_redirect(self, request: Request, response: Response) -> bool:
+        meta_http_codes = request.meta.get("redirect_http_codes")
+        http_codes = (
+            {int(x) for x in meta_http_codes}
+            if meta_http_codes is not None
+            else self.redirect_http_codes
+        )
+        if response.status not in http_codes:
+            return False
+        if response.status in _STANDARD_HTTP_CODES:
+            return True
+        # For other status codes, e.g. 201, Location identifies a resource
+        # rather than a redirection target, and the response body may be that
+        # resource, which following Location would discard.
+        return not response.body
+
     @_warn_spider_arg
     def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
@@ -208,13 +236,9 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         ):
             return response
 
-        if "Location" not in response.headers or response.status not in {
-            301,
-            302,
-            303,
-            307,
-            308,
-        }:
+        if "Location" not in response.headers or not self._is_redirect(
+            request, response
+        ):
             return response
 
         assert response.headers["Location"] is not None
@@ -224,8 +248,14 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
 
+        # 307 and 308 responses keep the method and the body of the original
+        # request as is, and so do 301 and 302 responses, except for POST
+        # requests, for historical reasons. Any other status code gets the
+        # handling of 303 responses, a bodyless GET request, which is the safest
+        # choice for status codes with no defined redirection semantics.
         if (response.status in {301, 302} and request.method == "POST") or (
-            response.status == 303 and request.method not in {"GET", "HEAD"}
+            response.status not in {301, 302, 307, 308}
+            and request.method not in {"GET", "HEAD"}
         ):
             redirected = self._redirect_request_using_get(
                 request, response, redirected_url

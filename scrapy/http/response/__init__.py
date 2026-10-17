@@ -321,10 +321,11 @@ class Response(object_ref):
 
         It raises :exc:`ValueError` if this response has no ``Location`` header.
 
-        The resulting request uses the GET method and has no body unless you
-        specify otherwise, even for 307 and 308 responses, for which
+        Note that the resulting request uses the GET method and has no body,
+        unless you specify otherwise. To reproduce instead how
         :class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware`
-        keeps the method and body of the original request.
+        follows the ``Location`` header of a given response status, see
+        :setting:`REDIRECT_HTTP_CODES`.
         """
         location = self.headers.get("Location")
         if location is None:

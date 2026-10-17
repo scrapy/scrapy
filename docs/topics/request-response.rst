@@ -835,6 +835,7 @@ Those are:
 * :reqmeta:`max_retry_times`
 * :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
+* :reqmeta:`redirect_http_codes`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_times`
 * :reqmeta:`redirect_ttl`
