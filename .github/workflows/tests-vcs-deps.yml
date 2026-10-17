@@ -50,7 +50,7 @@ jobs:
           tox.ini
 
     - name: Install mitmproxy
-      run: uv tool install --python cpython mitmproxy
+      run: uv tool install mitmproxy
 
     - name: Run tests
       run: uvx --with tox-uv tox
