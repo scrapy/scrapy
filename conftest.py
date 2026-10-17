@@ -282,6 +282,7 @@ def pytest_runtest_setup(item):
         "aiobotocore",
         "botocore",
         "boto3",
+        "aioboto3",
         "psutil",
     ]
 
