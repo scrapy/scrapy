@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import re
 import time
 from http.cookiejar import Cookie, CookiePolicy, DefaultCookiePolicy
@@ -19,6 +20,31 @@ if TYPE_CHECKING:
 # https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
 IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
+# Stands in for the creation time of RFC 6265. A counter, unlike a clock,
+# never gives the same value to two cookies.
+_creation_indexes = itertools.count()
+
+
+class _CreationOrderCookieJar(_CookieJar):
+    """Cookie jar that lists cookies in the ``Cookie`` header by descending
+    path length, then by ascending creation time, as :rfc:`6265#section-5.4`
+    requires.
+    """
+
+    def set_cookie(self, cookie: Cookie) -> None:
+        try:
+            # A cookie that replaces another one keeps its creation time.
+            old_cookie = self._cookies[cookie.domain][cookie.path][cookie.name]  # type: ignore[attr-defined]
+        except KeyError:
+            cookie._creation_index = next(_creation_indexes)  # type: ignore[attr-defined]
+        else:
+            cookie._creation_index = old_cookie._creation_index  # type: ignore[attr-defined]
+        super().set_cookie(cookie)
+
+    def _cookie_attrs(self, cookies: list[Cookie]) -> list[str]:
+        cookies.sort(key=lambda c: (-len(c.path), c._creation_index))  # type: ignore[attr-defined]
+        return super()._cookie_attrs(cookies)  # type: ignore[misc,no-any-return]
+
 
 class CookieJar:
     def __init__(
@@ -27,7 +53,7 @@ class CookieJar:
         check_expired_frequency: int = 10000,
     ):
         self.policy: CookiePolicy = policy or DefaultCookiePolicy()
-        self.jar: _CookieJar = _CookieJar(self.policy)
+        self.jar: _CookieJar = _CreationOrderCookieJar(self.policy)
         self.jar._cookies_lock = _DummyLock()  # type: ignore[attr-defined]
         self.check_expired_frequency: int = check_expired_frequency
         self.processed: int = 0
