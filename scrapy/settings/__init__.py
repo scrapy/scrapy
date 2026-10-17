@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
+from scrapy.utils._secrets import _resolve_secret
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 
@@ -315,6 +316,19 @@ class BaseSettings(MutableMapping[str, Any]):
                 f"got {type(value).__name__}: {value!r}"
             )
         return copy.deepcopy(value)
+
+    def getsecret(self, name: str, default: str | None = None) -> str | None:
+        """Get a setting value as a string, resolving :ref:`secret references
+        <secret-settings>`.
+
+        If the setting is not defined or its value is ``None``, *default* is
+        returned. If the referenced environment variable or keyring entry does
+        not exist, :exc:`KeyError` is raised.
+        """
+        value = self.get(name)
+        if value is None:
+            return default
+        return _resolve_secret(value)
 
     def getwithbase(self, name: str) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its ``_BASE``

@@ -132,7 +132,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
             raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self.default_user = crawler.settings["FTP_USER"]
-        self.default_password = crawler.settings["FTP_PASSWORD"]
+        self.default_password = crawler.settings.getsecret("FTP_PASSWORD")
         self.passive_mode = crawler.settings["FTP_PASSIVE_MODE"]
         self._default_maxsize: int = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._default_warnsize: int = crawler.settings.getint("DOWNLOAD_WARNSIZE")
