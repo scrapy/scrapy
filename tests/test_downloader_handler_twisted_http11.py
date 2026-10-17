@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from twisted.internet.address import IPv6Address
-from twisted.internet.error import ConnectingCancelledError
+from twisted.internet.defer import CancelledError
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.error import ConnectingCancelledError, ConnectionClosed
 from twisted.internet.interfaces import (
     IAddress,
     IHostnameResolver,
@@ -15,23 +17,25 @@ from twisted.internet.interfaces import (
     IResolutionReceiver,
 )
 from twisted.internet.protocol import Factory, Protocol
-from twisted.internet.testing import MemoryReactorClock
+from twisted.internet.testing import MemoryReactorClock, StringTransport
 from twisted.python.failure import Failure
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS
 from zope.interface import implementer
 
 from scrapy import Request, Spider
-from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
     TunnelError,
     _tunnel_request_data,
-    _TunnelingEndpoint,
+    _TunnelEndpoint,
+    _TunnelingAgent,
+    _TunnelProtocol,
 )
 from scrapy.crawler import Crawler
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadConnectionRefusedError,
+    DownloadFailedError,
     NotConfigured,
 )
 from scrapy.resolver import HostResolution
@@ -61,6 +65,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator, Sequence
 
     from twisted.internet.base import ReactorBase
+    from twisted.internet.interfaces import IProtocol, IStreamClientEndpoint
     from twisted.web.iweb import IPolicyForHTTPS
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
@@ -94,6 +99,16 @@ def test_not_configured_without_reactor() -> None:
         build_from_crawler(HTTP11DownloadHandler, crawler)
 
 
+def _tunnel_endpoint(reactor: MemoryReactorClock) -> _TunnelEndpoint:
+    return _TunnelEndpoint(
+        TCP4ClientEndpoint(reactor, "127.0.0.1", 8080),
+        host=b"example.com",
+        port=443,
+        proxyHost="127.0.0.1",
+        proxyPort=8080,
+    )
+
+
 def test_tunneling_cancelled_before_connected() -> None:
     """Cancelling a tunneled download before the connection to the proxy is
     established stops the connection attempt.
@@ -105,22 +120,37 @@ def test_tunneling_cancelled_before_connected() -> None:
     the connection to the proxy is established.
     """
     reactor = MemoryReactorClock()
-    endpoint = _TunnelingEndpoint(
-        reactor=cast("ReactorBase", reactor),
-        host=b"example.com",
-        port=443,
-        proxyConf=("::1", 8080, None),
-        contextFactory=_load_context_factory_from_settings(get_crawler()),
-        timeout=30,
-    )
-    results: list[Protocol | Failure] = []
-    endpoint.connect(Factory()).addBoth(results.append)
+    results: list[IProtocol | Failure] = []
+    d = _tunnel_endpoint(reactor).connect(Factory.forProtocol(Protocol))
+    d.addBoth(results.append)
 
-    endpoint._tunnelReadyDeferred.cancel()
+    d.cancel()
 
     assert reactor.connectors[0].stoppedConnecting
     assert isinstance(results[0], Failure)
     assert isinstance(results[0].value, ConnectingCancelledError)
+
+
+def test_tunneling_cancelled_before_connect_response() -> None:
+    """A CONNECT response received after cancelling the tunnel, but before the
+    connection to the proxy is closed, is ignored."""
+    reactor = MemoryReactorClock()
+    results: list[IProtocol | Failure] = []
+    d = _tunnel_endpoint(reactor).connect(Factory.forProtocol(Protocol))
+    d.addBoth(results.append)
+    factory = reactor.tcpClients[0][2]
+    protocol = factory.buildProtocol(None)
+    assert protocol is not None
+    transport = StringTransport()
+    protocol.makeConnection(transport)
+
+    d.cancel()
+    protocol.dataReceived(b"HTTP/1.1 200 OK\r\n\r\n")
+
+    assert transport.disconnecting
+    assert len(results) == 1
+    assert isinstance(results[0], Failure)
+    assert isinstance(results[0].value, CancelledError)
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):
@@ -171,14 +201,11 @@ class TestHttpProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
 
 class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
-    # not implemented
-    handler_supports_tls_in_tls = False
 
 
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
-    # not implemented
-    handler_supports_tls_in_tls = False
+    pass
 
 
 @pytest.mark.skipif(
@@ -199,9 +226,7 @@ class TestMitmProxyIPv6(TestMitmProxy):
 )
 def test_connect_authority(url: bytes, expected_authority: bytes) -> None:
     uri = URI.fromBytes(url)
-    tunnel_req = _tunnel_request_data(
-        _TunnelingEndpoint._format_host(uri.host), uri.port
-    )
+    tunnel_req = _tunnel_request_data(_TunnelProtocol._format_host(uri.host), uri.port)
     assert tunnel_req == (
         b"CONNECT " + expected_authority + b" HTTP/1.1\r\n"
         b"Host: " + expected_authority + b"\r\n\r\n"
@@ -331,6 +356,18 @@ def ipv6_only_proxy(fake_proxy_port: int) -> tuple[ReactorBase, str, int]:
     )
 
 
+def _proxy_tunnel_endpoint(
+    reactor: ReactorBase, proxy_host: str, proxy_port: int
+) -> IStreamClientEndpoint:
+    agent = _TunnelingAgent(
+        reactor=reactor,
+        proxyConf=(proxy_host, proxy_port, None, False),
+        contextFactory=cast("IPolicyForHTTPS", BrowserLikePolicyForHTTPS()),
+        connectTimeout=10,
+    )
+    return agent._getEndpoint(URI.fromBytes(b"https://example.com"))
+
+
 @pytest.mark.skipif(
     not ipv6_loopback_available(), reason="IPv6 loopback is not available"
 )
@@ -345,14 +382,7 @@ async def test_tunnel_to_proxy_reachable_only_over_ipv6(
     family for the proxy.
     """
     reactor, proxy_host, proxy_port = ipv6_only_proxy
-    endpoint = _TunnelingEndpoint(
-        reactor=reactor,
-        host=b"example.com",
-        port=443,
-        proxyConf=(proxy_host, proxy_port, None),
-        contextFactory=cast("IPolicyForHTTPS", BrowserLikePolicyForHTTPS()),
-        timeout=10,
-    )
+    endpoint = _proxy_tunnel_endpoint(reactor, proxy_host, proxy_port)
     with pytest.raises(TunnelError, match="Could not open CONNECT tunnel"):
         await maybe_deferred_to_future(endpoint.connect(Factory.forProtocol(Protocol)))
 
@@ -368,13 +398,10 @@ async def test_tunnel_to_ipv6_literal_proxy(fake_proxy_port: int) -> None:
     from twisted.internet import reactor
 
     resolver = _UnresolvingResolver()
-    endpoint = _TunnelingEndpoint(
-        reactor=cast("ReactorBase", _ReactorWithNameResolver(reactor, resolver)),
-        host=b"example.com",
-        port=443,
-        proxyConf=("::1", fake_proxy_port, None),
-        contextFactory=cast("IPolicyForHTTPS", BrowserLikePolicyForHTTPS()),
-        timeout=10,
+    endpoint = _proxy_tunnel_endpoint(
+        cast("ReactorBase", _ReactorWithNameResolver(reactor, resolver)),
+        "::1",
+        fake_proxy_port,
     )
     with pytest.raises(TunnelError, match="Could not open CONNECT tunnel"):
         await maybe_deferred_to_future(endpoint.connect(Factory.forProtocol(Protocol)))
@@ -389,7 +416,8 @@ class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
 
 
 class _CannedConnectProxy(Protocol):
-    """Answers any request with a canned response."""
+    """Answers any request with a canned response, or drops the connection when
+    the response is ``None``."""
 
     factory: _CannedConnectProxyFactory
 
@@ -398,6 +426,9 @@ class _CannedConnectProxy(Protocol):
 
         assert self.transport
         response = self.factory.response
+        if response is None:
+            self.transport.loseConnection()
+            return
         if not self.factory.split_at:
             self.transport.write(response)
             return
@@ -408,13 +439,15 @@ class _CannedConnectProxy(Protocol):
 class _CannedConnectProxyFactory(Factory):
     protocol = _CannedConnectProxy  # type: ignore[assignment]
 
-    def __init__(self, response: bytes, split_at: int = 0):
+    def __init__(self, response: bytes | None, split_at: int = 0):
         self.response = response
         self.split_at = split_at
 
 
 @asynccontextmanager
-async def _canned_proxy(response: bytes, split_at: int = 0) -> AsyncGenerator[str]:
+async def _canned_proxy(
+    response: bytes | None, split_at: int = 0
+) -> AsyncGenerator[str]:
     from twisted.internet import reactor
 
     port = reactor.listenTCP(
@@ -454,6 +487,26 @@ class TestTunnelingErrors:
             request = Request("https://example.com", meta={"proxy": proxy})
             async with _get_dh() as dh:
                 with pytest.raises(TunnelError, match="not an HTTP response"):
+                    await dh.download_request(request)
+
+    @coroutine_test
+    async def test_proxy_closes_connection(self) -> None:
+        """The proxy drops the connection instead of answering CONNECT."""
+        async with _canned_proxy(None) as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
+                with pytest.raises(ConnectionClosed):
+                    await dh.download_request(request)
+
+    @coroutine_test
+    async def test_trailing_bytes(self) -> None:
+        """Bytes right after a successful CONNECT response belong to the
+        tunneled protocol, whose TLS handshake they corrupt."""
+        response = b"HTTP/1.1 200 Connection established\r\n\r\ntrailing-bytes"
+        async with _canned_proxy(response) as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
+                with pytest.raises(DownloadFailedError):
                     await dh.download_request(request)
 
     @coroutine_test
