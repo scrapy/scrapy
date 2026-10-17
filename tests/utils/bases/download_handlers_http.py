@@ -31,7 +31,14 @@ from scrapy.exceptions import (
     StopDownload,
     UnsupportedURLSchemeError,
 )
-from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
+from scrapy.http import (
+    BodyFileResponse,
+    Headers,
+    HtmlResponse,
+    Request,
+    Response,
+    TextResponse,
+)
 from scrapy.utils._deps_compat import (
     TWISTED_TLS_LIMITS_OFFBY1,
     W3LIB_STRIPS_IPV6_BRACKETS,
@@ -74,6 +81,7 @@ class TestHttpBase(ABC):
     http2: bool = False
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
+    handler_supports_body_file: bool = True
     # whether the handler can return the body received so far, instead of
     # erroring out, when a request times out mid-response
     handler_supports_partial_response_on_timeout: bool = False
@@ -1163,6 +1171,54 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == path.encode()
+
+    @coroutine_test
+    async def test_body_file(self, mockserver: MockServer, tmp_path: Path) -> None:
+        if not self.handler_supports_body_file:
+            pytest.skip("The handler does not support body_file")
+        body_file = tmp_path / "body"
+        request = Request(
+            mockserver.url("/text", is_secure=self.is_secure),
+            meta={"body_file": body_file},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert isinstance(response, BodyFileResponse)
+        assert response.body_file == body_file
+        assert body_file.read_bytes() == b"Works"
+
+    @coroutine_test
+    async def test_body_file_empty_response(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        if not self.handler_supports_body_file:
+            pytest.skip("The handler does not support body_file")
+        body_file = tmp_path / "body"
+        request = Request(
+            mockserver.url("/text", is_secure=self.is_secure),
+            method="HEAD",
+            meta={"body_file": body_file},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert isinstance(response, BodyFileResponse)
+        assert body_file.read_bytes() == b""
+
+    @coroutine_test
+    async def test_body_file_maxsize(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        if not self.handler_supports_body_file:
+            pytest.skip("The handler does not support body_file")
+        body_file = tmp_path / "body"
+        request = Request(
+            mockserver.url("/largechunkedfile", is_secure=self.is_secure),
+            meta={"body_file": body_file},
+        )
+        async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
+            with pytest.raises(DownloadCancelledError):
+                await download_handler.download_request(request)
+        assert body_file.read_bytes() == b""
 
 
 class TestHttpsBase(TestHttpBase, ABC):

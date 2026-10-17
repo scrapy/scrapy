@@ -72,7 +72,9 @@ class HttpCacheMiddleware:
             return None
 
         # Skip uncacheable requests
-        if not self.policy.should_cache_request(request):
+        if request.meta.get("body_file") or not self.policy.should_cache_request(
+            request
+        ):
             request.meta["_dont_cache"] = True  # flag as uncacheable
             return None
 

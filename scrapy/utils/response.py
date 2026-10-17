@@ -10,6 +10,7 @@ import os
 import re
 import tempfile
 import webbrowser
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from weakref import WeakKeyDictionary
 
@@ -17,12 +18,20 @@ from twisted.web import http
 from w3lib import html
 
 from scrapy.http.headers import Headers
+from scrapy.http.response.body_file import BodyFileResponse
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from scrapy.http import Response, TextResponse
+
+
+def _body_size(response: Response) -> int:
+    if isinstance(response, BodyFileResponse):
+        return Path(response.body_file).stat().st_size
+    return len(response.body)
+
 
 _baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
 
