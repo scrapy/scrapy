@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from blinker import NamedSignal
 
 from scrapy import signals
 from scrapy.signalmanager import SignalManager
@@ -65,5 +66,5 @@ class TestUnknownArgumentWarning:
 
 
 def test_every_signal_declares_its_arguments() -> None:
-    defined = {v for v in vars(signals).values() if type(v) is object}
+    defined = {v for v in vars(signals).values() if isinstance(v, NamedSignal)}
     assert defined == set(signals._signal_args)
