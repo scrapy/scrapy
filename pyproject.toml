@@ -143,6 +143,7 @@ implicit_reexport = true
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
+    "aiobotocore.*",
     "bpython",
     "brotli",
     "brotlicffi",
@@ -296,6 +297,7 @@ markers = [
     "requires_reactor: marks tests that require a reactor",
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
+    "requires_aiobotocore: marks tests that need aiobotocore",
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_psutil: marks tests that need psutil",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
