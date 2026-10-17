@@ -805,6 +805,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`body_file`
 * :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
 * :reqmeta:`depth`
@@ -888,6 +889,39 @@ This meta key is not supported by
 :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
 the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 
+.. reqmeta:: body_file
+
+body_file
+---------
+
+.. versionadded:: VERSION
+
+Path of a file where the response body is written as it is downloaded, or
+``True`` to write it to a new temporary file, so that responses of any size can
+be downloaded without fitting them in memory:
+
+.. code-block:: python
+
+    Request("https://example.com/big.zip", meta={"body_file": "big.zip"})
+
+The response is then a :class:`BodyFileResponse`.
+
+Each download attempt, e.g. a retry or a redirect, writes the file from the
+start. If the download fails, e.g. because the response exceeds
+:setting:`DOWNLOAD_MAXSIZE`, the file may hold part of the body, except for
+temporary files, which Scrapy deletes. Deleting temporary files of successful
+downloads is up to you.
+
+Scrapy does not ask for a compressed response, and does not decompress the file
+if the server sends one anyway, as indicated by the ``Content-Encoding``
+response header.
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` skips
+these requests.
+
+Download handlers that do not support this key, such as :ref:`some built-in
+ones <download-handlers-ref>`, make the request fail with
+:exc:`~scrapy.exceptions.NotSupported`.
+
 .. reqmeta:: download_handler
 
 download_handler
@@ -954,6 +988,10 @@ http_auth_domain
 .. versionadded:: 2.17.0
 
 Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
+
+If this key is not set, :reqmeta:`http_user` and :reqmeta:`http_pass` are only
+sent to the origin (scheme, host and port) of the request where they were first
+used, e.g. they are not sent after a cross-origin redirect.
 
 .. reqmeta:: http_pass
 
@@ -1308,6 +1346,8 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.follow_redirect
+
     .. automethod:: Response.to_dict
 
     .. automethod:: Response.from_dict
@@ -1502,6 +1542,12 @@ JsonResponse objects
     that is used when the response has a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type`
     header.
+
+BodyFileResponse objects
+------------------------
+
+.. autoclass:: BodyFileResponse
+    :members: body_file
 
 
 Other functions related to responses

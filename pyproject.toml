@@ -50,7 +50,6 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -145,6 +144,7 @@ implicit_reexport = true
 [[tool.mypy.overrides]]
 module = [
     "aioboto3",
+    "aiobotocore.*",
     "bpython",
     "brotli",
     "brotlicffi",
@@ -298,6 +298,7 @@ markers = [
     "requires_reactor: marks tests that require a reactor",
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
+    "requires_aiobotocore: marks tests that need aiobotocore",
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_aioboto3: marks tests that need aiobotocore and aioboto3",
     "requires_psutil: marks tests that need psutil",
@@ -317,8 +318,7 @@ filterwarnings = [
     # ResourceWarning, re-emitted by pytest.warns() with the outer filters
     # applied, when GC instead runs while a pytest.warns() block for an
     # unrelated warning is active, failing that unrelated test. The message
-    # wording varies across Python implementations and versions (PyPy leaves
-    # the prefix empty), so match on the object repr.
+    # wording varies across Python versions, so match on the object repr.
     "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
     "ignore:unclosed <socket\\.socket fd=:ResourceWarning",
     "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
@@ -326,10 +326,6 @@ filterwarnings = [
     # These are triggered by garbage collecting an unclosed AiohttpDownloadHandler.
     "ignore:.*<function (ClientSession|BaseConnector)\\.__del__:pytest.PytestUnraisableExceptionWarning",
     "ignore:Unclosed (client session|connector) <aiohttp\\.:ResourceWarning",
-    # PyDispatcher iterates its connection registry while a weakref callback
-    # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
-    # can die within a single collection.
-    "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
     # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
     # files and SQLite connections open; see the comment above about the two
     # forms this can surface as. sqlite3's warning message has no path to
