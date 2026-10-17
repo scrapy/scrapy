@@ -186,7 +186,7 @@ jobs:
         # mitmproxy needs a newer Python than the oldest matrix entries, so let
         # uv download one where no system interpreter is new enough.
         UV_PYTHON_PREFERENCE: system
-      run: uv tool install --python cpython mitmproxy
+      run: uv tool install mitmproxy
 
     - name: Run tests
       env: ${{ matrix.env }}
