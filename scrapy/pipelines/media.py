@@ -28,7 +28,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Container
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -111,9 +111,10 @@ class MediaPipeline(ABC):
         self._cache_size: int = settings.getint(resolve("MEDIA_CACHE_SIZE"))
 
     def _handle_statuses(self, allow_redirects: bool) -> None:
-        self.handle_httpstatus_list = None
-        if allow_redirects:
-            self.handle_httpstatus_list = SequenceExclude(range(300, 400))
+        # Redirects are either followed by the framework or handled here.
+        self.handle_http_codes: bool | Container[int] = (
+            SequenceExclude(range(300, 400)) if allow_redirects else True
+        )
 
     def _key_for_pipe(
         self,
@@ -216,10 +217,7 @@ class MediaPipeline(ABC):
         return await maybe_deferred_to_future(wad)  # it must return wad at last
 
     def _modify_media_request(self, request: Request) -> None:
-        if self.handle_httpstatus_list:
-            request.meta["handle_httpstatus_list"] = self.handle_httpstatus_list
-        else:
-            request.meta["handle_httpstatus_all"] = True
+        request.meta["handle_http_codes"] = self.handle_http_codes
 
     async def _check_media_to_download(
         self, request: Request, info: SpiderInfo, item: Any

@@ -81,12 +81,9 @@ class Command(ScrapyCommand):
             if url:
                 raise UsageError("--curl cannot be combined with a URL argument")
             request = _request_from_curl(opts.curl, dont_filter=True)
-            if opts.no_redirect:
-                request.meta["handle_httpstatus_all"] = True
-            else:
-                request.meta["handle_httpstatus_list"] = SequenceExclude(
-                    range(300, 400)
-                )
+            request.meta["handle_http_codes"] = (
+                True if opts.no_redirect else SequenceExclude(range(300, 400))
+            )
             url = request.url
         elif url:
             # first argument may be a local file
