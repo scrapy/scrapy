@@ -8,8 +8,9 @@ import re
 from contextlib import suppress
 from functools import partial
 from io import BytesIO
+from pathlib import Path
 from time import monotonic
-from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, NotRequired, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag
 
 from twisted.internet import ssl
@@ -69,6 +70,8 @@ from scrapy.utils.url import _add_http_if_no_scheme
 from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
+    import os
+
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
     from twisted.web._newclient import Request as TxRequest
@@ -100,7 +103,10 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
+        self._pool: HTTPConnectionPool = HTTPConnectionPool(
+            reactor, persistent=bool(self._keepalive_timeout)
+        )
+        self._pool.cachedConnectionTimeout = self._keepalive_timeout  # type: ignore[assignment]
         self._pool.maxPersistentPerHost = crawler.settings.getint(
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
@@ -572,6 +578,8 @@ class _ScrapyAgent:
             for name, value in get_proxy_headers(request):
                 headers.addRawHeader(name, value)
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
+        body_file = request.meta.get("body_file")
+        bodybuf: BinaryIO = Path(body_file).open("wb") if body_file else BytesIO()
         start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
@@ -582,12 +590,18 @@ class _ScrapyAgent:
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed
-        d2: Deferred[_ResultT] = d.addCallback(self._cb_bodyready, request)
-        d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, url)
+        d2: Deferred[_ResultT] = d.addCallback(self._cb_bodyready, request, bodybuf)
+        d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, url, body_file)
         # check download timeout
         self._timeout_cl = reactor.callLater(timeout, self._cb_timed_out, d3, request)
         d3.addBoth(self._cb_timeout, request, url, timeout)
+        d3.addBoth(self._cb_close, bodybuf)
         return d3
+
+    @staticmethod
+    def _cb_close(result: _T, bodybuf: BinaryIO) -> _T:
+        bodybuf.close()
+        return result
 
     def _cb_timed_out(self, d3: Deferred[Response], request: Request) -> None:
         fail_on_dataloss = request.meta.get(
@@ -627,7 +641,7 @@ class _ScrapyAgent:
         return headers
 
     def _cb_bodyready(
-        self, txresponse: TxResponse, request: Request
+        self, txresponse: TxResponse, request: Request, bodybuf: BinaryIO
     ) -> _ResultT | Deferred[_ResultT]:
         if stop_download := check_stop_download(
             signals.headers_received,
@@ -683,6 +697,7 @@ class _ScrapyAgent:
                 finished=d,
                 txresponse=txresponse,
                 request=request,
+                bodybuf=bodybuf,
                 maxsize=maxsize,
                 warnsize=warnsize,
                 reached_warnsize=reached_warnsize,
@@ -702,7 +717,12 @@ class _ScrapyAgent:
         # Abort connection immediately.
         txresponse._transport._producer.abortConnection()
 
-    def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
+    def _cb_bodydone(
+        self,
+        result: _ResultT,
+        url: str,
+        body_file: str | os.PathLike[str] | None,
+    ) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
         version = result["txresponse"].version
         protocol = f"{version[0].decode()}/{version[1]}.{version[2]}"
@@ -716,6 +736,7 @@ class _ScrapyAgent:
             ip_address=result.get("ip_address"),
             protocol=protocol,
             stop_download=result.get("stop_download"),
+            body_file=body_file,
         )
 
 
@@ -742,6 +763,7 @@ class _ResponseReader(Protocol):
         finished: Deferred[_ResultT],
         txresponse: TxResponse,
         request: Request,
+        bodybuf: BinaryIO,
         maxsize: int,
         warnsize: int,
         fail_on_dataloss: bool,
@@ -753,7 +775,7 @@ class _ResponseReader(Protocol):
         self._finished: Deferred[_ResultT] = finished
         self._txresponse: TxResponse = txresponse
         self._request: Request = request
-        self._bodybuf: BytesIO = BytesIO()
+        self._bodybuf: BinaryIO = bodybuf
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
         self._fail_on_dataloss: bool = fail_on_dataloss
@@ -770,7 +792,11 @@ class _ResponseReader(Protocol):
         self._finished.callback(
             {
                 "txresponse": self._txresponse,
-                "body": self._bodybuf.getvalue(),
+                "body": (
+                    self._bodybuf.getvalue()
+                    if isinstance(self._bodybuf, BytesIO)
+                    else b""
+                ),
                 "flags": flags,
                 "certificate": self._certificate,
                 "ip_address": self._ip_address,

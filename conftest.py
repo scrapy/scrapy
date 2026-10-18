@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from weakref import WeakSet
 
 import pytest
 from twisted.web.http import H2_ENABLED
@@ -15,8 +16,13 @@ from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
 from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
 
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
+
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Generator, Iterator
 
 
 def _py_files(folder):
@@ -81,6 +87,55 @@ def fast_engine_heartbeat(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.1)
 
 
+_aiohttp_sessions: WeakSet[aiohttp.ClientSession] = WeakSet()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _track_aiohttp_sessions() -> Iterator[None]:
+    if aiohttp is None:
+        yield
+        return
+    original_init = aiohttp.ClientSession.__init__
+
+    def init(self: aiohttp.ClientSession, *args: Any, **kwargs: Any) -> None:
+        original_init(self, *args, **kwargs)
+        _aiohttp_sessions.add(self)
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(aiohttp.ClientSession, "__init__", init)
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _fail_on_unclosed_aiohttp_session(
+    caplog: pytest.LogCaptureFixture,
+) -> Iterator[None]:
+    """Fail the test that leaks an aiohttp ``ClientSession`` instead of a
+    later, unrelated one.
+
+    A leaked session usually sits in a reference cycle with its crawler, so it
+    is still alive at teardown and can be checked directly. One that was
+    already collected during the test reported itself through
+    ``ClientSession.__del__()``, which logs to the asyncio logger rather than
+    through the warnings module. Under the ``none`` reactor, any test that
+    downloads over HTTP or HTTPS can end up going through
+    :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`,
+    not only the tests that target it directly, so this runs for every test
+    rather than a single module.
+    """
+    yield
+    unclosed = [session for session in _aiohttp_sessions if not session.closed]
+    _aiohttp_sessions.clear()
+    reported = [
+        record.message
+        for when in ("setup", "call", "teardown")
+        for record in caplog.get_records(when)
+        if record.name == "asyncio" and "Unclosed" in record.message
+    ]
+    assert not unclosed
+    assert not reported
+
+
 @pytest.fixture(scope="session")
 def mockserver() -> Generator[MockServer]:
     with MockServer() as mockserver:
@@ -89,11 +144,15 @@ def mockserver() -> Generator[MockServer]:
 
 @pytest.fixture(scope="session")
 def mockserver_ipv6() -> Generator[MockServer]:
-    """A mockserver reachable only over the IPv6 loopback.
+    """A mockserver addressed by the IPv6 loopback.
 
     Tests using this must skip when :func:`ipv6_loopback_available` is False.
     """
-    with MockServer("::1") as mockserver:
+    # Where IPv6 sockets also accept IPv4, binding the IPv6 wildcard keeps
+    # IPv4 servers from getting the same port numbers. Otherwise a client
+    # resolving localhost to ::1 first would reach this server instead of
+    # an IPv4 one.
+    with MockServer("::") as mockserver:
         yield mockserver
 
 
@@ -220,8 +279,10 @@ def pytest_runtest_setup(item):
     # Skip tests requiring optional dependencies
     optional_deps = [
         "uvloop",
+        "aiobotocore",
         "botocore",
         "boto3",
+        "aioboto3",
         "psutil",
     ]
 

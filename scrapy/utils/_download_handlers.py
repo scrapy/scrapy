@@ -24,10 +24,11 @@ from scrapy.exceptions import (
     StopDownload,
     UnsupportedURLSchemeError,
 )
-from scrapy.http import Headers
+from scrapy.http import BodyFileResponse, Headers
 from scrapy.utils.log import logger
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Iterator
     from http.client import HTTPResponse
     from http.cookiejar import Cookie
@@ -102,18 +103,26 @@ def make_response(
     ip_address: IPv4Address | IPv6Address | None = None,
     protocol: str | None = None,
     stop_download: StopDownload | None = None,
+    body_file: str | os.PathLike[str] | None = None,
 ) -> Response:
-    respcls = responsetypes.responsetypes.from_args(headers=headers, url=url, body=body)
-    response = respcls(
-        url=url,
-        status=status,
-        headers=headers,
-        body=body,
-        flags=flags,
-        certificate=certificate,
-        ip_address=ip_address,
-        protocol=protocol,
-    )
+    kwargs: dict[str, Any] = {
+        "url": url,
+        "status": status,
+        "headers": headers,
+        "flags": flags,
+        "certificate": certificate,
+        "ip_address": ip_address,
+        "protocol": protocol,
+    }
+    response: Response
+    if body_file is not None:
+        assert not body
+        response = BodyFileResponse(**kwargs, body_file=body_file)
+    else:
+        respcls = responsetypes.responsetypes.from_args(
+            headers=headers, url=url, body=body
+        )
+        response = respcls(**kwargs, body=body)
     if stop_download:
         response.flags.append("download_stopped")
         if stop_download.fail:

@@ -34,15 +34,15 @@ class BaseMockServer(ABC):
     def __init__(self, host: str | None = None) -> None:
         """Start a mockserver.
 
-        *host* is the address to listen on; by default every interface is bound
-        and requests are made to 127.0.0.1. Pass e.g. ``"::1"`` to test over
-        IPv6.
+        *host* is the address to listen on; by default every IPv4 address is
+        bound and requests are made to 127.0.0.1. Pass ``"::"`` to bind every
+        IPv6 address instead, with requests made to ::1.
         """
         if not self.listen_http and not self.listen_https:
             raise ValueError("At least one of listen_http and listen_https must be set")
 
         self.proc: Popen[str] | None = None
-        self.host: str = host if host is not None else "127.0.0.1"
+        self.host: str = "::1" if host == "::" else host or "127.0.0.1"
         self._listen_host: str | None = host
         self.http_port: int | None = None
         self.https_port: int | None = None

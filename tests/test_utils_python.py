@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import functools
 import operator
-import platform
 import sys
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -188,7 +187,7 @@ def test_get_func_args():
     assert get_func_args(str.split, stripself=True) == ["sep", "maxsplit"]
     assert get_func_args(" ".join, stripself=True) == ["iterable"]
 
-    if sys.version_info >= (3, 13) or platform.python_implementation() == "PyPy":
+    if sys.version_info >= (3, 13):
         assert get_func_args(operator.itemgetter(2), stripself=True) == ["obj"]
     else:
         # The interpreter returns a wrong signature
@@ -199,8 +198,7 @@ def test_get_func_args():
 
     # inspect.signature() fails for these
     assert get_func_args(type) == []
-    if platform.python_implementation() != "PyPy":
-        assert get_func_args(max) == []
+    assert get_func_args(max) == []
 
 
 @pytest.mark.skipif(

@@ -20,7 +20,7 @@ from scrapy.exceptions import (
     IgnoreRequest,
     ScrapyDeprecationWarning,
 )
-from scrapy.http import Request, Response
+from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
@@ -94,7 +94,7 @@ class Slot:
         # this Deferred will be awaited in enqueue_scrape()
         deferred: Deferred[None] = Deferred()
         self.queue.append((result, request, deferred))
-        if isinstance(result, Response):
+        if isinstance(result, Response) and not isinstance(result, BodyFileResponse):
             self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size += self.MIN_RESPONSE_SIZE
@@ -107,7 +107,7 @@ class Slot:
 
     def finish_response(self, result: Response | Failure, request: Request) -> None:
         self.active.remove(request)
-        if isinstance(result, Response):
+        if isinstance(result, Response) and not isinstance(result, BodyFileResponse):
             self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size -= self.MIN_RESPONSE_SIZE
