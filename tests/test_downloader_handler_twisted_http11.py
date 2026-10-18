@@ -25,7 +25,9 @@ from scrapy.core.downloader.contextfactory import _load_context_factory_from_set
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
     TunnelError,
+    _ScrapyAgent,
     _tunnel_request_data,
+    _TunnelingAgent,
     _TunnelingEndpoint,
 )
 from scrapy.crawler import Crawler
@@ -94,6 +96,53 @@ def test_not_configured_without_reactor() -> None:
         build_from_crawler(HTTP11DownloadHandler, crawler)
 
 
+@pytest.mark.parametrize(
+    ("proxy_headers", "proxy_auth", "expected"),
+    [
+        (None, None, ()),
+        ({"X-B": "2", "X-A": "1"}, None, (("X-A", "1"), ("X-B", "2"))),
+        (None, "Basic Zm9v", (("Proxy-Authorization", "Basic Zm9v"),)),
+        (
+            {"X-A": "1"},
+            "Basic Zm9v",
+            (("Proxy-Authorization", "Basic Zm9v"), ("X-A", "1")),
+        ),
+        (
+            {"Proxy-Authorization": "Custom foo"},
+            "Basic Zm9v",
+            (("Proxy-Authorization", "Custom foo"),),
+        ),
+    ],
+    ids=[
+        "no headers",
+        "sorted headers",
+        "auth header",
+        "auth header and headers",
+        "auth header overridden",
+    ],
+)
+def test_tunnel_proxy_headers(
+    proxy_headers: dict[str, str] | None,
+    proxy_auth: str | None,
+    expected: tuple[tuple[str, str], ...],
+) -> None:
+    meta: dict[str, Any] = {"proxy": "http://proxy.example:8080"}
+    if proxy_headers is not None:
+        meta["proxy_headers"] = proxy_headers
+    request = Request(
+        "https://example.com",
+        meta=meta,
+        headers={"Proxy-Authorization": proxy_auth} if proxy_auth else None,
+    )
+    crawler = get_crawler(Spider)
+    agent = _ScrapyAgent(
+        contextFactory=_load_context_factory_from_settings(crawler), crawler=crawler
+    )
+    tunneling_agent = agent._get_agent(request, 10)
+    assert isinstance(tunneling_agent, _TunnelingAgent)
+    assert tunneling_agent._proxyConf == ("proxy.example", 8080, expected)
+
+
 def test_tunneling_cancelled_before_connected() -> None:
     """Cancelling a tunneled download before the connection to the proxy is
     established stops the connection attempt.
@@ -109,7 +158,7 @@ def test_tunneling_cancelled_before_connected() -> None:
         reactor=cast("ReactorBase", reactor),
         host=b"example.com",
         port=443,
-        proxyConf=("::1", 8080, None),
+        proxyConf=("::1", 8080, ()),
         contextFactory=_load_context_factory_from_settings(get_crawler()),
         timeout=30,
     )
@@ -349,7 +398,7 @@ async def test_tunnel_to_proxy_reachable_only_over_ipv6(
         reactor=reactor,
         host=b"example.com",
         port=443,
-        proxyConf=(proxy_host, proxy_port, None),
+        proxyConf=(proxy_host, proxy_port, ()),
         contextFactory=cast("IPolicyForHTTPS", BrowserLikePolicyForHTTPS()),
         timeout=10,
     )
@@ -372,7 +421,7 @@ async def test_tunnel_to_ipv6_literal_proxy(fake_proxy_port: int) -> None:
         reactor=cast("ReactorBase", _ReactorWithNameResolver(reactor, resolver)),
         host=b"example.com",
         port=443,
-        proxyConf=("::1", fake_proxy_port, None),
+        proxyConf=("::1", fake_proxy_port, ()),
         contextFactory=cast("IPolicyForHTTPS", BrowserLikePolicyForHTTPS()),
         timeout=10,
     )
