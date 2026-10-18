@@ -172,8 +172,7 @@ it sends, so you can speed a crawl up or slow it down while it runs::
 ``total_concurrency`` is :setting:`CONCURRENT_REQUESTS`, and ``slots`` maps the
 name of every :setting:`download slot <DOWNLOAD_SLOTS>` in use to an object
 whose ``concurrency`` and ``delay`` come from
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (or
-:setting:`CONCURRENT_REQUESTS_PER_IP`) and :setting:`DOWNLOAD_DELAY`. A slot
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`. A slot
 created later, e.g. for a domain not visited yet, starts from those settings
 again, and :ref:`AutoThrottle <topics-autothrottle>` recalculates ``delay``
 after every response.
