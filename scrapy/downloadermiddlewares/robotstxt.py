@@ -205,7 +205,13 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            # The Deferred of an in-flight download is shared by every request
+            # that reaches the host before the download finishes, and awaiting it
+            # consumes its result, leaving it firing with None. Read the parser
+            # that the download stored, so that every waiter gets it.
+            return await maybe_deferred_to_future(
+                parser.addBoth(lambda _: self._parsers[netloc])
+            )
         return parser
 
     async def _parse_robots(

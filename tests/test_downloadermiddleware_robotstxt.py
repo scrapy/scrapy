@@ -122,6 +122,22 @@ Disallow: /some/randome/page.html
         await asyncio.gather(c1, c2)
 
     @coroutine_test
+    async def test_robotstxt_concurrent_denied_reqs(self) -> None:
+        # every request that waits for an in-flight robots.txt download must get
+        # the parsed parser, not an empty one, no matter how many of them wait
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        dfds = [
+            deferred_from_coro(
+                middleware.process_request(Request(f"http://site.local/admin/{i}"))
+            )
+            for i in range(3)
+        ]
+        results = await maybe_deferred_to_future(DeferredList(dfds, consumeErrors=True))
+        assert [success for success, _ in results] == [False, False, False]
+
+    @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
