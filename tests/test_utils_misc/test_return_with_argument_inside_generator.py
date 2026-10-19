@@ -95,11 +95,21 @@ https://example.org
         yield url
         return 1
 
+    def m1():
+        yield 1
+
+        async def helper() -> int:
+            return 0
+
+        yield helper()
+        return 2
+
     assert is_generator_with_return_value(top_level_return_something)
     assert is_generator_with_return_value(f1)
     assert is_generator_with_return_value(g1)
     assert is_generator_with_return_value(h1)
     assert is_generator_with_return_value(i1)
+    assert is_generator_with_return_value(m1)
 
     with pytest.warns(
         UserWarning,
@@ -114,6 +124,8 @@ https://example.org
         warn_on_generator_with_return_value(mock_spider, h1)
     with pytest.warns(UserWarning, match='The "MockSpider.i1" method is a generator'):
         warn_on_generator_with_return_value(mock_spider, i1)
+    with pytest.warns(UserWarning, match='The "MockSpider.m1" method is a generator'):
+        warn_on_generator_with_return_value(mock_spider, m1)
 
 
 def test_generators_return_none(mock_spider):
@@ -150,6 +162,14 @@ https://example.org
     def l2():
         return
 
+    def m2():
+        yield 1
+
+        async def helper() -> int:
+            return 0
+
+        yield helper()
+
     assert not is_generator_with_return_value(top_level_return_none)
     assert not is_generator_with_return_value(f2)
     assert not is_generator_with_return_value(g2)
@@ -158,6 +178,7 @@ https://example.org
     assert not is_generator_with_return_value(j2)  # not recursive
     assert not is_generator_with_return_value(k2)  # not recursive
     assert not is_generator_with_return_value(l2)
+    assert not is_generator_with_return_value(m2)  # not recursive
 
     with warnings.catch_warnings():
         warnings.simplefilter("error", UserWarning)
@@ -169,6 +190,7 @@ https://example.org
         warn_on_generator_with_return_value(mock_spider, j2)
         warn_on_generator_with_return_value(mock_spider, k2)
         warn_on_generator_with_return_value(mock_spider, l2)
+        warn_on_generator_with_return_value(mock_spider, m2)
 
 
 def test_generators_return_none_with_decorator(mock_spider):
