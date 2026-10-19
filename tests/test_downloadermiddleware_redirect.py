@@ -8,7 +8,7 @@ import pytest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, Response
+from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.spidermiddlewares.referer import (
     POLICY_NO_REFERRER,
     POLICY_ORIGIN,
@@ -442,6 +442,19 @@ class NonStandardStatusMixin(ABC):
         would discard that resource."""
         response = self._response(body=b"file content")
         assert self.mw.process_response(Request(self.url), response) is response
+
+    @pytest.mark.parametrize("body", [b"", b"file content"])
+    def test_body_file(self, body, tmp_path):
+        body_file = tmp_path / "body"
+        body_file.write_bytes(body)
+        response = BodyFileResponse(
+            self.url,
+            status=self.status,
+            headers={"Location": "/target"},
+            body_file=body_file,
+        )
+        result = self.mw.process_response(Request(self.url), response)
+        assert (result is response) is bool(body)
 
     def test_no_location(self):
         response = self._response(location=None)

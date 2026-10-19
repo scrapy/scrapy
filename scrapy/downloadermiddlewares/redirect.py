@@ -10,7 +10,7 @@ from scrapy.spidermiddlewares.referer import RefererMiddleware
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import global_object_name
-from scrapy.utils.response import get_meta_refresh
+from scrapy.utils.response import _body_size, get_meta_refresh
 from scrapy.utils.url import _redirect_url
 
 if TYPE_CHECKING:
@@ -221,7 +221,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         # For other status codes, e.g. 201, Location identifies a resource
         # rather than a redirection target, and the response body may be that
         # resource, which following Location would discard.
-        return not response.body
+        return not _body_size(response)
 
     @_warn_spider_arg
     def process_response(

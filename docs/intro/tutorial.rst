@@ -439,8 +439,8 @@ We get a list of selectors for the quote HTML elements with:
 .. code-block:: pycon
 
     >>> response.css("div.quote")
-    [<Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-    <Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    [<Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    <Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
     ...]
 
 Each of the selectors returned by the query above allows us to run further

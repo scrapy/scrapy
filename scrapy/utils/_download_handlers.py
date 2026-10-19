@@ -24,9 +24,11 @@ from scrapy.exceptions import (
     StopDownload,
     UnsupportedURLSchemeError,
 )
+from scrapy.http import BodyFileResponse, Headers
 from scrapy.utils.log import logger
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Iterator
     from http.client import HTTPResponse
     from http.cookiejar import Cookie
@@ -35,7 +37,7 @@ if TYPE_CHECKING:
 
     from scrapy import Request
     from scrapy.crawler import Crawler
-    from scrapy.http import Headers, Response
+    from scrapy.http import Response
 
 
 class NullCookieJar(CookieJar):  # pragma: no cover
@@ -101,18 +103,26 @@ def make_response(
     ip_address: IPv4Address | IPv6Address | None = None,
     protocol: str | None = None,
     stop_download: StopDownload | None = None,
+    body_file: str | os.PathLike[str] | None = None,
 ) -> Response:
-    respcls = responsetypes.responsetypes.from_args(headers=headers, url=url, body=body)
-    response = respcls(
-        url=url,
-        status=status,
-        headers=headers,
-        body=body,
-        flags=flags,
-        certificate=certificate,
-        ip_address=ip_address,
-        protocol=protocol,
-    )
+    kwargs: dict[str, Any] = {
+        "url": url,
+        "status": status,
+        "headers": headers,
+        "flags": flags,
+        "certificate": certificate,
+        "ip_address": ip_address,
+        "protocol": protocol,
+    }
+    response: Response
+    if body_file is not None:
+        assert not body
+        response = BodyFileResponse(**kwargs, body_file=body_file)
+    else:
+        respcls = responsetypes.responsetypes.from_args(
+            headers=headers, url=url, body=body
+        )
+        response = respcls(**kwargs, body=body)
     if stop_download:
         response.flags.append("download_stopped")
         if stop_download.fail:
@@ -165,3 +175,16 @@ def normalize_bind_address(
     if isinstance(value, str):
         return (value, 0)
     return value
+
+
+def get_proxy_headers(request: Request) -> tuple[tuple[str, str], ...]:
+    """Return the headers to send to the proxy, from the ``proxy_headers``
+    request metadata key, as name-value pairs.
+
+    Pairs are sorted so that handlers that key their connections on them treat
+    header sets that only differ in order as the same set.
+    """
+    proxy_headers = request.meta.get("proxy_headers")
+    if not proxy_headers:
+        return ()
+    return tuple(sorted(Headers(proxy_headers).to_tuple_list()))

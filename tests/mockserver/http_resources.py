@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import itertools
 import json
 import random
 from typing import TYPE_CHECKING, Any, ClassVar, ParamSpec, TypeVar, cast
@@ -491,6 +492,25 @@ class SetCookie(BaseResource):
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
                 request.setHeader(b"Set-Cookie", cookie)
         return b""
+
+
+_connection_ids = itertools.count()
+
+
+class ConnectionId(LeafResource):
+    """Return the identifier of the connection serving the request.
+
+    Two responses carrying the same identifier were served over the same
+    connection, which lets tests tell connection reuse from reconnection.
+    """
+
+    def render_GET(self, request: Request) -> bytes:
+        # under HTTP/2 the channel of a request is its stream, so the
+        # connection has to be reached through it
+        channel: Any = getattr(request.channel, "_conn", request.channel)
+        if not hasattr(channel, "_mockserver_connection_id"):
+            channel._mockserver_connection_id = next(_connection_ids)
+        return str(channel._mockserver_connection_id).encode()
 
 
 def _h2_connection(request: Request) -> H2Connection:

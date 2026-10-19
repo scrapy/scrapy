@@ -20,14 +20,14 @@ from scrapy.exceptions import (
     IgnoreRequest,
     ScrapyDeprecationWarning,
 )
-from scrapy.http import Request, Response
+from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
+    _aiter_errback,
     _process_pending_io_before_callback,
     _schedule_coro,
-    aiter_errback,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
@@ -94,7 +94,7 @@ class Slot:
         # this Deferred will be awaited in enqueue_scrape()
         deferred: Deferred[None] = Deferred()
         self.queue.append((result, request, deferred))
-        if isinstance(result, Response):
+        if isinstance(result, Response) and not isinstance(result, BodyFileResponse):
             self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size += self.MIN_RESPONSE_SIZE
@@ -107,7 +107,7 @@ class Slot:
 
     def finish_response(self, result: Response | Failure, request: Request) -> None:
         self.active.remove(request)
-        if isinstance(result, Response):
+        if isinstance(result, Response) and not isinstance(result, BodyFileResponse):
             self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size -= self.MIN_RESPONSE_SIZE
@@ -273,8 +273,8 @@ class Scraper:
                 output = await self.spidermw.scrape_response_async(
                     self.call_spider_async, result, request
                 )
-            except Exception:
-                self.handle_spider_error(Failure(), request, result)
+            except Exception as spider_exc:
+                self._handle_spider_error(spider_exc, request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
             return
@@ -283,7 +283,9 @@ class Scraper:
             exc = result.value
             assert isinstance(exc, CloseSpider)  # typing
             _schedule_coro(
-                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
+                self.crawler.engine.close_spider_async(
+                    reason=exc.reason or "cancelled", error=exc.error
+                )
             )
             return
 
@@ -307,7 +309,7 @@ class Scraper:
                 )
             if spider_exc is not result.value:
                 # the errback raised a different exception, handle it
-                self.handle_spider_error(Failure(), request, result)
+                self._handle_spider_error(spider_exc, request, result)
         else:
             await self.handle_spider_output_async(output, request, result)
 
@@ -383,10 +385,23 @@ class Scraper:
         _failure: Failure,
         request: Request,
         response: Response | Failure,
+    ) -> None:  # pragma: no cover
+        warnings.warn(
+            "Scraper.handle_spider_error() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        assert _failure.value is not None
+        self._handle_spider_error(_failure.value, request, response)
+
+    def _handle_spider_error(
+        self,
+        exc: BaseException,
+        request: Request,
+        response: Response | Failure,
     ) -> None:
         """Handle an exception raised by a spider callback or errback."""
         assert self.crawler.spider
-        exc = _failure.value
         if isinstance(exc, CloseSpider):
             _schedule_coro(
                 self.crawler.engine.close_spider_async(
@@ -394,23 +409,24 @@ class Scraper:
                 )
             )
             return
+        failure = Failure(exc)
         logkws = self.logformatter.spider_error(
-            _failure, request, response, self.crawler.spider
+            failure, request, response, self.crawler.spider
         )
         logger.log(
             *logformatter_adapter(logkws),
-            exc_info=failure_to_exc_info(_failure),
+            exc_info=exc,
             extra={"spider": self.crawler.spider},
         )
         self.signals.send_catch_log(
             signal=signals.spider_error,
-            failure=_failure,
+            failure=failure,
             response=response,
             spider=self.crawler.spider,
         )
         stats = self.crawler.stats
         stats.inc_value("spider_exceptions/count")
-        stats.inc_value(f"spider_exceptions/{_failure.value.__class__.__name__}")
+        stats.inc_value(f"spider_exceptions/{exc.__class__.__name__}")
 
     def handle_spider_output(
         self,
@@ -445,7 +461,7 @@ class Scraper:
                 stacklevel=2,
             )
             result = as_async_generator(result)
-        it = aiter_errback(result, self.handle_spider_error, request, response)
+        it = _aiter_errback(result, self._handle_spider_error, request, response)
         if is_asyncio_available():
             await _parallel_asyncio(
                 it, self.concurrent_items, self._process_spidermw_output_async, response
