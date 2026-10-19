@@ -136,6 +136,29 @@ and defines some attributes and methods:
   the scraped data as dicts and also finding new URLs to
   follow and creating new requests (:class:`~scrapy.Request`) from them.
 
+Crawling faster for this tutorial
+---------------------------------
+
+The :file:`tutorial/settings.py` file of your project makes Scrapy crawl
+politely: it sends at most one request at a time to each website
+(:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`), waiting about one second between
+requests (:setting:`DOWNLOAD_DELAY`). That keeps you from overwhelming
+websites, but it also makes crawling slow, and it means the requests above are
+sent one after another rather than in parallel.
+
+``quotes.toscrape.com`` is a sandbox meant for scraping practice, so we can
+safely crawl it faster. Open :file:`tutorial/settings.py` and add a
+:setting:`DOWNLOAD_SLOTS` entry that raises the concurrency and lowers the
+delay for that domain only:
+
+.. code-block:: python
+
+    DOWNLOAD_SLOTS = {
+        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
+    }
+
+The polite defaults still apply to every other website.
+
 How to run our spider
 ---------------------
 
@@ -416,8 +439,8 @@ We get a list of selectors for the quote HTML elements with:
 .. code-block:: pycon
 
     >>> response.css("div.quote")
-    [<Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-    <Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    [<Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    <Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
     ...]
 
 Each of the selectors returned by the query above allows us to run further

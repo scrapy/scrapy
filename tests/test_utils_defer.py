@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import random
 import socket
 import warnings
@@ -17,8 +18,8 @@ from zope.interface import implementer
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
+    _aiter_errback,
     _process_pending_io,
-    aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
     deferred_to_future,
@@ -82,8 +83,8 @@ class TestAiterErrback:
             for x in range(10):
                 yield x
 
-        errors: list[Failure] = []
-        out = await collect_asyncgen(aiter_errback(itergood(), errors.append))
+        errors: list[Exception] = []
+        out = await collect_asyncgen(_aiter_errback(itergood(), errors.append))
         assert out == list(range(10))
         assert not errors
 
@@ -95,11 +96,11 @@ class TestAiterErrback:
                     1 / 0
                 yield x
 
-        errors: list[Failure] = []
-        out = await collect_asyncgen(aiter_errback(iterbad(), errors.append))
+        errors: list[Exception] = []
+        out = await collect_asyncgen(_aiter_errback(iterbad(), errors.append))
         assert out == [0, 1, 2, 3, 4]
         assert len(errors) == 1
-        assert isinstance(errors[0].value, ZeroDivisionError)
+        assert isinstance(errors[0], ZeroDivisionError)
 
 
 class TestAsyncDefTestsuite:
@@ -326,6 +327,24 @@ class TestParallelAsync:
         assert sorted(results) == [0, 2, 3]
         assert "Error processing an item" in caplog.text
         assert "Bad item" in caplog.text
+
+    @coroutine_test
+    async def test_context(self) -> None:
+        var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+            "var", default=None
+        )
+        var.set("hello")
+        seen: list[str | None] = []
+
+        async def aiterable() -> AsyncGenerator[int, None]:
+            for i in range(3):
+                seen.append(var.get())
+                yield i
+
+        await maybe_deferred_to_future(
+            parallel_async(aiterable(), 1, lambda _: seen.append(var.get()))
+        )
+        assert seen == ["hello"] * 6
 
 
 class TestDeferredFromCoro:

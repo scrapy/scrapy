@@ -174,3 +174,34 @@ async def test_none_slot_with_priority_queue(
     stats = crawler.stats
     assert stats.get_value("spider_exceptions", 0) == 0
     assert stats.get_value("downloader/exception_count", 0) == 0
+
+
+class CrossDomainRedirectSpider(MetaSpider):
+    name = "cross_domain_redirect"
+
+    def __init__(self, *args: Any, slot: str | None = None, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.slot = slot
+
+    async def start(self):
+        assert self.mockserver
+        target = self.mockserver.url("/text").replace("127.0.0.1", "localhost")
+        url = self.mockserver.url(f"/redirect-to?goto={target}")
+        meta = {} if self.slot is None else {"download_slot": self.slot}
+        yield Request(url, meta=meta, callback=self.parse)
+
+    def parse(self, response):
+        self.meta["slot"] = response.meta["download_slot"]
+
+
+@pytest.mark.parametrize(
+    ("slot", "expected"), [(None, "localhost"), ("custom", "custom")]
+)
+@coroutine_test
+async def test_cross_domain_redirect(
+    mockserver: MockServer, slot: str | None, expected: str
+) -> None:
+    crawler = get_crawler(CrossDomainRedirectSpider)
+    await crawler.crawl_async(mockserver=mockserver, slot=slot)
+    assert isinstance(crawler.spider, CrossDomainRedirectSpider)
+    assert crawler.spider.meta["slot"] == expected

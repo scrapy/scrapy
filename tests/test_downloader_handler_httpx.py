@@ -62,6 +62,8 @@ else:
 
 
 class HttpxDownloadHandlerMixin:
+    handler_supports_partial_response_on_timeout = True
+
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HttpxDownloadHandler
@@ -191,11 +193,44 @@ class TestHttpsProxy(TestHttpProxy):
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
     handler_supports_socks = HAS_SOCKS
+    # httpx sends an unbracketed IPv6 authority to the proxy, so the proxy
+    # answers 400; reproducible with httpx alone, without Scrapy involved.
+    # https://github.com/pydantic/httpx2/pull/1091
+    handler_supports_ipv6_destination = False
 
 
 @pytest.mark.requires_internet
 class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
+
+
+@coroutine_test
+async def test_proxy_clients() -> None:
+    proxy = "http://proxy.example:8080"
+    handler = build_from_crawler(HttpxDownloadHandler, get_crawler())
+    try:
+        client = handler._get_client(proxy, (("X-A", "1"),))
+        assert handler._get_client(proxy, (("X-A", "1"),)) is client
+        assert handler._get_client(proxy, (("X-A", "2"),)) is not client
+        assert handler._get_client(proxy) is not client
+        assert len(handler._proxy_clients) == 3
+    finally:
+        await handler.close()
+
+
+@coroutine_test
+async def test_proxy_headers_ignored_for_socks(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    if not HAS_SOCKS:  # pragma: no cover
+        pytest.skip("SOCKS support is not installed")
+    handler = build_from_crawler(HttpxDownloadHandler, get_crawler())
+    try:
+        with caplog.at_level("WARNING"):
+            handler._get_client("socks5://proxy.example:1080", (("X-A", "1"),))
+    finally:
+        await handler.close()
+    assert "the SOCKS protocol has no headers" in caplog.text
 
 
 @pytest.mark.parametrize(("concurrency", "expected"), [(16, 16), (0, None)])

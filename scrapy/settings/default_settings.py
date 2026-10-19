@@ -46,6 +46,7 @@ __all__ = [
     "CONCURRENT_ITEMS",
     "CONCURRENT_REQUESTS",
     "CONCURRENT_REQUESTS_PER_DOMAIN",
+    "CONNECTION_KEEPALIVE_TIMEOUT",
     "COOKIES_DEBUG",
     "COOKIES_ENABLED",
     "CRAWLSPIDER_FOLLOW_LINKS",
@@ -128,6 +129,7 @@ __all__ = [
     "HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS",
     "HTTPCACHE_IGNORE_SCHEMES",
     "HTTPCACHE_POLICY",
+    "HTTPCACHE_SCOPE",
     "HTTPCACHE_STORAGE",
     "HTTPERROR_ALLOWED_CODES",
     "HTTPERROR_ALLOW_ALL",
@@ -155,6 +157,7 @@ __all__ = [
     "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
     "LOG_LEVELS",
+    "LOG_ROOT_FORMATTER",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
     "LOG_VERSIONS",
@@ -276,6 +279,8 @@ CONCURRENT_ITEMS = 100
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
 
+CONNECTION_KEEPALIVE_TIMEOUT = 240.0
+
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
@@ -341,6 +346,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
+    "scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware": 200,
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
     "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
@@ -450,6 +456,7 @@ HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS: list[str] = []
 HTTPCACHE_IGNORE_SCHEMES = ["file"]
 HTTPCACHE_POLICY = "scrapy.extensions.httpcache.DummyPolicy"
+HTTPCACHE_SCOPE = "spider"
 HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 HTTPERROR_ALLOW_ALL = False
@@ -485,6 +492,7 @@ LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
 LOG_LEVELS: dict[str, str] = {}
+LOG_ROOT_FORMATTER = "scrapy.LogRootFormatter"
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
 LOG_VERSIONS = [

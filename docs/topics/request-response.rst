@@ -446,7 +446,9 @@ The following built-in Scrapy components have such restrictions:
     :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
     the following directory structure is created:
 
-    -   :attr:`.Spider.name`
+    -   the partition that :setting:`HTTPCACHE_SCOPE` selects, i.e.
+        :attr:`.Spider.name` or the request host, and no folder at all with
+        ``'none'``
 
         -   first byte of a request fingerprint as hexadecimal
 
@@ -803,6 +805,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`body_file`
 * :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
 * :reqmeta:`delay`
@@ -834,6 +837,7 @@ Those are:
 * :reqmeta:`max_retry_times`
 * :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
+* :reqmeta:`proxy_headers`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_times`
 * :reqmeta:`redirect_ttl`
@@ -887,6 +891,39 @@ This meta key is not supported by
 :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
 :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
 the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
+
+.. reqmeta:: body_file
+
+body_file
+---------
+
+.. versionadded:: VERSION
+
+Path of a file where the response body is written as it is downloaded, or
+``True`` to write it to a new temporary file, so that responses of any size can
+be downloaded without fitting them in memory:
+
+.. code-block:: python
+
+    Request("https://example.com/big.zip", meta={"body_file": "big.zip"})
+
+The response is then a :class:`BodyFileResponse`.
+
+Each download attempt, e.g. a retry or a redirect, writes the file from the
+start. If the download fails, e.g. because the response exceeds
+:setting:`DOWNLOAD_MAXSIZE`, the file may hold part of the body, except for
+temporary files, which Scrapy deletes. Deleting temporary files of successful
+downloads is up to you.
+
+Scrapy does not ask for a compressed response, and does not decompress the file
+if the server sends one anyway, as indicated by the ``Content-Encoding``
+response header.
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` skips
+these requests.
+
+Download handlers that do not support this key, such as :ref:`some built-in
+ones <download-handlers-ref>`, make the request fail with
+:exc:`~scrapy.exceptions.NotSupported`.
 
 .. reqmeta:: delay
 
@@ -993,6 +1030,10 @@ http_auth_domain
 
 Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
 
+If this key is not set, :reqmeta:`http_user` and :reqmeta:`http_pass` are only
+sent to the origin (scheme, host and port) of the request where they were first
+used, e.g. they are not sent after a cross-origin redirect.
+
 .. reqmeta:: http_pass
 
 http_pass
@@ -1031,6 +1072,41 @@ max_retry_times
 The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: proxy_headers
+
+proxy_headers
+-------------
+
+.. versionadded:: VERSION
+
+Headers for the proxy set in the :reqmeta:`proxy` metadata key, as a mapping,
+e.g. ``{"X-Proxy-Country": "us"}``.
+
+.. code-block:: python
+
+    Request(
+        "https://example.com",
+        meta={
+            "proxy": "http://proxy.example:8080",
+            "proxy_headers": {"X-Proxy-Country": "us"},
+        },
+    )
+
+For HTTPS URLs these headers are sent in the ``CONNECT`` request that opens the
+tunnel through the proxy, which the target server cannot see. For other URLs
+there is no tunnel, so they are sent among the request headers, and it is up to
+the proxy to consume them instead of passing them on to the target server.
+
+.. note::
+
+    Handling of this metadata key needs to be implemented inside the
+    :ref:`download handler <topics-download-handlers>`, so it's not guaranteed
+    to be supported by all 3rd-party handlers. Among the built-in handlers,
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`,
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
+    support it for HTTP and HTTPS proxies.
 
 .. reqmeta:: skip_dupefilter_once
 
@@ -1346,6 +1422,8 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.follow_redirect
+
     .. automethod:: Response.to_dict
 
     .. automethod:: Response.from_dict
@@ -1540,6 +1618,12 @@ JsonResponse objects
     that is used when the response has a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type`
     header.
+
+BodyFileResponse objects
+------------------------
+
+.. autoclass:: BodyFileResponse
+    :members: body_file
 
 
 Other functions related to responses

@@ -3,8 +3,9 @@ from __future__ import annotations
 import base64
 import logging
 import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from io import BytesIO
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -39,6 +40,7 @@ from scrapy.utils.url import _add_http_if_no_scheme
 from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import AsyncIterable
     from contextlib import AbstractAsyncContextManager
     from ipaddress import IPv4Address, IPv6Address
@@ -61,9 +63,10 @@ class _BaseResponseArgs(TypedDict):
     certificate: NotRequired[Any]
     ip_address: NotRequired[IPv4Address | IPv6Address | None]
     protocol: str | None
+    body_file: NotRequired[str | os.PathLike[str] | None]
 
 
-class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_ResponseT]):
+class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT]):
     """A base class for HTTP download handlers that follow the streaming logic flow."""
 
     _DEFAULT_CONNECT_TIMEOUT: ClassVar[float] = 10
@@ -136,6 +139,13 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         raise NotImplementedError
 
     @staticmethod
+    @abstractmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        """Return True if ``exc`` represents the download timeout being hit
+        while reading the response body."""
+        raise NotImplementedError
+
+    @staticmethod
     def _check_deps_installed() -> None:
         """Raise NotConfigured if the required deps are not installed."""
 
@@ -144,12 +154,16 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
 
     def _open_body_buffer(self, response: _ResponseT, request: Request) -> BinaryIO:
         """Return a file object to write the response body into."""
+        if body_file := request.meta.get("body_file"):
+            return Path(body_file).open("wb")
         return BytesIO()
 
     def _get_body(
         self, buffer: BinaryIO, response: _ResponseT, request: Request
     ) -> bytes:
         """Return the response body given the *buffer* it was written into."""
+        if request.meta.get("body_file"):
+            return b""
         assert isinstance(buffer, BytesIO)
         return buffer.getvalue()
 
@@ -191,23 +205,24 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         make_response_base_args = self._build_base_response_args(
             response, request, headers
         )
+        make_response_base_args["body_file"] = request.meta.get("body_file")
 
         if self._tls_verbose_logging:
             self._log_tls_info(response, request)
 
-        if stop_download := check_stop_download(
-            signals.headers_received,
-            self.crawler,
-            request,
-            headers=headers,
-            body_length=expected_size,
-        ):
-            return make_response(
-                **make_response_base_args,
-                stop_download=stop_download,
-            )
-
         with self._open_body_buffer(response, request) as response_body:
+            if stop_download := check_stop_download(
+                signals.headers_received,
+                self.crawler,
+                request,
+                headers=headers,
+                body_length=expected_size,
+            ):
+                return make_response(
+                    **make_response_base_args,
+                    stop_download=stop_download,
+                )
+
             bytes_received = 0
             try:
                 async for chunk in self._iter_body_chunks(response):
@@ -237,26 +252,44 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
                             )
                         )
             except Exception as e:
-                if not self._is_dataloss_exception(e):
-                    raise
-                fail_on_dataloss: bool = request.meta.get(
-                    "download_fail_on_dataloss", self._fail_on_dataloss
+                return self._handle_body_exception(
+                    e,
+                    request,
+                    make_response_base_args,
+                    self._get_body(response_body, response, request),
                 )
-                if not fail_on_dataloss:
-                    return make_response(
-                        **make_response_base_args,
-                        body=self._get_body(response_body, response, request),
-                        flags=["dataloss"],
-                    )
-                if not self._fail_on_dataloss_warned:
-                    logger.warning(get_dataloss_msg(request.url))
-                    self._fail_on_dataloss_warned = True
-                raise ResponseDataLossError(str(e)) from e
 
             return make_response(
                 **make_response_base_args,
                 body=self._get_body(response_body, response, request),
             )
+
+    def _handle_body_exception(
+        self,
+        exc: Exception,
+        request: Request,
+        make_response_base_args: _BaseResponseArgs,
+        body: bytes,
+    ) -> Response:
+        """Turn an exception raised while reading the response body into a
+        partial response, if the request allows for it, or reraise it."""
+        is_dataloss = self._is_dataloss_exception(exc)
+        if not is_dataloss and not self._is_timeout_exception(exc):
+            raise exc
+        fail_on_dataloss: bool = request.meta.get(
+            "download_fail_on_dataloss", self._fail_on_dataloss
+        )
+        if not fail_on_dataloss:
+            return make_response(
+                **make_response_base_args, body=body, flags=["dataloss"]
+            )
+        if not is_dataloss:
+            # let the timeout be reported as usual
+            raise exc
+        if not self._fail_on_dataloss_warned:
+            logger.warning(get_dataloss_msg(request.url))
+            self._fail_on_dataloss_warned = True
+        raise ResponseDataLossError(str(exc)) from exc
 
     @staticmethod
     def _request_headers(request: Request) -> Headers:

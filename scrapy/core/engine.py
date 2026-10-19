@@ -587,6 +587,8 @@ class ExecutionEngine:
             raise RuntimeError("Engine slot not assigned")
         if not self.scraper.slot.is_idle():  # type: ignore[union-attr]
             return False
+        if self._slot.inprogress:  # the downloader may not have these requests yet
+            return False
         if self.downloader.active:  # downloader has pending requests
             return False
         if self._start is not None:  # not all start requests are handled
