@@ -32,7 +32,6 @@ jobs:
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: "3.15"
-        allow-prereleases: true
 
     # Dependencies that ship wheels on PyPI are built from source here, so
     # their build dependencies are needed: libxml2 and libxslt for lxml,
@@ -51,7 +50,7 @@ jobs:
           tox.ini
 
     - name: Install mitmproxy
-      run: uv tool install --python cpython mitmproxy
+      run: uv tool install mitmproxy
 
     - name: Run tests
       run: uvx --with tox-uv tox

@@ -41,7 +41,7 @@ from twisted.internet.protocol import ClientCreator, Protocol
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import DownloadCancelledError, DownloadFailedError, NotConfigured
-from scrapy.http import Response
+from scrapy.http import BodyFileResponse, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._download_handlers import (
     get_maxsize_msg,
@@ -52,6 +52,8 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
+    import os
+
     from twisted.protocols.ftp import FTPClient
 
     from scrapy import Request
@@ -69,11 +71,16 @@ class ReceivedDataProtocol(Protocol):
         request: Request | None = None,
         maxsize: int = 0,
         warnsize: int = 0,
+        body_file: str | os.PathLike[str] | None = None,
     ):
         self.__filename: bytes | None = filename
-        self.body: BinaryIO = (
-            Path(filename.decode()).open("wb") if filename else BytesIO()
-        )
+        self.body: BinaryIO
+        if filename:
+            self.body = Path(filename.decode()).open("wb")
+        elif body_file:
+            self.body = Path(body_file).open("wb")
+        else:
+            self.body = BytesIO()
         self.size: int = 0
         self._request: Request | None = request
         self._maxsize: int = maxsize
@@ -105,10 +112,10 @@ class ReceivedDataProtocol(Protocol):
         return self.__filename
 
     def close(self) -> None:
-        if self.filename:
-            self.body.close()
-        else:
+        if isinstance(self.body, BytesIO):
             self.body.seek(0)
+        else:
+            self.body.close()
 
 
 _CODE_RE = re.compile(r"\d+")
@@ -149,11 +156,13 @@ class FTPDownloadHandler(BaseDownloadHandler):
         filepath = unquote(parsed_url.path)
         is_listing = filepath == "" or filepath.endswith("/")
         maxsize: int = request.meta.get("download_maxsize", self._default_maxsize)
+        body_file = request.meta.get("body_file")
         protocol = ReceivedDataProtocol(
-            request.meta.get("ftp_local_filename"),
+            None if body_file else request.meta.get("ftp_local_filename"),
             request=request,
             maxsize=maxsize,
             warnsize=get_warnsize(request.meta, self._default_warnsize),
+            body_file=body_file,
         )
         try:
             if is_listing:
@@ -170,6 +179,11 @@ class FTPDownloadHandler(BaseDownloadHandler):
                 httpcode = self.CODE_MAPPING.get(
                     m.group(), self.CODE_MAPPING["default"]
                 )
+                if body_file:
+                    protocol.body.write(message.encode())
+                    return BodyFileResponse(
+                        url=request.url, status=httpcode, body_file=body_file
+                    )
                 return Response(url=request.url, status=httpcode, body=message.encode())
         except ConnectionLost as e:
             raise DownloadFailedError(str(e)) from e
@@ -184,6 +198,10 @@ class FTPDownloadHandler(BaseDownloadHandler):
             logger.warning(warning_msg)
             raise DownloadCancelledError(warning_msg)
         headers = {"Local Filename": protocol.filename or b"", "Size": protocol.size}
+        if body_file:
+            return BodyFileResponse(
+                url=request.url, status=200, headers=headers, body_file=body_file
+            )
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
         return respcls(url=request.url, status=200, body=body, headers=headers)

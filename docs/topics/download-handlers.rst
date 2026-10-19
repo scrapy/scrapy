@@ -296,6 +296,7 @@ HTTP/2                      No (not supported by the library)
 Bad header handling         Fail (not supported by the library)
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
+:reqmeta:`body_file`        Yes
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
@@ -342,6 +343,7 @@ HTTP/2                      Yes
 Bad header handling         Not applicable (HTTP/2 only)
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
+:reqmeta:`body_file`        No (not implemented)
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
@@ -387,6 +389,7 @@ HTTP/2                      No (implemented as a separate handler)
 Bad header handling         Skip bad, like web browsers do
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
+:reqmeta:`body_file`        Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
@@ -453,6 +456,7 @@ HTTP/2                      Yes
 Bad header handling         Fail (not supported by the library)
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
+:reqmeta:`body_file`        Yes
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
