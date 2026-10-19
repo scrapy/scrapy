@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import unittest
 from typing import TYPE_CHECKING, Any
-from unittest import TestCase as _TestCase
-from unittest import TestResult as _TestResult
-from unittest import TextTestResult
+from unittest import TestCase, TestResult, TextTestResult
 
 import pytest
 from twisted.python import failure
@@ -32,7 +31,7 @@ if TYPE_CHECKING:
 
 
 def _request(
-    conman: ContractsManager, method: CallbackT, results: _TestResult
+    conman: ContractsManager, method: CallbackT, results: unittest.TestResult
 ) -> Request:
     requests = conman.from_method(method, results)
     assert len(requests) == 1
@@ -866,14 +865,17 @@ class PostProcessErrorContract(Contract):
         raise ValueError("post-process error")
 
 
-class _TrackingTestResult(_TestResult):
+class _TrackingTestResult(TestResult):
     def __init__(self) -> None:
         super().__init__()
-        self.stopped_tests: list[_TestCase] = []
+        self.stopped_tests: list[TestCase] = []
 
-    def stopTest(self, test: _TestCase) -> None:
+    def stopTest(self, test: TestCase) -> None:
         self.stopped_tests.append(test)
         super().stopTest(test)
+
+
+del TestResult  # Prevent pytest from collecting the imported class.
 
 
 class TestCustomContractPrePostProcess:
@@ -884,74 +886,62 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPreProcess(spider.returns_request)
-        conman = ContractsManager([UrlContract, ReturnsContract])
-
-        request = _request(conman, spider.returns_request, self.results)
+        request = Request("http://example.com", callback=spider.returns_request)
         contract.add_pre_hook(request, self.results)
         with pytest.raises(KeyboardInterrupt, match="Pre-process exception"):
             _call(request, response)
 
         assert not self.results.failures
         assert not self.results.errors
-        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
+        assert self.results.stopped_tests == [contract.testcase_pre]
 
     def test_post_hook_keyboard_interrupt(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPostProcess(spider.returns_request)
-        conman = ContractsManager([UrlContract, ReturnsContract])
-
-        request = _request(conman, spider.returns_request, self.results)
+        request = Request("http://example.com", callback=spider.returns_request)
         contract.add_post_hook(request, self.results)
         with pytest.raises(KeyboardInterrupt, match="Post-process exception"):
             _call(request, response)
 
         assert not self.results.failures
         assert not self.results.errors
-        assert any(
-            test is contract.testcase_post for test in self.results.stopped_tests
-        )
+        assert self.results.stopped_tests == [contract.testcase_post]
 
     def test_pre_hook_success(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessSuccessContract(spider.returns_request)
-        conman = ContractsManager([UrlContract, ReturnsContract])
-
-        request = _request(conman, spider.returns_request, self.results)
+        request = Request("http://example.com", callback=spider.returns_request)
         contract.add_pre_hook(request, self.results)
         _call(request, response)
 
         assert not self.results.failures
         assert not self.results.errors
-        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
+        assert self.results.stopped_tests == [contract.testcase_pre]
 
     def test_pre_hook_assertion_failure(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessAssertionFailContract(spider.returns_request)
-        conman = ContractsManager([UrlContract, ReturnsContract])
-
-        request = _request(conman, spider.returns_request, self.results)
+        request = Request("http://example.com", callback=spider.returns_request)
         contract.add_pre_hook(request, self.results)
         _call(request, response)
 
         assert self.results.failures
         assert not self.results.errors
-        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
+        assert self.results.stopped_tests == [contract.testcase_pre]
 
     def test_pre_hook_error(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessErrorContract(spider.returns_request)
-        conman = ContractsManager([UrlContract, ReturnsContract])
-
-        request = _request(conman, spider.returns_request, self.results)
+        request = Request("http://example.com", callback=spider.returns_request)
         contract.add_pre_hook(request, self.results)
         _call(request, response)
 
         assert self.results.errors
-        assert any(test is contract.testcase_pre for test in self.results.stopped_tests)
+        assert self.results.stopped_tests == [contract.testcase_pre]
 
     @coroutine_test
     async def test_pre_hook_async_callback(self):
@@ -999,16 +989,12 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = PostProcessErrorContract(spider.returns_request)
-        conman = ContractsManager([UrlContract, ReturnsContract])
-
-        request = _request(conman, spider.returns_request, self.results)
+        request = Request("http://example.com", callback=spider.returns_request)
         contract.add_post_hook(request, self.results)
         _call(request, response)
 
         assert self.results.errors
-        assert any(
-            test is contract.testcase_post for test in self.results.stopped_tests
-        )
+        assert self.results.stopped_tests == [contract.testcase_post]
 
 
 class LegacyHookContract(Contract):
