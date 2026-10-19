@@ -211,7 +211,7 @@ exclude_also = [
 
 [tool.pylint.MASTER]
 persistent = "no"
-jobs = 1          # >1 hides results
+jobs = 0  # run in parallel
 extension-pkg-allow-list=[
     "lxml",
 ]
