@@ -66,7 +66,7 @@ Take a few readings at different points of the crawl:
 -   :attr:`engine.response_active_size
     <scrapy.core.engine.ExecutionEngine.response_active_size>` approaches
     :setting:`RESPONSE_MAX_ACTIVE_SIZE`, or the
-    ``request_backout_seconds/response_max_active_size`` stat grows (see
+    :stat:`request_backout_seconds/response_max_active_size` stat grows (see
     :ref:`crawl-bottlenecks`): responses arrive faster than your callbacks and
     :ref:`item pipelines <topics-item-pipeline>` handle them, or your code
     keeps responses in memory. The bottleneck is your own code.

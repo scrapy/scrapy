@@ -91,6 +91,7 @@ def test_pool_keeps_newer_connection() -> None:
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
     http2 = True
+    handler_supports_body_file = False
 
     @coroutine_test
     async def test_protocol(self, mockserver: MockServer) -> None:

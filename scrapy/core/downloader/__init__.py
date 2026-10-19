@@ -31,7 +31,6 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import garbage_collect
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -186,7 +185,6 @@ _STAMPED_SLOT_META_KEY = "_download_slot_stamp"
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
-    _GC_INTERVAL: float = 1.0  # seconds
 
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
@@ -218,9 +216,6 @@ class Downloader:
         # (None, None) if not backing out.
         self._last_backout: tuple[str | None, float | None] = (None, None)
         self._max_active_size_warned = False
-        self._gc: bool = self.settings.getbool("RESPONSE_MAX_ACTIVE_SIZE_GC")
-        self._last_gc: float = 0
-        self._active_size_at_last_gc: int | None = None
 
     @property
     def randomize_delay(self) -> bool:
@@ -271,21 +266,18 @@ class Downloader:
             return True
         if self._exceeds_max_active_size():
             self._record_backout("response_max_active_size")
-            if self._gc:
-                self._maybe_garbage_collect()
-            if self._exceeds_max_active_size():
-                if not self._max_active_size_warned:
-                    self._max_active_size_warned = True
-                    logger.info(
-                        f"Pausing request processing: the active response size "
-                        f"({self.middleware._total_active_size} B) has reached "
-                        f"RESPONSE_MAX_ACTIVE_SIZE "
-                        f"({self.middleware._max_active_size} B). See "
-                        f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
-                        f"and the request_backout_seconds/response_max_active_size "
-                        f"stat. This message is only logged once."
-                    )
-                return True
+            if not self._max_active_size_warned:
+                self._max_active_size_warned = True
+                logger.info(
+                    f"Pausing request processing: the active response size "
+                    f"({self.middleware._total_active_size} B) has reached "
+                    f"RESPONSE_MAX_ACTIVE_SIZE "
+                    f"({self.middleware._max_active_size} B). See "
+                    f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+                    f"and the request_backout_seconds/response_max_active_size "
+                    f"stat. This message is only logged once."
+                )
+            return True
         self._record_backout(None)
         return False
 
@@ -295,29 +287,6 @@ class Downloader:
             bool(max_active_size)
             and self.middleware._total_active_size >= max_active_size
         )
-
-    def _maybe_garbage_collect(self) -> None:
-        # A full collection is expensive, so it only runs when there are
-        # tracked responses that neither the downloader nor the scraper holds,
-        # i.e. ones that may be unreachable, and at most once per interval
-        # while something is in flight. When nothing is in flight, it is the
-        # only way to make progress, so it also runs whenever the tracked size
-        # changed since the last collection.
-        engine = self.crawler.engine
-        assert engine is not None
-        slot = engine.scraper.slot
-        assert slot is not None
-        in_use = len(self.active) + len(slot.queue) + len(slot.active)
-        if len(self.middleware._tracked_responses) <= in_use:
-            return
-        current_time = perf_counter()
-        stale = current_time - self._last_gc >= self._GC_INTERVAL
-        changed = self.middleware._total_active_size != self._active_size_at_last_gc
-        if not (stale or (changed and not in_use)):
-            return
-        self._last_gc = current_time
-        garbage_collect()
-        self._active_size_at_last_gc = self.middleware._total_active_size
 
     @_warn_spider_arg
     def _get_slot(

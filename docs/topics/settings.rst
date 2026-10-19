@@ -2041,6 +2041,8 @@ Adjust redirect request priority relative to original request:
 RESPONSE_MAX_ACTIVE_SIZE
 ------------------------
 
+.. versionadded:: VERSION
+
 Default: ``5_000_000``
 
 Soft limit (in bytes) on the total size of responses being kept in memory.
@@ -2056,7 +2058,7 @@ downloader. A higher value improves crawl speed at the cost of memory usage.
 
 Scrapy logs an info-level message the first time the limit is reached. To see
 how long request processing was paused because of it over a whole crawl, check
-the ``request_backout_seconds/response_max_active_size`` stat.
+the :stat:`request_backout_seconds/response_max_active_size` stat.
 
 .. caution::
 
@@ -2064,43 +2066,22 @@ the ``request_backout_seconds/response_max_active_size`` stat.
     :attr:`.Request.meta` of a scheduled request or in a component attribute,
     count toward this limit until that reference is gone, so accumulating them
     can pause a crawl indefinitely. So do responses in a reference cycle,
-    unless :setting:`RESPONSE_MAX_ACTIVE_SIZE_GC` is enabled. To find out, run
-    ``prefs()`` on the :ref:`telnet console <topics-telnetconsole>` and see
-    whether the count of live :class:`~scrapy.http.Response` objects keeps
-    growing; see :ref:`topics-leaks`.
-
-.. versionadded:: VERSION
-
-.. setting:: RESPONSE_MAX_ACTIVE_SIZE_GC
-
-RESPONSE_MAX_ACTIVE_SIZE_GC
----------------------------
-
-Default: ``False`` on CPython, ``True`` otherwise
-
-Whether to force garbage collections while :setting:`RESPONSE_MAX_ACTIVE_SIZE`
-is reached, so that it does not count responses that nothing refers to anymore.
-
-.. versionadded:: VERSION
-
-On CPython, only responses in a reference cycle need a garbage collection to be
-freed, so enable this if your code creates such cycles.
+    until Python's garbage collector frees them. To find out whether your
+    crawl keeps responses alive, see :ref:`topics-leaks`.
 
 .. setting:: RESPONSE_ROUGH_SIZE
 
 RESPONSE_ROUGH_SIZE
 -------------------
 
+.. versionadded:: VERSION
+
 Default: ``None``
 
 Estimated size (in bytes) to count toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`
 for each request being downloaded, whose actual response size is not known yet.
 
-``None`` means a quarter of :setting:`RESPONSE_MAX_ACTIVE_SIZE` split among
-:setting:`CONCURRENT_REQUESTS` requests, so that requests being downloaded
-cannot use up the whole limit on their own. ``0`` counts only responses.
-
-.. versionadded:: VERSION
+``None`` lets Scrapy choose a value. ``0`` counts only responses.
 
 .. setting:: ROBOTSTXT_OBEY
 

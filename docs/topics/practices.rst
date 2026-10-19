@@ -539,14 +539,10 @@ modules by separating them with commas.
 Identifying crawl bottlenecks
 =============================
 
-Scrapy exposes ``request_backout_seconds`` stats that show how long request
-scheduling was paused during a crawl, and why:
-
-- ``request_backout_seconds/total``: total time paused for any reason
-- ``request_backout_seconds/concurrency``: time paused because
-  :setting:`CONCURRENT_REQUESTS` was reached
-- ``request_backout_seconds/response_max_active_size``: time paused because
-  :setting:`RESPONSE_MAX_ACTIVE_SIZE` was reached
+The :stat:`request_backout_seconds/concurrency`,
+:stat:`request_backout_seconds/response_max_active_size` and
+:stat:`request_backout_seconds/total` stats show how long request scheduling
+was paused during a crawl, and why.
 
 For example, after a crawl you might see::
 

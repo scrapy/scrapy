@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import logging
 import warnings
 from typing import Any
 
@@ -7,13 +8,11 @@ import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider
-from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import Response
+from scrapy.http import HtmlResponse, Response
 from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.python import garbage_collect
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -75,6 +74,10 @@ def _assert_scraper_slot_deprecation(
             "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
             "RESPONSE_MAX_ACTIVE_SIZE instead."
         )
+
+
+def _raise(response: Response) -> None:
+    raise ValueError(response.url)
 
 
 class gt:
@@ -422,25 +425,44 @@ class TestRequestBackout:
         }
         assert _backout_stats(crawler) == expected_stats
 
-    @staticmethod
-    def _count_garbage_collections(monkeypatch) -> list[None]:
-        collections: list[None] = []
+    @pytest.mark.parametrize(
+        ("status", "callback"),
+        [
+            (200, lambda response: response.css("a")),
+            (200, _raise),
+            (404, None),
+        ],
+        ids=["selector", "callback-exception", "errback"],
+    )
+    @coroutine_test
+    async def test_response_max_active_size_no_cycles(self, status, callback):
+        """Scrapy frees responses through reference counting alone, so a crawl
+        does not stall on RESPONSE_MAX_ACTIVE_SIZE without garbage
+        collection."""
 
-        def counting_garbage_collect():
-            collections.append(None)
-            garbage_collect()
+        class ResponseMiddleware:
+            def process_request(self, request):
+                return HtmlResponse(request.url, status=status, body=b"<a></a>")
 
-        monkeypatch.setattr(
-            "scrapy.core.downloader.garbage_collect", counting_garbage_collect
-        )
-        # Keep the heartbeat from masking a stall.
-        monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 60)
-        return collections
+        class TestSpider(Spider):
+            name = "test"
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {ResponseMiddleware: 0},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
 
-    @staticmethod
-    async def _crawl_without_automatic_gc(crawler) -> None:
-        # Leave the forced collection as the only one that can free responses
-        # in a cycle.
+            async def start(self):
+                for n in range(3):
+                    yield Request(
+                        f"https://example.com/{n}",
+                        callback=callback,
+                        errback=lambda failure: None,
+                    )
+
+        crawler = get_crawler(TestSpider)
+        # The log capture of pytest keeps the tracebacks of logged errors, and
+        # with them the responses they refer to.
+        logging.disable()
         gc.disable()
         try:
             crawl_deferred = crawler.crawl()
@@ -452,84 +474,10 @@ class TestRequestBackout:
                 timeout.cancel()
         finally:
             gc.enable()
-
-    @coroutine_test
-    async def test_response_max_active_size_gc(self, monkeypatch):
-        """Responses that only the garbage collector can free stop counting
-        toward the limit as soon as nothing else can make progress, without
-        waiting for the engine heartbeat."""
-        collections = self._count_garbage_collections(monkeypatch)
-
-        class TestSpider(Spider):
-            name = "test"
-            start_urls = [f"data:,{n}" for n in range(3)]
-            custom_settings = {
-                "RESPONSE_MAX_ACTIVE_SIZE": 1,
-                "RESPONSE_MAX_ACTIVE_SIZE_GC": True,
-            }
-
-            def parse(self, response):
-                cycle = [response]
-                cycle.append(cycle)
-
-        crawler = get_crawler(TestSpider)
-        await self._crawl_without_automatic_gc(crawler)
+            logging.disable(logging.NOTSET)
 
         assert crawler.stats
         assert crawler.stats.get_value("response_received_count") == 3
-        assert 0 < len(collections) <= 3
-
-    @coroutine_test
-    async def test_response_max_active_size_gc_in_flight(self, monkeypatch):
-        """While a download is in flight, collections are throttled."""
-        collections = self._count_garbage_collections(monkeypatch)
-
-        class SlowDown:
-            async def process_request(self, request):
-                if request.url == "data:,slow":
-                    await sleep(0.3)
-
-        class TestSpider(Spider):
-            name = "test"
-            start_urls = ["data:,slow", "data:,a", "data:,b"]
-            custom_settings = {
-                "DOWNLOADER_MIDDLEWARES": {SlowDown: 0},
-                "RESPONSE_MAX_ACTIVE_SIZE": 2,
-                "RESPONSE_MAX_ACTIVE_SIZE_GC": True,
-            }
-            kept: list[Response] = []
-
-            def parse(self, response):
-                if response.url == "data:,slow":
-                    self.kept.clear()
-                else:
-                    self.kept.append(response)
-
-        crawler = get_crawler(TestSpider)
-        await maybe_deferred_to_future(crawler.crawl())
-
-        assert crawler.stats
-        assert crawler.stats.get_value("response_received_count") == 3
-        assert len(collections) == 1
-
-    @coroutine_test
-    async def test_response_max_active_size_gc_default(self, monkeypatch):
-        collections = self._count_garbage_collections(monkeypatch)
-
-        class TestSpider(Spider):
-            name = "test"
-            start_urls = [f"data:text/html,<a>{n}</a>" for n in range(3)]
-            custom_settings = {"RESPONSE_MAX_ACTIVE_SIZE": 1}
-
-            def parse(self, response):
-                response.css("a")
-
-        crawler = get_crawler(TestSpider)
-        await self._crawl_without_automatic_gc(crawler)
-
-        assert crawler.stats
-        assert crawler.stats.get_value("response_received_count") == 3
-        assert not collections
 
     @coroutine_test
     async def test_response_size_process_request(self):

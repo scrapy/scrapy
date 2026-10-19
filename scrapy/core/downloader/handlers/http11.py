@@ -8,8 +8,9 @@ import re
 from contextlib import suppress
 from functools import partial
 from io import BytesIO
+from pathlib import Path
 from time import monotonic
-from typing import TYPE_CHECKING, Any, NotRequired, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, NotRequired, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag
 
 from twisted.internet import ssl
@@ -53,6 +54,7 @@ from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
+    get_proxy_headers,
     get_warnsize,
     get_warnsize_msg,
     make_response,
@@ -68,6 +70,8 @@ from scrapy.utils.url import _add_http_if_no_scheme
 from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
+    import os
+
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
     from twisted.web._newclient import Request as TxRequest
@@ -202,12 +206,12 @@ class _TunnelingEndpoint:
         reactor: ReactorBase,
         host: bytes,
         port: int,
-        proxyConf: tuple[str, int, bytes | None],
+        proxyConf: tuple[str, int, tuple[tuple[str, str], ...]],
         contextFactory: IPolicyForHTTPS,
         timeout: float = 30,
         bindAddress: tuple[str, int] | None = None,
     ):
-        proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
+        proxyHost, proxyPort, self._proxyHeaders = proxyConf
         self._proxyHost: str = proxyHost
         self._proxyPort: int = proxyPort
         # Reach a proxy given as a name through a HostnameEndpoint, the same
@@ -246,7 +250,7 @@ class _TunnelingEndpoint:
         tunnelReq = _tunnel_request_data(
             self._format_host(self._tunneledHost),
             self._tunneledPort,
-            self._proxyAuthHeader,
+            self._proxyHeaders,
         )
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
@@ -325,21 +329,21 @@ class _TunnelingEndpoint:
 
 
 def _tunnel_request_data(
-    host: bytes, port: int, proxy_auth_header: bytes | None = None
+    host: bytes, port: int, proxy_headers: tuple[tuple[str, str], ...] = ()
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
 
     >>> _tunnel_request_data(b"example.com", 8080).decode()
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
-    >>> _tunnel_request_data(b"example.com", 8080, b"123").decode()
+    >>> _tunnel_request_data(b"example.com", 8080, (("Proxy-Authorization", "123"),)).decode()
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
     """
     host_value = host + b":" + str(port).encode()
     tunnel_req = b"CONNECT " + host_value + b" HTTP/1.1\r\n"
     tunnel_req += b"Host: " + host_value + b"\r\n"
-    if proxy_auth_header:
-        tunnel_req += b"Proxy-Authorization: " + proxy_auth_header + b"\r\n"
+    for name, value in proxy_headers:
+        tunnel_req += name.encode() + b": " + value.encode() + b"\r\n"
     tunnel_req += b"\r\n"
     return tunnel_req
 
@@ -387,14 +391,14 @@ class _TunnelingAgent(_BindAddressAgent):
         self,
         *,
         reactor: ReactorBase,
-        proxyConf: tuple[str, int, bytes | None],
+        proxyConf: tuple[str, int, tuple[tuple[str, str], ...]],
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
-        self._proxyConf: tuple[str, int, bytes | None] = proxyConf
+        self._proxyConf: tuple[str, int, tuple[tuple[str, str], ...]] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
     def _getEndpoint(self, uri: URI) -> _TunnelingEndpoint:
@@ -418,9 +422,10 @@ class _TunnelingAgent(_BindAddressAgent):
         bodyProducer: IBodyProducer | None,
         requestPath: bytes,
     ) -> Deferred[IResponse]:
-        # proxy host and port are required for HTTP pool `key`
-        # otherwise, same remote host connection request could reuse
-        # a cached tunneled connection to a different proxy
+        # the proxy host and port and the headers sent to the proxy are part of
+        # the HTTP pool `key`, otherwise a request for the same remote host
+        # could reuse a tunnel that was opened through a different proxy or
+        # with different proxy headers
         key += self._proxyConf
         return super()._requestWithEndpoint(
             key=key,
@@ -519,8 +524,16 @@ class _ScrapyAgent:
                         "HTTPS proxies for HTTPS destinations are not supported"
                     )
                 assert proxy_host is not None
+                proxy_headers = get_proxy_headers(request)
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
-                proxyConf = (proxy_host, proxy_port, proxyAuth)
+                if proxyAuth and not any(
+                    name == "Proxy-Authorization" for name, _ in proxy_headers
+                ):
+                    proxy_headers = (
+                        ("Proxy-Authorization", proxyAuth.decode()),
+                        *proxy_headers,
+                    )
+                proxyConf = (proxy_host, proxy_port, proxy_headers)
                 return _TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
@@ -558,7 +571,15 @@ class _ScrapyAgent:
         headers = TxHeaders(request.headers)
         if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
+        elif isinstance(agent, _ScrapyProxyAgent):
+            # without a tunnel the proxy reads the request headers, so the
+            # headers meant for it travel among them, and it is up to the proxy
+            # not to pass them on to the target server
+            for name, value in get_proxy_headers(request):
+                headers.addRawHeader(name, value)
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
+        body_file = request.meta.get("body_file")
+        bodybuf: BinaryIO = Path(body_file).open("wb") if body_file else BytesIO()
         start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
@@ -569,12 +590,18 @@ class _ScrapyAgent:
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed
-        d2: Deferred[_ResultT] = d.addCallback(self._cb_bodyready, request)
-        d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, url)
+        d2: Deferred[_ResultT] = d.addCallback(self._cb_bodyready, request, bodybuf)
+        d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, url, body_file)
         # check download timeout
         self._timeout_cl = reactor.callLater(timeout, self._cb_timed_out, d3, request)
         d3.addBoth(self._cb_timeout, request, url, timeout)
+        d3.addBoth(self._cb_close, bodybuf)
         return d3
+
+    @staticmethod
+    def _cb_close(result: _T, bodybuf: BinaryIO) -> _T:
+        bodybuf.close()
+        return result
 
     def _cb_timed_out(self, d3: Deferred[Response], request: Request) -> None:
         fail_on_dataloss = request.meta.get(
@@ -614,7 +641,7 @@ class _ScrapyAgent:
         return headers
 
     def _cb_bodyready(
-        self, txresponse: TxResponse, request: Request
+        self, txresponse: TxResponse, request: Request, bodybuf: BinaryIO
     ) -> _ResultT | Deferred[_ResultT]:
         if stop_download := check_stop_download(
             signals.headers_received,
@@ -670,6 +697,7 @@ class _ScrapyAgent:
                 finished=d,
                 txresponse=txresponse,
                 request=request,
+                bodybuf=bodybuf,
                 maxsize=maxsize,
                 warnsize=warnsize,
                 reached_warnsize=reached_warnsize,
@@ -689,7 +717,12 @@ class _ScrapyAgent:
         # Abort connection immediately.
         txresponse._transport._producer.abortConnection()
 
-    def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
+    def _cb_bodydone(
+        self,
+        result: _ResultT,
+        url: str,
+        body_file: str | os.PathLike[str] | None,
+    ) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
         version = result["txresponse"].version
         protocol = f"{version[0].decode()}/{version[1]}.{version[2]}"
@@ -703,6 +736,7 @@ class _ScrapyAgent:
             ip_address=result.get("ip_address"),
             protocol=protocol,
             stop_download=result.get("stop_download"),
+            body_file=body_file,
         )
 
 
@@ -729,6 +763,7 @@ class _ResponseReader(Protocol):
         finished: Deferred[_ResultT],
         txresponse: TxResponse,
         request: Request,
+        bodybuf: BinaryIO,
         maxsize: int,
         warnsize: int,
         fail_on_dataloss: bool,
@@ -740,7 +775,7 @@ class _ResponseReader(Protocol):
         self._finished: Deferred[_ResultT] = finished
         self._txresponse: TxResponse = txresponse
         self._request: Request = request
-        self._bodybuf: BytesIO = BytesIO()
+        self._bodybuf: BinaryIO = bodybuf
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
         self._fail_on_dataloss: bool = fail_on_dataloss
@@ -757,7 +792,11 @@ class _ResponseReader(Protocol):
         self._finished.callback(
             {
                 "txresponse": self._txresponse,
-                "body": self._bodybuf.getvalue(),
+                "body": (
+                    self._bodybuf.getvalue()
+                    if isinstance(self._bodybuf, BytesIO)
+                    else b""
+                ),
                 "flags": flags,
                 "certificate": self._certificate,
                 "ip_address": self._ip_address,

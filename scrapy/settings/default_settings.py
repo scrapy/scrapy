@@ -200,7 +200,6 @@ __all__ = [
     "REMOTE_CONTROL_TRACEBACK_MAX_BYTES",
     "REQUEST_FINGERPRINTER_CLASS",
     "RESPONSE_MAX_ACTIVE_SIZE",
-    "RESPONSE_MAX_ACTIVE_SIZE_GC",
     "RESPONSE_ROUGH_SIZE",
     "RETRY_ENABLED",
     "RETRY_EXCEPTIONS",
@@ -605,9 +604,6 @@ SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5_000_000
 RESPONSE_MAX_ACTIVE_SIZE = 5_000_000
-# CPython frees most responses through reference counting.
-RESPONSE_MAX_ACTIVE_SIZE_GC = sys.implementation.name != "cpython"
-# None means a share of RESPONSE_MAX_ACTIVE_SIZE based on CONCURRENT_REQUESTS.
 RESPONSE_ROUGH_SIZE = None
 
 SPIDER_CONTRACTS: dict[str, int] = {}

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from weakref import WeakSet, finalize
 
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, _InvalidOutput
-from scrapy.http import Request, Response
+from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
@@ -131,7 +131,10 @@ class DownloaderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstrac
         # The actual response size replaces the rough size estimate of its
         # request.
         self._discount_rough_size(request)
-        if response in self._tracked_responses:
+        if (
+            isinstance(response, BodyFileResponse)
+            or response in self._tracked_responses
+        ):
             return
         self._tracked_responses.add(response)
         size = len(response.body)
