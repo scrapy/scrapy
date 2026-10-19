@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import inspect
 import warnings
+from itertools import takewhile
 from typing import TYPE_CHECKING
 from typing import Any as TypingAny
 from weakref import WeakKeyDictionary
 
-from blinker import ANY, NamedSignal, Signal
+from blinker import ANY, Signal
 
 from scrapy import signals as _builtin_signals
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, MutableMapping
 
 Any = ANY
 """Sender that matches receivers connected to any sender."""
@@ -62,47 +63,43 @@ def _signal_for(signal: TypingAny) -> _Signal:
     try:
         return _signals[signal]
     except KeyError:
-        obj = _signals[signal] = _Signal()
-        return obj
+        store: MutableMapping[TypingAny, _Signal] = _signals
     except TypeError:
-        pass
-    try:
-        return _signals_by_value[signal]
-    except KeyError:
-        obj = _signals_by_value[signal] = _Signal()
-        return obj
+        store = _signals_by_value
+        if (obj := store.get(signal)) is not None:
+            return obj
+    # setdefault() so that concurrent first uses of a signal agree on one object.
+    return store.setdefault(signal, _Signal())
 
 
-# Keyed by the underlying function rather than by the receiver, so that a bound
-# method does not keep its instance alive, and so that every instance of a
-# component shares one entry.
-_accepted_args: dict[TypingAny, frozenset[str] | None] = {}
+_Parameters = tuple[frozenset[str], tuple[str, ...]]
+
+# Weak keys, so that the cache does not keep receivers alive. Bound methods are
+# keyed by their underlying function, so that they do not keep their instance
+# alive either, and every instance of a component shares one entry.
+_parameters_cache: WeakKeyDictionary[TypingAny, _Parameters | None] = (
+    WeakKeyDictionary()
+)
 
 
-def _cache_key(receiver: TypingAny) -> TypingAny:
-    func = getattr(receiver, "__func__", None)
-    if func is not None:
-        return func
-    if inspect.isroutine(receiver):
-        return receiver
-    return type(receiver)
-
-
-def _accepted(receiver: TypingAny) -> frozenset[str] | None:
-    """Return the names of the arguments *receiver* accepts, or ``None`` if it
-    accepts arbitrary keyword arguments.
+def _parameters(receiver: TypingAny) -> _Parameters | None:
+    """Return the names of the arguments *receiver* accepts and of its leading
+    positional parameters, or ``None`` if it accepts arbitrary keyword
+    arguments.
     """
-    key = _cache_key(receiver)
+    key = getattr(receiver, "__func__", receiver)
     try:
-        return _accepted_args[key]
+        return _parameters_cache[key]
     except KeyError:
         pass
-    names = _introspect(receiver)
-    _accepted_args[key] = names
-    return names
+    except TypeError:
+        # Receivers that cannot be weakly referenced.
+        return _introspect(receiver)
+    result = _parameters_cache[key] = _introspect(receiver)
+    return result
 
 
-def _introspect(receiver: TypingAny) -> frozenset[str] | None:
+def _introspect(receiver: TypingAny) -> _Parameters | None:
     try:
         parameters = inspect.signature(receiver).parameters.values()
     except (TypeError, ValueError):
@@ -110,21 +107,29 @@ def _introspect(receiver: TypingAny) -> frozenset[str] | None:
         return None
     if any(p.kind is p.VAR_KEYWORD for p in parameters):
         return None
-    return frozenset(
+    positional_kinds = (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+    )
+    accepted = frozenset(
         p.name
         for p in parameters
-        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
+        if p.kind in (*positional_kinds, inspect.Parameter.KEYWORD_ONLY)
     )
+    positional = tuple(
+        p.name for p in takewhile(lambda p: p.kind in positional_kinds, parameters)
+    )
+    return accepted, positional
 
 
 def _warn_unknown_args(receiver: TypingAny, signal: TypingAny) -> None:
     sent = _builtin_signals._signal_args.get(signal)
     if sent is None:
         return
-    accepted = _accepted(receiver)
-    if accepted is None:
+    parameters = _parameters(receiver)
+    if parameters is None:
         return
-    unknown = accepted - sent - _COMMON_ARGS
+    unknown = parameters[0] - sent - _COMMON_ARGS
     if not unknown:
         return
     names = ", ".join(sorted(unknown))
@@ -134,17 +139,11 @@ def _warn_unknown_args(receiver: TypingAny, signal: TypingAny) -> None:
         receiver_name = repr(receiver)
     warnings.warn(
         f"Signal handler {receiver_name} declares"
-        f" {names}, which {_signal_name(signal)} does not send. Handlers"
+        f" {names}, which {signal!r} does not send. Handlers"
         f" only receive the arguments of their signal, so those arguments always"
         f" get their default value.",
         stacklevel=4,
     )
-
-
-def _signal_name(signal: TypingAny) -> str:
-    if isinstance(signal, NamedSignal):
-        return f"scrapy.signals.{signal.name}"
-    return repr(signal)
 
 
 def connect(
@@ -181,21 +180,12 @@ def apply(
     **named: TypingAny,
 ) -> TypingAny:
     """Call *receiver* with *arguments* and the entries of *named* that it accepts."""
-    accepted = _accepted(receiver)
-    if accepted is not None:
+    parameters = _parameters(receiver)
+    if parameters is not None:
+        accepted, positional = parameters
         if arguments:
-            accepted = accepted - _positional_names(receiver, len(arguments))
+            # Positional arguments bind the leading parameters, which keyword
+            # arguments therefore must not repeat.
+            accepted = accepted.difference(positional[: len(arguments)])
         named = {k: v for k, v in named.items() if k in accepted}
     return receiver(*arguments, **named)
-
-
-def _positional_names(receiver: TypingAny, count: int) -> frozenset[str]:
-    """Return the names of the first *count* parameters of *receiver*, which
-    positional arguments bind and keyword arguments therefore must not repeat.
-    """
-    parameters = list(inspect.signature(receiver).parameters.values())
-    return frozenset(
-        p.name
-        for p in parameters[:count]
-        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-    )

@@ -68,6 +68,23 @@ class TestArgumentDelivery:
         sm.send_catch_log(signal, spider="SPIDER")
         assert received == {"spider": "p-SPIDER"}
 
+    def test_partial_handlers_with_different_signatures(self) -> None:
+        received: dict[str, Any] = {}
+
+        def first(prefix: str, spider: Any = None) -> None:
+            received.update(spider=f"{prefix}{spider}")
+
+        def second(prefix: str, request: Any = None) -> None:
+            received.update(request=f"{prefix}{request}")
+
+        handlers = [partial(first, "a-"), partial(second, "b-")]
+        signal = object()
+        sm = SignalManager(object())
+        for handler in handlers:
+            sm.connect(handler, signal)
+        sm.send_catch_log(signal, spider="SPIDER", request="REQUEST")
+        assert received == {"spider": "a-SPIDER", "request": "b-REQUEST"}
+
     def test_handler_that_cannot_be_introspected_gets_every_argument(self) -> None:
         assert registry.apply(dict, spider="SPIDER") == {"spider": "SPIDER"}
 
@@ -199,12 +216,6 @@ class TestSenderIsolation:
         assert calls == ["first"]
 
 
-class TestUnknownArgumentWarning:
-    def test_warning_falls_back_to_the_repr_of_the_signal(self) -> None:
-        signal = object()
-        assert registry._signal_name(signal) == repr(signal)
-
-
 class TestReceiverCache:
     def test_bound_method_handler_is_not_kept_alive(self) -> None:
         class Component:
@@ -220,6 +231,32 @@ class TestReceiverCache:
         gc.collect()
         assert ref() is None
         assert registry.receivers(signal, sm.sender) == []
+
+    def test_function_handler_is_not_kept_alive(self) -> None:
+        def handler(spider: Any = None) -> None:
+            pass
+
+        ref = weakref.ref(handler)
+        sm = SignalManager(object())
+        sm.connect(handler, signals.spider_opened)
+        sm.send_catch_log(signals.spider_opened, spider="SPIDER")
+        del handler
+        gc.collect()
+        assert ref() is None
+
+    def test_handler_that_cannot_be_weakly_referenced(self) -> None:
+        received: list[Any] = []
+
+        class Handler:
+            __slots__ = ()
+
+            def __call__(self, spider: Any = None) -> None:
+                received.append(spider)
+
+        sm = SignalManager(object())
+        sm.connect(Handler(), signals.spider_opened, weak=False)
+        sm.send_catch_log(signals.spider_opened, spider="SPIDER")
+        assert received == ["SPIDER"]
 
 
 class TestSignalStorage:

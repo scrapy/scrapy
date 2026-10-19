@@ -5,33 +5,40 @@ These signals are documented in docs/topics/signals.rst. Please don't add new
 signals here without documenting them there.
 """
 
-from blinker import NamedSignal as _NamedSignal
 
-engine_started = _NamedSignal("engine_started")
-engine_stopped = _NamedSignal("engine_stopped")
-scheduler_empty = _NamedSignal("scheduler_empty")
-spider_opened = _NamedSignal("spider_opened")
-spider_idle = _NamedSignal("spider_idle")
-spider_closed = _NamedSignal("spider_closed")
-spider_error = _NamedSignal("spider_error")
-memusage_warning_reached = _NamedSignal("memusage_warning_reached")
-request_scheduled = _NamedSignal("request_scheduled")
-request_dropped = _NamedSignal("request_dropped")
-request_reached_downloader = _NamedSignal("request_reached_downloader")
-request_left_downloader = _NamedSignal("request_left_downloader")
-response_received = _NamedSignal("response_received")
-response_downloaded = _NamedSignal("response_downloaded")
-headers_received = _NamedSignal("headers_received")
-bytes_received = _NamedSignal("bytes_received")
-robots_parsed = _NamedSignal("robots_parsed")
-item_scraped = _NamedSignal("item_scraped")
-item_dropped = _NamedSignal("item_dropped")
-item_error = _NamedSignal("item_error")
-feed_slot_closed = _NamedSignal("feed_slot_closed")
-feed_exporter_closed = _NamedSignal("feed_exporter_closed")
-feed_slots_initialized = _NamedSignal("feed_slots_initialized")
-spider_state_loaded = _NamedSignal("spider_state_loaded")
-spider_state_saving = _NamedSignal("spider_state_saving")
+class _Signal:
+    def __init__(self, name: str):
+        self.name = name
+
+    def __repr__(self) -> str:
+        return f"scrapy.signals.{self.name}"
+
+
+engine_started = _Signal("engine_started")
+engine_stopped = _Signal("engine_stopped")
+scheduler_empty = _Signal("scheduler_empty")
+spider_opened = _Signal("spider_opened")
+spider_idle = _Signal("spider_idle")
+spider_closed = _Signal("spider_closed")
+spider_error = _Signal("spider_error")
+memusage_warning_reached = _Signal("memusage_warning_reached")
+request_scheduled = _Signal("request_scheduled")
+request_dropped = _Signal("request_dropped")
+request_reached_downloader = _Signal("request_reached_downloader")
+request_left_downloader = _Signal("request_left_downloader")
+response_received = _Signal("response_received")
+response_downloaded = _Signal("response_downloaded")
+headers_received = _Signal("headers_received")
+bytes_received = _Signal("bytes_received")
+robots_parsed = _Signal("robots_parsed")
+item_scraped = _Signal("item_scraped")
+item_dropped = _Signal("item_dropped")
+item_error = _Signal("item_error")
+feed_slot_closed = _Signal("feed_slot_closed")
+feed_exporter_closed = _Signal("feed_exporter_closed")
+feed_slots_initialized = _Signal("feed_slots_initialized")
+spider_state_loaded = _Signal("spider_state_loaded")
+spider_state_saving = _Signal("spider_state_saving")
 
 _signal_args: dict[object, frozenset[str]] = {
     engine_started: frozenset(),
