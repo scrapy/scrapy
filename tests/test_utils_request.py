@@ -152,6 +152,16 @@ class TestFingerprint:
             {"include_headers": ["A"], "keep_fragments": True},
         ),
         (
+            Request("https://example.org", headers=[("A", b"B"), ("a", b"C")]),
+            b"\xf6\xd4\xfe\xb0e\xa4\xde\xab\xfc*\x83o=\xa8\x8a\x8f#\x9e^z",
+            {"include_headers": ["A"]},
+        ),
+        (
+            Request("https://example.org", headers={"A": None}),
+            b"*\x1f\xf2\xf5a\xc2?\xda9\x11>\xff$\xed\xc2\x81\xa1J(\xae",
+            {"include_headers": ["A"]},
+        ),
+        (
             Request("https://example.org/ab"),
             b"N\xe5l\xb8\x12@iw\xe2\xf3\x1bp\xea\xffp!u\xe2\x8a\xc6",
             {},

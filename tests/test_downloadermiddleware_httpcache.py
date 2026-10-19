@@ -233,6 +233,24 @@ class StorageTestMixin(TestBase):
             assert cached_response.encoding == "utf-8"
             assert cached_response.text == response.text
 
+    def test_storage_headers(self) -> None:
+        """Repeated headers, the case of header names and header values that
+        are not valid UTF-8 are kept."""
+        with self._storage() as (storage, crawler):
+            response = Response(
+                "http://www.example.com",
+                headers=[
+                    ("Set-Cookie", "a=1"),
+                    ("content-type", "text/html"),
+                    ("set-cookie", "b=2"),
+                    ("X-Custom-Header", b"caf\xe9"),
+                ],
+                body=b"test body",
+            )
+            storage.store_response(crawler.spider, self.request, response)
+            cached_response = storage.retrieve_response(crawler.spider, self.request)
+            self.assertEqualResponse(response, cached_response)
+
     def test_storage_old_cache_entry(self):
         with self._storage() as (storage, crawler):
             storage.store_response(crawler.spider, self.request, self.response)
@@ -848,6 +866,27 @@ class FilesystemStorageTestMixin(StorageTestMixin):
     def _downgrade_cache_entry(self, storage, spider, request) -> None:
         rpath = Path(storage._get_request_path(spider, request))
         (rpath / "response_data").unlink()
+
+    @pytest.mark.parametrize("filename", ["request_headers", "response_headers"])
+    def test_storage_header_file(self, filename: str) -> None:
+        headers = [
+            ("X-Repeated", "1"),
+            ("content-type", "text/html"),
+            ("x-repeated", "2"),
+            ("X-Removed", None),
+            ("X-Custom-Header", b"caf\xe9"),
+        ]
+        expected = (
+            b"X-Repeated: 1\r\nX-Repeated: 2\r\ncontent-type: text/html\r\n"
+            b"X-Custom-Header: caf\xe9"
+        )
+        request = Request("http://www.example.com", headers=headers)
+        response = Response("http://www.example.com", headers=headers)
+        with self._storage() as (storage, crawler):
+            storage.store_response(crawler.spider, request, response)
+            rpath = Path(storage._get_request_path(crawler.spider, request))
+            with storage._open(rpath / filename, "rb") as f:
+                assert f.read() == expected
 
 
 class DbmStorageTestMixin(StorageTestMixin):
