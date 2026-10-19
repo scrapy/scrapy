@@ -145,17 +145,14 @@ to be run by Scrapy. They are only meant to be subclassed to create regular
 spiders or other base spiders. They are one way to share code between two or
 more spiders.
 
-Use the :func:`~scrapy.spiders.ignore_spider` decorator to mark any base spider
-class:
+Define base spiders with ``abstract=True`` to hide them from the
+:command:`crawl`, :command:`list` and :command:`runspider` commands. Their
+subclasses are not affected::
 
-.. autodecorator:: scrapy.spiders.ignore_spider
+    from scrapy import Spider
 
-For example::
 
-    from scrapy.spiders import ignore_spider, Spider
-
-    @ignore_spider
-    class MyBaseSpider(Spider):
+    class MyBaseSpider(Spider, abstract=True):
         pass
 
 If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), spiders

@@ -8,10 +8,10 @@ from __future__ import annotations
 import re
 import warnings
 from typing import TYPE_CHECKING, TypeAlias
-from urllib.parse import ParseResult, urlunparse
+from urllib.parse import ParseResult, urljoin, urlunparse
 
 import w3lib.url
-from w3lib.url import any_to_uri, parse_url
+from w3lib.url import any_to_uri, parse_url, safe_url_string
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
@@ -191,3 +191,19 @@ def strip_url(
             "" if strip_fragment else parsed_url.fragment,
         )
     )
+
+
+def _redirect_url(url: str, location: bytes) -> str:
+    """Return the absolute URL that the *location* value of the ``Location``
+    header of a response to a request to *url* points to."""
+    target = safe_url_string(location)
+    parsed_url = urlparse_cached(url)
+    if location.startswith(b"//"):
+        # safe_url_string() may drop leading slashes of a scheme-relative URL,
+        # so build the absolute URL without relying on urljoin().
+        target = f"{parsed_url.scheme}://{target.lstrip('/')}"
+    redirect_url = urljoin(url, target)
+    # A percent-encoded number sign is URI data, not a fragment delimiter.
+    if b"#" not in location and parsed_url.fragment:
+        redirect_url = urljoin(redirect_url, f"#{parsed_url.fragment}")
+    return redirect_url

@@ -30,8 +30,8 @@ def _path_safe(text: str) -> str:
     True
     """
     pathable_slot = "".join([c if c.isalnum() or c in "-._" else "_" for c in text])
-    # as we replace some letters we can get collision for different slots
-    # add we add unique part
+    # Replacing characters can make different inputs collapse to the same
+    # prefix, so a hash of the original text keeps the result unique.
     unique_slot = hashlib.md5(text.encode()).hexdigest()  # noqa: S324
     return f"{pathable_slot}-{unique_slot}"
 
@@ -196,6 +196,9 @@ class ScrapyPriorityQueue:
                     q.close()
                     self.changed = True
 
+        # A recorded priority may have no queue to restore, e.g. if it only
+        # ever held a request that failed to serialize, so curprio comes from
+        # the queues that do exist and not from startprios.
         self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:
@@ -230,47 +233,40 @@ class ScrapyPriorityQueue:
                 self.changed = True
             q = self.queues[priority]
         q.push(request)  # this may fail (eg. serialization error)
-        if self.curprio is None or priority < self.curprio:
+        # A queue class may drop a request instead of storing it, and a
+        # priority with an empty queue must not become the current one, since
+        # pop() and peek() expect to find a request there.
+        if q and (self.curprio is None or priority < self.curprio):
             self.curprio = priority
 
+    def _curqueue(self) -> QueueProtocol:
+        assert self.curprio is not None
+        # Whichever dict holds a non-empty queue at the current priority. The
+        # other one may hold an empty queue left behind by a failed push, e.g.
+        # on a serialization error, which would hide the next request.
+        return self.queues.get(self.curprio) or self._start_queues[self.curprio]
+
     def pop(self) -> Request | None:
-        while self.curprio is not None:
-            try:
-                q = self.queues[self.curprio]
-            except KeyError:
-                pass
-            else:
-                m = q.pop()
-                if not q:
-                    del self.queues[self.curprio]
-                    q.close()
-                    self.changed = True
-                    self._update_curprio()
-                return m
-            if self._start_queues:
-                try:
-                    q = self._start_queues[self.curprio]
-                except KeyError:
-                    self._update_curprio()
-                else:
-                    m = q.pop()
-                    if not q:
-                        del self._start_queues[self.curprio]
-                        q.close()
-                        self.changed = True
-                        self._update_curprio()
-                    return m
-            else:
-                self._update_curprio()
-        return None
+        if self.curprio is None:
+            return None
+        q = self._curqueue()
+        request = q.pop()
+        if not q:
+            self._update_curprio()
+        return request
 
     def _update_curprio(self) -> None:
-        prios = {
-            p
-            for queues in (self.queues, self._start_queues)
-            for p, q in queues.items()
-            if q
-        }
+        # Keeping an empty queue would hold its storage open for nothing, and
+        # make close() record a priority with nothing to restore from it.
+        prios: set[int] = set()
+        for queues in (self.queues, self._start_queues):
+            for p, q in list(queues.items()):
+                if q:
+                    prios.add(p)
+                else:
+                    del queues[p]
+                    q.close()
+                    self.changed = True
         self.curprio = min(prios) if prios else None
 
     def peek(self) -> Request | None:
@@ -282,10 +278,9 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
-        try:
-            queue = self._start_queues[self.curprio]
-        except KeyError:
-            queue = self.queues[self.curprio]
+        # Picking the queue the same way as pop() is what makes the returned
+        # request the one that pop() then returns.
+        queue = self._curqueue()
         # Protocols can't declare optional members
         return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
@@ -415,28 +410,17 @@ class DownloaderAwarePriorityQueue:
                 self._collect_change(self.pqueues[slot])
 
     def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
+        # Lexicographic on (active, slot): the least-loaded slot, and the
+        # lowest-named one among ties.
+        min_active, slot = min(stats)
         last = self._last_selected_slot
-        min_active: int | None = None
-        best_slot: str | None = None
-        best_slot_after_last: str | None = None
-        for active, slot in stats:
-            if min_active is None or active < min_active:
-                min_active = active
-                best_slot = slot
-                best_slot_after_last = None
-                if last is not None and slot > last:
-                    best_slot_after_last = slot
-            elif active == min_active:
-                if best_slot is None or slot < best_slot:
-                    best_slot = slot
-                if (
-                    last is not None
-                    and slot > last
-                    and (best_slot_after_last is None or slot < best_slot_after_last)
-                ):
-                    best_slot_after_last = slot
-        assert best_slot is not None
-        slot = best_slot_after_last if best_slot_after_last is not None else best_slot
+        if last is not None:
+            # Round-robin among the tied slots: the first one after the last
+            # selected, so that equally-loaded slots take turns.
+            slot = min(
+                (s for active, s in stats if active == min_active and s > last),
+                default=slot,
+            )
         if update_state:
             self._last_selected_slot = slot
         return slot

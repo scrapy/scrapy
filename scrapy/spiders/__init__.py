@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -27,21 +27,6 @@ if TYPE_CHECKING:
     from scrapy.utils.log import SpiderLoggerAdapter
 
 
-_SpiderT = TypeVar("_SpiderT", bound="type[Spider]")
-
-
-def ignore_spider(cls: _SpiderT) -> _SpiderT:
-    """Mark a :class:`~scrapy.spiders.Spider` subclass to be ignored.
-
-    Marked spider classes are not available to the :command:`crawl`,
-    :command:`list` and :command:`runspider` commands. Only the decorated
-    class is marked; its subclasses are unaffected.
-    """
-    cls._ignore_spider = True
-    return cls
-
-
-@ignore_spider
 class Spider(object_ref):
     """Base class that any spider must subclass.
 
@@ -81,7 +66,7 @@ class Spider(object_ref):
     ``books_toscrape_com``.
     """
 
-    _ignore_spider: bool
+    _abstract: bool = True
 
     custom_settings: dict[str, Any] | None = None
     """Settings that override the project-wide configuration when running this
@@ -140,6 +125,10 @@ class Spider(object_ref):
     details.
     """
 
+    def __init_subclass__(cls, *, abstract: bool = False, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        cls._abstract = abstract
+
     def __init__(self, name: str | None = None, **kwargs: Any):
         if name is not None:
             self.name: str = name
@@ -154,12 +143,6 @@ class Spider(object_ref):
         """Return the name under which spider loaders and commands know this
         spider class, which falls back to its class name."""
         return getattr(cls, "name", None) or cls.__name__
-
-    @classmethod
-    def _is_ignored(cls) -> bool:
-        # The mark set by ignore_spider() is read from the class __dict__ so
-        # that subclasses do not inherit it.
-        return "_ignore_spider" in cls.__dict__
 
     @property
     def logger(self) -> SpiderLoggerAdapter:

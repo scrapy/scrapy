@@ -14,7 +14,6 @@ from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules_iter
 from scrapy.utils.project import get_project_settings, inside_project
-from scrapy.utils.python import garbage_collect
 from scrapy.utils.reactor import _asyncio_reactor_path
 
 if TYPE_CHECKING:
@@ -239,10 +238,4 @@ def _run_command_profiled(
 
 
 if __name__ == "__main__":
-    try:
-        execute()
-    finally:
-        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect() on exit:
-        # http://doc.pypy.org/en/latest/cpython_differences.html
-        # ?highlight=gc.collect#differences-related-to-garbage-collection-strategies
-        garbage_collect()
+    execute()

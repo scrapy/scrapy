@@ -59,6 +59,7 @@ class SpiderLoader:
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders: dict[str, type[Spider]] = {}
         self._found: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
+        self._nameless: list[type[Spider]] = []
         self._load_all_spiders()
 
     def _check_name_duplicates(self) -> None:
@@ -84,16 +85,7 @@ class SpiderLoader:
     def _load_spiders(self, module: ModuleType) -> None:
         for spcls in iter_spider_classes(module, require_name=False):
             if self.require_name and not getattr(spcls, "name", None):
-                warnings.warn(
-                    f"{global_object_name(spcls)} has no name, so it is not"
-                    " loaded. In a future Scrapy version, spiders without a name"
-                    " will be loaded with their class name as name. Set the"
-                    " SPIDER_LOADER_REQUIRE_NAME setting to False to get that"
-                    " behavior now, and decorate base spiders with"
-                    " scrapy.spiders.ignore_spider so that they are not loaded.",
-                    ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
+                self._nameless.append(spcls)
                 continue
             name = spcls._default_name()
             self._found[name].append((module.__name__, spcls.__name__))
@@ -116,6 +108,25 @@ class SpiderLoader:
                 else:
                     raise
         self._check_name_duplicates()
+        self._warn_nameless()
+
+    def _warn_nameless(self) -> None:
+        # Nameless spiders with subclasses are most likely base spiders, which
+        # are not meant to be loaded anyway. Subclasses can be defined in
+        # modules loaded after their base, so this runs once all are loaded.
+        for spcls in self._nameless:
+            if spcls.__subclasses__():
+                continue
+            warnings.warn(
+                f"{global_object_name(spcls)} has no name, so it is not loaded."
+                " In a future Scrapy version, spiders without a name will be"
+                " loaded with their class name as name. Set the"
+                " SPIDER_LOADER_REQUIRE_NAME setting to False to get that"
+                " behavior now. If it is a base spider, pass abstract=True to"
+                " its class definition so that it is not loaded.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:

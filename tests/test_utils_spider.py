@@ -10,7 +10,6 @@ from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.settings import Settings
 from scrapy.spiderloader import get_spider_loader
-from scrapy.spiders import ignore_spider
 from scrapy.utils.spider import (
     iter_spider_classes,
     iterate_spider_output,
@@ -25,13 +24,11 @@ class SpiderA(Spider):
     pass
 
 
-@ignore_spider
-class SpiderB(Spider):
+class SpiderB(Spider, abstract=True):
     pass
 
 
-@ignore_spider
-class SpiderC(Spider):
+class SpiderC(Spider, abstract=True):
     name = "c"
 
 

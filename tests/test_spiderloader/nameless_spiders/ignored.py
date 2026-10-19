@@ -1,8 +1,7 @@
-from scrapy.spiders import Spider, ignore_spider
+from scrapy.spiders import Spider
 
 
-@ignore_spider
-class IgnoredSpider(Spider):
+class IgnoredSpider(Spider, abstract=True):
     name = "ignored"
 
 

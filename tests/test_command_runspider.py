@@ -153,25 +153,6 @@ class MySpider(scrapy.Spider):
         assert "[MySpider] DEBUG: It Works!" in log
         assert "INFO: Spider closed (finished)" in log
 
-    def test_runspider_prefers_named_spider(self, tmp_path: Path) -> None:
-        """A base spider defined after the spider itself does not shadow it."""
-        base_last_spider = """
-import scrapy
-
-class MySpider(scrapy.Spider):
-    name = 'myspider'
-
-    async def start(self):
-        self.logger.debug("It Works!")
-        return
-        yield
-
-class MyBaseSpider(scrapy.Spider):
-    pass
-"""
-        log = self.get_log(tmp_path, base_last_spider)
-        assert "[myspider] DEBUG: It Works!" in log
-
     def test_runspider_no_spider_found(self, tmp_path: Path) -> None:
         log = self.get_log(tmp_path, "from scrapy.spiders import Spider\n")
         assert "No spider found in file" in log

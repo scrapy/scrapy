@@ -1,6 +1,5 @@
-from scrapy.spiders import Spider, ignore_spider
+from scrapy.spiders import Spider
 
 
-@ignore_spider
-class Spider0(Spider):
+class Spider0(Spider, abstract=True):
     allowed_domains = ["scrapy1.org", "scrapy3.org"]

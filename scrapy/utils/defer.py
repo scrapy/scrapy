@@ -5,6 +5,7 @@ Helper functions for dealing with Twisted deferreds
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import inspect
 import logging
 import sys
@@ -326,6 +327,10 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         self.finished: bool = False
         self.waiting_deferreds: deque[Deferred[Any]] = deque()
         self.anext_deferred: Deferred[_T] | None = None
+        # Cooperator ticks are scheduled through the reactor, which does not
+        # preserve contextvars, so both anext() and the callable run in the
+        # context captured here.
+        self._context: contextvars.Context = contextvars.copy_context()
         # Called whenever aiterator produces a value, so that parallel_async()
         # can start a task for it.
         self.on_value: Callable[[], None] = lambda: None
@@ -336,8 +341,8 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         # (by chaining if the result is a Deferred too or by firing if not).
         self.anext_deferred = None
         self.on_value()
-        callable_result = self.callable(
-            result, *self.callable_args, **self.callable_kwargs
+        callable_result = self._context.run(
+            self.callable, result, *self.callable_args, **self.callable_kwargs
         )
         d = self.waiting_deferreds.popleft()
         if isinstance(callable_result, Deferred):
@@ -359,7 +364,9 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(anext(self.aiterator))
+        self.anext_deferred = self._context.run(
+            deferred_from_coro, anext(self.aiterator)
+        )
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred[Any]:
@@ -460,22 +467,43 @@ def iter_errback(
             errback(failure.Failure(), *a, **kw)
 
 
-async def aiter_errback(
+async def _aiter_errback(
     aiterable: AsyncIterator[_T],
-    errback: Callable[Concatenate[Failure, _P], Any],
+    errback: Callable[Concatenate[Exception, _P], Any],
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> AsyncIterator[_T]:
-    """Wrap an async iterable calling an errback if an error is caught while
-    iterating it."""
+    """Wrap an async iterable calling *errback* with the exception if one is
+    raised while iterating it."""
     it = aiter(aiterable)
     while True:
         try:
             yield await anext(it)
         except StopAsyncIteration:
             break
-        except Exception:
-            errback(failure.Failure(), *a, **kw)
+        except Exception as exc:
+            errback(exc, *a, **kw)
+
+
+async def aiter_errback(
+    aiterable: AsyncIterator[_T],
+    errback: Callable[Concatenate[Failure, _P], Any],
+    *a: _P.args,
+    **kw: _P.kwargs,
+) -> AsyncIterator[_T]:  # pragma: no cover
+    """Wrap an async iterable calling an errback if an error is caught while
+    iterating it."""
+    warnings.warn(
+        "scrapy.utils.defer.aiter_errback() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
+    def failure_errback(exc: Exception, /, *args: _P.args, **kwargs: _P.kwargs) -> Any:
+        return errback(failure.Failure(exc), *args, **kwargs)
+
+    async for item in _aiter_errback(aiterable, failure_errback, *a, **kw):
+        yield item
 
 
 @overload

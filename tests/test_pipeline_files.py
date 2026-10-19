@@ -115,6 +115,18 @@ class TestFilesPipeline:
         pipeline.open_spider()
         return pipeline
 
+    @coroutine_test
+    async def test_close_spider_closes_store(self):
+        self.pipeline.store = mock.MagicMock()
+        self.pipeline.store.close = mock.AsyncMock()
+        await self.pipeline.close_spider()
+        self.pipeline.store.close.assert_awaited_once_with()
+
+    @coroutine_test
+    async def test_close_spider_without_store_close(self):
+        assert not hasattr(self.pipeline.store, "close")
+        await self.pipeline.close_spider()
+
     def test_file_path_query_parameters(self):
         file_path = self.pipeline.file_path
 
@@ -444,6 +456,20 @@ class TestFilesPipeline:
         # check that the file was written by persist_file()
         path = Path(self.tempdir) / result["files"][0]["path"]
         assert path.exists()
+        assert path.read_bytes() == b"data"
+
+    @coroutine_test
+    async def test_file_created(self) -> None:
+        item_url = "http://example.com/created.pdf"
+        item = _create_item_with_files(item_url)
+        with mock.patch.object(
+            FilesPipeline,
+            "get_media_requests",
+            return_value=[_prepare_request_object(item_url, status=201)],
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        path = Path(self.tempdir) / result["files"][0]["path"]
         assert path.read_bytes() == b"data"
 
     @coroutine_test
@@ -1058,7 +1084,7 @@ class TestFSFilesStore:
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
     @inline_callbacks_test
-    def test_persist(self):
+    def test_persist(self, monkeypatch):
         bucket = "mybucket"
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
@@ -1068,6 +1094,7 @@ class TestS3FilesStore:
         content_type = "image/png"
 
         store = S3FilesStore(uri)
+        monkeypatch.setattr(store, "_use_async", lambda: False)
         from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
@@ -1098,13 +1125,14 @@ class TestS3FilesStore:
             assert buffer.method_calls == [mock.call.seek(0)]
 
     @inline_callbacks_test
-    def test_persist_without_headers(self):
+    def test_persist_without_headers(self, monkeypatch):
         """Without custom headers only the default ones are sent."""
         bucket = "mybucket"
         key = "export.csv"
         buffer = mock.MagicMock()
 
         store = S3FilesStore(f"s3://{bucket}/{key}")
+        monkeypatch.setattr(store, "_use_async", lambda: False)
         from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
@@ -1126,13 +1154,14 @@ class TestS3FilesStore:
             stub.assert_no_pending_responses()
 
     @inline_callbacks_test
-    def test_persist_acl_header(self):
+    def test_persist_acl_header(self, monkeypatch):
         """A header overrides the matching put_object argument."""
         bucket = "mybucket"
         key = "export.csv"
         buffer = mock.MagicMock()
 
         store = S3FilesStore(f"s3://{bucket}/{key}")
+        monkeypatch.setattr(store, "_use_async", lambda: False)
         from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
@@ -1190,7 +1219,7 @@ class TestS3FilesStore:
         ) == {"CacheControl": "max-age=1", "Tagging": "a=b"}
 
     @inline_callbacks_test
-    def test_stat(self):
+    def test_stat(self, monkeypatch):
         bucket = "mybucket"
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
@@ -1203,6 +1232,7 @@ class TestS3FilesStore:
         )
 
         store = S3FilesStore(uri)
+        monkeypatch.setattr(store, "_use_async", lambda: False)
         from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
@@ -1225,7 +1255,7 @@ class TestS3FilesStore:
             }
 
     @inline_callbacks_test
-    def test_stat_checksum_algorithm(self):
+    def test_stat_checksum_algorithm(self, monkeypatch):
         """Amazon S3 only reports MD5 checksums, so no checksum is reported
         when a different algorithm is configured."""
         bucket = "mybucket"
@@ -1234,6 +1264,7 @@ class TestS3FilesStore:
         last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
 
         store = S3FilesStore(f"s3://{bucket}/{key}")
+        monkeypatch.setattr(store, "_use_async", lambda: False)
         store.checksum_algorithm = "sha256"
         from botocore.stub import Stubber  # noqa: PLC0415
 
@@ -1292,6 +1323,109 @@ class TestS3FilesStore:
         assert isinstance(store, S3FilesStore)
         config: Any = store.s3_client.meta.config
         assert config.max_pool_connections == expected
+
+
+@pytest.mark.requires_aiobotocore
+@pytest.mark.only_asyncio
+class TestS3FilesStoreAsync:
+    @coroutine_test
+    async def test_persist(self):
+        bucket = "mybucket"
+        key = "export.csv"
+        uri = f"s3://{bucket}/{key}"
+        buffer = mock.MagicMock()
+        meta = {"foo": "bar"}
+        path = ""
+        content_type = "image/png"
+
+        store = S3FilesStore(uri)
+        assert store._use_async()
+        client = await store._get_aio_client()
+        from aiobotocore.stub import Stubber  # noqa: PLC0415
+
+        with Stubber(client) as stub:
+            stub.add_response(
+                "put_object",
+                expected_params={
+                    "ACL": S3FilesStore.POLICY,
+                    "Body": buffer,
+                    "Bucket": bucket,
+                    "CacheControl": S3FilesStore.HEADERS["Cache-Control"],
+                    "ContentType": content_type,
+                    "Key": key,
+                    "Metadata": meta,
+                },
+                service_response={},
+            )
+
+            await maybe_deferred_to_future(
+                store.persist_file(
+                    path,
+                    buffer,
+                    info=DUMMY_SPIDER_INFO,
+                    meta=meta,
+                    headers={"Content-Type": content_type},
+                )
+            )
+
+            stub.assert_no_pending_responses()
+            assert buffer.method_calls == [mock.call.seek(0)]
+
+        await store.close()
+
+    @coroutine_test
+    async def test_max_pool_connections(self) -> None:
+        store = S3FilesStore("s3://mybucket/prefix/", AWS_MAX_POOL_CONNECTIONS=30)
+        client = await store._get_aio_client()
+        assert client.meta.config.max_pool_connections == 30
+        await store.close()
+
+    @coroutine_test
+    async def test_stat(self):
+        bucket = "mybucket"
+        key = "export.csv"
+        uri = f"s3://{bucket}/{key}"
+        checksum = "3187896a9657a28163abb31667df64c8"
+        last_modified = datetime(2019, 12, 1, tzinfo=UTC)
+
+        store = S3FilesStore(uri)
+        client = await store._get_aio_client()
+        from aiobotocore.stub import Stubber  # noqa: PLC0415
+
+        with Stubber(client) as stub:
+            stub.add_response(
+                "head_object",
+                expected_params={"Bucket": bucket, "Key": key},
+                service_response={
+                    "ETag": f'"{checksum}"',
+                    "LastModified": last_modified,
+                },
+            )
+
+            file_stats = await maybe_deferred_to_future(
+                store.stat_file("", info=DUMMY_SPIDER_INFO)
+            )
+            assert file_stats == {
+                "checksum": checksum,
+                "last_modified": last_modified.timestamp(),
+            }
+
+            stub.assert_no_pending_responses()
+
+        await store.close()
+
+    @coroutine_test
+    async def test_client_reused_and_closed(self):
+        store = S3FilesStore("s3://mybucket/export.csv")
+        assert store._aio_client is None
+        client = await store._get_aio_client()
+        # The client is created lazily and reused across calls.
+        assert store._aio_client is client
+        assert await store._get_aio_client() is client
+        await store.close()
+        assert store._aio_client is None
+        # close() is a no-op if there is no open client.
+        await store.close()
 
 
 class TestGCSFilesStore:
@@ -1459,7 +1593,7 @@ class TestGCSFilesStore:
         stat = await maybe_deferred_to_future(
             store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
         )
-        assert stat == {"last_modified": time.mktime(updated.timetuple())}
+        assert stat == {"last_modified": updated.timestamp()}
 
     @coroutine_test
     async def test_stat_missing_blob(self) -> None:
@@ -1596,12 +1730,13 @@ def _prepare_request_object(
     item_url: str,
     flags: list[str] | None = None,
     headers: dict[str, str] | None = None,
+    status: int = 200,
 ) -> Request:
     return Request(
         item_url,
         meta={
             "response": Response(
-                item_url, status=200, body=b"data", flags=flags, headers=headers
+                item_url, status=status, body=b"data", flags=flags, headers=headers
             )
         },
     )

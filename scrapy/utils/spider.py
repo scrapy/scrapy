@@ -53,8 +53,8 @@ def iter_spider_classes(
     require_name: bool = True,
 ) -> Iterable[type[Spider]]:
     """Return an iterator over all :class:`~scrapy.spiders.Spider` subclasses
-    defined in the given module, excluding those marked with
-    :func:`scrapy.spiders.ignore_spider`.
+    defined in the given module, excluding those defined with
+    ``abstract=True`` (see :ref:`base-spiders`).
 
     If *require_name* is ``True`` (default), any
     :class:`~scrapy.spiders.Spider` subclass without a non-empty
@@ -63,7 +63,7 @@ def iter_spider_classes(
     for obj in vars(module).values():
         if not inspect.isclass(obj) or not issubclass(obj, Spider):
             continue
-        if obj.__module__ != module.__name__ or obj._is_ignored():
+        if obj.__module__ != module.__name__ or obj._abstract:
             continue
         if require_name and not getattr(obj, "name", None):
             continue

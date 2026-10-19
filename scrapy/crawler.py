@@ -505,6 +505,8 @@ class CrawlerRunnerBase(ABC):
         self.spider_loader: SpiderLoaderProtocol = get_spider_loader(settings)
         self._crawlers: set[Crawler] = set()
         self.bootstrap_failed = False
+        """``True`` if any crawl started by :meth:`crawl` was interrupted by an
+        exception, including a failure to create the spider object."""
 
     @property
     def crawlers(self) -> set[Crawler]:

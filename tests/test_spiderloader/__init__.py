@@ -183,6 +183,8 @@ class TestNamelessSpiderLoader:
     def test_list(self, spider_loader):
         assert set(spider_loader.list()) == {
             "subclass",
+            "named_subclass",
+            "NamelessBaseSpider",
             "NamelessSpider",
             "OtherNamelessSpider",
         }
@@ -195,7 +197,7 @@ class TestNamelessSpiderLoader:
             f"{self.module}.nameless1.NamelessSpider",
             f"{self.module}.nameless2.OtherNamelessSpider",
         ]
-        assert set(spider_loader.list()) == {"subclass"}
+        assert set(spider_loader.list()) == {"subclass", "named_subclass"}
 
     def test_load(self, spider_loader):
         assert spider_loader.load("NamelessSpider") is NamelessSpider
