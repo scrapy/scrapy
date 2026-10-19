@@ -23,9 +23,11 @@ from twisted.web.client import URI, BrowserLikePolicyForHTTPS
 from zope.interface import implementer
 
 from scrapy import Request, Spider
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
     TunnelError,
+    _ScrapyAgent,
     _tunnel_request_data,
     _TunnelEndpoint,
     _TunnelingAgent,
@@ -107,6 +109,53 @@ def _tunnel_endpoint(reactor: MemoryReactorClock) -> _TunnelEndpoint:
         proxyHost="127.0.0.1",
         proxyPort=8080,
     )
+
+
+@pytest.mark.parametrize(
+    ("proxy_headers", "proxy_auth", "expected"),
+    [
+        (None, None, ()),
+        ({"X-B": "2", "X-A": "1"}, None, (("X-A", "1"), ("X-B", "2"))),
+        (None, "Basic Zm9v", (("Proxy-Authorization", "Basic Zm9v"),)),
+        (
+            {"X-A": "1"},
+            "Basic Zm9v",
+            (("Proxy-Authorization", "Basic Zm9v"), ("X-A", "1")),
+        ),
+        (
+            {"Proxy-Authorization": "Custom foo"},
+            "Basic Zm9v",
+            (("Proxy-Authorization", "Custom foo"),),
+        ),
+    ],
+    ids=[
+        "no headers",
+        "sorted headers",
+        "auth header",
+        "auth header and headers",
+        "auth header overridden",
+    ],
+)
+def test_tunnel_proxy_headers(
+    proxy_headers: dict[str, str] | None,
+    proxy_auth: str | None,
+    expected: tuple[tuple[str, str], ...],
+) -> None:
+    meta: dict[str, Any] = {"proxy": "http://proxy.example:8080"}
+    if proxy_headers is not None:
+        meta["proxy_headers"] = proxy_headers
+    request = Request(
+        "https://example.com",
+        meta=meta,
+        headers={"Proxy-Authorization": proxy_auth} if proxy_auth else None,
+    )
+    crawler = get_crawler(Spider)
+    agent = _ScrapyAgent(
+        contextFactory=_load_context_factory_from_settings(crawler), crawler=crawler
+    )
+    tunneling_agent = agent._get_agent(request, 10)
+    assert isinstance(tunneling_agent, _TunnelingAgent)
+    assert tunneling_agent._proxyConf == ("proxy.example", 8080, expected, False)
 
 
 def test_tunneling_cancelled_before_connected() -> None:
@@ -361,7 +410,7 @@ def _proxy_tunnel_endpoint(
 ) -> IStreamClientEndpoint:
     agent = _TunnelingAgent(
         reactor=reactor,
-        proxyConf=(proxy_host, proxy_port, None, False),
+        proxyConf=(proxy_host, proxy_port, (), False),
         contextFactory=cast("IPolicyForHTTPS", BrowserLikePolicyForHTTPS()),
         connectTimeout=10,
     )

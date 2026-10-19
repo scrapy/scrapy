@@ -83,7 +83,7 @@ class TestAiterErrback:
             for x in range(10):
                 yield x
 
-        errors: list[Failure] = []
+        errors: list[Exception] = []
         out = await collect_asyncgen(_aiter_errback(itergood(), errors.append))
         assert out == list(range(10))
         assert not errors
@@ -96,11 +96,11 @@ class TestAiterErrback:
                     1 / 0
                 yield x
 
-        errors: list[Failure] = []
+        errors: list[Exception] = []
         out = await collect_asyncgen(_aiter_errback(iterbad(), errors.append))
         assert out == [0, 1, 2, 3, 4]
         assert len(errors) == 1
-        assert isinstance(errors[0].value, ZeroDivisionError)
+        assert isinstance(errors[0], ZeroDivisionError)
 
 
 class TestAsyncDefTestsuite:
