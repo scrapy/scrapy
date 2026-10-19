@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import gc
 from io import StringIO
 from unittest import mock
 
 import pytest
 
 from scrapy.utils import trackref
-from scrapy.utils.python import garbage_collect
 
 
 class Foo(trackref.object_ref):
@@ -95,6 +95,6 @@ def test_run_time_classes() -> None:
         base = type("Baz", (trackref.object_ref,), {})
         base()
     del base
-    garbage_collect()
+    gc.collect()
     assert not list(trackref.iter_all("Baz"))
     assert sum(1 for cls in trackref.live_refs if cls.__name__ == "Baz") == 0

@@ -10,6 +10,7 @@ import pytest
 from w3lib.http import basic_auth_header
 
 from scrapy import Request, Spider, signals
+from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.websocket import (
     _HAS_SOCKS,
     WebSocketDownloadHandler,
@@ -20,6 +21,7 @@ from scrapy.exceptions import (
     DownloadFailedError,
     DownloadTimeoutError,
     NotConfigured,
+    NotSupported,
     UnsupportedURLSchemeError,
 )
 from scrapy.http import WebSocketResponse
@@ -30,6 +32,7 @@ from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Generator
+    from pathlib import Path
 
     from scrapy.crawler import Crawler
 
@@ -324,6 +327,23 @@ class TestWebSocketDownloadHandler:
             ws_server.url("/echo"), callback, CLOSESPIDER_ITEMCOUNT=1
         )
         assert items == [{"abandoned": True}]
+
+    @coroutine_test
+    async def test_body_file(
+        self, ws_server: WebSocketMockServer, tmp_path: Path
+    ) -> None:
+        crawler = get_crawler()
+        crawler.spider = crawler._create_spider("foo")
+        download_handlers = DownloadHandlers(crawler)
+        request = Request(ws_server.url("/echo"), meta={"body_file": tmp_path / "x"})
+        try:
+            with pytest.raises(NotSupported):
+                await download_handlers.download_request_async(request)
+            handler = download_handlers._handlers["ws"]
+            assert isinstance(handler, WebSocketDownloadHandler)
+            assert all(c.close_code is not None for c in handler._connections)
+        finally:
+            await download_handlers._close()
 
     def test_no_websockets_library(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(

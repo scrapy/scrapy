@@ -7,9 +7,12 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
+    "PyDispatcher>=2.0.5",
     "Twisted>=21.7.0",
     "aioftp>=0.26.1",
     "aiohttp>=3.13.3",
+    'backports.zstd>=1.3.0; python_version < "3.14"',
+    "brotli>=1.2.0",
     "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
     "cssselect>=1.2.0",
@@ -29,12 +32,6 @@ dependencies = [
     'typing-extensions>=4.6.0; python_version < "3.13"',
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
-    # Platform-specific dependencies
-    'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
-    'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
-    'backports.zstd>=1.3.0; python_version < "3.14"',
-    'brotli>=1.2.0; implementation_name != "pypy"',
-    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -79,11 +76,11 @@ ipython = ["ipython>=8.15.0"]
 memusage = ["psutil>=5.9.0"]
 ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
-s3 = ["boto3>=1.35.2"]
+s3 = ["aioboto3>=9.0.0", "boto3>=1.35.2"]
 socks = ["python-socks[asyncio]>=2.6.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
-    "uvloop>=0.17.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+    "uvloop>=0.17.0; platform_system != 'Windows'",
 ]
 websockets = ["websockets>=15.0"]
 
@@ -144,9 +141,10 @@ implicit_reexport = true
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
+    "aioboto3",
+    "aiobotocore.*",
     "bpython",
     "brotli",
-    "brotlicffi",
     "google.*",
     "ipdb",
     "psutil",
@@ -210,7 +208,7 @@ exclude_also = [
 
 [tool.pylint.MASTER]
 persistent = "no"
-jobs = 1          # >1 hides results
+jobs = 0  # run in parallel
 extension-pkg-allow-list=[
     "lxml",
 ]
@@ -297,7 +295,9 @@ markers = [
     "requires_reactor: marks tests that require a reactor",
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
+    "requires_aiobotocore: marks tests that need aiobotocore",
     "requires_boto3: marks tests that need botocore and boto3",
+    "requires_aioboto3: marks tests that need aiobotocore and aioboto3",
     "requires_psutil: marks tests that need psutil",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
     "requires_internet: marks tests that need real Internet access",
@@ -323,15 +323,6 @@ filterwarnings = [
     # These are triggered by garbage collecting an unclosed AiohttpDownloadHandler.
     "ignore:.*<function (ClientSession|BaseConnector)\\.__del__:pytest.PytestUnraisableExceptionWarning",
     "ignore:Unclosed (client session|connector) <aiohttp\\.:ResourceWarning",
-    # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
-    # files and SQLite connections open; see the comment above about the two
-    # forms this can surface as. sqlite3's warning message has no path to
-    # match on, so it cannot be scoped to queuelib's temporary directories the
-    # way the file one is.
-    "ignore:.*<_io\\.\\w+ name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
-    "ignore:unclosed file <_io\\.\\w+ name=.*queuelib-tests-:ResourceWarning",
-    "ignore:.*<sqlite3\\.Connection object at:pytest.PytestUnraisableExceptionWarning",
-    "ignore:unclosed database in <sqlite3\\.Connection object at:ResourceWarning",
     # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
     "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
     # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.

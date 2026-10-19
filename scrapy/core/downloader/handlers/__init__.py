@@ -4,11 +4,20 @@ from __future__ import annotations
 
 import inspect
 import logging
+import os
 import warnings
+from pathlib import Path
+from tempfile import mkstemp
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import NotConfigured, NotSupported, ScrapyDeprecationWarning
+from scrapy.exceptions import (
+    NotConfigured,
+    NotSupported,
+    ScrapyDeprecationWarning,
+    StopDownload,
+)
+from scrapy.http import BodyFileResponse
 from scrapy.utils.defer import (
     deferred_from_coro,
     ensure_awaitable,
@@ -190,6 +199,13 @@ class DownloadHandlers:
                     f"Unusable download handler {handler_id!r}: "
                     f"{self._notconfigured[handler_id]}"
                 )
+        if not request.meta.get("body_file"):
+            return await self._download(handler_id, handler, request)
+        return await self._download_to_file(handler_id, handler, request)
+
+    async def _download(
+        self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
+    ) -> Response:
         assert self._crawler.spider
         if handler_id in self._old_style_handlers:  # pragma: no cover
             return await maybe_deferred_to_future(
@@ -199,6 +215,32 @@ class DownloadHandlers:
                 )
             )
         return await handler.download_request(request)
+
+    async def _download_to_file(
+        self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
+    ) -> Response:
+        temporary = request.meta["body_file"] is True
+        if temporary:
+            fd, request.meta["body_file"] = mkstemp()
+            os.close(fd)
+        try:
+            response = await self._download(handler_id, handler, request)
+            if not isinstance(response, BodyFileResponse):
+                await response._release()
+                raise NotSupported(
+                    f"{global_object_name(type(handler))} does not support the "
+                    f"body_file request meta key."
+                )
+        except StopDownload:
+            # Its response, which points to the body file, reaches errbacks.
+            raise
+        except BaseException:
+            if temporary:
+                Path(request.meta["body_file"]).unlink()  # noqa: ASYNC240
+                # Retries of the request get a new temporary file.
+                request.meta["body_file"] = True
+            raise
+        return response
 
     async def _close(self) -> None:
         for dh in self._handlers.values():
