@@ -21,7 +21,7 @@ from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.extensions.httpcache import DummyPolicy, rfc1123_to_epoch
-from scrapy.http import HtmlResponse, Request, Response
+from scrapy.http import BodyFileResponse, HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
@@ -292,6 +292,18 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
+
+    @coroutine_test
+    async def test_body_file(self):
+        with self._middleware() as mw:
+            mw.process_response(self.request, self.response)
+            request = self.request.replace(meta={"body_file": "body"})
+            assert await mw.process_request(request) is None
+            response = BodyFileResponse(request.url, body_file="body")
+            assert mw.process_response(request, response) is response
+            cached = await mw.process_request(self.request)
+            assert isinstance(cached, HtmlResponse)
+            self.assertEqualResponse(self.response, cached)
 
     @coroutine_test
     async def test_different_request_response_urls(self):
