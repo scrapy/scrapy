@@ -27,8 +27,7 @@ if TYPE_CHECKING:
 
     from scrapy.http import Response, TextResponse
 
-_BASE_URL_MAX_SCAN = 32768
-_META_REFRESH_MAX_SCAN = 32768
+_MAX_SCAN = 16384
 
 
 def _body_size(response: Response) -> int:
@@ -48,7 +47,7 @@ def get_base_url(response: TextResponse) -> str:
                 response.body,
                 response.url,
                 response.encoding,
-                max_scan=_BASE_URL_MAX_SCAN,
+                max_scan=_MAX_SCAN,
             )
         else:
             _baseurl_cache[response] = html.get_base_url(
@@ -74,7 +73,7 @@ def get_meta_refresh(
                 get_base_url(response),
                 response.encoding,
                 ignore_tags=ignore_tags,
-                max_scan=_META_REFRESH_MAX_SCAN,
+                max_scan=_MAX_SCAN,
             )
         else:
             _metaref_cache[response] = html.get_meta_refresh(
