@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Self
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.response import _body_size
 
 if TYPE_CHECKING:
     from scrapy.core.downloader import Slot
@@ -71,7 +72,7 @@ class AutoThrottle:
         self._adjust_delay(slot, latency, response)
         if self.debug:
             diff = slot.delay - olddelay
-            size = len(response.body)
+            size = _body_size(response)
             conc = len(slot.transferring)
             logger.info(
                 "slot: %(slot)s | conc:%(concurrency)2d | "

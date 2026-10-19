@@ -255,6 +255,41 @@ def test_sqlite_queue_survives_unclean_shutdown(
         queue.close()
 
 
+@pytest.mark.parametrize(
+    ("queue_cls", "is_fifo"),
+    [
+        (PickleFifoDiskQueue, True),
+        (PickleLifoDiskQueue, False),
+        (MarshalFifoDiskQueue, True),
+        (MarshalLifoDiskQueue, False),
+        (PickleFifoSQLiteQueue, True),
+        (PickleLifoSQLiteQueue, False),
+        (MarshalFifoSQLiteQueue, True),
+        (MarshalLifoSQLiteQueue, False),
+    ],
+)
+def test_close_reopen(
+    crawler: Crawler, tmp_path: Path, queue_cls: Any, is_fifo: bool
+) -> None:
+    key = str(tmp_path / "queue")
+    urls = [f"https://example.com/{i}" for i in range(4)]
+    queue = build_from_crawler(queue_cls, crawler, key=key)
+    for url in urls:
+        queue.push(Request(url))
+    queue.pop()
+    queue.close()
+
+    expected = urls[1:] if is_fifo else urls[-2::-1]
+    queue = build_from_crawler(queue_cls, crawler, key=key)
+    try:
+        assert len(queue) == 3
+        assert queue.peek().url == expected[0]
+        assert [queue.pop().url for _ in expected] == expected
+        assert queue.pop() is None
+    finally:
+        queue.close()
+
+
 class TestFifoMemoryQueueRequest(TestRequestQueueBase):
     is_fifo = True
 

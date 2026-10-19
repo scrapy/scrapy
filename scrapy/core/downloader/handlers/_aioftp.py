@@ -20,7 +20,7 @@ from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
 )
-from scrapy.http import Headers
+from scrapy.http import BodyFileResponse, Headers
 from scrapy.utils._ssl import _log_sslobj_debug_info, _make_ssl_context
 from scrapy.utils.httpobj import urlparse_cached
 
@@ -199,7 +199,7 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
 
     @staticmethod
     def _local_filename(response: _AioftpResponse, request: Request) -> bytes | None:
-        if response.data is None:
+        if response.data is None or request.meta.get("body_file"):
             return None
         return request.meta.get("ftp_local_filename")
 
@@ -230,6 +230,8 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
     ) -> None:
         if local_filename := self._local_filename(response, request):
             size = Path(local_filename.decode()).stat().st_size
+        elif isinstance(result, BodyFileResponse):
+            size = Path(result.body_file).stat().st_size
         else:
             size = len(result.body)
         result.headers.update({"Local Filename": local_filename or b"", "Size": size})

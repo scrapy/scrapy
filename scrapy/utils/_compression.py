@@ -7,10 +7,7 @@ from gzip import GzipFile
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-try:
-    import brotli
-except ImportError:  # pragma: no cover
-    import brotlicffi as brotli
+import brotli
 
 if sys.version_info >= (3, 14):
     from compression import zstd
