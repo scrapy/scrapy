@@ -222,8 +222,8 @@ line, e.g. one with no colon in it, which some servers send. Handlers that skip
 bad header lines, like web browsers do, still parse the header lines that follow
 them; other handlers also lose those, or cannot download such responses at all.
 
-Handlers that require a reactor resolve hosts, including IPv6 address literals
-such as ``https://[::1]/``, with the resolver set in
+Handlers that require a reactor resolve hosts, including proxy hosts and IPv6
+address literals such as ``https://[::1]/``, with the resolver set in
 :setting:`TWISTED_DNS_RESOLVER`, whose default value only supports IPv4. To use
 IPv6 with them, set it to ``scrapy.resolver.CachingHostnameResolver``.
 
@@ -245,10 +245,13 @@ AiohttpDownloadHandler
 
 .. versionadded:: 2.19.0
 
+.. versionchanged:: VERSION
+    In earlier versions, the handler was not lazy.
+
 .. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
 
 | Supported schemes: ``http``, ``https``.
-| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
 | :ref:`Requires asyncio support <using-asyncio>`: yes.
 | :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
@@ -285,6 +288,7 @@ HTTP/2                      No (not supported by the library)
 Bad header handling         Fail (not supported by the library)
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
+:reqmeta:`body_file`        Yes
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
@@ -326,6 +330,7 @@ HTTP/2                      Yes
 Bad header handling         Not applicable (HTTP/2 only)
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
+:reqmeta:`body_file`        No (not implemented)
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
@@ -371,6 +376,7 @@ HTTP/2                      No (implemented as a separate handler)
 Bad header handling         Skip bad, like web browsers do
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
+:reqmeta:`body_file`        Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
@@ -437,6 +443,7 @@ HTTP/2                      Yes
 Bad header handling         Fail (not supported by the library)
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
+:reqmeta:`body_file`        Yes
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
@@ -449,6 +456,11 @@ Other limitations:
 -   Requests to a URL with an IPv6 address literal, such as
     ``https://[::1]/``, `do not work through a proxy
     <https://github.com/pydantic/httpx2/pull/1091>`__.
+
+Unlike the Twisted-based handlers, this handler does not use the resolver
+configured with :setting:`TWISTED_DNS_RESOLVER`, so it resolves IPv6 hosts
+without needing that setting changed, and it is not affected by
+:setting:`DNS_TIMEOUT` or by the :setting:`DNSCACHE_ENABLED` cache.
 
 .. setting:: HTTPX_HTTP2_ENABLED
 

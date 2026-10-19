@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from scrapy.downloadermiddlewares.stats import DownloaderStats, get_header_size
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, Response
+from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class MyException(Exception):
@@ -60,6 +65,15 @@ class TestDownloaderStats:
         res = Response("http://scrapytest.org", headers=headers, body=b"body")
         self.mw.process_response(self.req, res)
         self.assertStatsEqual("downloader/response_bytes", len(raw_response))
+
+    def test_response_bytes_body_file(self, tmp_path: Path) -> None:
+        body_file = tmp_path / "body"
+        body_file.write_bytes(b"body")
+        res = BodyFileResponse("https://example.com", body_file=body_file)
+        self.mw.process_response(self.req, res)
+        self.assertStatsEqual(
+            "downloader/response_bytes", len(b"HTTP/1.1 200 OK\r\n\r\nbody")
+        )
 
     def test_process_exception(self) -> None:
         self.mw.process_exception(self.req, MyException())

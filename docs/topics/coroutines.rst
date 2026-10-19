@@ -74,11 +74,8 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: VERSION
 
-Every callable above may also :ref:`await a request directly <inline-requests>`
-to send it and get its response, except download handler methods, whose
-:class:`contract <scrapy.core.downloader.handlers.DownloadHandlerProtocol>`
-forbids it, and code that runs while the spider is closing, such as
-:signal:`spider_closed` handlers.
+Most callables above may also :ref:`await a request <inline-requests>` to send
+it and get its response.
 
 .. versionadded:: VERSION
 
@@ -301,10 +298,12 @@ Awaiting a request sends it and returns its response. Only downloader
 middlewares apply.
 
 You may await a request wherever :ref:`coroutine syntax is supported
-<coroutine-support>`, with the exception of :ref:`download handlers
-<topics-download-handlers>`, and only while its *callback* and *errback* are
-unset; awaiting sets its *callback* to
-:func:`~scrapy.http.request.NO_CALLBACK`.
+<coroutine-support>`, except in :ref:`download handlers
+<topics-download-handlers>` and in code that runs after a closing spider has
+finished its last requests, such as :signal:`spider_closed` handlers.
+
+You may only await a request while its *callback* and *errback* are unset;
+awaiting sets its *callback* to :func:`~scrapy.http.request.NO_CALLBACK`.
 
 For a request that you did not build yourself, and that may already have a
 *callback* or an *errback*, use :meth:`ExecutionEngine.download_async()
