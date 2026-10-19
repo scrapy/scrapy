@@ -94,17 +94,32 @@ def test_get_shell_embed_func_ipython():
     assert shell.__name__ == "_embed_ipython_shell"
 
 
-def test_get_shell_embed_func_ptpython():
-    pytest.importorskip("ptpython")
-    shell = get_shell_embed_func(["ptpython"])
+@pytest.mark.parametrize(
+    ("platform", "isatty", "expected"),
+    [
+        ("linux", False, "_embed_ptpython_shell"),
+        ("win32", True, "_embed_ptpython_shell"),
+        ("win32", False, "_embed_standard_shell"),
+    ],
+)
+def test_get_shell_embed_func_ptpython(
+    monkeypatch: pytest.MonkeyPatch, platform: str, isatty: bool, expected: str
+) -> None:
+    # Import ptpython before faking the platform it is imported on.
+    pytest.importorskip("ptpython.repl")
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: isatty)
+    shell = get_shell_embed_func(["ptpython", "python"])
     assert shell is not None
-    assert shell.__name__ == "_embed_ptpython_shell"
+    assert shell.__name__ == expected
 
 
-def test_get_shell_embed_func_default():
+def test_get_shell_embed_func_default(monkeypatch: pytest.MonkeyPatch) -> None:
     # with no shells given, the first available shell in preference order
     # (ptpython, ipython, bpython, python) is returned; the standard shell
     # is always available, so the default is never None
+    # on Windows, ptpython is only available when stdout is a console
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
     shell = get_shell_embed_func()
     assert shell is not None
     if find_spec("ptpython") is not None:

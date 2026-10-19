@@ -310,17 +310,13 @@ def global_object_name(obj: Any) -> str:
     return f"{obj.__module__}.{obj.__qualname__}"
 
 
-if hasattr(sys, "pypy_version_info"):  # pragma: no cover
-
-    def garbage_collect() -> None:
-        # Collecting weakreferences can take two collections on PyPy.
-        gc.collect()
-        gc.collect()
-
-else:
-
-    def garbage_collect() -> None:
-        gc.collect()
+def garbage_collect() -> None:  # pragma: no cover
+    warnings.warn(
+        "scrapy.utils.python.garbage_collect() is deprecated, use gc.collect() instead.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    gc.collect()
 
 
 class MutableChain(Iterable[_T]):  # pragma: no cover

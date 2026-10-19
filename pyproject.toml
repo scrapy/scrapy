@@ -7,9 +7,12 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
+    "PyDispatcher>=2.0.5",
     "Twisted>=21.7.0",
     "aioftp>=0.26.1",
     "aiohttp>=3.13.3",
+    'backports.zstd>=1.3.0; python_version < "3.14"',
+    "brotli>=1.2.0",
     "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
     "cssselect>=1.2.0",
@@ -29,12 +32,6 @@ dependencies = [
     'typing-extensions>=4.6.0; python_version < "3.13"',
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
-    # Platform-specific dependencies
-    'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
-    'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
-    'backports.zstd>=1.3.0; python_version < "3.14"',
-    'brotli>=1.2.0; implementation_name != "pypy"',
-    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -83,7 +80,7 @@ s3 = ["aioboto3>=9.0.0", "boto3>=1.35.2"]
 socks = ["python-socks[asyncio]>=2.6.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
-    "uvloop>=0.17.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+    "uvloop>=0.17.0; platform_system != 'Windows'",
 ]
 
 [project.scripts]
@@ -147,7 +144,6 @@ module = [
     "aiobotocore.*",
     "bpython",
     "brotli",
-    "brotlicffi",
     "google.*",
     "ipdb",
     "psutil",
