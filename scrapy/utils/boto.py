@@ -9,8 +9,16 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
+def is_aiobotocore_available() -> bool:
+    return find_spec("aiobotocore") is not None
+
+
 def is_botocore_available() -> bool:
     return find_spec("botocore") is not None
+
+
+def is_aioboto3_available() -> bool:
+    return find_spec("aioboto3") is not None
 
 
 def _get_max_pool_connections(settings: BaseSettings) -> int:

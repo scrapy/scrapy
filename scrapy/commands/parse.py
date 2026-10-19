@@ -16,15 +16,12 @@ from scrapy.http import Request, Response
 from scrapy.utils import _colorize
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import _aiter_errback, _schedule_coro, deferred_from_coro
-from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import AsyncGenerator, AsyncIterator, Coroutine, Iterable
-
-    from twisted.python.failure import Failure
 
     from scrapy.http.request import CallbackT
     from scrapy.spiders import Spider
@@ -135,10 +132,11 @@ class Command(BaseRunSpiderCommand):
             max_requests = max(self.requests)
         return max(max_items, max_requests)
 
-    def handle_exception(self, _failure: Failure) -> None:
+    @staticmethod
+    def handle_exception(exc: Exception) -> None:
         logger.error(
             "An error is caught while iterating the async iterable",
-            exc_info=failure_to_exc_info(_failure),
+            exc_info=exc,
         )
 
     @overload

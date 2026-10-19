@@ -279,8 +279,10 @@ def pytest_runtest_setup(item):
     # Skip tests requiring optional dependencies
     optional_deps = [
         "uvloop",
+        "aiobotocore",
         "botocore",
         "boto3",
+        "aioboto3",
         "psutil",
     ]
 
