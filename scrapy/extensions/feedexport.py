@@ -13,7 +13,7 @@ import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
@@ -30,7 +30,7 @@ from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
-from scrapy.utils.boto import _get_max_pool_connections
+from scrapy.utils.boto import _get_max_pool_connections, is_aioboto3_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import (
     deferred_from_coro,
@@ -318,16 +318,19 @@ class S3FeedStorage(BlockingFeedStorage):
         if upload_timeout is not None:
             config_kwargs["read_timeout"] = upload_timeout
 
+        self._client_kwargs: dict[str, Any] = {
+            "aws_access_key_id": self.access_key,
+            "aws_secret_access_key": self.secret_key,
+            "aws_session_token": self.session_token,
+            "endpoint_url": self.endpoint_url,
+            "region_name": self.region_name,
+            "config": Config(**config_kwargs),
+        }
+
+        # Synchronous boto3 client, used when asyncio support or aioboto3 is not
+        # available (its calls are then run in a thread).
         boto3_session = boto3.session.Session()
-        self.s3_client = boto3_session.client(
-            "s3",
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            aws_session_token=self.session_token,
-            endpoint_url=self.endpoint_url,
-            region_name=self.region_name,
-            config=Config(**config_kwargs),
-        )
+        self.s3_client = boto3_session.client("s3", **self._client_kwargs)
 
         self._mode: str = _get_mode(self, feed_options, "overwrite")
 
@@ -352,16 +355,59 @@ class S3FeedStorage(BlockingFeedStorage):
             feed_options=feed_options,
         )
 
-    def _store_in_thread(self, file: IO[bytes]) -> None:
+    def store(self, file: IO[bytes]) -> Deferred[None]:
+        if is_asyncio_available() and is_aioboto3_available():
+            return deferred_from_coro(self._store_async(file))
+        return super().store(file)
+
+    async def _store_async(self, file: IO[bytes]) -> None:
+        import aioboto3  # noqa: PLC0415
+
+        file.seek(0)
+        extra_args: dict[str, Any] = {"ACL": self.acl} if self.acl else {}
+        session = aioboto3.Session()
+        try:
+            async with session.client("s3", **self._client_kwargs) as client:
+                if self._mode == "create":
+                    with self._raise_if_exists():
+                        await client.put_object(
+                            Bucket=self.bucketname,
+                            Key=self.keyname,
+                            Body=file,
+                            IfNoneMatch="*",
+                            **extra_args,
+                        )
+                else:
+                    await client.upload_fileobj(
+                        Fileobj=file,
+                        Bucket=self.bucketname,
+                        Key=self.keyname,
+                        ExtraArgs=extra_args,
+                    )
+        finally:
+            file.close()
+
+    @contextlib.contextmanager
+    def _raise_if_exists(self) -> Iterator[None]:
         from botocore.exceptions import ClientError  # noqa: PLC0415
 
+        try:
+            yield
+        except ClientError as error:
+            if error.response.get("Error", {}).get("Code") == "PreconditionFailed":
+                raise FileExistsError(
+                    f"s3://{self.bucketname}/{self.keyname} already exists"
+                ) from error
+            raise
+
+    def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
         extra_args: dict[str, Any] = {"ACL": self.acl} if self.acl else {}
         try:
             if self._mode == "create":
                 # upload_fileobj() does not allow IfNoneMatch
                 # (https://github.com/boto/boto3/issues/4366).
-                try:
+                with self._raise_if_exists():
                     self.s3_client.put_object(
                         Bucket=self.bucketname,
                         Key=self.keyname,
@@ -369,15 +415,6 @@ class S3FeedStorage(BlockingFeedStorage):
                         IfNoneMatch="*",
                         **extra_args,
                     )
-                except ClientError as error:
-                    if (
-                        error.response.get("Error", {}).get("Code")
-                        == "PreconditionFailed"
-                    ):
-                        raise FileExistsError(
-                            f"s3://{self.bucketname}/{self.keyname} already exists"
-                        ) from error
-                    raise
             elif extra_args:
                 self.s3_client.upload_fileobj(
                     Bucket=self.bucketname,

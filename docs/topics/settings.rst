@@ -682,6 +682,21 @@ See also: :ref:`topics-autothrottle` and its
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
 
+.. setting:: CONNECTION_KEEPALIVE_TIMEOUT
+
+CONNECTION_KEEPALIVE_TIMEOUT
+----------------------------
+
+.. versionadded:: VERSION
+
+Default: ``240.0``
+
+How long, in seconds, a connection is kept open for reuse after the response it
+was serving is complete. Use ``0`` to close connections as soon as they become
+idle.
+
+Servers usually close idle connections earlier than this on their own.
+
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
 DEFAULT_DROPITEM_LOG_LEVEL

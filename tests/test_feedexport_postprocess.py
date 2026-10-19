@@ -5,7 +5,6 @@ import gzip
 import lzma
 import marshal
 import pickle
-import sys
 import tempfile
 from io import BytesIO
 from typing import IO, TYPE_CHECKING
@@ -323,10 +322,6 @@ class TestFeedPostProcessedExports:
     async def test_lzma_plugin_filters(
         self, mockserver: MockServer, tmp_path: Path
     ) -> None:
-        if "PyPy" in sys.version:
-            # https://foss.heptapod.net/pypy/pypy/-/issues/3527
-            pytest.skip("lzma filters doesn't work in PyPy")
-
         filters = [{"id": lzma.FILTER_LZMA2}]
         compressed = lzma.compress(self.expected, filters=filters)
         filename = tmp_path / "filters"

@@ -50,7 +50,7 @@ class H2ConnectionPool:
 
         # Check if we already have a connection to the remote
         conn = self._connections.get(key, None)
-        if conn:
+        if conn and not conn.closing:
             # Return this connection instance wrapped inside a deferred
             return defer.succeed(conn)
 
@@ -63,7 +63,6 @@ class H2ConnectionPool:
         self._pending_requests[key] = deque()
 
         conn_lost_deferred: Deferred[None] = Deferred()
-        conn_lost_deferred.addCallback(self._remove_connection, key)
 
         factory = H2ClientFactory(
             uri,
@@ -73,7 +72,7 @@ class H2ConnectionPool:
         )
         conn_d = endpoint.connect(factory)
         d = self._pending_request(key)
-        conn_d.addCallback(self.put_connection, key)
+        conn_d.addCallback(self.put_connection, key, conn_lost_deferred)
         conn_d.addErrback(self._connection_failed, key)
         return d
 
@@ -91,9 +90,13 @@ class H2ConnectionPool:
         return d
 
     def put_connection(
-        self, conn: H2ClientProtocol, key: ConnectionKey
+        self,
+        conn: H2ClientProtocol,
+        key: ConnectionKey,
+        conn_lost_deferred: Deferred[None],
     ) -> H2ClientProtocol:
         self._connections[key] = conn
+        conn_lost_deferred.addCallback(self._remove_connection, key, conn)
 
         # Now as we have established a proper HTTP/2 connection
         # we fire all the deferred's with the connection instance
@@ -112,8 +115,12 @@ class H2ConnectionPool:
             d = pending_requests.popleft()
             d.errback(failure)
 
-    def _remove_connection(self, _: None, key: ConnectionKey) -> None:
-        self._connections.pop(key)
+    def _remove_connection(
+        self, _: None, key: ConnectionKey, conn: H2ClientProtocol
+    ) -> None:
+        # a newer connection may have taken over the key already
+        if self._connections.get(key) is conn:
+            del self._connections[key]
 
     def close_connections(self) -> None:
         """Close all the HTTP/2 connections and remove them from pool."""

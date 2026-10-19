@@ -15,7 +15,7 @@ from scrapy import Spider
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import DownloadCancelledError, DownloadFailedError, NotConfigured
-from scrapy.http import HtmlResponse, Request, Response
+from scrapy.http import BodyFileResponse, HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -144,6 +144,33 @@ class TestFTPBase(ABC):
         assert local_path.exists()
         assert local_path.read_bytes() == b"I have the power!"
         local_path.unlink()
+
+    @deferred_f_from_coro_f
+    async def test_body_file(
+        self, server_url: str, dh: FTPDownloadHandler, tmp_path: Path
+    ) -> None:
+        body_file = tmp_path / "body"
+        meta = {**self.req_meta, "body_file": body_file}
+        request = Request(url=server_url + "file.txt", meta=meta)
+        r = await dh.download_request(request)
+        assert isinstance(r, BodyFileResponse)
+        assert r.headers == {b"Local Filename": [b""], b"Size": [b"17"]}
+        assert body_file.read_bytes() == b"I have the power!"
+
+    @deferred_f_from_coro_f
+    async def test_body_file_nonexistent(
+        self, server_url: str, dh: FTPDownloadHandler, tmp_path: Path
+    ) -> None:
+        body_file = tmp_path / "body"
+        meta = {**self.req_meta, "body_file": body_file}
+        request = Request(url=server_url + "nonexistent.txt", meta=meta)
+        r = await dh.download_request(request)
+        assert isinstance(r, BodyFileResponse)
+        assert r.status == 404
+        assert (
+            body_file.read_bytes()
+            == b"['550 nonexistent.txt: No such file or directory.']"
+        )
 
     @pytest.mark.parametrize("filename", ["file.txt", "big.bin"])
     @pytest.mark.parametrize("local", [False, True])
