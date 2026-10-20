@@ -32,6 +32,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http.request import Request
 from scrapy.utils.asyncio import (
     _get_running_or_installed_loop,
     is_asyncio_available,
@@ -44,7 +45,8 @@ if TYPE_CHECKING:
 
     from twisted.python.failure import Failure
 
-    from scrapy.http.request import Request
+    # typing.TypeIs requires Python 3.13
+    from typing_extensions import TypeIs
 
     class FailureWithRequest(Protocol):
         """A :class:`~twisted.python.failure.Failure` that has had a
@@ -486,6 +488,15 @@ async def _aiter_errback(
             errback(exc, *a, **kw)
 
 
+def _is_awaitable(o: Any) -> TypeIs[Awaitable[Any]]:
+    """Return ``True`` if *o* is meant to be awaited.
+
+    Request objects support ``await`` to send them, but one returned by a
+    callable is a value to process, not something to await.
+    """
+    return inspect.isawaitable(o) and not isinstance(o, Request)
+
+
 async def aiter_errback(
     aiterable: AsyncIterator[_T],
     errback: Callable[Concatenate[Failure, _P], Any],
@@ -520,7 +531,7 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
     or return the object as is if it isn't a coroutine."""
     if isinstance(o, Deferred):
         return o
-    if inspect.isawaitable(o):
+    if _is_awaitable(o):
         if not is_asyncio_available():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
@@ -700,7 +711,7 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
                 stacklevel=2,
             )
         return maybe_deferred_to_future(o)
-    if inspect.isawaitable(o):
+    if _is_awaitable(o):
         return o
 
     async def coro() -> _T:

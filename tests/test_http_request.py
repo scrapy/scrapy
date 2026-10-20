@@ -1,10 +1,21 @@
+import contextvars
 import xmlrpc.client
+from collections.abc import Callable, Coroutine, Generator
+from contextlib import AbstractContextManager
+from functools import partial
 from typing import Any
 
 import pytest
 
 from scrapy import Request
 from scrapy.http import XmlRpcRequest
+from scrapy.http.request import (
+    _active_crawler,
+    _active_crawler_scope,
+    _in_download_handler,
+    _in_download_handler_scope,
+)
+from scrapy.utils.test import get_crawler
 from tests.utils.bases.http_request import TestRequestBase
 
 
@@ -40,3 +51,41 @@ class TestXmlRpcRequest(TestRequestBase):
 
     def test_latin1(self):
         self._test_request(params=("pas£",), encoding="latin1")
+
+
+class _Suspend:
+    def __await__(self) -> Generator[None]:
+        yield
+
+
+@pytest.mark.parametrize(
+    ("make_scope", "var"),
+    [
+        (lambda: partial(_active_crawler_scope, get_crawler()), _active_crawler),
+        (lambda: _in_download_handler_scope, _in_download_handler),
+    ],
+    ids=["active_crawler", "in_download_handler"],
+)
+def test_scope_closed_elsewhere(
+    make_scope: Callable[[], Callable[[], AbstractContextManager[None]]],
+    var: contextvars.ContextVar[Any],
+) -> None:
+    scope = make_scope()
+
+    async def inner() -> None:
+        with scope():
+            await _Suspend()
+
+    def outer() -> Coroutine[Any, Any, None]:
+        with scope():
+            coro = inner()
+            coro.send(None)
+        return coro
+
+    def run() -> None:
+        default = var.get()
+        coro = contextvars.copy_context().run(outer)
+        coro.close()
+        assert var.get() == default
+
+    contextvars.Context().run(run)

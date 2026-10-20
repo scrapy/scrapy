@@ -18,6 +18,7 @@ from scrapy.exceptions import (
     StopDownload,
 )
 from scrapy.http import BodyFileResponse
+from scrapy.http.request import _in_download_handler_scope
 from scrapy.utils.defer import (
     deferred_from_coro,
     ensure_awaitable,
@@ -53,7 +54,8 @@ class DownloadHandlerProtocol(Protocol):
 
     Besides implementing this protocol, the contract of a download handler
     includes **never** calling :meth:`crawler.engine.download_async()
-    <scrapy.core.engine.ExecutionEngine.download_async>`.
+    <scrapy.core.engine.ExecutionEngine.download_async>`, including
+    indirectly by awaiting a :class:`~scrapy.Request` object.
     """
 
     lazy: bool
@@ -211,14 +213,15 @@ class DownloadHandlers:
         self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
     ) -> Response:
         assert self._crawler.spider
-        if handler_id in self._old_style_handlers:  # pragma: no cover
-            return await maybe_deferred_to_future(
-                cast(
-                    "Deferred[Response]",
-                    handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+        with _in_download_handler_scope():
+            if handler_id in self._old_style_handlers:  # pragma: no cover
+                return await maybe_deferred_to_future(
+                    cast(
+                        "Deferred[Response]",
+                        handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+                    )
                 )
-            )
-        return await handler.download_request(request)
+            return await handler.download_request(request)
 
     async def _download_to_file(
         self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
