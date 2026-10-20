@@ -2,29 +2,31 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import random
 import sys
 import time
 import warnings
 from collections import OrderedDict
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import TYPE_CHECKING, Any, Protocol, Self, TypedDict, cast
 from weakref import WeakKeyDictionary, WeakSet
 
+from twisted.internet.defer import Deferred
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
-from scrapy.utils.asyncio import _wait_for_first, sleep
-from scrapy.utils.defer import _Event, maybe_deferred_to_future
+from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import _Event
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
-    from twisted.internet.defer import Deferred
-
     from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
     from scrapy.http import Request
     from scrapy.settings import BaseSettings
+    from scrapy.utils.asyncio import CallLaterResult
 
 
 logger = logging.getLogger(__name__)
@@ -286,10 +288,24 @@ class ThrottlerProtocol(Protocol):
         of those scopes based on the response.
         """
 
-    async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
-        """Block until *request* is allowed to be sent by all of its scopes.
+    def acquire(
+        self,
+        request: Request,
+        *,
+        retry: Callable[[], None],
+        unscheduled: bool = False,
+    ) -> float | None:
+        """Reserve a concurrency slot of every scope of *request* and return
+        ``None`` if they all allow *request* to be sent right now.
 
-        The engine awaits this before handing a request to the downloader.
+        Otherwise, return the number of seconds after which the engine is to
+        call this method again for *request*, or :data:`math.inf` for the engine
+        to wait until *retry* is called. Call *retry* whenever something that
+        holds *request* back may have changed, e.g. when a concurrency slot of
+        one of its scopes frees up; a premature call only costs another attempt.
+
+        The engine calls this before handing a request to the downloader, again
+        and again until it returns ``None`` or the engine drops the request.
 
         *unscheduled* tells whether *request* was sent without going through the
         scheduler, i.e. through :meth:`crawler.engine.download_async()
@@ -310,7 +326,8 @@ class ThrottlerProtocol(Protocol):
 
         The engine calls this once *request* has finished downloading (whether
         it succeeded, failed or returned a new request), so that scopes that
-        enforce a concurrency limit can let other requests through.
+        enforce a concurrency limit can let other requests through, and also
+        when it drops a request that :meth:`acquire` did not let through.
         """
 
     def download_handler_blocked(self, request: Request) -> bool:
@@ -448,10 +465,24 @@ class Throttler(ThrottlerProtocol):
         # _reserved, used to tell whether a scope can lend a slot to an
         # unscheduled request (see _can_lend_slot).
         self._scope_holders: dict[ScopeID, WeakSet[Request]] = {}
-        # Unscheduled requests currently waiting in acquire(), by scope, so that
-        # a slot freed in one of those scopes goes to them before it goes to a
-        # request from the scheduler (see _unscheduled_claims).
+        # Unscheduled requests that acquire() has not let through yet, by
+        # scope, so that a slot freed in one of those scopes goes to them before
+        # it goes to a request from the scheduler (see _unscheduled_claims).
         self._unscheduled_waiters: dict[ScopeID, WeakSet[Request]] = {}
+        # Requests from the scheduler that acquire() held back once in favor of
+        # an unscheduled request, which it does not do twice.
+        self._yielded: set[Request] = set()
+        # The slot events that acquire() registered each retry of each request
+        # on, each with the callable that discards it. Retries are told apart
+        # because the same request can wait more than once at a time, e.g. as
+        # the prerequisite of two requests.
+        self._waits: dict[
+            Request,
+            dict[
+                Callable[[], None],
+                list[tuple[Deferred[None], Callable[[Deferred[None]], None]]],
+            ],
+        ] = {}
 
     @staticmethod
     def _merge_download_slots(settings: BaseSettings) -> dict[str, dict[str, Any]]:
@@ -620,115 +651,189 @@ class Throttler(ThrottlerProtocol):
         for scope_id in evictable:
             del self._scope_managers[scope_id]
 
-    async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
-        await self._delay_request(request)
-        # The scopes are resolved (and persisted, see _resolve_scopes) even for a
-        # request excluded from throttling, because its outcome still backs off
-        # its scopes, and get_applied_scopes() is how a middleware finds them.
-        scope_ids = self._resolve_scopes(request)
-        if request.meta.get("dont_throttle"):
-            return
-        if not scope_ids:
-            return
-        if not unscheduled:
-            await self._acquire_scope_slots(request, scope_ids, unscheduled=False)
-            return
-        # A registration here makes the whole scope yield its free slots to
-        # this request (see _unscheduled_claims), so one that outlived its wait
-        # would hold the scope back for good. The finally below covers every way
-        # this coroutine can end, including being cancelled or abandoned (both
-        # of which throw into the await).
-        for scope_id in scope_ids:
-            self._unscheduled_waiters.setdefault(scope_id, WeakSet()).add(request)
-        try:
-            await self._acquire_scope_slots(request, scope_ids, unscheduled=True)
-        finally:
-            for scope_id in scope_ids:
-                waiters = self._unscheduled_waiters.get(scope_id)
-                if waiters is not None:
-                    waiters.discard(request)
-                    if not waiters:
-                        del self._unscheduled_waiters[scope_id]
+    def acquire(
+        self,
+        request: Request,
+        *,
+        retry: Callable[[], None],
+        unscheduled: bool = False,
+    ) -> float | None:
+        if self._stop_waiting(request, retry):
+            # A retry after waiting for a slot, which only happens once the delay
+            # has elapsed and the scopes are resolved.
+            scope_ids = cast("list[ScopeID]", request.meta[_APPLIED_SCOPES_META_KEY])
+        else:
+            wait = self._delay(request)
+            if wait > 0:
+                return wait
+            # The scopes are resolved (and persisted, see _resolve_scopes) even
+            # for a request excluded from throttling, because its outcome still
+            # backs off its scopes, and get_applied_scopes() is how a middleware
+            # finds them.
+            scope_ids = self._resolve_scopes(request)
+            if request.meta.get("dont_throttle") or not scope_ids:
+                return None
+            if unscheduled:
+                # A registration here makes the whole scope yield its free slots
+                # to this request (see _unscheduled_claims), so it is undone once
+                # the request is let through or released.
+                for scope_id in scope_ids:
+                    self._unscheduled_waiters.setdefault(scope_id, WeakSet()).add(
+                        request
+                    )
+        slot_wait = self._acquire_scope_slots(
+            request, scope_ids, retry=retry, unscheduled=unscheduled
+        )
+        if slot_wait is None and unscheduled:
+            self._forget_unscheduled(request, scope_ids)
+        return slot_wait
 
-    async def _acquire_scope_slots(
+    def _acquire_scope_slots(
         self,
         request: Request,
         scope_ids: list[ScopeID],
         *,
+        retry: Callable[[], None],
         unscheduled: bool,
-    ) -> None:
-        """Block until every scope in *scope_ids* allows *request* through,
-        then reserve a slot on each of them.
+    ) -> float | None:
+        """Reserve a slot on every scope in *scope_ids* if they all allow
+        *request* through, and otherwise return how long until another attempt
+        is worth it, see :meth:`acquire`.
 
-        The scope managers are resolved anew on every pass: a scope can be
-        evicted while this waits (see :setting:`THROTTLING_SCOPE_LIMIT`), and
+        The scope managers are resolved anew on every attempt: a scope can be
+        evicted between attempts (see :setting:`THROTTLING_SCOPE_LIMIT`), and
         recording the send on a replaced manager would leave the scope with two
         sets of counters, letting it exceed its limits.
         """
-        yielded_to_unscheduled = False
-        while True:
-            # Rechecked on every pass: a second send that only one release()
-            # undoes would leave these scopes permanently short of a slot. It
-            # takes an unsupported crawl (one Request object downloaded twice at
-            # once) to get here.
-            if request in self._reserved:
-                return
-            scopes = self._resolve_scope_slots(scope_ids)
-            wait = max(
-                (manager._can_send() for _, manager in scopes),
-                default=0.0,
-            )
-            if wait > 0:
-                if self._debug:
-                    logger.debug(
-                        f"Throttling {request} for {wait:.2f}s (scopes: {scope_ids})"
-                    )
-                await sleep(wait)
-                continue
-            # The delay has elapsed; the only remaining reason to wait is a full
-            # concurrency slot.
-            blocked: list[ScopeSlot] = []
-            free: list[ScopeSlot] = []
-            for scope_id, manager in scopes:
-                if manager._concurrency_blocked():
-                    blocked.append((scope_id, manager))
-                else:
-                    free.append((scope_id, manager))
-            if not blocked:
-                if (
-                    not unscheduled
-                    and not yielded_to_unscheduled
-                    and self._unscheduled_claims(scope_ids)
-                ):
-                    # An unscheduled request waiting for one of these scopes can
-                    # use the free slot right now, and something in flight may
-                    # be waiting for it, so let it go first. Only once, so that
-                    # a claim that no one takes cannot spin here.
-                    yielded_to_unscheduled = True
-                    await sleep(0)
-                    continue
-                self._record_reservation(request, scopes)
-                return
-            if unscheduled and all(
-                self._can_lend_slot(scope_id) for scope_id, _ in blocked
-            ):
-                self._borrow_slots(
-                    request, scopes, [scope_id for scope_id, _ in blocked]
-                )
-                return
+        # A second send that only one release() undoes would leave these scopes
+        # permanently short of a slot. It takes an unsupported crawl (one
+        # Request object downloaded twice at once) to get here.
+        if request in self._reserved:
+            return None
+        scopes = self._resolve_scope_slots(scope_ids)
+        wait = max((manager._can_send() for _, manager in scopes), default=0.0)
+        if wait > 0:
             if self._debug:
                 logger.debug(
-                    f"Throttling {request} until a concurrency slot frees up "
-                    f"(scopes: {scope_ids})"
+                    f"Throttling {request} for {wait:.2f}s (scopes: {scope_ids})"
                 )
-            # A scope with room while another one holds this request back may
-            # have woken it for a slot it is not going to take, and only one
-            # waiter is woken per freed slot, so that slot would sit unused.
-            for _, manager in free:
-                manager._wake_waiters()
-            await self._wait_for_slot(
-                [manager for _, manager in blocked], unscheduled=unscheduled
+            return wait
+        # The delay has elapsed; the only remaining reason to wait is a full
+        # concurrency slot.
+        blocked: list[ScopeSlot] = []
+        free: list[ScopeSlot] = []
+        for scope_id, manager in scopes:
+            if manager._concurrency_blocked():
+                blocked.append((scope_id, manager))
+            else:
+                free.append((scope_id, manager))
+        if not blocked:
+            if (
+                not unscheduled
+                and self._unscheduled_claims(scope_ids)
+                and request not in self._yielded
+            ):
+                # An unscheduled request waiting for one of these scopes can use
+                # the free slot right now, and something in flight may be
+                # waiting for it, so let it go first. Only once, so that a claim
+                # that no one takes cannot hold this request back for good.
+                self._yielded.add(request)
+                return 0.0
+            if self._yielded:
+                self._yielded.discard(request)
+            self._record_reservation(request, scopes)
+            return None
+        if unscheduled and all(
+            self._can_lend_slot(scope_id) for scope_id, _ in blocked
+        ):
+            self._borrow_slots(request, scopes, [scope_id for scope_id, _ in blocked])
+            return None
+        if self._debug:
+            logger.debug(
+                f"Throttling {request} until a concurrency slot frees up "
+                f"(scopes: {scope_ids})"
             )
+        self._wait_for_slot(
+            request,
+            [manager for _, manager in blocked],
+            retry=retry,
+            unscheduled=unscheduled,
+        )
+        # A scope with room while another one holds this request back may have
+        # woken it for a slot it is not going to take, and only one waiter is
+        # woken per freed slot, so that slot would sit unused.
+        for _, manager in free:
+            manager._wake_waiters()
+        return math.inf
+
+    def _wait_for_slot(
+        self,
+        request: Request,
+        managers: list[ThrottlingScopeManager],
+        *,
+        retry: Callable[[], None],
+        unscheduled: bool,
+    ) -> None:
+        """Have *retry* called once any of *managers* frees a concurrency slot
+        or, for an unscheduled *request*, once one of them may have a slot to
+        lend.
+
+        A slot becomes available on
+        :meth:`~ThrottlingScopeManager._record_done` or
+        :meth:`~ThrottlingScopeManager.set_concurrency`, both of which fire the
+        manager event. An unscheduled request may also borrow the slot of a
+        holder that reaches the downloader middlewares (see
+        :meth:`_can_lend_slot`), which fires no manager event, hence the
+        downloader event.
+        """
+        waits = self._waits.setdefault(request, {}).setdefault(retry, [])
+        for manager in managers:
+            waits.append(
+                (manager._slot_available_event(), manager._discard_slot_available_event)
+            )
+        downloader = self._downloader() if unscheduled else None
+        if downloader is not None:
+            waits.append(
+                (
+                    downloader._downloader_middlewares_event(),
+                    downloader._discard_downloader_middlewares_event,
+                )
+            )
+        for event, _ in waits:
+            event.addCallback(lambda _: retry())
+
+    def _stop_waiting(
+        self, request: Request, retry: Callable[[], None] | None = None
+    ) -> bool:
+        """Discard the slot events registered by :meth:`_wait_for_slot` for
+        *retry* of *request*, or for every retry of it, which the next attempt
+        registers again if it still has to wait, and return whether there were
+        any."""
+        if not self._waits:
+            return False
+        by_retry = self._waits.get(request)
+        if not by_retry:
+            return False
+        if retry is None:
+            waits = [wait for retry_waits in by_retry.values() for wait in retry_waits]
+            by_retry.clear()
+        else:
+            waits = by_retry.pop(retry, [])
+        if not by_retry:
+            del self._waits[request]
+        for event, discard in waits:
+            # A fired event is no longer registered.
+            if not event.called:
+                discard(event)
+        return bool(waits)
+
+    def _forget_unscheduled(self, request: Request, scope_ids: list[ScopeID]) -> None:
+        for scope_id in scope_ids:
+            waiters = self._unscheduled_waiters.get(scope_id)
+            if waiters is not None:
+                waiters.discard(request)
+                if not waiters:
+                    del self._unscheduled_waiters[scope_id]
 
     def _record_reservation(self, request: Request, scopes: list[ScopeSlot]) -> None:
         """Record a send on each of *request*'s *scopes* and mark *request* as
@@ -739,6 +844,13 @@ class Throttler(ThrottlerProtocol):
         self._reserved[request] = scopes
 
     def release(self, request: Request) -> None:
+        self._stop_waiting(request)
+        if self._yielded:
+            self._yielded.discard(request)
+        if self._unscheduled_waiters:
+            self._forget_unscheduled(
+                request, request.meta.get(_APPLIED_SCOPES_META_KEY, [])
+            )
         scopes = self._reserved.pop(request, None)
         if not scopes:
             return
@@ -831,7 +943,7 @@ class Throttler(ThrottlerProtocol):
         self._record_reservation(request, scopes)
 
     def _unscheduled_claims(self, scope_ids: list[ScopeID]) -> bool:
-        """Return whether an unscheduled request waiting in :meth:`acquire`
+        """Return whether an unscheduled request that :meth:`acquire` holds back
         could use a free slot of any of *scope_ids* right now, in which case it
         gets it before a request from the scheduler does."""
         if not self._unscheduled_waiters:
@@ -867,61 +979,9 @@ class Throttler(ThrottlerProtocol):
         manager = self._live_scope_manager(scope_id)
         return 0.0 if manager is None else manager._get_load()
 
-    async def _wait_for_slot(
-        self, managers: list[ThrottlingScopeManager], *, unscheduled: bool
-    ) -> None:
-        """Block until any of *managers* frees a concurrency slot or, for an
-        unscheduled request, until one of them may have a slot to lend.
-
-        A slot becomes available on
-        :meth:`~ThrottlingScopeManager._record_done` or
-        :meth:`~ThrottlingScopeManager.set_concurrency`, both of which
-        fire the manager event. An unscheduled request may also borrow the slot
-        of a holder that reaches the downloader middlewares (see
-        :meth:`_can_lend_slot`), which fires no manager event, hence the
-        downloader event.
-
-        Every event is registered before this coroutine gives up control, or one
-        firing in between would go unnoticed.
-        """
-        downloader = self._downloader() if unscheduled else None
-        if downloader is None and len(managers) == 1:
-            # By far the most common case: one scope, and nothing but a freed
-            # slot to wait for. Awaiting the event directly skips building the
-            # bookkeeping that _wait_for_first needs to tell several apart.
-            manager = managers[0]
-            event = manager._slot_available_event()
-            try:
-                await maybe_deferred_to_future(event)
-            except BaseException:
-                # This wait is over without having taken the slot it may have
-                # been woken for; hand that slot to the next waiter.
-                manager._discard_slot_available_event(event)
-                manager._wake_waiters()
-                raise
-            return
-        pairs = [(manager, manager._slot_available_event()) for manager in managers]
-        events = [event for _, event in pairs]
-        middlewares_event: Deferred[None] | None = None
-        if downloader is not None:
-            middlewares_event = downloader._downloader_middlewares_event()
-            events.append(middlewares_event)
-        try:
-            _, pending = await _wait_for_first(events)
-        except BaseException:
-            for manager, event in pairs:
-                manager._discard_slot_available_event(event)
-                manager._wake_waiters()
-            raise
-        for manager, event in pairs:
-            if event in pending:
-                manager._discard_slot_available_event(event)
-        if middlewares_event is not None and middlewares_event in pending:
-            assert downloader is not None
-            downloader._discard_downloader_middlewares_event(middlewares_event)
-
-    async def _delay_request(self, request: Request) -> None:
-        """Hold *request* until the deadline of its :reqmeta:`delay`.
+    def _delay(self, request: Request) -> float:
+        """Return how long to hold *request* for the deadline of its
+        :reqmeta:`delay`.
 
         The wait happens before the request gets a concurrency slot, so it does
         not take one.
@@ -929,20 +989,65 @@ class Throttler(ThrottlerProtocol):
         # A request that skipped the scheduler, e.g. one from
         # ExecutionEngine.download_async(), starts its countdown here.
         _start_delay_countdown(request)
-        countdown = request.meta.pop(_DELAY_DEADLINE_META_KEY, None)
+        countdown = request.meta.get(_DELAY_DEADLINE_META_KEY)
         if countdown is None:
-            return
-        delay, deadline = countdown
+            return 0.0
+        delay, deadline = cast("tuple[float, float]", countdown)
+        now = time.time()
         # A deadline further away than the delay means the clock moved backwards
         # since it was set, which takes a crawl resumed from a disk queue, e.g.
         # on a machine with a lagging clock. Capping keeps the wait to what the
         # delay asked for.
-        wait = min(deadline - time.time(), delay)
+        if deadline - now > delay:
+            deadline = now + delay
+            request.meta[_DELAY_DEADLINE_META_KEY] = (delay, deadline)
+        wait = deadline - now
         if wait <= 0:
-            return
+            del request.meta[_DELAY_DEADLINE_META_KEY]
+            return 0.0
         if self._debug:
             logger.debug(f"Holding {request} for {wait:.2f}s (delay)")
-        await sleep(wait)
+        return wait
+
+
+def _wait_for_throttler(
+    throttler: ThrottlerProtocol, request: Request, *, unscheduled: bool = False
+) -> Deferred[None]:
+    """Return a :class:`~twisted.internet.defer.Deferred` that fires once
+    :meth:`~ThrottlerProtocol.acquire` lets *request* through.
+
+    Cancelling it stops trying, and releases *request*.
+    """
+    timer: CallLaterResult | None = None
+
+    def stop(_: Deferred[None]) -> None:
+        if timer is not None:
+            timer.cancel()
+        throttler.release(request)
+
+    acquired: Deferred[None] = Deferred(stop)
+
+    def attempt() -> None:
+        nonlocal timer
+        # A retry can come late, e.g. from a timer or an event that another
+        # attempt made obsolete.
+        if acquired.called:
+            return
+        if timer is not None:
+            timer.cancel()
+            timer = None
+        try:
+            wait = throttler.acquire(request, retry=attempt, unscheduled=unscheduled)
+        except Exception:
+            acquired.errback()
+            return
+        if wait is None:
+            acquired.callback(None)
+        elif wait != math.inf:
+            timer = call_later(wait, attempt)
+
+    attempt()
+    return acquired
 
 
 class ThrottlingScopeManager:

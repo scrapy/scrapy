@@ -336,7 +336,7 @@ class TestEngineThrottler:
     async def test_acquire_throttler_reruns_the_loop_for_unscheduled(self, engine):
         engine._slot = Mock()
         engine.crawler.throttler = Mock()
-        engine.crawler.throttler.acquire = AsyncMock()
+        engine.crawler.throttler.acquire = Mock(return_value=None)
         request = Request("http://a.example")
 
         await maybe_deferred_to_future(engine._acquire_throttler(request, False))

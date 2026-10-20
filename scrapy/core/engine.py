@@ -31,7 +31,7 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Request, Response
 from scrapy.http.request import _active_crawler_scope
-from scrapy.throttler import _start_delay_countdown
+from scrapy.throttler import _start_delay_countdown, _wait_for_throttler
 from scrapy.utils._stopmode import _max_stop_mode, _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -717,12 +717,6 @@ class ExecutionEngine:
     def _acquire_throttler(self, request: Request, unscheduled: bool) -> Deferred[None]:
         """Wait for the throttler to allow *request* to be sent, tracking it as
         held meanwhile.
-
-        Under the asyncio reactor this costs a task hop per request even when
-        the throttler has nothing to wait for, because that is what turning a
-        coroutine into a :class:`~twisted.internet.defer.Deferred` takes. Skipping
-        it would mean a synchronous "would this block?" throttler API, which is
-        not worth its weight until a profile asks for it.
         """
         throttler = self.crawler.throttler
 
@@ -738,9 +732,7 @@ class ExecutionEngine:
                 self._slot.nextcall.schedule()
             return result
 
-        d: Deferred[None] = deferred_from_coro(
-            throttler.acquire(request, unscheduled=unscheduled)
-        )
+        d = _wait_for_throttler(throttler, request, unscheduled=unscheduled)
         self._throttler_waiting[request] = d
         d.addBoth(released)
         return d

@@ -15,7 +15,6 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     _parallel_asyncio,
-    _wait_for_first,
     call_later,
     is_asyncio_available,
     sleep,
@@ -351,35 +350,3 @@ def test_looping_call_no_asyncio() -> None:
     looping_call = AsyncioLoopingCall(lambda: None)
     with pytest.raises(RuntimeError, match="no running asyncio event loop"):
         looping_call.start(1, now=False)
-
-
-class TestWaitForFirst:
-    @coroutine_test
-    async def test_empty(self):
-        # No deferreds -> two empty sets, returned immediately.
-        assert await _wait_for_first([]) == (set(), set())
-
-    @coroutine_test
-    async def test_returns_done_deferred(self):
-        fired: Deferred[None] = Deferred()
-        fired.callback(None)
-        done, pending = await _wait_for_first([fired], timeout=1)
-        assert done == {fired}
-        assert pending == set()
-
-    @coroutine_test
-    async def test_no_timeout(self):
-        # timeout=None -> no timeout deferred is created.
-        fired: Deferred[None] = Deferred()
-        fired.callback(None)
-        done, pending = await _wait_for_first([fired])
-        assert done == {fired}
-        assert pending == set()
-
-    @coroutine_test
-    async def test_timeout_elapses(self):
-        # When the timeout fires first, every input deferred is still pending.
-        never: Deferred[None] = Deferred()
-        done, pending = await _wait_for_first([never], timeout=0.01)
-        assert done == set()
-        assert pending == {never}
