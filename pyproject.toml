@@ -9,6 +9,7 @@ description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "PyDispatcher>=2.0.5",
     "Twisted>=21.7.0",
+    "aiodns>=3.3.0",
     "aioftp>=0.26.1",
     "aiohttp>=3.13.3",
     'backports.zstd>=1.3.0; python_version < "3.14"',
