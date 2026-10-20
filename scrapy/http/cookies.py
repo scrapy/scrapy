@@ -38,11 +38,12 @@ class _CreationOrderCookieJar(_CookieJar):
         except KeyError:
             cookie._creation_index = next(_creation_indexes)  # type: ignore[attr-defined]
         else:
-            cookie._creation_index = old_cookie._creation_index  # type: ignore[attr-defined]
+            cookie._creation_index = getattr(old_cookie, "_creation_index", -1)  # type: ignore[attr-defined]
         super().set_cookie(cookie)
 
     def _cookie_attrs(self, cookies: list[Cookie]) -> list[str]:
-        cookies.sort(key=lambda c: (-len(c.path), c._creation_index))  # type: ignore[attr-defined]
+        # super() then sorts by path length, and its sort is stable.
+        cookies.sort(key=lambda c: getattr(c, "_creation_index", -1))
         return super()._cookie_attrs(cookies)  # type: ignore[misc,no-any-return]
 
 

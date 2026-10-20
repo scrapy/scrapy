@@ -103,6 +103,27 @@ class TestCookieJar:
         jar.add_cookie_header(request)
         assert request.headers["Cookie"] == expected
 
+    def test_cookie_without_creation_index(self) -> None:
+        jar = CookieJar()
+        url = "https://www.example.com/a/b"
+        for header in ["id=old; Domain=example.com; Path=/", "id=new; Path=/"]:
+            response = Response(url, headers={"Set-Cookie": header})
+            jar.extract_cookies(response, Request(url))
+        # e.g. a cookie added to the jar without going through set_cookie()
+        old_cookie = jar.jar._cookies[".example.com"]["/"]["id"]  # type: ignore[attr-defined]
+        del old_cookie._creation_index
+        request = Request(url)
+        jar.add_cookie_header(request)
+        assert request.headers["Cookie"] == b"id=old; id=new"
+
+        response = Response(
+            url, headers={"Set-Cookie": "id=updated; Domain=example.com; Path=/"}
+        )
+        jar.extract_cookies(response, Request(url))
+        request = Request(url)
+        jar.add_cookie_header(request)
+        assert request.headers["Cookie"] == b"id=updated; id=new"
+
 
 class TestWrappedRequest:
     def setup_method(self):
