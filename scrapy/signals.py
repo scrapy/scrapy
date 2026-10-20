@@ -5,31 +5,40 @@ These signals are documented in docs/topics/signals.rst. Please don't add new
 signals here without documenting them there.
 """
 
-engine_started = object()
-engine_stopped = object()
-scheduler_empty = object()
-spider_opened = object()
-spider_idle = object()
-spider_closed = object()
-spider_error = object()
-memusage_warning_reached = object()
-request_scheduled = object()
-request_dropped = object()
-request_reached_downloader = object()
-request_left_downloader = object()
-response_received = object()
-response_downloaded = object()
-headers_received = object()
-bytes_received = object()
-robots_parsed = object()
-item_scraped = object()
-item_dropped = object()
-item_error = object()
-feed_slot_closed = object()
-feed_exporter_closed = object()
-feed_slots_initialized = object()
-spider_state_loaded = object()
-spider_state_saving = object()
+
+class _Signal:
+    def __init__(self, name: str):
+        self.name = name
+
+    def __repr__(self) -> str:
+        return f"scrapy.signals.{self.name}"
+
+
+engine_started = _Signal("engine_started")
+engine_stopped = _Signal("engine_stopped")
+scheduler_empty = _Signal("scheduler_empty")
+spider_opened = _Signal("spider_opened")
+spider_idle = _Signal("spider_idle")
+spider_closed = _Signal("spider_closed")
+spider_error = _Signal("spider_error")
+memusage_warning_reached = _Signal("memusage_warning_reached")
+request_scheduled = _Signal("request_scheduled")
+request_dropped = _Signal("request_dropped")
+request_reached_downloader = _Signal("request_reached_downloader")
+request_left_downloader = _Signal("request_left_downloader")
+response_received = _Signal("response_received")
+response_downloaded = _Signal("response_downloaded")
+headers_received = _Signal("headers_received")
+bytes_received = _Signal("bytes_received")
+robots_parsed = _Signal("robots_parsed")
+item_scraped = _Signal("item_scraped")
+item_dropped = _Signal("item_dropped")
+item_error = _Signal("item_error")
+feed_slot_closed = _Signal("feed_slot_closed")
+feed_exporter_closed = _Signal("feed_exporter_closed")
+feed_slots_initialized = _Signal("feed_slots_initialized")
+spider_state_loaded = _Signal("spider_state_loaded")
+spider_state_saving = _Signal("spider_state_saving")
 
 _signal_args: dict[object, frozenset[str]] = {
     engine_started: frozenset(),
