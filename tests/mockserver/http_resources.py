@@ -296,6 +296,16 @@ class RedirectTo(LeafResource):
         return b"redirecting..."
 
 
+class Created(LeafResource):
+    """Emulate a server that creates a resource on the fly, reporting it with an
+    empty 201 response that points at the created resource through Location."""
+
+    def render(self, request: Request) -> bytes:
+        request.setResponseCode(201)
+        request.setHeader(b"Location", getarg(request, b"goto", b"/"))
+        return b""
+
+
 class Partial(LeafResource):
     def render_GET(self, request: Request) -> int:
         request.setHeader(b"Content-Length", b"1024")
@@ -488,13 +498,26 @@ _connection_ids = itertools.count()
 
 
 class ConnectionId(LeafResource):
-    """Return the identifier of the connection serving the request.
+    """Return the identifier of the connection serving the request, after the
+    number of seconds given in the ``delay`` argument.
 
     Two responses carrying the same identifier were served over the same
     connection, which lets tests tell connection reuse from reconnection.
     """
 
-    def render_GET(self, request: Request) -> bytes:
+    def render_GET(self, request: Request) -> int | bytes:
+        delay = getarg(request, b"delay", 0, type_=float)
+        if not delay:
+            return self._connection_id(request)
+        self.deferRequest(request, delay, self._delayedRender, request)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request: Request) -> None:
+        request.write(self._connection_id(request))
+        request.finish()
+
+    @staticmethod
+    def _connection_id(request: Request) -> bytes:
         # under HTTP/2 the channel of a request is its stream, so the
         # connection has to be reached through it
         channel: Any = getattr(request.channel, "_conn", request.channel)

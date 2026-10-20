@@ -50,19 +50,16 @@ class LegacyFileStorage(FileFeedStorage):
 class TestFeedMode:
     """End-to-end tests of the mode feed option and the FEED_MODE setting."""
 
-    @pytest.fixture(autouse=True)
-    def _setup(self, mockserver: MockServer, tmp_path: Path) -> None:
-        self.mockserver = mockserver
-        self.temp_dir = tmp_path
-
-    def _path(self, content: bytes | None = None) -> Path:
-        path = self.temp_dir / "items.jl"
+    @staticmethod
+    def _path(tmp_path: Path, content: bytes | None = None) -> Path:
+        path = tmp_path / "items.jl"
         if content is not None:
             path.write_bytes(content)
         return path
 
+    @staticmethod
     async def _crawl(
-        self,
+        mockserver: MockServer,
         path: Path,
         mode: str | None = None,
         settings: dict[str, Any] | None = None,
@@ -83,22 +80,24 @@ class TestFeedMode:
         else:
             uri = printf_escape(path_to_url(path))
         return await crawl_items(
-            self.mockserver,
+            mockserver,
             [{"foo": "bar"}] * item_count,
             {"FEEDS": {uri: feed_options}, **(settings or {})},
         )
 
     @coroutine_test
-    async def test_create(self) -> None:
-        path = self._path()
-        await self._crawl(path, "create")
+    async def test_create(self, mockserver: MockServer, tmp_path: Path) -> None:
+        path = self._path(tmp_path)
+        await self._crawl(mockserver, path, "create")
         assert path.read_bytes() == b'{"foo": "bar"}\n'
 
     @coroutine_test
-    async def test_create_existing(self, caplog: pytest.LogCaptureFixture) -> None:
-        path = self._path(b"old content")
+    async def test_create_existing(
+        self, mockserver: MockServer, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        path = self._path(tmp_path, b"old content")
         with caplog.at_level(logging.ERROR):
-            crawler = await self._crawl(path, "create", item_count=3)
+            crawler = await self._crawl(mockserver, path, "create", item_count=3)
         assert path.read_bytes() == b"old content"
         # Reported once, not once per item.
         assert caplog.text.count("because it already exists") == 1
@@ -108,13 +107,15 @@ class TestFeedMode:
         assert "feedexport/success_count/FileFeedStorage" not in stats
 
     @coroutine_test
-    async def test_create_existing_multiple_feeds(self) -> None:
+    async def test_create_existing_multiple_feeds(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
         """A conflicting target only affects its own feed: the crawl runs and
         the other feeds are written."""
-        existing = self._path(b"old content")
-        missing = self.temp_dir / "missing.jl"
+        existing = self._path(tmp_path, b"old content")
+        missing = tmp_path / "missing.jl"
         crawler = await crawl_items(
-            self.mockserver,
+            mockserver,
             [{"foo": "bar"}],
             {
                 "FEEDS": {
@@ -133,15 +134,17 @@ class TestFeedMode:
         assert stats.get("finish_reason") == "finished"
 
     @coroutine_test
-    async def test_create_existing_all_feeds(self, caplog: pytest.LogCaptureFixture):
+    async def test_create_existing_all_feeds(
+        self, mockserver: MockServer, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """A crawl that cannot write any feed still runs, like any other crawl
         whose feeds cannot be written."""
-        existing1 = self._path(b"old content")
-        existing2 = self.temp_dir / "items2.jl"
+        existing1 = self._path(tmp_path, b"old content")
+        existing2 = tmp_path / "items2.jl"
         existing2.write_bytes(b"old content")
         with caplog.at_level(logging.ERROR):
             crawler = await crawl_items(
-                self.mockserver,
+                mockserver,
                 [{"foo": "bar"}],
                 {
                     "FEEDS": {
@@ -161,36 +164,44 @@ class TestFeedMode:
         assert "feedexport/success_count/FileFeedStorage" not in stats
 
     @coroutine_test
-    async def test_overwrite_existing(self) -> None:
-        path = self._path(b"old content")
-        await self._crawl(path, "overwrite")
+    async def test_overwrite_existing(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        path = self._path(tmp_path, b"old content")
+        await self._crawl(mockserver, path, "overwrite")
         assert path.read_bytes() == b'{"foo": "bar"}\n'
 
     @coroutine_test
-    async def test_append_existing(self) -> None:
-        path = self._path(b"old content\n")
-        await self._crawl(path, "append")
+    async def test_append_existing(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        path = self._path(tmp_path, b"old content\n")
+        await self._crawl(mockserver, path, "append")
         assert path.read_bytes() == b'old content\n{"foo": "bar"}\n'
 
     @coroutine_test
-    async def test_unset_mode(self) -> None:
-        path = self._path()
+    async def test_unset_mode(self, mockserver: MockServer, tmp_path: Path) -> None:
+        path = self._path(tmp_path)
         with pytest.warns(ScrapyDeprecationWarning, match="FEED_MODE"):
-            await self._crawl(path, settings={"FEED_MODE": None})
+            await self._crawl(mockserver, path, settings={"FEED_MODE": None})
         assert path.read_bytes() == b'{"foo": "bar"}\n'
 
     @coroutine_test
-    async def test_unset_mode_existing_target(self) -> None:
-        path = self._path(b"old content\n")
+    async def test_unset_mode_existing_target(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        path = self._path(tmp_path, b"old content\n")
         with pytest.warns(ScrapyDeprecationWarning, match="FEED_MODE"):
-            await self._crawl(path, settings={"FEED_MODE": None})
+            await self._crawl(mockserver, path, settings={"FEED_MODE": None})
         # The legacy behavior is kept.
         assert path.read_bytes() == b'old content\n{"foo": "bar"}\n'
 
     @coroutine_test
-    async def test_explicit_mode_existing_target(self, recwarn) -> None:
-        path = self._path(b"old content\n")
-        await self._crawl(path, "append")
+    async def test_explicit_mode_existing_target(
+        self, mockserver: MockServer, tmp_path: Path, recwarn
+    ) -> None:
+        path = self._path(tmp_path, b"old content\n")
+        await self._crawl(mockserver, path, "append")
         assert not [
             warning
             for warning in recwarn
@@ -200,24 +211,25 @@ class TestFeedMode:
 
     @coroutine_test
     async def test_create_existing_later_batch(
-        self, caplog: pytest.LogCaptureFixture
+        self, mockserver: MockServer, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
         """When the target of a later batch exists, that batch is skipped, and
         the following ones are still written."""
-        (self.temp_dir / "items-2.jl").write_bytes(b"old content")
+        (tmp_path / "items-2.jl").write_bytes(b"old content")
         with caplog.at_level(logging.ERROR):
             crawler = await self._crawl(
-                self.temp_dir / "items-%(batch_id)d.jl",
+                mockserver,
+                tmp_path / "items-%(batch_id)d.jl",
                 "create",
                 {"FEED_EXPORT_BATCH_ITEM_COUNT": 1},
                 item_count=3,
             )
-        assert (self.temp_dir / "items-1.jl").read_bytes() == b'{"foo": "bar"}\n'
-        assert (self.temp_dir / "items-2.jl").read_bytes() == b"old content"
+        assert (tmp_path / "items-1.jl").read_bytes() == b'{"foo": "bar"}\n'
+        assert (tmp_path / "items-2.jl").read_bytes() == b"old content"
         # The skipped items are counted, so the following batch covers the same
         # items that it would have covered otherwise.
-        assert (self.temp_dir / "items-3.jl").read_bytes() == b'{"foo": "bar"}\n'
-        assert not (self.temp_dir / "items-4.jl").exists()
+        assert (tmp_path / "items-3.jl").read_bytes() == b'{"foo": "bar"}\n'
+        assert not (tmp_path / "items-4.jl").exists()
         # A single error, instead of one per item after the conflicting one.
         assert caplog.text.count("because it already exists") == 1
         assert crawler.stats
@@ -228,27 +240,26 @@ class TestFeedMode:
 
     @coroutine_test
     async def test_create_existing_later_batch_delayed(
-        self, caplog: pytest.LogCaptureFixture
+        self, mockserver: MockServer, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
         """When the feed is only delivered at the end of each batch, the
         conflict is detected then, and only that batch is lost."""
-        (self.temp_dir / "items-2.jl").write_bytes(b"old content")
+        (tmp_path / "items-2.jl").write_bytes(b"old content")
         with caplog.at_level(logging.ERROR):
             crawler = await self._crawl(
-                self.temp_dir / "items-%(batch_id)d.jl",
+                mockserver,
+                tmp_path / "items-%(batch_id)d.jl",
                 "create",
                 {
                     "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
-                    "FEED_STORAGES": {
-                        "delayed": "tests.test_feedexport_mode.DelayedFileStorage"
-                    },
+                    "FEED_STORAGES": {"delayed": DelayedFileStorage},
                 },
                 item_count=3,
                 scheme="delayed",
             )
-        assert (self.temp_dir / "items-1.jl").read_bytes() == b'{"foo": "bar"}\n'
-        assert (self.temp_dir / "items-2.jl").read_bytes() == b"old content"
-        assert (self.temp_dir / "items-3.jl").read_bytes() == b'{"foo": "bar"}\n'
+        assert (tmp_path / "items-1.jl").read_bytes() == b'{"foo": "bar"}\n'
+        assert (tmp_path / "items-2.jl").read_bytes() == b"old content"
+        assert (tmp_path / "items-3.jl").read_bytes() == b'{"foo": "bar"}\n'
         assert caplog.text.count("because it already exists") == 1
         assert crawler.stats
         stats = crawler.stats.get_stats()
@@ -257,20 +268,24 @@ class TestFeedMode:
         assert stats.get("feedexport/success_count/DelayedFileStorage") == 2
 
     @coroutine_test
-    async def test_feed_mode_setting(self) -> None:
-        path = self._path(b"old content")
-        await self._crawl(path, settings={"FEED_MODE": "overwrite"})
+    async def test_feed_mode_setting(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        path = self._path(tmp_path, b"old content")
+        await self._crawl(mockserver, path, settings={"FEED_MODE": "overwrite"})
         assert path.read_bytes() == b'{"foo": "bar"}\n'
 
     @coroutine_test
-    async def test_mode_overrides_feed_mode_setting(self) -> None:
-        path = self._path(b"old content\n")
-        await self._crawl(path, "append", {"FEED_MODE": "overwrite"})
+    async def test_mode_overrides_feed_mode_setting(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        path = self._path(tmp_path, b"old content\n")
+        await self._crawl(mockserver, path, "append", {"FEED_MODE": "overwrite"})
         assert path.read_bytes() == b'old content\n{"foo": "bar"}\n'
 
 
 class TestFeedModeInit:
-    def test_invalid_mode(self):
+    def test_invalid_mode(self) -> None:
         """An invalid mode prevents the crawl from running."""
         settings = {
             "FEEDS": {"file:///tmp/items.json": {"format": "json", "mode": "x"}}
@@ -278,12 +293,10 @@ class TestFeedModeInit:
         with pytest.raises(ValueError, match="Invalid feed mode: 'x'"):
             get_crawler(settings_dict=settings)
 
-    def test_unsupported_mode(self):
+    def test_unsupported_mode(self) -> None:
         settings = {
             "FEEDS": {"file:///tmp/items.json": {"format": "json"}},
-            "FEED_STORAGES": {
-                "file": "tests.test_feedexport_mode.CreateOnlyFileStorage"
-            },
+            "FEED_STORAGES": {"file": CreateOnlyFileStorage},
             "FEED_MODE": "append",
         }
         with pytest.raises(
@@ -292,20 +305,22 @@ class TestFeedModeInit:
         ):
             get_crawler(settings_dict=settings)
 
-    def test_undeclared_mode_support(self, caplog: pytest.LogCaptureFixture):
+    def test_undeclared_mode_support(self, caplog: pytest.LogCaptureFixture) -> None:
         settings = {
             "FEEDS": {"file:///tmp/items.json": {"format": "json"}},
-            "FEED_STORAGES": {"file": "tests.test_feedexport_mode.LegacyFileStorage"},
+            "FEED_STORAGES": {"file": LegacyFileStorage},
             "FEED_MODE": "create",
         }
         with caplog.at_level(logging.WARNING):
             get_crawler(settings_dict=settings)
         assert "does not declare which feed modes it supports" in caplog.text
 
-    def test_undeclared_mode_support_unset_mode(self, caplog: pytest.LogCaptureFixture):
+    def test_undeclared_mode_support_unset_mode(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         settings = {
             "FEEDS": {"file:///tmp/items.json": {"format": "json"}},
-            "FEED_STORAGES": {"file": "tests.test_feedexport_mode.LegacyFileStorage"},
+            "FEED_STORAGES": {"file": LegacyFileStorage},
             "FEED_MODE": None,
         }
         with (

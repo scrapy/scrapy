@@ -95,11 +95,6 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
             crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         )
         self._proxy_auth_encoding: str = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
-        # these are useful for many handlers but used in different ways by them
-        self._pool_size_total: int = crawler.settings.getint("CONCURRENT_REQUESTS")
-        self._pool_size_per_host: int = crawler.settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
 
     @abstractmethod
     def _make_request(
