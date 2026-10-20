@@ -14,6 +14,7 @@ from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from urllib.parse import urlparse
 
+import aiodns
 import pytest
 from cryptography.x509 import load_der_x509_certificate
 from twisted.internet.defer import DeferredList
@@ -600,6 +601,16 @@ class TestHttpBase(ABC):
         # httpx goes through anyio and asyncio, which look socket.getaddrinfo
         # up when resolving.
         monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo)
+
+        real_aiodns_getaddrinfo = aiodns.DNSResolver.getaddrinfo
+
+        def aiodns_getaddrinfo(self, host, *args, **kwargs):
+            return real_aiodns_getaddrinfo(self, "127.0.0.1", *args, **kwargs)
+
+        # aiohttp resolves through aiodns (when it is installed), which uses
+        # c-ares instead of socket.getaddrinfo.
+        monkeypatch.setattr(aiodns.DNSResolver, "getaddrinfo", aiodns_getaddrinfo)
+
         previous = None
         if is_reactor_installed():
             # Twisted resolves through a GAIResolver that bound
