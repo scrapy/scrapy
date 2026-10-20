@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import ipaddress
+import socket
 import ssl
+import sys
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, ClassVar, cast
 
@@ -25,12 +27,28 @@ from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from aiohttp.abc import ResolveResult
     from aiohttp.client_proto import ResponseHandler
     from aiohttp.client_reqrep import ClientRequest
     from aiohttp.tracing import Trace
 
     from scrapy import Request
     from scrapy.crawler import Crawler
+
+
+class _AsyncResolver(aiohttp.AsyncResolver):
+    """Resolves only the host and sets the requested port on the results.
+
+    Workaround for https://github.com/c-ares/c-ares/issues/1374.
+    """
+
+    async def resolve(
+        self, host: str, port: int = 0, family: socket.AddressFamily = socket.AF_INET
+    ) -> list[ResolveResult]:
+        results = await super().resolve(host, 0, family)
+        for result in results:
+            result["port"] = port
+        return results
 
 
 class _TCPConnector(aiohttp.TCPConnector):
@@ -87,7 +105,11 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
         self._ssl_context: ssl.SSLContext = _make_ssl_context(crawler.settings)
+        self._resolver: _AsyncResolver | None = (
+            _AsyncResolver() if sys.platform == "win32" else None
+        )
         connector = _TCPConnector(
+            resolver=self._resolver,
             local_addr=self._bind_address,
             # hard limit on open connections, idle ones included
             limit=self._pool_size_total,
@@ -204,3 +226,5 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     async def close(self) -> None:
         await self._session.close()
+        if self._resolver is not None:
+            await self._resolver.close()
