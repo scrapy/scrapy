@@ -8,6 +8,8 @@ import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
+from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
@@ -798,6 +800,81 @@ class TestRequestsDuringClose:
         assert crawler.stats.get_value("scheduler/enqueued") is None
 
 
+class TestDownloadHandlersClose:
+    """The download handlers are closed with the downloader, also when the
+    engine is never started."""
+
+    @pytest.fixture
+    def closes(self) -> list[None]:
+        return []
+
+    @pytest.fixture
+    def settings(self, closes: list[None]) -> dict[str, Any]:
+        class Handler(DataURIDownloadHandler):
+            async def close(self) -> None:
+                closes.append(None)
+
+        return {"DOWNLOAD_HANDLERS": {"data": Handler}}
+
+    @coroutine_test
+    async def test_crawl(self, settings: dict[str, Any], closes: list[None]) -> None:
+        crawler = get_crawler(DefaultSpider, settings)
+        await crawler.crawl_async()
+        assert len(closes) == 1
+
+    @coroutine_test
+    async def test_crawl_custom_downloader(
+        self, settings: dict[str, Any], closes: list[None]
+    ) -> None:
+        """The handlers of a custom downloader that does not subclass the
+        default one are closed when the engine stops."""
+
+        class CustomDownloader:
+            def __init__(self, crawler: Crawler) -> None:
+                self.active: set[Request] = set()
+                self.handlers = DownloadHandlers(crawler)
+
+            def fetch(self, request: Request) -> Deferred[Response]:
+                raise NotImplementedError
+
+            def needs_backout(self) -> bool:
+                return False
+
+            def close(self) -> None:
+                pass
+
+        crawler = get_crawler(
+            DefaultSpider, {**settings, "DOWNLOADER": CustomDownloader}
+        )
+        await crawler.crawl_async()
+        assert len(closes) == 1
+
+    @coroutine_test
+    async def test_close_while_opening(
+        self, settings: dict[str, Any], closes: list[None]
+    ) -> None:
+        crawler = get_crawler(DefaultSpider, settings)
+
+        async def spider_opened(**kwargs: Any) -> None:
+            assert crawler.engine is not None
+            await crawler.engine.download_async(Request("data:,"))
+            raise CloseSpider("early")
+
+        crawler.signals.connect(spider_opened, signals.spider_opened)
+        await crawler.crawl_async()
+        assert crawler.engine is not None
+        assert_state(crawler.engine, EngineState.STOPPED)
+        assert len(closes) == 1
+
+    @coroutine_test
+    async def test_close_created(
+        self, settings: dict[str, Any], closes: list[None]
+    ) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider, settings))
+        await engine.close_async()
+        assert len(closes) == 1
+
+
 class TestInvalidTransitions:
     """Calls that the state does not allow raise instead of transitioning, and
     a transition that the transition table does not allow is logged."""
@@ -811,7 +888,7 @@ class TestInvalidTransitions:
             engine._transition_to(EngineState.RUNNING)
         assert "Invalid engine state transition: CREATED → RUNNING" in caplog.text
         assert_state(engine, EngineState.RUNNING)
-        engine.downloader.close()
+        await engine.downloader._close_async()
 
     @coroutine_test
     async def test_stop_not_opened(self) -> None:
@@ -819,7 +896,7 @@ class TestInvalidTransitions:
         engine = ExecutionEngine(crawler)
         with pytest.raises(RuntimeError, match="Spider not opened"):
             await engine.stop_async()
-        engine.downloader.close()
+        await engine.close_async()
 
     @coroutine_test
     async def test_double_open(self) -> None:
@@ -886,7 +963,7 @@ class TestInvalidTransitions:
         engine = ExecutionEngine(crawler)
         with pytest.raises(RuntimeError, match="Spider not opened"):
             await engine.close_spider_async()
-        engine.downloader.close()
+        await engine.close_async()
 
 
 class TestCloseAsync:
@@ -899,6 +976,25 @@ class TestCloseAsync:
         engine.downloader.close = Mock(wraps=engine.downloader.close)  # type: ignore[method-assign]
         await engine.close_async()
         assert_state(engine, EngineState.STOPPED)
+        engine.downloader.close.assert_called()
+
+    @coroutine_test
+    async def test_created_custom_downloader(self) -> None:
+        """A custom downloader that does not subclass the default one is closed
+        too."""
+
+        class CustomDownloader:
+            def __init__(self, crawler: Crawler) -> None:
+                self.close = Mock()
+
+            def fetch(self, request: Request) -> Deferred[Response]:
+                raise NotImplementedError
+
+        crawler = get_crawler(DefaultSpider, {"DOWNLOADER": CustomDownloader})
+        engine = ExecutionEngine(crawler)
+        await engine.close_async()
+        assert_state(engine, EngineState.STOPPED)
+        assert isinstance(engine.downloader, CustomDownloader)
         engine.downloader.close.assert_called()
 
     @coroutine_test
@@ -961,7 +1057,7 @@ class TestDeprecated:
         ):
             engine.running = True
         assert engine.running is False  # setting it has no effect
-        engine.downloader.close()
+        await engine.close_async()
 
     @coroutine_test
     async def test_spider_closed_callback(self) -> None:

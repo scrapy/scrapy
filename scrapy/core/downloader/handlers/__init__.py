@@ -80,6 +80,7 @@ class DownloadHandlers:
         self._notconfigured: dict[str, str] = {}
         # remembers handlers with Deferred-based download_request()
         self._old_style_handlers: set[str] = set()
+        self._closed: bool = False
         scheme_handlers: dict[str, str | Callable[..., Any]] = without_none_values(
             cast(
                 "dict[str, str | Callable[..., Any]]",
@@ -103,6 +104,9 @@ class DownloadHandlers:
             self._paths[handler_id] = clspath
             self._load_handler(handler_id, skip_lazy=True)
 
+        # Downloader closes the handlers when the engine closes it. This signal
+        # handler closes them for custom downloaders that don't subclass the
+        # default one.
         crawler.signals.connect(self._close, signals.engine_stopped)
 
     def _get_handler(self, handler_id: str) -> DownloadHandlerProtocol | None:
@@ -242,6 +246,9 @@ class DownloadHandlers:
         return response
 
     async def _close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         for dh in self._handlers.values():
             if not hasattr(dh, "close"):  # pragma: no cover
                 warnings.warn(
