@@ -11,6 +11,8 @@ import inspect
 import itertools
 import secrets
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -34,14 +36,66 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Generator, Iterable, Mapping
 
     from twisted.python.failure import Failure
 
     # circular import
+    from scrapy.crawler import Crawler
     from scrapy.http import Response
 
     CallbackT: TypeAlias = Callable[Concatenate[Response, ...], Any]
+
+
+# Crawler for the callback, coroutine pipeline method or Spider.start()
+# call currently executing, if any. Lets Request.__await__() schedule
+# itself without needing a crawler reference passed in explicitly.
+_active_crawler: ContextVar[Crawler | None] = ContextVar(
+    "_active_crawler", default=None
+)
+
+# Whether a download handler's download_request() is currently executing.
+# Download handlers must never await a Request or call download_async(),
+# so Request.__await__() checks this instead of just relying on whatever
+# _active_crawler happens to be set to.
+_in_download_handler: ContextVar[bool] = ContextVar(
+    "_in_download_handler", default=False
+)
+
+
+@contextmanager
+def _active_crawler_scope(crawler: Crawler) -> Generator[None, None, None]:
+    """Set _active_crawler to *crawler* for the duration of the block.
+
+    Restores the previous value with set() instead of reset(): on some
+    supported Twisted versions, the code after an ``await`` may resume in
+    a copied contextvars.Context, where the token from the original set()
+    is invalid. The block may also be exited from an unrelated context, e.g.
+    when an abandoned coroutine is garbage-collected, so the previous value
+    is only restored where the value set here is still in place.
+    """
+    previous = _active_crawler.get()
+    _active_crawler.set(crawler)
+    try:
+        yield
+    finally:
+        if _active_crawler.get() is crawler:
+            _active_crawler.set(previous)
+
+
+@contextmanager
+def _in_download_handler_scope() -> Generator[None, None, None]:
+    """Set _in_download_handler to True for the duration of the block.
+
+    See _active_crawler_scope() for how the previous value is restored.
+    """
+    previous = _in_download_handler.get()
+    _in_download_handler.set(True)
+    try:
+        yield
+    finally:
+        if _in_download_handler.get():
+            _in_download_handler.set(previous)
 
 
 class VerboseCookie(TypedDict):
@@ -395,6 +449,31 @@ class Request(object_ref):
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
+
+    def __await__(self) -> Generator[Any, None, Response]:
+        """Send this request and return its response.
+
+        .. versionadded:: VERSION
+
+        See :ref:`inline-requests`.
+        """
+        if _in_download_handler.get():
+            raise RuntimeError(
+                "Request objects cannot be awaited from a download "
+                "handler; see DownloadHandlerProtocol"
+            )
+        if self.callback not in (None, NO_CALLBACK) or self.errback is not None:
+            raise ValueError(
+                "Cannot await a Request that has a callback or an errback set"
+            )
+        crawler = _active_crawler.get()
+        if crawler is None:
+            raise RuntimeError(
+                "Request objects can only be awaited from where coroutine "
+                "syntax is supported (see the Scrapy coroutines docs)"
+            )
+        self.callback = NO_CALLBACK
+        return crawler.engine.download_async(self).__await__()
 
     def copy(self) -> Self:
         return self.replace()

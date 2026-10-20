@@ -70,7 +70,8 @@ defines one or more of these methods:
 .. class:: DownloaderMiddleware
 
    .. note::  Any of the downloader middleware methods may be defined as a
-        coroutine function (``async def``).
+        coroutine function (``async def``), which lets it :ref:`send a
+        request of its own <mw-download>` before deciding what to return.
 
    .. method:: process_request(request)
 
@@ -180,34 +181,24 @@ another one, e.g. to fetch something that the request it is processing needs.
 The built-in :ref:`robots.txt middleware <topics-dlmw-robots>` does that: it
 holds each request while it downloads the ``robots.txt`` file of its website.
 
-Use :meth:`crawler.engine.download_async()
-<scrapy.core.engine.ExecutionEngine.download_async>` for that:
+:ref:`Await the request <inline-requests>` for that:
 
 .. code-block:: python
 
     from scrapy import Request
-    from scrapy.http.request import NO_CALLBACK
 
 
     class TokenMiddleware:
-        def __init__(self, crawler):
-            self.crawler = crawler
+        def __init__(self):
             self.token = None
-
-        @classmethod
-        def from_crawler(cls, crawler):
-            return cls(crawler)
 
         async def process_request(self, request):
             if request.meta.get("dont_obey_robotstxt"):
                 return
             if self.token is None:
-                response = await self.crawler.engine.download_async(
-                    Request(
-                        "https://example.com/token",
-                        callback=NO_CALLBACK,
-                        meta={"dont_obey_robotstxt": True},
-                    )
+                response = await Request(
+                    "https://example.com/token",
+                    meta={"dont_obey_robotstxt": True},
                 )
                 self.token = response.text
             request.headers["Authorization"] = self.token
