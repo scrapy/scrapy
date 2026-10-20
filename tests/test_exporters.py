@@ -175,6 +175,20 @@ class TestBaseItemExporter(ABC):
             "age": "24",
         }
 
+    @pytest.mark.parametrize("export_empty_fields", [False, True])
+    @pytest.mark.parametrize("as_list", [False, True])
+    def test_nested_item_empty_fields(self, export_empty_fields, as_list):
+        nested = CustomFieldItem(name="Nested\xa3")
+        item = MyItem(name="Top", age=[nested] if as_list else nested)
+        ie = self._get_exporter(export_empty_fields=export_empty_fields)
+        expected: dict[str, str | None] = {"name": "Nested\xa3"}
+        if export_empty_fields:
+            expected["age"] = None
+        assert dict(ie.get_serialized_fields(item)) == {
+            "name": "Top",
+            "age": [expected] if as_list else expected,
+        }
+
 
 class TestPythonItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs: Any) -> PythonItemExporter:

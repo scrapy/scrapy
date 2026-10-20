@@ -89,8 +89,12 @@ class BaseItemExporter(ABC):
                 else self._get_populated_field_names(adapter)
             )
             return {
-                name: self.serialize_field(
-                    adapter.get_field_meta(name), name, adapter[name]
+                name: (
+                    self.serialize_field(
+                        adapter.get_field_meta(name), name, adapter[name]
+                    )
+                    if name in adapter
+                    else None
                 )
                 for name in field_names
             }
