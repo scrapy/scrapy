@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-from unittest import TestCase, TextTestResult
+from unittest import TestCase, TextTestResult, TextTestRunner
 
 import pytest
 from twisted.python import failure
@@ -867,7 +867,8 @@ class PostProcessErrorContract(Contract):
 
 class _TrackingTestResult(TextTestResult):
     def __init__(self) -> None:
-        super().__init__(stream=None, descriptions=False, verbosity=0)  # type: ignore[type-var]
+        runner = TextTestRunner(descriptions=False, verbosity=0)
+        super().__init__(runner.stream, runner.descriptions, runner.verbosity)
         self.stopped_tests: list[TestCase] = []
 
     def stopTest(self, test: TestCase) -> None:
