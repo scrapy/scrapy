@@ -53,6 +53,7 @@ from tests import IDNA_REJECTED_HOSTNAMES, NON_EXISTING_RESOLVABLE
 from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.proxy_stalling import StallingProxy
+from tests.mockserver.raw_http import RawHttpServer
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import (
     BytesReceivedCallbackSpider,
@@ -75,6 +76,7 @@ if TYPE_CHECKING:
 
 BadHeaderHandling = Literal["skip-bad", "skip-rest", "fail"]
 NonUtf8RequestHeaderHandling = Literal["send", "replace"]
+HeaderNameCase = Literal["as-is", "canonical"]
 
 
 class TestHttpBase(ABC):
@@ -105,6 +107,15 @@ class TestHttpBase(ABC):
     #         follow it;
     # "fail": the response cannot be downloaded at all.
     handler_bad_header_handling: BadHeaderHandling = "skip-bad"
+    # How the handler writes request header names over HTTP/1.1, compared to
+    # their spelling in Request.headers:
+    # "as-is": unchanged;
+    # "canonical": in the canonical form of Twisted's Headers, e.g. "X-Api-Key"
+    #         for "x-API-key" and "DNT" for "dnt".
+    handler_request_header_name_case: HeaderNameCase = "as-is"
+    # How the handler spells response header names in Response.headers,
+    # compared to their spelling on the wire, with the same options as above.
+    handler_response_header_name_case: HeaderNameCase = "as-is"
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
     default_handler_settings: ClassVar[dict[str, Any]] = {}
@@ -396,6 +407,50 @@ class TestHttpBase(ABC):
         replaced = self.handler_non_utf8_request_header_handling == "replace"
         assert received == [b"caf\xef\xbf\xbd" if replaced else b"caf\xe9"]
         assert ("is not valid UTF-8" in caplog.text) == replaced
+
+    @coroutine_test
+    async def test_request_header_name_case(self) -> None:
+        if self.is_secure:
+            pytest.skip("RawHttpServer only supports plain HTTP")
+        with RawHttpServer() as server:
+            request = Request(server.url, headers={"x-API-key": "a", "dnt": "1"})
+            async with self.get_dh() as download_handler:
+                await download_handler.download_request(request)
+        sent = sorted(
+            name
+            for name in server.request_header_names()
+            if name.lower() in {b"x-api-key", b"dnt"}
+        )
+        expected = {
+            "as-is": [b"dnt", b"x-API-key"],
+            "canonical": [b"DNT", b"X-Api-Key"],
+        }
+        assert sent == expected[self.handler_request_header_name_case]
+
+    @coroutine_test
+    async def test_response_header_name_case(self) -> None:
+        if self.is_secure:
+            pytest.skip("RawHttpServer only supports plain HTTP")
+        response_headers = [
+            (b"x-custom-HEADER", b"a"),
+            (b"etag", b'"b"'),
+            (b"X-Custom-Header", b"c"),
+        ]
+        with RawHttpServer(response_headers) as server:
+            async with self.get_dh() as download_handler:
+                response = await download_handler.download_request(Request(server.url))
+        received = sorted(
+            name
+            for name in response.headers
+            if name.lower() in {b"x-custom-header", b"etag"}
+        )
+        expected = {
+            # differently-cased names are stored with the first spelling
+            "as-is": [b"etag", b"x-custom-HEADER"],
+            "canonical": [b"ETag", b"X-Custom-Header"],
+        }
+        assert received == expected[self.handler_response_header_name_case]
+        assert response.headers.getlist("X-Custom-Header") == [b"a", b"c"]
 
     @coroutine_test
     async def test_server_receives_no_extra_headers(

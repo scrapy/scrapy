@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from twisted.web.iweb import IPolicyForHTTPS
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
+    from tests.utils.bases.download_handlers_http import HeaderNameCase
 
 
 pytestmark = pytest.mark.requires_reactor  # HTTP11DownloadHandler requires a reactor
@@ -99,6 +100,8 @@ class HTTP11DownloadHandlerMixin:
         }
 
     handler_supports_custom_content_length = False
+    handler_request_header_name_case: HeaderNameCase = "canonical"
+    handler_response_header_name_case: HeaderNameCase = "canonical"
 
 
 def test_not_configured_without_reactor() -> None:
