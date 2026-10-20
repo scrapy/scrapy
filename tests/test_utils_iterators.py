@@ -92,7 +92,7 @@ class TestXmliter:
 
         for r in (
             # with bytes
-            XmlResponse(url="http://example.com", body=body.encode("utf-8")),
+            XmlResponse(url="http://example.com", body=body.encode()),
             # Unicode body needs encoding information
             XmlResponse(url="http://example.com", body=body, encoding="utf-8"),
         ):
@@ -209,6 +209,31 @@ class TestXmliter:
         my_iter = xmliter_lxml(response, "g:link_image")
         with pytest.raises(StopIteration):
             next(my_iter)
+
+    def test_xmliter_namespaced_nodename_other_prefixes(self):
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0"
+                 xmlns:a="http://example.com/ns/a"
+                 xmlns:g="http://base.google.com/ns/1.0">
+                <item>
+                    <a:id>A_1</a:id>
+                    <g:id>ITEM_1</g:id>
+                </item>
+            </rss>
+        """
+        response = XmlResponse(url="http://example.com", body=body)
+        node = next(xmliter_lxml(response, "g:id"))
+        assert node.xpath("text()").getall() == ["ITEM_1"]
+
+    def test_xmliter_non_text_response(self):
+        body = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b"<products><product>one</product></products>"
+        )
+        response = Response(url="http://example.com", body=body)
+        assert [
+            node.xpath("text()").get() for node in xmliter_lxml(response, "product")
+        ] == ["one"]
 
     def test_xmliter_exception(self):
         body = (
@@ -398,7 +423,7 @@ class TestUtilsCsv:
         headers, body = sample[0].split(b","), b"\n".join(sample[1:])
 
         response = TextResponse(url="http://example.com/", body=body)
-        csv = csviter(response, headers=[h.decode("utf-8") for h in headers])
+        csv = csviter(response, headers=[h.decode() for h in headers])
 
         assert list(csv) == [
             {"id": "1", "name": "alpha", "value": "foobar"},
@@ -420,6 +445,9 @@ class TestUtilsCsv:
             {"id": "3", "name": "multi", "value": "foo\nbar"},
             {"id": "4", "name": "empty", "value": ""},
         ]
+
+    def test_csviter_empty(self):
+        assert not list(csviter(""))
 
     def test_csviter_exception(self):
         body = get_testdata("feeds", "feed-sample3.csv")
@@ -460,7 +488,7 @@ class TestUtilsCsv:
 
 class TestBodyOrStr:
     bbody = b"utf8-body"
-    ubody = bbody.decode("utf8")
+    ubody = bbody.decode()
 
     @pytest.mark.parametrize(
         "obj",
@@ -480,6 +508,12 @@ class TestBodyOrStr:
         self._assert_type_and_value(r3, self.bbody, obj)
         assert type(r1) is type(r2)
         assert type(r1) is not type(r3)  # type: ignore[comparison-overlap]
+
+    def test_body_or_str_unsupported_type(self) -> None:
+        with pytest.raises(
+            TypeError, match="must be Response or str or bytes, not int"
+        ):
+            _body_or_str(42)  # type: ignore[call-overload]
 
     @staticmethod
     def _assert_type_and_value(

@@ -7,16 +7,13 @@ See documentation in docs/topics/extensions.rst
 from __future__ import annotations
 
 import gc
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.trackref import live_refs
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
 
@@ -29,7 +26,6 @@ class MemoryDebugger:
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("MEMDEBUG_ENABLED"):
             raise NotConfigured
-        assert crawler.stats
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o

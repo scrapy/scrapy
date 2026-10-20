@@ -7,6 +7,7 @@ import pytest
 from scrapy import Spider
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.middleware import MiddlewareManager
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -93,7 +94,7 @@ def test_enabled(crawler: Crawler) -> None:
 
 def test_enabled_from_settings(crawler: Crawler) -> None:
     crawler = get_crawler()
-    mwman = MyMiddlewareManager.from_crawler(crawler)
+    mwman = build_from_crawler(MyMiddlewareManager, crawler)
     classes = [x.__class__ for x in mwman.middlewares]
     assert classes == [M1, M3]
     assert mwman.crawler == crawler

@@ -6,11 +6,10 @@ See documentation in docs/topics/telnetconsole.rst
 
 from __future__ import annotations
 
-import binascii
 import logging
-import os
 import pprint
-from typing import TYPE_CHECKING, Any
+from secrets import token_hex
+from typing import TYPE_CHECKING, Any, Self
 
 from twisted.conch import telnet
 from twisted.conch.insults import insults
@@ -26,9 +25,6 @@ from scrapy.utils.trackref import print_live_refs
 if TYPE_CHECKING:
     from twisted.internet.tcp import Port
 
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
 
 
@@ -37,6 +33,30 @@ logger = logging.getLogger(__name__)
 # signal to update telnet variables
 # args: telnet_vars
 update_telnet_vars = object()
+
+
+def _get_manhole_class() -> type[Any]:
+    # Imported here, not at module level, because twisted.conch.manhole
+    # indirectly imports twisted.internet.reactor.
+    from twisted.conch import manhole
+
+    class _ManholeInterpreter(manhole.ManholeInterpreter):
+        def runcode(self, *args: Any, **kwargs: Any) -> None:
+            try:
+                super().runcode(*args, **kwargs)  # type: ignore[no-untyped-call]
+            except SystemExit:
+                # exit()/quit() would otherwise raise into the reactor and
+                # be logged as an unhandled error.
+                self.handler.terminal.loseConnection()
+
+    class _Manhole(manhole.Manhole):
+        def connectionMade(self) -> None:
+            super().connectionMade()  # type: ignore[no-untyped-call]
+            self.interpreter = _ManholeInterpreter(  # type: ignore[no-untyped-call]
+                self, self.namespace
+            )
+
+    return _Manhole
 
 
 class TelnetConsole(protocol.ServerFactory):
@@ -52,6 +72,7 @@ class TelnetConsole(protocol.ServerFactory):
 
         self.crawler: Crawler = crawler
         self.noisy: bool = False
+        self.port: Port | None = None
         self.portrange: list[int] = [
             int(x) for x in crawler.settings.getlist("TELNETCONSOLE_PORT")
         ]
@@ -60,7 +81,7 @@ class TelnetConsole(protocol.ServerFactory):
         self.password: str = crawler.settings["TELNETCONSOLE_PASSWORD"]
 
         if not self.password:
-            self.password = binascii.hexlify(os.urandom(8)).decode("utf8")
+            self.password = token_hex(8)
             logger.info("Telnet Password: %s", self.password)
 
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
@@ -71,7 +92,7 @@ class TelnetConsole(protocol.ServerFactory):
         return cls(crawler)
 
     def start_listening(self) -> None:
-        self.port: Port = listen_tcp(self.portrange, self.host, self)
+        self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
         logger.info(
             "Telnet console listening on %(host)s:%(port)d",
@@ -80,7 +101,10 @@ class TelnetConsole(protocol.ServerFactory):
         )
 
     def stop_listening(self) -> None:
-        self.port.stopListening()
+        # The port is unset if start_listening() failed, e.g. because every
+        # port in TELNETCONSOLE_PORT was taken.
+        if self.port is not None:
+            self.port.stopListening()
 
     def protocol(self) -> telnet.TelnetTransport:
         class Portal:
@@ -88,15 +112,15 @@ class TelnetConsole(protocol.ServerFactory):
 
             def login(self_, credentials, mind, *interfaces):  # type: ignore[no-untyped-def]  # pylint: disable=no-self-argument
                 if not (
-                    credentials.username == self.username.encode("utf8")
-                    and credentials.checkPassword(self.password.encode("utf8"))
+                    credentials.username == self.username.encode()
+                    and credentials.checkPassword(self.password.encode())
                 ):
                     return fail(ValueError("Invalid credentials"))
 
-                from twisted.conch import manhole
-
                 protocol = telnet.TelnetBootstrapProtocol(
-                    insults.ServerProtocol, manhole.Manhole, self._get_telnet_vars()
+                    insults.ServerProtocol,
+                    _get_manhole_class(),
+                    self._get_telnet_vars(),
                 )
                 return succeed((interfaces[0], protocol, lambda: None))
 
@@ -104,7 +128,6 @@ class TelnetConsole(protocol.ServerFactory):
 
     def _get_telnet_vars(self) -> dict[str, Any]:
         # Note: if you add entries here also update topics/telnetconsole.rst
-        assert self.crawler.engine
         telnet_vars: dict[str, Any] = {
             "engine": self.crawler.engine,
             "spider": self.crawler.engine.spider,

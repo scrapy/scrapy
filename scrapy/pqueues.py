@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import TYPE_CHECKING, Protocol, cast
+from contextlib import suppress
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Protocol, Self, cast
 
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request
     from scrapy.core.downloader import Downloader
@@ -31,9 +30,9 @@ def _path_safe(text: str) -> str:
     True
     """
     pathable_slot = "".join([c if c.isalnum() or c in "-._" else "_" for c in text])
-    # as we replace some letters we can get collision for different slots
-    # add we add unique part
-    unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()  # noqa: S324
+    # Replacing characters can make different inputs collapse to the same
+    # prefix, so a hash of the original text keeps the result unique.
+    unique_slot = hashlib.md5(text.encode()).hexdigest()  # noqa: S324
     return f"{pathable_slot}-{unique_slot}"
 
 
@@ -49,30 +48,73 @@ class QueueProtocol(Protocol):
     def __len__(self) -> int: ...
 
 
+class PriorityQueueProtocol(Protocol):
+    """Interface of :setting:`SCHEDULER_PRIORITY_QUEUE` classes.
+
+    :attr:`changed`, :meth:`next_priority` and :meth:`state` are optional.
+    """
+
+    @classmethod
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        downstream_queue_cls: type[QueueProtocol],
+        key: str,
+        startprios: Any = (),
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
+    ) -> Self:
+        """Return a priority queue that stores requests in instances of
+        *downstream_queue_cls*, or of *start_queue_cls* for :ref:`start
+        requests <start-requests>` if it is not ``None``.
+
+        *key* is the directory where the queue persists its requests, or an
+        empty string for an in-memory queue. *startprios* is what
+        :meth:`close` returned the last time the job stopped.
+        """
+
+    def push(self, request: Request) -> None:
+        """Store *request*."""
+
+    def pop(self) -> Request | None:
+        """Remove and return the next request, or return ``None`` if the queue
+        is empty.
+        """
+
+    def close(self) -> Any:
+        """Close the queue and return a JSON-serializable state to pass as
+        *startprios* to :meth:`from_crawler` when resuming the job.
+        """
+
+    def __len__(self) -> int:
+        """Return the number of stored requests."""
+
+    changed: bool
+    """Whether the return value of :meth:`state` changed since this
+    attribute was last set to ``False``.
+
+    With :setting:`JOBDIR_SYNC_EVERY`, the scheduler persists the state while
+    the job runs, and resets this attribute after persisting it.
+    """
+
+    def next_priority(self) -> int | None:
+        """Return the priority of the request that :meth:`pop` would return
+        next, or ``None`` if the queue is empty.
+
+        The scheduler pops requests from whichever of its memory and disk
+        queues returns the lowest value, or from its memory queue on a tie, so
+        any scale works as long as lower values pop first. Without this
+        method, the scheduler pops memory requests first.
+        """
+
+    def state(self) -> Any:
+        """Return the same as :meth:`close`, without closing the queue."""
+
+
 class ScrapyPriorityQueue:
-    """A priority queue implemented using multiple internal queues (typically,
-    FIFO queues). It uses one internal queue for each priority value. The
-    internal queue must implement the following methods:
-
-        * push(obj)
-        * pop()
-        * close()
-        * __len__()
-
-    Optionally, the queue could provide a ``peek`` method, that should return
-    the next object to be returned by ``pop``, but without removing it from the
-    queue.
-
-    ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls
-    argument, which is a class used to instantiate a new (internal) queue when
-    a new priority is allocated.
-
-    Only integer priorities should be used. Lower numbers are higher
-    priorities.
-
-    startprios is a sequence of priorities to start with. If the queue was
-    previously closed leaving some priority buckets non-empty, those priorities
-    should be passed in startprios.
+    """Priority queue that pops requests from highest to lowest
+    :attr:`~scrapy.Request.priority`, in :ref:`request order <request-order>`
+    within a priority.
 
     Disk persistence
     ================
@@ -132,6 +174,7 @@ class ScrapyPriorityQueue:
         self.queues: dict[int, QueueProtocol] = {}
         self._start_queues: dict[int, QueueProtocol] = {}
         self.curprio: int | None = None
+        self.changed: bool = False
         self.init_prios(startprios)
 
     def init_prios(self, startprios: Iterable[int]) -> None:
@@ -144,14 +187,19 @@ class ScrapyPriorityQueue:
                 self.queues[priority] = q
             else:
                 q.close()
+                self.changed = True
             if self._start_queue_cls:
                 q = self._sqfactory(priority)
                 if q:
                     self._start_queues[priority] = q
                 else:
                     q.close()
+                    self.changed = True
 
-        self.curprio = min(startprios)
+        # A recorded priority may have no queue to restore, e.g. if it only
+        # ever held a request that failed to serialize, so curprio comes from
+        # the queues that do exist and not from startprios.
+        self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:
         return build_from_crawler(
@@ -177,52 +225,48 @@ class ScrapyPriorityQueue:
         if is_start_request and self._start_queue_cls:
             if priority not in self._start_queues:
                 self._start_queues[priority] = self._sqfactory(priority)
+                self.changed = True
             q = self._start_queues[priority]
         else:
             if priority not in self.queues:
                 self.queues[priority] = self.qfactory(priority)
+                self.changed = True
             q = self.queues[priority]
         q.push(request)  # this may fail (eg. serialization error)
-        if self.curprio is None or priority < self.curprio:
+        # A queue class may drop a request instead of storing it, and a
+        # priority with an empty queue must not become the current one, since
+        # pop() and peek() expect to find a request there.
+        if q and (self.curprio is None or priority < self.curprio):
             self.curprio = priority
 
+    def _curqueue(self) -> QueueProtocol:
+        assert self.curprio is not None
+        # Whichever dict holds a non-empty queue at the current priority. The
+        # other one may hold an empty queue left behind by a failed push, e.g.
+        # on a serialization error, which would hide the next request.
+        return self.queues.get(self.curprio) or self._start_queues[self.curprio]
+
     def pop(self) -> Request | None:
-        while self.curprio is not None:
-            try:
-                q = self.queues[self.curprio]
-            except KeyError:
-                pass
-            else:
-                m = q.pop()
-                if not q:
-                    del self.queues[self.curprio]
-                    q.close()
-                    if not self._start_queues:
-                        self._update_curprio()
-                return m
-            if self._start_queues:
-                try:
-                    q = self._start_queues[self.curprio]
-                except KeyError:
-                    self._update_curprio()
-                else:
-                    m = q.pop()
-                    if not q:
-                        del self._start_queues[self.curprio]
-                        q.close()
-                        self._update_curprio()
-                    return m
-            else:
-                self._update_curprio()
-        return None
+        if self.curprio is None:
+            return None
+        q = self._curqueue()
+        request = q.pop()
+        if not q:
+            self._update_curprio()
+        return request
 
     def _update_curprio(self) -> None:
-        prios = {
-            p
-            for queues in (self.queues, self._start_queues)
-            for p, q in queues.items()
-            if q
-        }
+        # Keeping an empty queue would hold its storage open for nothing, and
+        # make close() record a priority with nothing to restore from it.
+        prios: set[int] = set()
+        for queues in (self.queues, self._start_queues):
+            for p, q in list(queues.items()):
+                if q:
+                    prios.add(p)
+                else:
+                    del queues[p]
+                    q.close()
+                    self.changed = True
         self.curprio = min(prios) if prios else None
 
     def peek(self) -> Request | None:
@@ -234,20 +278,24 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
-        try:
-            queue = self._start_queues[self.curprio]
-        except KeyError:
-            queue = self.queues[self.curprio]
+        # Picking the queue the same way as pop() is what makes the returned
+        # request the one that pop() then returns.
+        queue = self._curqueue()
         # Protocols can't declare optional members
         return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
+    def next_priority(self) -> int | None:
+        return self.curprio
+
+    def state(self) -> list[int]:
+        return sorted(self.queues.keys() | self._start_queues.keys())
+
     def close(self) -> list[int]:
-        active: set[int] = set()
+        active = self.state()
         for queues in (self.queues, self._start_queues):
-            for p, q in queues.items():
-                active.add(p)
+            for q in queues.values():
                 q.close()
-        return list(active)
+        return active
 
     def __len__(self) -> int:
         return (
@@ -263,7 +311,6 @@ class ScrapyPriorityQueue:
 
 class DownloaderInterface:
     def __init__(self, crawler: Crawler):
-        assert crawler.engine
         self.downloader: Downloader = crawler.engine.downloader
 
     def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:
@@ -356,33 +403,24 @@ class DownloaderAwarePriorityQueue:
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         self._last_selected_slot: str | None = None
+        self.changed: bool = False
         if slot_startprios:
             for slot, startprios in slot_startprios.items():
                 self.pqueues[slot] = self.pqfactory(slot, startprios)
+                self._collect_change(self.pqueues[slot])
 
     def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
+        # Lexicographic on (active, slot): the least-loaded slot, and the
+        # lowest-named one among ties.
+        min_active, slot = min(stats)
         last = self._last_selected_slot
-        min_active: int | None = None
-        best_slot: str | None = None
-        best_slot_after_last: str | None = None
-        for active, slot in stats:
-            if min_active is None or active < min_active:
-                min_active = active
-                best_slot = slot
-                best_slot_after_last = None
-                if last is not None and slot > last:
-                    best_slot_after_last = slot
-            elif active == min_active:
-                if best_slot is None or slot < best_slot:
-                    best_slot = slot
-                if (
-                    last is not None
-                    and slot > last
-                    and (best_slot_after_last is None or slot < best_slot_after_last)
-                ):
-                    best_slot_after_last = slot
-        assert best_slot is not None
-        slot = best_slot_after_last if best_slot_after_last is not None else best_slot
+        if last is not None:
+            # Round-robin among the tied slots: the first one after the last
+            # selected, so that equally-loaded slots take turns.
+            slot = min(
+                (s for active, s in stats if active == min_active and s > last),
+                default=slot,
+            )
         if update_state:
             self._last_selected_slot = slot
         return slot
@@ -398,6 +436,11 @@ class DownloaderAwarePriorityQueue:
             start_queue_cls=self._start_queue_cls,
         )
 
+    def _collect_change(self, queue: ScrapyPriorityQueue) -> None:
+        if queue.changed:
+            queue.changed = False
+            self.changed = True
+
     def pop(self) -> Request | None:
         stats = self._downloader_interface.stats(self.pqueues)
 
@@ -407,16 +450,26 @@ class DownloaderAwarePriorityQueue:
         slot = self._next_slot(stats, update_state=True)
         queue = self.pqueues[slot]
         request = queue.pop()
+        self._collect_change(queue)
         if len(queue) == 0:
             del self.pqueues[slot]
+            queue.close()
+            self.changed = True
+            if self.key:
+                # Reclaim the slot directory; rmdir leaves it alone if the
+                # downstream queues did not remove all their files.
+                with suppress(OSError):
+                    Path(self.key, _path_safe(slot)).rmdir()
         return request
 
     def push(self, request: Request) -> None:
         slot = self._downloader_interface.get_slot_key(request)
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
+            self.changed = True
         queue = self.pqueues[slot]
         queue.push(request)
+        self._collect_change(queue)
 
     def peek(self) -> Request | None:
         """Returns the next object to be returned by :meth:`pop`,
@@ -432,8 +485,20 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         return queue.peek()
 
+    def next_priority(self) -> int | None:
+        if not self.pqueues:
+            return None
+        stats = self._downloader_interface.stats(self.pqueues)
+        slot = self._next_slot(stats, update_state=False)
+        return self.pqueues[slot].next_priority()
+
+    def state(self) -> dict[str, list[int]]:
+        return {slot: queue.state() for slot, queue in self.pqueues.items()}
+
     def close(self) -> dict[str, list[int]]:
-        active = {slot: queue.close() for slot, queue in self.pqueues.items()}
+        active = self.state()
+        for queue in self.pqueues.values():
+            queue.close()
         self.pqueues.clear()
         return active
 

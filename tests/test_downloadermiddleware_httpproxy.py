@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import pytest
@@ -6,58 +8,60 @@ from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
 class TestHttpProxyMiddleware:
-    def setup_method(self):
-        self._oldenv = os.environ.copy()
-
-    def teardown_method(self):
-        os.environ.clear()
-        os.environ.update(self._oldenv)
-
     def test_not_enabled(self):
         crawler = get_crawler(Spider, {"HTTPPROXY_ENABLED": False})
         with pytest.raises(NotConfigured):
-            HttpProxyMiddleware.from_crawler(crawler)
+            build_from_crawler(HttpProxyMiddleware, crawler)
 
-    def test_no_environment_proxies(self):
-        os.environ.clear()
-        os.environ["dummy_proxy"] = "reset_env_and_do_not_raise"
+    @pytest.mark.parametrize("url", ["http://e.com", "https://e.com", "file:///tmp/a"])
+    def test_no_environment_proxies(
+        self, url: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        for name in list(os.environ):
+            monkeypatch.delenv(name)
+        monkeypatch.setenv("dummy_proxy", "reset_env_and_do_not_raise")
         mw = HttpProxyMiddleware()
 
-        for url in ("http://e.com", "https://e.com", "file:///tmp/a"):
-            req = Request(url)
-            assert mw.process_request(req) is None
-            assert req.url == url
-            assert req.meta == {}
+        req = Request(url)
+        assert mw.process_request(req) is None
+        assert req.url == url
+        assert req.meta == {}
 
-    def test_environment_proxies(self):
-        os.environ["http_proxy"] = http_proxy = "https://proxy.for.http:3128"
-        os.environ["https_proxy"] = https_proxy = "http://proxy.for.https:8080"
-        os.environ.pop("file_proxy", None)
-        mw = HttpProxyMiddleware()
-
-        for url, proxy in [
-            ("http://e.com", http_proxy),
-            ("https://e.com", https_proxy),
+    @pytest.mark.parametrize(
+        ("url", "proxy"),
+        [
+            ("http://e.com", "https://proxy.for.http:3128"),
+            ("https://e.com", "http://proxy.for.https:8080"),
             ("file://tmp/a", None),
-        ]:
-            req = Request(url)
-            assert mw.process_request(req) is None
-            assert req.url == url
-            assert req.meta.get("proxy") == proxy
+        ],
+    )
+    def test_environment_proxies(
+        self, url: str, proxy: str | None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("http_proxy", "https://proxy.for.http:3128")
+        monkeypatch.setenv("https_proxy", "http://proxy.for.https:8080")
+        monkeypatch.delenv("file_proxy", raising=False)
+        mw = HttpProxyMiddleware()
 
-    def test_proxy_precedence_meta(self):
-        os.environ["http_proxy"] = "https://proxy.com"
+        req = Request(url)
+        assert mw.process_request(req) is None
+        assert req.url == url
+        assert req.meta.get("proxy") == proxy
+
+    def test_proxy_precedence_meta(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("http_proxy", "https://proxy.com")
         mw = HttpProxyMiddleware()
         req = Request("http://scrapytest.org", meta={"proxy": "https://new.proxy:3128"})
         assert mw.process_request(req) is None
         assert req.meta == {"proxy": "https://new.proxy:3128"}
 
-    def test_proxy_auth(self):
-        os.environ["http_proxy"] = "https://user:pass@proxy:3128"
+    def test_proxy_auth(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("http_proxy", "https://user:pass@proxy:3128")
         mw = HttpProxyMiddleware()
         req = Request("http://scrapytest.org")
         assert mw.process_request(req) is None
@@ -74,8 +78,8 @@ class TestHttpProxyMiddleware:
             req.headers.get("Proxy-Authorization") == b"Basic dXNlcm5hbWU6cGFzc3dvcmQ="
         )
 
-    def test_proxy_auth_empty_passwd(self):
-        os.environ["http_proxy"] = "https://user:@proxy:3128"
+    def test_proxy_auth_empty_passwd(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("http_proxy", "https://user:@proxy:3128")
         mw = HttpProxyMiddleware()
         req = Request("http://scrapytest.org")
         assert mw.process_request(req) is None
@@ -89,9 +93,9 @@ class TestHttpProxyMiddleware:
         assert req.meta["proxy"] == "https://proxy:3128"
         assert req.headers.get("Proxy-Authorization") == b"Basic dXNlcm5hbWU6"
 
-    def test_proxy_auth_encoding(self):
+    def test_proxy_auth_encoding(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # utf-8 encoding
-        os.environ["http_proxy"] = "https://m\u00e1n:pass@proxy:3128"
+        monkeypatch.setenv("http_proxy", "https://m\u00e1n:pass@proxy:3128")
         mw = HttpProxyMiddleware(auth_encoding="utf-8")
         req = Request("http://scrapytest.org")
         assert mw.process_request(req) is None
@@ -121,41 +125,41 @@ class TestHttpProxyMiddleware:
         assert req.meta["proxy"] == "https://proxy:3128"
         assert req.headers.get("Proxy-Authorization") == b"Basic /HNlcjpwYXNz"
 
-    def test_proxy_already_seted(self):
-        os.environ["http_proxy"] = "https://proxy.for.http:3128"
+    def test_proxy_already_seted(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("http_proxy", "https://proxy.for.http:3128")
         mw = HttpProxyMiddleware()
         req = Request("http://noproxy.com", meta={"proxy": None})
         assert mw.process_request(req) is None
         assert "proxy" in req.meta
         assert req.meta["proxy"] is None
 
-    def test_no_proxy(self):
-        os.environ["http_proxy"] = "https://proxy.for.http:3128"
+    def test_no_proxy(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("http_proxy", "https://proxy.for.http:3128")
         mw = HttpProxyMiddleware()
 
-        os.environ["no_proxy"] = "*"
+        monkeypatch.setenv("no_proxy", "*")
         req = Request("http://noproxy.com")
         assert mw.process_request(req) is None
         assert "proxy" not in req.meta
 
-        os.environ["no_proxy"] = "other.com"
+        monkeypatch.setenv("no_proxy", "other.com")
         req = Request("http://noproxy.com")
         assert mw.process_request(req) is None
         assert "proxy" in req.meta
 
-        os.environ["no_proxy"] = "other.com,noproxy.com"
+        monkeypatch.setenv("no_proxy", "other.com,noproxy.com")
         req = Request("http://noproxy.com")
         assert mw.process_request(req) is None
         assert "proxy" not in req.meta
 
         # proxy from meta['proxy'] takes precedence
-        os.environ["no_proxy"] = "*"
+        monkeypatch.setenv("no_proxy", "*")
         req = Request("http://noproxy.com", meta={"proxy": "http://proxy.com"})
         assert mw.process_request(req) is None
         assert req.meta == {"proxy": "http://proxy.com"}
 
-    def test_no_proxy_invalid_values(self):
-        os.environ["no_proxy"] = "/var/run/docker.sock"
+    def test_no_proxy_invalid_values(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("no_proxy", "/var/run/docker.sock")
         mw = HttpProxyMiddleware()
         # '/var/run/docker.sock' may be used by the user for
         # no_proxy value but is not parseable and should be skipped

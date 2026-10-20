@@ -15,7 +15,7 @@ This tutorial will walk you through these tasks:
 1. Creating a new Scrapy project
 2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data
 3. Exporting the scraped data using the command line
-4. Changing spider to recursively follow links
+4. Changing the spider to recursively follow links
 5. Using spider arguments
 
 Scrapy is written in Python_. The more you learn about Python, the more you
@@ -72,14 +72,20 @@ This will create a ``tutorial`` directory with the following contents::
             spiders/          # a directory where you'll later put your spiders
                 __init__.py
 
+Before crawling anything, open ``settings.py`` and uncomment the
+:setting:`USER_AGENT` line to identify yourself, e.g. a project name plus a URL
+or an email address. Website owners who take issue with your crawler can then
+ask you to adjust it, rather than block it.
+
 
 Our first Spider
 ================
 
-Spiders are classes that you define and that Scrapy uses to scrape information from a website
-(or a group of websites). They must subclass :class:`~scrapy.Spider` and define the initial
-requests to be made, and optionally, how to follow links in pages and parse the downloaded
-page content to extract data.
+Spiders are classes that you define and that Scrapy uses to scrape information
+from a website (or a group of websites). They must subclass
+:class:`~scrapy.Spider` and define the initial requests to be made and,
+optionally, how to follow links in pages and parse the downloaded page content
+to extract data.
 
 This is the code for our first Spider. Save it in a file named
 ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project:
@@ -130,16 +136,40 @@ and defines some attributes and methods:
   the scraped data as dicts and also finding new URLs to
   follow and creating new requests (:class:`~scrapy.Request`) from them.
 
+Crawling faster for this tutorial
+---------------------------------
+
+The :file:`tutorial/settings.py` file of your project makes Scrapy crawl
+politely: it sends at most one request at a time to each website
+(:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`), waiting about one second between
+requests (:setting:`DOWNLOAD_DELAY`). That keeps you from overwhelming
+websites, but it also makes crawling slow, and it means the requests above are
+sent one after another rather than in parallel.
+
+``quotes.toscrape.com`` is a sandbox meant for scraping practice, so we can
+safely crawl it faster. Open :file:`tutorial/settings.py` and add a
+:setting:`DOWNLOAD_SLOTS` entry that raises the concurrency and lowers the
+delay for that domain only:
+
+.. code-block:: python
+
+    DOWNLOAD_SLOTS = {
+        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
+    }
+
+The polite defaults still apply to every other website.
+
 How to run our spider
 ---------------------
 
-To put our spider to work, go to the project's top level directory and run::
+To put our spider to work, go to the project's top level directory, the one
+that contains :file:`scrapy.cfg`, and run::
 
    scrapy crawl quotes
 
-This command runs the spider named ``quotes`` that we've just added, that
-will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
-similar to this::
+This command runs the spider named ``quotes`` that we've just added, which will
+send some requests for the ``quotes.toscrape.com`` domain. You will get an
+output similar to this::
 
     ... (omitted for brevity)
     2016-12-16 21:24:05 [scrapy.core.engine] INFO: Spider opened
@@ -400,8 +430,8 @@ like this:
         </div>
     </div>
 
-Let's open up scrapy shell and play a bit to find out how to extract the data
-we want::
+Let's open up the Scrapy shell and play a bit to find out how to extract the
+data we want::
 
     scrapy shell 'https://quotes.toscrape.com'
 
@@ -410,8 +440,8 @@ We get a list of selectors for the quote HTML elements with:
 .. code-block:: pycon
 
     >>> response.css("div.quote")
-    [<Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-    <Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    [<Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    <Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
     ...]
 
 Each of the selectors returned by the query above allows us to run further
@@ -668,14 +698,14 @@ As a shortcut for creating Request objects you can use
             if next_page is not None:
                 yield response.follow(next_page, callback=self.parse)
 
-Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no
-need to call urljoin. Note that ``response.follow`` just returns a Request
-instance; you still have to yield this Request.
+Unlike :class:`scrapy.Request`, ``response.follow`` supports relative URLs
+directly - no need to call urljoin. Note that ``response.follow`` just returns
+a Request instance; you still have to yield this Request.
 
 .. skip: start
 
-You can also pass a selector to ``response.follow`` instead of a string;
-this selector should extract necessary attributes:
+You can also pass a selector to ``response.follow`` instead of a string; this
+selector should extract the necessary attributes:
 
 .. code-block:: python
 
@@ -741,7 +771,7 @@ this time for scraping author information:
             }
 
 This spider will start from the main page, it will follow all the links to the
-authors pages calling the ``parse_author`` callback for each of them, and also
+author pages calling the ``parse_author`` callback for each of them, and also
 the pagination links with the ``parse`` callback as we saw before.
 
 Here we're passing callbacks to
@@ -749,8 +779,8 @@ Here we're passing callbacks to
 arguments to make the code shorter; it also works for
 :class:`~scrapy.Request`.
 
-The ``parse_author`` callback defines a helper function to extract and cleanup the
-data from a CSS query and yields the Python dict with the author data.
+The ``parse_author`` callback defines a helper function to extract and clean up
+the data from a CSS query and yields the Python dict with the author data.
 
 Another interesting thing this spider demonstrates is that, even if there are
 many quotes from the same author, we don't need to worry about visiting the
@@ -762,10 +792,10 @@ much because of a programming mistake. This can be configured in the
 Hopefully by now you have a good understanding of how to use the mechanism
 of following links and callbacks with Scrapy.
 
-As yet another example spider that leverages the mechanism of following links,
-check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
-spider that implements a small rules engine that you can use to write your
-crawlers on top of it.
+If the link following of a crawl can be expressed as a set of declarative
+rules, the :class:`~scrapy.spiders.CrawlSpider` class implements a small rules
+engine that handles it for you. For anything else, keep following links from
+your callbacks, as shown above.
 
 Also, a common pattern is to build an item with data from more than one page,
 using a :ref:`trick to pass additional data to the callbacks
@@ -831,5 +861,10 @@ You can continue from the section :ref:`section-basics` to know more about the
 command-line tool, spiders, selectors and other things the tutorial hasn't covered like
 modeling the scraped data. If you'd prefer to play with an example project, check
 the :ref:`intro-examples` section.
+
+To turn whole pages into clean text or markdown, or to turn the strings you
+select into dates, prices or other values, see :ref:`extraction`.
+
+If you are using a coding agent, see :ref:`agents`.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON

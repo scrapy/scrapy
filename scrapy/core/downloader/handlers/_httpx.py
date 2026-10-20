@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 import ssl
 from contextlib import asynccontextmanager
 from socket import gaierror
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -17,13 +18,13 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers
-from scrapy.utils._download_handlers import NullCookieJar
-from scrapy.utils.python import _iter_exc_causes
-from scrapy.utils.ssl import (
+from scrapy.utils._download_handlers import NullCookieJar, get_proxy_headers
+from scrapy.utils._ssl import (
     _log_sslobj_debug_info,
     _make_insecure_ssl_ctx,
     _make_ssl_context,
 )
+from scrapy.utils.python import _iter_exc_causes
 
 from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 
@@ -36,13 +37,15 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
+logger = logging.getLogger(__name__)
+
+# a proxy URL and the headers to send to that proxy
+_ProxyKey: TypeAlias = tuple[str, tuple[tuple[str, str], ...]]
+
 HAS_SOCKS = HAS_HTTP2 = False
 
 try:
-    try:
-        import httpx2 as httpx
-    except ImportError:  # pragma: no cover
-        import httpx  # type: ignore[import-not-found,no-redef]
+    import httpx2 as httpx
 except ImportError:  # pragma: no cover
     httpx = None  # type: ignore[assignment]
 else:
@@ -93,16 +96,22 @@ class HttpxDownloadHandler(_Base):
         self._bind_host: str | None = self._get_bind_address_host()
         self._limits: httpx.Limits = httpx.Limits(
             # hard limit on simultaneous connections (None for no limit, which
-            # is what a CONCURRENT_REQUESTS of 0 means)
+            # is what a CONCURRENT_CONNECTIONS_PER_HANDLER of 0 means)
             max_connections=self._pool_size_total or None,
-            # total number of idle connections in the pool (extra ones are closed)
-            max_keepalive_connections=self._pool_size_total or None,
+            # total number of idle connections in the pool (extra ones are
+            # closed); keeping none of them is how keepalive gets disabled,
+            # since expiry alone is subject to the resolution of the clock
+            max_keepalive_connections=(
+                (self._pool_size_total or None) if self._keepalive_timeout else 0
+            ),
+            keepalive_expiry=self._keepalive_timeout,
         )
 
         self._default_client: httpx.AsyncClient = self._make_client()
         # httpx2 doesn't support per-request proxies: https://github.com/pydantic/httpx2/issues/818,
-        # so we keep a pool of clients per proxy URL. LRU eviction can be added here if needed.
-        self._proxy_clients: dict[str, httpx.AsyncClient] = {}
+        # so we keep a pool of clients per proxy URL and set of proxy headers.
+        # LRU eviction can be added here if needed.
+        self._proxy_clients: dict[_ProxyKey, httpx.AsyncClient] = {}
 
     @staticmethod
     def _check_deps_installed() -> None:
@@ -111,13 +120,27 @@ class HttpxDownloadHandler(_Base):
                 "HttpxDownloadHandler requires the httpx2 library to be installed."
             )
 
-    def _make_client(self, proxy_url: str | None = None) -> httpx.AsyncClient:
+    def _make_client(
+        self,
+        proxy_url: str | None = None,
+        proxy_headers: tuple[tuple[str, str], ...] = (),
+    ) -> httpx.AsyncClient:
         if proxy_url:
             if proxy_url.startswith("https:") and not self._verify_certificates:
                 proxy_ssl_context = _make_insecure_ssl_ctx()
             else:
                 proxy_ssl_context = None
-            proxy = httpx.Proxy(proxy_url, ssl_context=proxy_ssl_context)
+            if proxy_headers and proxy_url.startswith("socks"):
+                logger.warning(
+                    f"Ignoring the proxy_headers request metadata key for "
+                    f"{proxy_url}, as the SOCKS protocol has no headers."
+                )
+                proxy_headers = ()
+            proxy = httpx.Proxy(
+                proxy_url,
+                ssl_context=proxy_ssl_context,
+                headers=list(proxy_headers),
+            )
         else:
             proxy = None
 
@@ -137,26 +160,38 @@ class HttpxDownloadHandler(_Base):
             client.headers.pop(header_name, None)
         return client
 
-    def _get_client(self, proxy_url: str | None) -> httpx.AsyncClient:
+    def _get_client(
+        self,
+        proxy_url: str | None,
+        proxy_headers: tuple[tuple[str, str], ...] = (),
+    ) -> httpx.AsyncClient:
         if proxy_url is None:
             return self._default_client
-        if cached := self._proxy_clients.get(proxy_url):
+        key = (proxy_url, proxy_headers)
+        if cached := self._proxy_clients.get(key):
             return cached
-        client = self._make_client(proxy_url)
-        self._proxy_clients[proxy_url] = client
+        client = self._make_client(proxy_url, proxy_headers)
+        self._proxy_clients[key] = client
         return client
 
     @asynccontextmanager
     async def _make_request(
-        self, request: Request, timeout: float
+        self,
+        request: Request,
+        timeout: float,  # noqa: ASYNC109
     ) -> AsyncIterator[httpx.Response]:
         proxy = self._extract_proxy_url_with_creds(request)
         if proxy and proxy.startswith("socks") and not HAS_SOCKS:  # pragma: no cover
             raise ValueError(
                 f"SOCKS proxy support in {type(self).__name__} requires the 'httpx2[socks]' extra to be installed."
             )
-        client = self._get_client(proxy)
-        headers = self._request_headers(request).to_tuple_list()
+        client = self._get_client(proxy, get_proxy_headers(request))
+        # httpx sends bytes as they are but encodes str values as ASCII.
+        headers = [
+            (name, value)
+            for name, values in self._request_headers(request).items()
+            for value in values
+        ]
 
         try:
             async with client.stream(
@@ -179,12 +214,12 @@ class HttpxDownloadHandler(_Base):
             raise DownloadConnectionRefusedError(str(e)) from e
         except httpx.ProxyError as e:
             raise DownloadConnectionRefusedError(str(e)) from e
-        except DOWNLOAD_FAILED_EXCEPTIONS as e:  # pylint: disable=catching-non-exception
+        except DOWNLOAD_FAILED_EXCEPTIONS as e:
             raise DownloadFailedError(str(e)) from e
 
     @staticmethod
     def _extract_headers(response: httpx.Response) -> Headers:
-        return Headers(response.headers.multi_items())
+        return Headers(response.headers.raw)
 
     @staticmethod
     def _build_base_response_args(
@@ -215,9 +250,15 @@ class HttpxDownloadHandler(_Base):
 
     @staticmethod
     def _is_dataloss_exception(exc: Exception) -> bool:
+        if HAS_HTTP2 and isinstance(exc, h2.exceptions.InvalidBodyLengthError):
+            return True
         return isinstance(
             exc, httpx.RemoteProtocolError
         ) and "peer closed connection without sending complete message body" in str(exc)
+
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, httpx.ReadTimeout)
 
     def _log_tls_info(self, response: httpx.Response, request: Request) -> None:
         network_stream: AsyncNetworkStream = response.extensions["network_stream"]

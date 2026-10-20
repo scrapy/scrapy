@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import logging
+from abc import ABC
 from unittest.mock import MagicMock
 
 import pytest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, Response
+from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.spidermiddlewares.referer import (
     POLICY_NO_REFERRER,
     POLICY_ORIGIN,
@@ -27,7 +30,7 @@ class TestRedirectMiddleware(TestRedirectBase):
     def setup_method(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        self.mw = self.mwcls.from_crawler(crawler)
+        self.mw = build_from_crawler(self.mwcls, crawler)
 
     def get_response(self, request, location, status=302):
         headers = {"Location": location}
@@ -208,7 +211,7 @@ class TestRedirectMiddleware(TestRedirectBase):
         response = Response(source_url, headers=resp_headers, status=302)
         crawler = get_crawler()
         referer_mw = build_from_crawler(RefererMiddleware, crawler)
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         redirect_mw._referer_spider_middleware = referer_mw
         redirect_request = redirect_mw.process_response(source_request, response)
         if expected_referer:
@@ -223,7 +226,7 @@ class TestRedirectMiddleware(TestRedirectBase):
             source_url, headers={"Referer": "http://example.com/old"}
         )
         response = Response(source_url, headers={"Location": redirect_url}, status=302)
-        redirect_mw = self.mwcls.from_crawler(get_crawler())
+        redirect_mw = build_from_crawler(self.mwcls, get_crawler())
         redirect_mw._referer_spider_middleware = None
         redirect_request = redirect_mw.process_response(source_request, response)
         assert "Referer" not in redirect_request.headers
@@ -272,6 +275,26 @@ class TestRedirectMiddleware(TestRedirectBase):
         req2 = self.mw.process_response(req, rsp)
         assert isinstance(req2, Request)
         assert req2.url == "http://www.example.com/redirected#target"
+
+    def test_redirect_target_has_empty_fragment(self):
+        url = "http://www.example.com/302#original"
+        url2 = "http://www.example.com/redirected#"
+        req = Request(url)
+        rsp = Response(url, headers={"Location": url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == "http://www.example.com/redirected"
+
+    def test_redirect_target_has_percent_encoded_number_sign(self):
+        url = "http://www.example.com/302#original"
+        url2 = "http://www.example.com/redirected%23"
+        req = Request(url)
+        rsp = Response(url, headers={"Location": url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == "http://www.example.com/redirected%23#original"
 
     def test_redirect_302_head(self):
         url = "http://www.example.com/302"
@@ -348,11 +371,157 @@ class TestRedirectMiddleware(TestRedirectBase):
         response = Response(request.url, status=302)
         assert self.mw.process_response(request, response) is response
 
+    @pytest.mark.parametrize("status", [201, 300])
+    def test_status_not_in_redirect_http_codes(self, status):
+        """Status codes outside REDIRECT_HTTP_CODES are not followed, even if they
+        report a Location header, as 201 (Created) or 300 (Multiple Choices) may
+        do."""
+        url = f"https://example.com/{status}"
+        request = Request(url)
+        response = Response(url, status=status, headers={"Location": "/target"})
+        assert self.mw.process_response(request, response) is response
+
+    def test_standard_status_not_in_redirect_http_codes(self):
+        crawler = get_crawler(DefaultSpider, {"REDIRECT_HTTP_CODES": [301]})
+        crawler.spider = crawler._create_spider()
+        mw = RedirectMiddleware.from_crawler(crawler)
+        url = "https://example.com/302"
+        request = Request(url)
+        response = Response(url, status=302, headers={"Location": "/redirected"})
+        assert mw.process_response(request, response) is response
+
+    def test_meta_http_codes(self):
+        """The redirect_http_codes request metadata key overrides the
+        REDIRECT_HTTP_CODES setting."""
+        url = "https://example.com/201"
+        request = Request(url, meta={"redirect_http_codes": [201]})
+        response = Response(url, status=201, headers={"Location": "/created"})
+        redirect_request = self.mw.process_response(request, response)
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.url == "https://example.com/created"
+
+    def test_meta_http_codes_excluding_standard_status(self):
+        url = "https://example.com/302"
+        request = Request(url, meta={"redirect_http_codes": [201]})
+        response = Response(url, status=302, headers={"Location": "/redirected"})
+        assert self.mw.process_response(request, response) is response
+
+
+class NonStandardStatusMixin(ABC):
+    """Tests of status codes added to REDIRECT_HTTP_CODES for which the HTTP
+    standard does not define redirection handling, and which therefore get
+    conservative handling."""
+
+    status: int
+
+    def setup_method(self):
+        crawler = get_crawler(
+            DefaultSpider,
+            {"REDIRECT_HTTP_CODES": [self.status, 301, 302, 303, 307, 308]},
+        )
+        crawler.spider = crawler._create_spider()
+        self.mw = RedirectMiddleware.from_crawler(crawler)
+        self.url = f"https://example.com/{self.status}"
+
+    def _response(
+        self, body: bytes = b"", location: str | None = "/target"
+    ) -> Response:
+        headers = {"Location": location} if location else {}
+        return Response(self.url, status=self.status, headers=headers, body=body)
+
+    def test_empty_body(self):
+        redirect_request = self.mw.process_response(Request(self.url), self._response())
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.url == "https://example.com/target"
+        assert redirect_request.method == "GET"
+        assert redirect_request.meta["redirect_urls"] == [self.url]
+        assert redirect_request.meta["redirect_reasons"] == [self.status]
+
+    def test_non_empty_body(self):
+        """A response that carries a resource in its body is not followed, doing so
+        would discard that resource."""
+        response = self._response(body=b"file content")
+        assert self.mw.process_response(Request(self.url), response) is response
+
+    @pytest.mark.parametrize("body", [b"", b"file content"])
+    def test_body_file(self, body, tmp_path):
+        body_file = tmp_path / "body"
+        body_file.write_bytes(body)
+        response = BodyFileResponse(
+            self.url,
+            status=self.status,
+            headers={"Location": "/target"},
+            body_file=body_file,
+        )
+        result = self.mw.process_response(Request(self.url), response)
+        assert (result is response) is bool(body)
+
+    def test_no_location(self):
+        response = self._response(location=None)
+        assert self.mw.process_response(Request(self.url), response) is response
+
+    @pytest.mark.parametrize("method", ["POST", "PUT"])
+    def test_method_becomes_get(self, method):
+        request = Request(
+            self.url,
+            method=method,
+            body=b"payload",
+            headers={"Content-Type": "text/plain", "Content-Length": "7"},
+        )
+        redirect_request = self.mw.process_response(request, self._response())
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.method == "GET"
+        assert not redirect_request.body
+        assert "Content-Type" not in redirect_request.headers
+        assert "Content-Length" not in redirect_request.headers
+
+    def test_head_method_preserved(self):
+        request = Request(self.url, method="HEAD")
+        redirect_request = self.mw.process_response(request, self._response())
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.method == "HEAD"
+
+    @pytest.mark.parametrize(
+        "meta",
+        [
+            {"dont_redirect": True},
+            {"handle_httpstatus_all": True},
+        ],
+    )
+    def test_request_meta_handling(self, meta):
+        request = Request(self.url, meta=meta)
+        response = self._response()
+        assert self.mw.process_response(request, response) is response
+
+    def test_request_meta_status_handling(self):
+        request = Request(self.url, meta={"handle_httpstatus_list": [self.status]})
+        response = self._response()
+        assert self.mw.process_response(request, response) is response
+
+    def test_spider_handling(self):
+        self.mw.crawler.spider.handle_httpstatus_list = [self.status]  # type: ignore[union-attr]
+        response = self._response()
+        assert self.mw.process_response(Request(self.url), response) is response
+
+
+class TestRedirect201(NonStandardStatusMixin):
+    """201 (Created) reports the created resource through Location."""
+
+    status = 201
+
+
+class TestRedirect300(NonStandardStatusMixin):
+    """300 (Multiple Choices) may report a preferred choice through Location. It
+    is a 3xx status code, but the standard defines no redirection handling for
+    it, so it gets the same conservative handling as 201."""
+
+    status = 300
+
 
 @pytest.mark.parametrize(SCHEME_PARAMS, REDIRECT_SCHEME_CASES)
 def test_redirect_schemes(url, location, target):
     crawler = get_crawler(Spider)
-    mw = RedirectMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(RedirectMiddleware, crawler)
     request = Request(url)
     response = Response(url, headers={"Location": location}, status=301)
     redirect = mw.process_response(request, response)
@@ -418,7 +587,7 @@ def test_no_warning_when_referer_middleware_present(caplog):
     mw = build_from_crawler(RedirectMiddleware, crawler)
     caplog.clear()
     with caplog.at_level(logging.WARNING):
-        mw._engine_started()
+        mw._spider_opened()
     assert not [
         record
         for record in caplog.records
@@ -433,7 +602,7 @@ def test_warning_redirect_middleware(caplog):
     )
     mw = build_from_crawler(RedirectMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
-        mw._engine_started()
+        mw._spider_opened()
     assert (
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"
@@ -458,7 +627,7 @@ def test_warning_subclass(caplog):
     )
     mw = build_from_crawler(MyRedirectMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
-        mw._engine_started()
+        mw._spider_opened()
     assert (
         "test_warning_subclass.<locals>.MyRedirectMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"
@@ -477,4 +646,4 @@ def test_warning_subclass(caplog):
 def test_not_configured():
     crawler = get_crawler(DefaultSpider, {"REDIRECT_ENABLED": False})
     with pytest.raises(NotConfigured):
-        RedirectMiddleware.from_crawler(crawler)
+        build_from_crawler(RedirectMiddleware, crawler)

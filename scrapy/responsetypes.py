@@ -5,14 +5,13 @@ based on different criteria.
 
 from __future__ import annotations
 
-from io import StringIO
+from importlib.resources import files
 from mimetypes import MimeTypes
-from pkgutil import get_data
 from typing import TYPE_CHECKING, ClassVar
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
+from scrapy.utils.python import binary_is_text, to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -39,9 +38,8 @@ class ResponseTypes:
     def __init__(self) -> None:
         self.classes: dict[str, type[Response]] = {}
         self.mimetypes: MimeTypes = MimeTypes()
-        mimedata = get_data("scrapy", "mime.types")
-        assert mimedata is not None
-        self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
+        with files("scrapy").joinpath("mime.types").open(encoding="utf8") as f:
+            self.mimetypes.readfp(f)
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
@@ -104,7 +102,6 @@ class ResponseTypes:
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
-        chunk = to_bytes(chunk)
         if not binary_is_text(chunk):
             return self.from_mimetype("application/octet-stream")
         lowercase_chunk = chunk.lower()

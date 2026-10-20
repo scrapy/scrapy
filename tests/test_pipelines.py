@@ -1,20 +1,25 @@
+from __future__ import annotations
+
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from twisted.internet.defer import Deferred, fail, succeed
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
+    from tests.mockserver.http import MockServer
 
 
 class SimplePipeline:
@@ -47,7 +52,7 @@ class DeferredPipeline:
         return succeed(None)
 
     def process_item(self, item):
-        d = Deferred()
+        d: Deferred[Any] = Deferred()
         d.addCallback(self.cb)
         d.callback(item)
         return d
@@ -55,7 +60,7 @@ class DeferredPipeline:
 
 class AsyncDefPipeline:
     async def process_item(self, item):
-        d = Deferred()
+        d: Deferred[Any] = Deferred()
         call_later(0, d.callback, None)
         await maybe_deferred_to_future(d)
         item["pipeline_passed"] = True
@@ -64,8 +69,8 @@ class AsyncDefPipeline:
 
 class AsyncDefAsyncioPipeline:
     async def process_item(self, item):
-        d = Deferred()
-        loop = asyncio.get_event_loop()
+        d: Deferred[Any] = Deferred()
+        loop = asyncio.get_running_loop()
         loop.call_later(0, d.callback, None)
         await deferred_to_future(d)
         await asyncio.sleep(0.2)
@@ -75,12 +80,12 @@ class AsyncDefAsyncioPipeline:
 
 class AsyncDefNotAsyncioPipeline:
     async def process_item(self, item):
-        d1 = Deferred()
+        d1: Deferred[Any] = Deferred()
         from twisted.internet import reactor
 
         reactor.callLater(0, d1.callback, None)
         await d1
-        d2 = Deferred()
+        d2: Deferred[Any] = Deferred()
         reactor.callLater(0, d2.callback, None)
         await maybe_deferred_to_future(d2)
         item["pipeline_passed"] = True
@@ -120,6 +125,8 @@ class OpenSpiderExceptionAsyncPipeline:
 class ItemSpider(Spider):
     name = "itemspider"
 
+    mockserver: MockServer
+
     async def start(self):
         yield Request(self.mockserver.url("/status?n=200"))
 
@@ -128,7 +135,7 @@ class ItemSpider(Spider):
 
 
 class TestPipeline:
-    def _on_item_scraped(self, item):
+    def _on_item_scraped(self, item: dict[str, Any]) -> None:
         assert isinstance(item, dict)
         assert item.get("pipeline_passed")
         self.items.append(item)
@@ -256,7 +263,7 @@ class TestCustomPipelineManager:
 
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        itemproc = CustomPipelineManager.from_crawler(crawler)
+        itemproc = build_from_crawler(CustomPipelineManager, crawler)
         with pytest.warns(
             ScrapyDeprecationWarning,
             match=r"CustomPipelineManager.process_item\(\) is deprecated, use process_item_async\(\)",
@@ -271,7 +278,7 @@ class TestCustomPipelineManager:
 
         items = []
 
-        def _on_item_scraped(item):
+        def _on_item_scraped(item: dict[str, Any]) -> None:
             assert isinstance(item, dict)
             assert item.get("pipeline_passed")
             items.append(item)
@@ -315,7 +322,7 @@ class TestCustomPipelineManager:
 
         items = []
 
-        def _on_item_scraped(item):
+        def _on_item_scraped(item: dict[str, Any]) -> None:
             assert isinstance(item, dict)
             assert item.get("pipeline_passed")
             items.append(item)
@@ -377,7 +384,7 @@ class TestCustomPipelineManager:
 
         items = []
 
-        def _on_item_scraped(item):
+        def _on_item_scraped(item: dict[str, Any]) -> None:
             assert isinstance(item, dict)
             assert item.get("pipeline_passed")
             items.append(item)

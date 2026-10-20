@@ -4,7 +4,8 @@ import marshal
 import pickle
 import re
 from abc import ABC, abstractmethod
-from datetime import datetime
+from collections.abc import Mapping
+from datetime import UTC, datetime
 from io import BytesIO
 from typing import Any
 
@@ -41,6 +42,11 @@ class CustomFieldItem(Item):
     age = Field(serializer=custom_serializer)
 
 
+class FriendsItem(Item):
+    name = Field()
+    friends = Field()
+
+
 @dataclasses.dataclass
 class MyDataClass:
     name: str
@@ -63,26 +69,25 @@ class TestBaseItemExporter(ABC):
         self.ie = self._get_exporter()
 
     @abstractmethod
-    def _get_exporter(self, **kwargs) -> BaseItemExporter:
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         raise NotImplementedError
 
-    def _check_output(self):  # noqa: B027
+    def _check_output(self) -> None:  # noqa: B027
         pass
 
-    def _assert_expected_item(self, exported_dict):
-        for k, v in exported_dict.items():
-            exported_dict[k] = to_unicode(v)
+    def _assert_expected_item(self, exported_dict: dict[str, Any]) -> None:
         assert self.i == self.item_class(**exported_dict)
 
-    def _get_nonstring_types_item(self):
+    @staticmethod
+    def _get_nonstring_types_item() -> dict[str, Any]:
         return {
             "boolean": False,
             "number": 22,
-            "time": datetime(2015, 1, 1, 1, 1, 1),
+            "time": datetime(2015, 1, 1, 1, 1, 1, tzinfo=UTC),
             "float": 3.14,
         }
 
-    def assertItemExportWorks(self, item):
+    def assertItemExportWorks(self, item: Any) -> None:
         self.ie.start_exporting()
         self.ie.export_item(item)
         self.ie.finish_exporting()
@@ -92,7 +97,7 @@ class TestBaseItemExporter(ABC):
         del self.ie
         self._check_output()
 
-    def test_export_item(self):
+    def test_export_item(self) -> None:
         self.assertItemExportWorks(self.i)
 
     def test_export_dict_item(self):
@@ -108,26 +113,26 @@ class TestBaseItemExporter(ABC):
 
     def test_fields_to_export(self):
         ie = self._get_exporter(fields_to_export=["name"])
-        assert list(ie._get_serialized_fields(self.i)) == [("name", "John\xa3")]
+        assert list(ie.get_serialized_fields(self.i)) == [("name", "John\xa3")]
 
         ie = self._get_exporter(fields_to_export=["name"], encoding="latin-1")
-        _, name = next(iter(ie._get_serialized_fields(self.i)))
+        _, name = next(iter(ie.get_serialized_fields(self.i)))
         assert isinstance(name, str)
         assert name == "John\xa3"
 
         ie = self._get_exporter(fields_to_export={"name": "名稱"})
-        assert list(ie._get_serialized_fields(self.i)) == [("名稱", "John\xa3")]
+        assert list(ie.get_serialized_fields(self.i)) == [("名稱", "John\xa3")]
 
     def test_field_order(self):
         item = self.item_class(age="22", name="John\xa3")
         ie = self._get_exporter()
-        assert [name for name, _ in ie._get_serialized_fields(item)] == ["name", "age"]
+        assert [name for name, _ in ie.get_serialized_fields(item)] == ["name", "age"]
 
     def test_field_order_dict_item(self):
         ie = self._get_exporter()
-        assert [name for name, _ in ie._get_serialized_fields({"age": "22"})] == ["age"]
+        assert [name for name, _ in ie.get_serialized_fields({"age": "22"})] == ["age"]
         assert [
-            name for name, _ in ie._get_serialized_fields({"age": "22", "name": "John"})
+            name for name, _ in ie.get_serialized_fields({"age": "22", "name": "John"})
         ] == ["age", "name"]
 
     def test_field_custom_serializer(self):
@@ -140,9 +145,39 @@ class TestBaseItemExporter(ABC):
         )
         assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == "24"
 
+    def test_nested_item_field_custom_serializer(self):
+        nested = self.custom_field_item_class(name="Nested\xa3", age="22")
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == {
+            "name": "Nested\xa3",
+            "age": "24",
+        }
+
+    def test_nested_item_list_field_custom_serializer(self):
+        nested = [
+            self.custom_field_item_class(name="Nested\xa3", age="22"),
+            self.custom_field_item_class(name="Other", age="1"),
+        ]
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == [
+            {"name": "Nested\xa3", "age": "24"},
+            {"name": "Other", "age": "3"},
+        ]
+
+    def test_nested_item_field_ignores_fields_to_export(self):
+        nested = self.custom_field_item_class(name="Nested\xa3", age="22")
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter(fields_to_export=["age"])
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == {
+            "name": "Nested\xa3",
+            "age": "24",
+        }
+
 
 class TestPythonItemExporter(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> PythonItemExporter:
         return PythonItemExporter(**kwargs)
 
     def test_invalid_option(self):
@@ -173,6 +208,7 @@ class TestPythonItemExporter(TestBaseItemExporter):
             "age": [{"age": [{"age": "22", "name": "Joseph"}], "name": "Maria"}],
             "name": "Jesus",
         }
+        assert exported is not None
         assert isinstance(exported["age"][0], dict)
         assert isinstance(exported["age"][0]["age"][0], dict)
 
@@ -186,6 +222,7 @@ class TestPythonItemExporter(TestBaseItemExporter):
             "age": [{"age": [{"age": "22", "name": "Joseph"}], "name": "Maria"}],
             "name": "Jesus",
         }
+        assert exported is not None
         assert isinstance(exported["age"][0], dict)
         assert isinstance(exported["age"][0]["age"][0], dict)
 
@@ -202,10 +239,10 @@ class TestPythonItemExporterDataclass(TestPythonItemExporter):
 
 
 class TestPprintItemExporter(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         return PprintItemExporter(self.output, **kwargs)
 
-    def _check_output(self):
+    def _check_output(self) -> None:
         self._assert_expected_item(eval(self.output.getvalue()))
 
 
@@ -215,10 +252,10 @@ class TestPprintItemExporterDataclass(TestPprintItemExporter):
 
 
 class TestPickleItemExporter(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         return PickleItemExporter(self.output, **kwargs)
 
-    def _check_output(self):
+    def _check_output(self) -> None:
         self._assert_expected_item(pickle.loads(self.output.getvalue()))
 
     def test_export_multiple_items(self):
@@ -252,10 +289,10 @@ class TestPickleItemExporterDataclass(TestPickleItemExporter):
 
 
 class TestMarshalItemExporter(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         return MarshalItemExporter(self.output, **kwargs)
 
-    def _check_output(self):
+    def _check_output(self) -> None:
         self.output.seek(0)
         self._assert_expected_item(marshal.load(self.output))
 
@@ -279,7 +316,7 @@ class TestMarshalItemExporterDataclass(TestMarshalItemExporter):
 
 
 class TestCsvItemExporter(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         # We need a fresh instance for each exporter, because
         # CsvItemExporter.stream.__del__() closes the underlying file
         # (CsvItemExporter.finish_exporting() calls detach() but not all tests
@@ -287,8 +324,10 @@ class TestCsvItemExporter(TestBaseItemExporter):
         self.output = BytesIO()
         return CsvItemExporter(self.output, **kwargs)
 
-    def assertCsvEqual(self, first, second, msg=None):
-        def split_csv(csv):
+    def assertCsvEqual(
+        self, first: bytes | str, second: bytes | str, msg: str | None = None
+    ) -> None:
+        def split_csv(csv: bytes | str) -> list[list[str]]:
             return [
                 sorted(re.split(r"(,|\s+)", line))
                 for line in to_unicode(csv).splitlines(True)
@@ -296,13 +335,13 @@ class TestCsvItemExporter(TestBaseItemExporter):
 
         assert split_csv(first) == split_csv(second), msg
 
-    def _check_output(self):
+    def _check_output(self) -> None:
         self.output.seek(0)
-        self.assertCsvEqual(
-            to_unicode(self.output.read()), "age,name\r\n22,John\xa3\r\n"
-        )
+        self.assertCsvEqual(self.output.read(), "age,name\r\n22,John\xa3\r\n")
 
-    def assertExportResult(self, item, expected, **kwargs):
+    def assertExportResult(
+        self, item: Any, expected: bytes | str = b"", **kwargs: Any
+    ) -> None:
         fp = BytesIO()
         ie = CsvItemExporter(fp, **kwargs)
         ie.start_exporting()
@@ -324,46 +363,43 @@ class TestCsvItemExporter(TestBaseItemExporter):
             expected=b"age,name\r\n22,John\xc2\xa3\r\n",
         )
 
-    def test_header_export_single_field(self):
-        for item in [self.i, ItemAdapter(self.i).asdict()]:
-            self.assertExportResult(
-                item=item,
-                fields_to_export=["age"],
-                expected=b"age\r\n22\r\n",
-            )
+    @pytest.mark.parametrize("as_dict", [False, True], ids=["item", "dict"])
+    def test_header_export_single_field(self, as_dict: bool) -> None:
+        self.assertExportResult(
+            item=ItemAdapter(self.i).asdict() if as_dict else self.i,
+            fields_to_export=["age"],
+            expected=b"age\r\n22\r\n",
+        )
 
-    def test_header_export_two_items(self):
-        for item in [self.i, ItemAdapter(self.i).asdict()]:
-            output = BytesIO()
-            ie = CsvItemExporter(output)
-            ie.start_exporting()
-            ie.export_item(item)
-            ie.export_item(item)
-            ie.finish_exporting()
-            del ie  # See the first “del self.ie” in this file for context.
-            self.assertCsvEqual(
-                output.getvalue(), b"age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n"
-            )
+    @pytest.mark.parametrize("as_dict", [False, True], ids=["item", "dict"])
+    def test_header_export_two_items(self, as_dict: bool) -> None:
+        item = ItemAdapter(self.i).asdict() if as_dict else self.i
+        output = BytesIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(item)
+        ie.export_item(item)
+        ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
+        self.assertCsvEqual(
+            output.getvalue(), b"age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n"
+        )
 
-    def test_header_no_header_line(self):
-        for item in [self.i, ItemAdapter(self.i).asdict()]:
-            self.assertExportResult(
-                item=item,
-                include_headers_line=False,
-                expected=b"22,John\xc2\xa3\r\n",
-            )
+    @pytest.mark.parametrize("as_dict", [False, True], ids=["item", "dict"])
+    def test_header_no_header_line(self, as_dict: bool) -> None:
+        self.assertExportResult(
+            item=ItemAdapter(self.i).asdict() if as_dict else self.i,
+            include_headers_line=False,
+            expected=b"22,John\xc2\xa3\r\n",
+        )
 
-    def test_join_multivalue(self):
-        class TestItem2(Item):
-            name = Field()
-            friends = Field()
-
-        for cls in TestItem2, dict:
-            self.assertExportResult(
-                item=cls(name="John", friends=["Mary", "Paul"]),
-                include_headers_line=False,
-                expected='"Mary,Paul",John\r\n',
-            )
+    @pytest.mark.parametrize("cls", [FriendsItem, dict])
+    def test_join_multivalue(self, cls: type) -> None:
+        self.assertExportResult(
+            item=cls(name="John", friends=["Mary", "Paul"]),
+            include_headers_line=False,
+            expected='"Mary,Paul",John\r\n',
+        )
 
     def test_join_multivalue_not_strings(self):
         self.assertExportResult(
@@ -376,14 +412,13 @@ class TestCsvItemExporter(TestBaseItemExporter):
         self.assertExportResult(
             item=self._get_nonstring_types_item(),
             include_headers_line=False,
-            expected="22,False,3.14,2015-01-01 01:01:01\r\n",
+            expected="22,False,3.14,2015-01-01 01:01:01+00:00\r\n",
         )
 
     def test_errors_default(self):
         with pytest.raises(UnicodeEncodeError):
             self.assertExportResult(
                 item={"text": "W\u0275\u200brd"},
-                expected=None,
                 encoding="windows-1251",
             )
 
@@ -417,7 +452,7 @@ class TestCsvItemExporterDataclass(TestCsvItemExporter):
 
 
 class TestXmlItemExporter(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         # We need a fresh instance for each exporter, because
         # XmlItemExporter.stream.__del__() closes the underlying file
         # (XmlItemExporter.finish_exporting() calls detach() but not all tests
@@ -425,20 +460,22 @@ class TestXmlItemExporter(TestBaseItemExporter):
         self.output = BytesIO()
         return XmlItemExporter(self.output, **kwargs)
 
-    def assertXmlEquivalent(self, first, second, msg=None):
-        def xmltuple(elem):
+    def assertXmlEquivalent(
+        self, first: bytes, second: bytes, msg: str | None = None
+    ) -> None:
+        def xmltuple(elem: Any) -> list[Any]:
             children = list(elem.iterchildren())
             if children:
                 return [(child.tag, sorted(xmltuple(child))) for child in children]
             return [(elem.tag, [(elem.text, ())])]
 
-        def xmlsplit(xmlcontent):
+        def xmlsplit(xmlcontent: bytes) -> list[Any]:
             doc = lxml.etree.fromstring(xmlcontent)
             return xmltuple(doc)
 
         assert xmlsplit(first) == xmlsplit(second), msg
 
-    def assertExportResult(self, item, expected_value):
+    def assertExportResult(self, item: Any, expected_value: bytes) -> None:
         fp = BytesIO()
         ie = XmlItemExporter(fp)
         ie.start_exporting()
@@ -447,7 +484,7 @@ class TestXmlItemExporter(TestBaseItemExporter):
         del ie  # See the first “del self.ie” in this file for context.
         self.assertXmlEquivalent(fp.getvalue(), expected_value)
 
-    def _check_output(self):
+    def _check_output(self) -> None:
         expected_value = (
             b'<?xml version="1.0" encoding="utf-8"?>\n'
             b"<items><item><age>22</age><name>John\xc2\xa3</name></item></items>"
@@ -520,7 +557,7 @@ class TestXmlItemExporter(TestBaseItemExporter):
                        <float>3.14</float>
                        <boolean>False</boolean>
                        <number>22</number>
-                       <time>2015-01-01 01:01:01</time>
+                       <time>2015-01-01 01:01:01+00:00</time>
                    </item>
                 </items>
             """,
@@ -538,11 +575,11 @@ class TestJsonLinesItemExporter(TestBaseItemExporter):
         "age": {"name": "Maria", "age": {"name": "Joseph", "age": "22"}},
     }
 
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         return JsonLinesItemExporter(self.output, **kwargs)
 
-    def _check_output(self):
-        exported = json.loads(to_unicode(self.output.getvalue().strip()))
+    def _check_output(self) -> None:
+        exported = json.loads(self.output.getvalue().strip())
         assert exported == ItemAdapter(self.i).asdict()
 
     def test_nested_item(self):
@@ -553,7 +590,7 @@ class TestJsonLinesItemExporter(TestBaseItemExporter):
         self.ie.export_item(i3)
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
-        exported = json.loads(to_unicode(self.output.getvalue()))
+        exported = json.loads(self.output.getvalue())
         assert exported == self._expected_nested
 
     def test_extra_keywords(self):
@@ -569,8 +606,8 @@ class TestJsonLinesItemExporter(TestBaseItemExporter):
         self.ie.export_item(item)
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
-        exported = json.loads(to_unicode(self.output.getvalue()))
-        item["time"] = str(item["time"])
+        exported = json.loads(self.output.getvalue())
+        item["time"] = item["time"].isoformat()
         assert exported == item
 
 
@@ -582,20 +619,20 @@ class TestJsonLinesItemExporterDataclass(TestJsonLinesItemExporter):
 class TestJsonItemExporter(TestJsonLinesItemExporter):
     _expected_nested = [TestJsonLinesItemExporter._expected_nested]
 
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         return JsonItemExporter(self.output, **kwargs)
 
-    def _check_output(self):
-        exported = json.loads(to_unicode(self.output.getvalue().strip()))
+    def _check_output(self) -> None:
+        exported = json.loads(self.output.getvalue().strip())
         assert exported == [ItemAdapter(self.i).asdict()]
 
-    def assertTwoItemsExported(self, item):
+    def assertTwoItemsExported(self, item: Any) -> None:
         self.ie.start_exporting()
         self.ie.export_item(item)
         self.ie.export_item(item)
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
-        exported = json.loads(to_unicode(self.output.getvalue()))
+        exported = json.loads(self.output.getvalue())
         assert exported == [ItemAdapter(item).asdict(), ItemAdapter(item).asdict()]
 
     def test_two_items(self):
@@ -616,7 +653,7 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
             self.ie.export_item(i2)
         self.ie.export_item(i3)
         self.ie.finish_exporting()
-        exported = json.loads(to_unicode(self.output.getvalue()))
+        exported = json.loads(self.output.getvalue())
         assert exported == [dict(i1), dict(i3)]
 
     def test_nested_item(self):
@@ -627,7 +664,7 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
         self.ie.export_item(i3)
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
-        exported = json.loads(to_unicode(self.output.getvalue()))
+        exported = json.loads(self.output.getvalue())
         expected = {
             "name": "Jesus",
             "age": {"name": "Maria", "age": ItemAdapter(i1).asdict()},
@@ -642,7 +679,7 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
         self.ie.export_item(i3)
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
-        exported = json.loads(to_unicode(self.output.getvalue()))
+        exported = json.loads(self.output.getvalue())
         expected = {"name": "Jesus", "age": {"name": "Maria", "age": i1}}
         assert exported == [expected]
 
@@ -652,13 +689,13 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
         self.ie.export_item(item)
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
-        exported = json.loads(to_unicode(self.output.getvalue()))
-        item["time"] = str(item["time"])
+        exported = json.loads(self.output.getvalue())
+        item["time"] = item["time"].isoformat()
         assert exported == [item]
 
 
 class TestJsonItemExporterToBytes(TestBaseItemExporter):
-    def _get_exporter(self, **kwargs):
+    def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
         kwargs["encoding"] = "latin"
         return JsonItemExporter(self.output, **kwargs)
 
@@ -672,7 +709,7 @@ class TestJsonItemExporterToBytes(TestBaseItemExporter):
             self.ie.export_item(i2)
         self.ie.export_item(i3)
         self.ie.finish_exporting()
-        exported = json.loads(to_unicode(self.output.getvalue(), encoding="latin"))
+        exported = json.loads(self.output.getvalue().decode(encoding="latin-1"))
         assert exported == [dict(i1), dict(i3)]
 
 
@@ -690,7 +727,9 @@ class TestCustomExporterItem:
 
     def test_exporter_custom_serializer(self):
         class CustomItemExporter(BaseItemExporter):
-            def serialize_field(self, field, name, value):
+            def serialize_field(
+                self, field: Mapping[str, Any] | Field, name: str, value: Any
+            ) -> Any:
                 if name == "age":
                     return str(int(value) + 1)
                 return super().serialize_field(field, name, value)

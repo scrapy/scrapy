@@ -6,22 +6,36 @@ library.
 from __future__ import annotations
 
 import re
+import warnings
 from typing import TYPE_CHECKING, TypeAlias
-from urllib.parse import ParseResult, urlparse, urlunparse
+from urllib.parse import ParseResult, urljoin, urlunparse
 
-from w3lib.url import any_to_uri, parse_url
+import w3lib.url
+from w3lib.url import any_to_uri, parse_url, safe_url_string
+
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from scrapy import Spider
+    from scrapy.http import Request, Response
 
 UrlT: TypeAlias = str | bytes | ParseResult
 
 
-def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
+def _parse_url(url: UrlT | Request | Response) -> ParseResult:
+    if isinstance(url, (bytes, ParseResult)):
+        return parse_url(url)
+    return urlparse_cached(url)
+
+
+def url_is_from_any_domain(
+    url: UrlT | Request | Response, domains: Iterable[str]
+) -> bool:
     """Return True if the url belongs to any of the given domains"""
-    host = parse_url(url).netloc.lower()
+    host = _parse_url(url).netloc.lower()
     if not host:
         return False
     return any((host == d) or (host.endswith(f".{d}")) for d in map(str.lower, domains))
@@ -29,30 +43,52 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
 
 def _spider_domains(spider: type[Spider]) -> Iterable[str]:
     yield spider.name
-    if allowed_domains := getattr(spider, "allowed_domains", None):
+    allowed_domains = getattr(spider, "allowed_domains", None)
+    if isinstance(allowed_domains, property):
+        warnings.warn(
+            f"{spider.__name__}.allowed_domains is a property. Properties "
+            "cannot be evaluated on a spider class, only on a spider "
+            "instance, so it will be ignored here. This affects matching "
+            "URLs to spiders, e.g. in the shell, fetch and parse commands. "
+            "Define allowed_domains as a plain class attribute instead.",
+            stacklevel=2,
+            category=UserWarning,
+        )
+        return
+    if allowed_domains:
         yield from allowed_domains
 
 
-def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
+def url_is_from_spider(url: UrlT | Request | Response, spider: type[Spider]) -> bool:
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(url, _spider_domains(spider))
 
 
-def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
+def url_has_any_extension(
+    url: UrlT | Request | Response, extensions: Iterable[str]
+) -> bool:
     """Return True if the url ends with one of the extensions provided"""
-    lowercase_path = parse_url(url).path.lower()
+    lowercase_path = _parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
+
+
+def _add_http_if_no_scheme(url: str) -> str:
+    if not re.match(r"^\w+://", url, flags=re.IGNORECASE):
+        scheme = "http:" if urlparse_cached(url).netloc else "http://"
+        url = scheme + url
+    return url
 
 
 def add_http_if_no_scheme(url: str) -> str:
     """Add http as the default scheme if it is missing from the url."""
-    match = re.match(r"^\w+://", url, flags=re.IGNORECASE)
-    if not match:
-        parts = urlparse(url)
-        scheme = "http:" if parts.netloc else "http://"
-        url = scheme + url
-
-    return url
+    if hasattr(w3lib.url, "add_http_if_no_scheme"):
+        warnings.warn(
+            "scrapy.utils.url.add_http_if_no_scheme() is deprecated, use "
+            "w3lib.url.add_http_if_no_scheme() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+    return _add_http_if_no_scheme(url)
 
 
 def _is_posix_path(string: str) -> bool:
@@ -102,7 +138,7 @@ def guess_scheme(url: str) -> str:
     http:// otherwise."""
     if _is_filesystem_path(url):
         return any_to_uri(url)
-    return add_http_if_no_scheme(url)
+    return _add_http_if_no_scheme(url)
 
 
 def strip_url(
@@ -122,7 +158,7 @@ def strip_url(
     - ``strip_fragment`` drops any #fragment component
     """
 
-    parsed_url = urlparse(url)
+    parsed_url = urlparse_cached(url)
     netloc = parsed_url.netloc
     if (strip_credentials or origin_only) and (
         parsed_url.username or parsed_url.password
@@ -152,3 +188,19 @@ def strip_url(
             "" if strip_fragment else parsed_url.fragment,
         )
     )
+
+
+def _redirect_url(url: str, location: bytes) -> str:
+    """Return the absolute URL that the *location* value of the ``Location``
+    header of a response to a request to *url* points to."""
+    target = safe_url_string(location)
+    parsed_url = urlparse_cached(url)
+    if location.startswith(b"//"):
+        # safe_url_string() may drop leading slashes of a scheme-relative URL,
+        # so build the absolute URL without relying on urljoin().
+        target = f"{parsed_url.scheme}://{target.lstrip('/')}"
+    redirect_url = urljoin(url, target)
+    # A percent-encoded number sign is URI data, not a fragment delimiter.
+    if b"#" not in location and parsed_url.fragment:
+        redirect_url = urljoin(redirect_url, f"#{parsed_url.fragment}")
+    return redirect_url

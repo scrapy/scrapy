@@ -25,6 +25,14 @@ class TestCurlToRequestKwargs:
         expected_result = {"method": "GET", "url": "http://example.org/"}
         self._test_command(curl_command, expected_result)
 
+    def test_get_url_with_escaped_space(self):
+        curl_command = r"curl http://example.org/a\ b"
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/a b",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_get_without_scheme(self):
         curl_command = "curl www.example.org"
         expected_result = {"method": "GET", "url": "http://www.example.org"}
@@ -38,6 +46,79 @@ class TestCurlToRequestKwargs:
             "headers": [
                 ("Authorization", basic_auth_header("some_username", "some_password"))
             ],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize("auth", ["some_username", "some_username:"])
+    def test_get_basic_auth_without_password(self, auth):
+        curl_command = f'curl "https://api.test.com/" -u "{auth}"'
+        expected_result = {
+            "method": "GET",
+            "url": "https://api.test.com/",
+            "headers": [("Authorization", basic_auth_header("some_username", ""))],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_header_with_empty_value(self):
+        curl_command = 'curl "http://example.org/" -H "X-Flag;"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Flag", "")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_header_with_string_prefix(self):
+        curl_command = "curl 'http://example.org/' -H $'X-A: b'"
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-A", "b")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize("header", ["X-Flag:", "X-Flag: "])
+    def test_get_header_without_value(self, header):
+        curl_command = f'curl "http://example.org/" -H "{header}"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Flag", None)],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize("header", ["X-Flag", "X-Flag;extra", "X-Flag ; ", ";"])
+    def test_get_header_curl_would_not_send(self, header):
+        curl_command = f'curl "http://example.org/" -H "{header}"'
+        expected_result = {"method": "GET", "url": "http://example.org/"}
+        self._test_command(curl_command, expected_result)
+
+    def test_get_ignored_header_does_not_hide_following_header(self):
+        curl_command = 'curl "http://example.org/" -H "X-Flag" -H "X-Other: value"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Other", "value")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_cookie_option(self):
+        curl_command = 'curl "http://example.org/" -b "a=1; b=2"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "cookies": {"a": "1", "b": "2"},
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_cookie_file_option(self):
+        # curl reads cookies from a file when the value is not a key-value
+        # pair; Scrapy ignores it.
+        curl_command = 'curl "http://example.org/" -b cookies.txt -b "a=1"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "cookies": {"a": "1"},
         }
         self._test_command(curl_command, expected_result)
 
@@ -63,14 +144,18 @@ class TestCurlToRequestKwargs:
                 ("Upgrade-Insecure-Requests", "1"),
                 (
                     "User-Agent",
-                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
-                    ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
-                    "02.75 Safari/537.36",
+                    (
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
+                        ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
+                        "02.75 Safari/537.36"
+                    ),
                 ),
                 (
                     "Accept",
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
-                    "ge/webp,image/apng,*/*;q=0.8",
+                    (
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
+                        "ge/webp,image/apng,*/*;q=0.8"
+                    ),
                 ),
                 ("Referer", "http://httpbin.org/"),
                 ("Connection", "keep-alive"),
@@ -122,15 +207,19 @@ class TestCurlToRequestKwargs:
                 ("Upgrade-Insecure-Requests", "1"),
                 (
                     "User-Agent",
-                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
-                    ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
-                    "02.75 Safari/537.36",
+                    (
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML"
+                        ", like Gecko) Ubuntu Chromium/62.0.3202.75 Chrome/62.0.32"
+                        "02.75 Safari/537.36"
+                    ),
                 ),
                 ("Content-Type", "application/x-www-form-urlencoded"),
                 (
                     "Accept",
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
-                    "ge/webp,image/apng,*/*;q=0.8",
+                    (
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,ima"
+                        "ge/webp,image/apng,*/*;q=0.8"
+                    ),
                 ),
                 ("Cache-Control", "max-age=0"),
                 ("Referer", "http://httpbin.org/forms/post"),
@@ -165,6 +254,15 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_raw_preserves_leading_dollar(self):
+        curl_command = "curl 'https://www.example.org/' --data-raw '$top=10&$skip=5'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "$top=10&$skip=5",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_post_data_multiple(self):
         # curl merges repeated -d/--data/--data-raw options into a single body
         # joined with "&"; scrapy must do the same, not keep only the last one.
@@ -188,8 +286,8 @@ class TestCurlToRequestKwargs:
         self._test_command(curl_command, expected_result)
 
     def test_post_data_multiple_with_string_prefix(self):
-        # The leading "$" left by bash $'...' quoting is stripped per option,
-        # before the values are merged.
+        # Bash $'...' quoting is normalized before parsing,
+        # so the prefix is not included when the values are merged.
         curl_command = "curl 'https://www.example.org/' -d $'a=1' -d $'b=2'"
         expected_result = {
             "method": "POST",
@@ -265,3 +363,7 @@ class TestCurlToRequestKwargs:
     def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")
+
+    def test_empty_command_error(self):
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs("")

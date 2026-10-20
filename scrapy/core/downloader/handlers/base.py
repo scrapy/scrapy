@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
+
+from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy import Request
     from scrapy.crawler import Crawler
     from scrapy.http import Response
 
 
-class BaseDownloadHandler(ABC):
+class BaseDownloadHandler(DownloadHandlerProtocol, ABC):
     """Optional base class for download handlers."""
 
     lazy: bool = False
@@ -28,5 +27,5 @@ class BaseDownloadHandler(ABC):
     async def download_request(self, request: Request) -> Response:
         raise NotImplementedError
 
-    async def close(self) -> None:  # noqa: B027
+    async def close(self) -> None:
         pass

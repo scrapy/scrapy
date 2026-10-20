@@ -12,21 +12,22 @@ import sys
 import warnings
 from importlib import import_module
 from pprint import pformat
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.engine import get_engine_status
+from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     from twisted.internet.task import LoopingCall
 
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
@@ -36,13 +37,26 @@ class MemoryUsage:
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("MEMUSAGE_ENABLED"):
             raise NotConfigured
+        self.resource: ModuleType | None
         try:
             # stdlib's resource module is only available on unix platforms.
             self.resource = import_module("resource")
-        except ImportError as exc:
-            raise NotConfigured from exc
+        except ImportError:
+            self.resource = None
+            try:
+                import psutil  # noqa: PLC0415
+            except ImportError as exc:
+                raise NotConfigured(
+                    "The MemoryUsage extension requires either the stdlib "
+                    "'resource' module (not available on Windows) or the "
+                    "'psutil' package. Install it with the 'memusage' extra "
+                    "(pip install scrapy[memusage]), or disable this "
+                    "extension by setting MEMUSAGE_ENABLED to False."
+                ) from exc
+            self._process = psutil.Process()
 
         self.crawler: Crawler = crawler
+        self._stats: StatsCollector = crawler.stats
         self.warned: bool = False
         self.notify_mails: list[str] = crawler.settings.getlist("MEMUSAGE_NOTIFY_MAIL")
         if self.notify_mails:  # pragma: no cover
@@ -55,7 +69,7 @@ class MemoryUsage:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            self.mail = MailSender.from_crawler(crawler)
+            self.mail = build_from_crawler(MailSender, crawler)
 
         self.limit: int = crawler.settings.getint("MEMUSAGE_LIMIT_MB") * 1024 * 1024
         self.warning: int = crawler.settings.getint("MEMUSAGE_WARNING_MB") * 1024 * 1024
@@ -70,16 +84,19 @@ class MemoryUsage:
         return cls(crawler)
 
     def get_virtual_size(self) -> int:
-        size: int = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
-        if sys.platform != "darwin":
-            # on macOS ru_maxrss is in bytes, on Linux it is in KB
-            size *= 1024
-        return size
+        if self.resource is not None:
+            size: int = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
+            if sys.platform != "darwin":
+                # on macOS ru_maxrss is in bytes, on Linux it is in KB
+                size *= 1024
+            return size
+        # The psutil fallback is only used where 'resource' is unavailable,
+        # i.e. on Windows, where psutil tracks the peak working set size.
+        return int(self._process.memory_info().peak_wset)
 
     def engine_started(self) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.set_value("memusage/startup", self.get_virtual_size())
-        self.tasks: list[AsyncioLoopingCall | LoopingCall] = []
+        self._stats.set_value("memusage/startup", self.get_virtual_size())
+        self.tasks: list[AsyncioLoopingCall[[], None] | LoopingCall] = []
         tsk = create_looping_call(self.update)
         self.tasks.append(tsk)
         tsk.start(self.check_interval, now=True)
@@ -98,15 +115,12 @@ class MemoryUsage:
                 tsk.stop()
 
     def update(self) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.max_value("memusage/max", self.get_virtual_size())
+        self._stats.max_value("memusage/max", self.get_virtual_size())
 
     def _check_limit(self) -> None:
-        assert self.crawler.engine
-        assert self.crawler.stats
         peak_mem_usage = self.get_virtual_size()
         if peak_mem_usage > self.limit:
-            self.crawler.stats.set_value("memusage/limit_reached", 1)
+            self._stats.set_value("memusage/limit_reached", 1)
             mem = self.limit / 1024 / 1024
             logger.error(
                 "Memory usage exceeded %(memusage)dMiB. Shutting down Scrapy...",
@@ -119,7 +133,7 @@ class MemoryUsage:
                     f"memory usage exceeded {mem}MiB at {socket.gethostname()}"
                 )
                 self._send_report(self.notify_mails, subj)
-                self.crawler.stats.set_value("memusage/limit_notified", 1)
+                self._stats.set_value("memusage/limit_notified", 1)
 
             if self.crawler.engine.spider is not None:
                 _schedule_coro(
@@ -136,9 +150,8 @@ class MemoryUsage:
     def _check_warning(self) -> None:
         if self.warned:  # warn only once
             return
-        assert self.crawler.stats
         if self.get_virtual_size() > self.warning:
-            self.crawler.stats.set_value("memusage/warning_reached", 1)
+            self._stats.set_value("memusage/warning_reached", 1)
             self.crawler.signals.send_catch_log(signal=signals.memusage_warning_reached)
             mem = self.warning / 1024 / 1024
             logger.warning(
@@ -152,16 +165,13 @@ class MemoryUsage:
                     f"memory usage reached {mem}MiB at {socket.gethostname()}"
                 )
                 self._send_report(self.notify_mails, subj)
-                self.crawler.stats.set_value("memusage/warning_notified", 1)
+                self._stats.set_value("memusage/warning_notified", 1)
             self.warned = True
 
     def _send_report(self, rcpts: list[str], subject: str) -> None:  # pragma: no cover
         """send notification mail with some additional useful info"""
-        assert self.crawler.engine
-        assert self.crawler.stats
-        stats = self.crawler.stats
-        s = f"Memory usage at engine startup : {stats.get_value('memusage/startup') / 1024 / 1024}M\r\n"
-        s += f"Maximum memory usage          : {stats.get_value('memusage/max') / 1024 / 1024}M\r\n"
+        s = f"Memory usage at engine startup : {self._stats.get_value('memusage/startup') / 1024 / 1024}M\r\n"
+        s += f"Maximum memory usage          : {self._stats.get_value('memusage/max') / 1024 / 1024}M\r\n"
         s += f"Current memory usage          : {self.get_virtual_size() / 1024 / 1024}M\r\n"
 
         s += (
