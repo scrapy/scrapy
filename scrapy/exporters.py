@@ -18,12 +18,14 @@ from xml.sax.xmlreader import AttributesImpl
 
 from itemadapter import ItemAdapter, is_item
 
-from scrapy.item import Field, Item
-from scrapy.utils.python import is_listlike, to_bytes, to_unicode
+from scrapy.utils.python import is_listlike, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine
     from json import JSONEncoder
+
+    from scrapy.item import Field
 
 logger = logging.getLogger(__name__)
 
@@ -59,20 +61,66 @@ class BaseItemExporter(ABC):
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
     @abstractmethod
-    def export_item(self, item: Any) -> None:
+    def export_item(self, item: Any) -> Coroutine[Any, Any, None] | None:
+        """Exports the given item. This method must be implemented in
+        subclasses.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``). Scrapy
+           awaits its result when the exporter is used by the :ref:`feed
+           exports <topics-feed-exports>`.
+        """
         raise NotImplementedError
 
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
-        serializer: Callable[[Any], Any] = field.get("serializer", lambda x: x)
+        serializer: Callable[[Any], Any] = field.get(
+            "serializer", self._serialize_value
+        )
         return serializer(value)
 
-    def start_exporting(self) -> None:  # noqa: B027
-        pass
+    def _serialize_value(self, value: Any) -> Any:
+        if is_item(value):
+            adapter = ItemAdapter(value)
+            field_names = (
+                adapter.field_names()
+                if self.export_empty_fields
+                else self._get_populated_field_names(adapter)
+            )
+            return {
+                name: self.serialize_field(
+                    adapter.get_field_meta(name), name, adapter[name]
+                )
+                for name in field_names
+            }
+        if is_listlike(value):
+            return [self._serialize_value(v) for v in value]
+        return value
 
-    def finish_exporting(self) -> None:  # noqa: B027
-        pass
+    def start_exporting(self) -> Coroutine[Any, Any, None] | None:  # noqa: B027
+        """Signal the beginning of the exporting process. Some exporters may
+        use this to generate some required header (for example, the
+        :class:`XmlItemExporter`). You must call this method before exporting
+        any items.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``). Scrapy
+           awaits its result when the exporter is used by the :ref:`feed
+           exports <topics-feed-exports>`.
+        """
+
+    def finish_exporting(self) -> Coroutine[Any, Any, None] | None:  # noqa: B027
+        """Signal the end of the exporting process. Some exporters may use this
+        to generate some required footer (for example, the
+        :class:`XmlItemExporter`). You must always call this method after you
+        have no more items to export.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``). Scrapy
+           awaits its result when the exporter is used by the :ref:`feed
+           exports <topics-feed-exports>`.
+        """
 
     @staticmethod
     def _get_populated_field_names(adapter: ItemAdapter) -> Iterable[str]:
@@ -85,11 +133,16 @@ class BaseItemExporter(ABC):
         declared = (name for name in adapter.field_names() if name in populated)
         return dict.fromkeys([*declared, *adapter.keys()])
 
-    def _get_serialized_fields(
+    def get_serialized_fields(
         self, item: Any, default_value: Any = None, include_empty: bool | None = None
     ) -> Iterable[tuple[str, Any]]:
-        """Return the fields to export as an iterable of tuples
-        (name, serialized_value)
+        """Return the fields of *item* to export, as an iterable of
+        ``(name, serialized_value)`` tuples, taking :attr:`fields_to_export`
+        into account and applying :meth:`serialize_field` to every value.
+
+        Fields missing from *item* are exported with *default_value*.
+
+        *include_empty* overrides :attr:`export_empty_fields`.
         """
         item = ItemAdapter(item)
 
@@ -136,9 +189,9 @@ class JsonLinesItemExporter(BaseItemExporter):
         self.encoder: JSONEncoder = ScrapyJSONEncoder(**self._kwargs)
 
     def export_item(self, item: Any) -> None:
-        itemdict = dict(self._get_serialized_fields(item))
+        itemdict = dict(self.get_serialized_fields(item))
         data = self.encoder.encode(itemdict) + "\n"
-        self.file.write(to_bytes(data, self.encoding))
+        self.file.write(data.encode(self.encoding or "utf-8"))
 
 
 class JsonItemExporter(BaseItemExporter):
@@ -176,8 +229,8 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(b"]")
 
     def export_item(self, item: Any) -> None:
-        itemdict = dict(self._get_serialized_fields(item))
-        data = to_bytes(self.encoder.encode(itemdict), self.encoding)
+        itemdict = dict(self.get_serialized_fields(item))
+        data = self.encoder.encode(itemdict).encode(self.encoding or "utf-8")
         self._add_comma_after_first()
         self.file.write(data)
 
@@ -216,7 +269,7 @@ class XmlItemExporter(BaseItemExporter):
         self._beautify_indent(depth=1)
         self.xg.startElement(self.item_element, AttributesImpl({}))
         self._beautify_newline()
-        for name, value in self._get_serialized_fields(item, default_value=""):
+        for name, value in self.get_serialized_fields(item, default_value=""):
             self._export_xml_field(name, value, depth=2)
         self._beautify_indent(depth=1)
         self.xg.endElement(self.item_element)
@@ -282,6 +335,7 @@ class CsvItemExporter(BaseItemExporter):
         return serializer(value)
 
     def _join_if_needed(self, value: Any) -> Any:
+        value = self._serialize_value(value)
         if isinstance(value, (list, tuple)):
             try:
                 return self._join_multivalued.join(value)
@@ -310,7 +364,7 @@ class CsvItemExporter(BaseItemExporter):
                     f"See: https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-fields",
                 )
                 self._data_loss_warned = True
-        fields = self._get_serialized_fields(item, default_value="", include_empty=True)
+        fields = self.get_serialized_fields(item, default_value="", include_empty=True)
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
 
@@ -347,7 +401,7 @@ class PickleItemExporter(BaseItemExporter):
         self.protocol: int = protocol
 
     def export_item(self, item: Any) -> None:
-        d = dict(self._get_serialized_fields(item))
+        d = dict(self.get_serialized_fields(item))
         pickle.dump(d, self.file, self.protocol)
 
 
@@ -365,7 +419,7 @@ class MarshalItemExporter(BaseItemExporter):
         self.file: BytesIO = file
 
     def export_item(self, item: Any) -> None:
-        marshal.dump(dict(self._get_serialized_fields(item)), self.file)
+        marshal.dump(dict(self.get_serialized_fields(item)), self.file)
 
 
 class PprintItemExporter(BaseItemExporter):
@@ -374,16 +428,14 @@ class PprintItemExporter(BaseItemExporter):
         self.file: BytesIO = file
 
     def export_item(self, item: Any) -> None:
-        itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(to_bytes(pprint.pformat(itemdict) + "\n"))
+        itemdict = dict(self.get_serialized_fields(item))
+        self.file.write(pprint.pformat(itemdict).encode() + b"\n")
 
 
 class PythonItemExporter(BaseItemExporter):
-    """This is a base class for item exporters that extends
-    :class:`BaseItemExporter` with support for nested items.
-
-    It serializes items to built-in Python types, so that any serialization
-    library (e.g. :mod:`json` or msgpack_) can be used on top of it.
+    """It serializes items to built-in Python types, so that any
+    serialization library (e.g. :mod:`json` or msgpack_) can be used on top
+    of it.
 
     .. _msgpack: https://pypi.org/project/msgpack/
     """
@@ -393,29 +445,11 @@ class PythonItemExporter(BaseItemExporter):
         if not self.encoding:
             self.encoding = "utf-8"
 
-    def serialize_field(
-        self, field: Mapping[str, Any] | Field, name: str, value: Any
-    ) -> Any:
-        serializer: Callable[[Any], Any] = field.get(
-            "serializer", self._serialize_value
-        )
-        return serializer(value)
-
     def _serialize_value(self, value: Any) -> Any:
-        if isinstance(value, Item):
-            return self.export_item(value)
         if isinstance(value, (str, bytes)):
             return to_unicode(value, encoding=self.encoding)
-        if is_item(value):
-            return dict(self._serialize_item(value))
-        if is_listlike(value):
-            return [self._serialize_value(v) for v in value]
-        return value
-
-    def _serialize_item(self, item: Any) -> Iterable[tuple[str | bytes, Any]]:
-        for key, value in ItemAdapter(item).items():
-            yield key, self._serialize_value(value)
+        return super()._serialize_value(value)
 
     def export_item(self, item: Any) -> dict[str | bytes, Any]:  # type: ignore[override]
-        result: dict[str | bytes, Any] = dict(self._get_serialized_fields(item))
+        result: dict[str | bytes, Any] = dict(self.get_serialized_fields(item))
         return result

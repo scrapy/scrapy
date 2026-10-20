@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Any
 
 from w3lib.url import is_url
 
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import ScrapyCommand, _add_curl_option, _request_from_curl
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
-from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils._datatypes import SequenceExclude
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Iterable
 
     from scrapy import Spider
 
@@ -32,8 +32,14 @@ class Command(ScrapyCommand):
             " to stdout. You may want to use --nolog to disable logging"
         )
 
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest == "spider":
+            return self._spider_names()
+        return super().complete_option(dest)
+
     def add_options(self, parser: ArgumentParser) -> None:
         super().add_options(parser)
+        _add_curl_option(parser)
         parser.add_argument("--spider", dest="spider", help="use this spider")
         parser.add_argument(
             "--headers",
@@ -67,14 +73,24 @@ class Command(ScrapyCommand):
         sys.stdout.buffer.write(bytes_ + b"\n")
 
     def run(self, args: list[str], opts: Namespace) -> None:
-        if len(args) != 1 or not is_url(args[0]):
-            raise UsageError
-        request = Request(
-            args[0],
-            callback=self._print_response,
-            cb_kwargs={"opts": opts},
-            dont_filter=True,
-        )
+        if opts.curl:
+            if args:
+                raise UsageError("--curl cannot be combined with a URL argument")
+            request = _request_from_curl(
+                opts.curl,
+                callback=self._print_response,
+                cb_kwargs={"opts": opts},
+                dont_filter=True,
+            )
+        else:
+            if len(args) != 1 or not is_url(args[0]):
+                raise UsageError
+            request = Request(
+                args[0],
+                callback=self._print_response,
+                cb_kwargs={"opts": opts},
+                dont_filter=True,
+            )
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx
         if not opts.no_redirect:
@@ -97,3 +113,5 @@ class Command(ScrapyCommand):
 
         self.crawler_process.crawl(spidercls)
         self.crawler_process.start()
+        if self.crawler_process.bootstrap_failed:
+            self.exitcode = 1

@@ -1,8 +1,11 @@
 from logging import INFO
+from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
-from scrapy import Request
+from scrapy import Request, Spider
+from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.http.response import Response
@@ -11,6 +14,7 @@ from scrapy.settings.default_settings import (
     AUTOTHROTTLE_START_DELAY,
     DOWNLOAD_DELAY,
 )
+from scrapy.throttler import Throttler
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler as _get_crawler
@@ -18,7 +22,9 @@ from scrapy.utils.test import get_crawler as _get_crawler
 UNSET = object()
 
 
-def get_crawler(settings=None, spidercls=None):
+def get_crawler(
+    settings: dict[str, Any] | None = None, spidercls: type[Spider] | None = None
+) -> Crawler:
     settings = settings or {}
     settings["AUTOTHROTTLE_ENABLED"] = True
     return _get_crawler(settings_dict=settings, spidercls=spidercls)
@@ -72,7 +78,7 @@ def test_mindelay_definition(setting, expected):
 
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    at._spider_opened(DefaultSpider())
+    at._spider_opened(DefaultSpider.from_crawler(crawler))
     assert at.mindelay == expected
 
 
@@ -89,7 +95,7 @@ def test_maxdelay_definition(value, expected):
         settings["AUTOTHROTTLE_MAX_DELAY"] = value
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    at._spider_opened(DefaultSpider())
+    at._spider_opened(DefaultSpider.from_crawler(crawler))
     assert at.maxdelay == expected
 
 
@@ -122,7 +128,7 @@ def test_startdelay_definition(min_setting, start_setting, expected):
 
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    at._spider_opened(DefaultSpider())
+    at._spider_opened(DefaultSpider.from_crawler(crawler))
     assert at._startdelay == expected
 
 
@@ -136,24 +142,32 @@ def test_startdelay_definition(min_setting, start_setting, expected):
     ],
     ids=["no-latency", "dont-adjust"],
 )
-def test_skipped(meta):
+def test_skipped(meta, monkeypatch):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
     request = Request("https://example.com", meta=meta)
     response = Response(request.url)
-    at._adjust_delay = None  # Raise an exception if called.
+    # Fail instead of adjusting the delay.
+    monkeypatch.setattr(at, "_adjust_delay", Mock(side_effect=AssertionError))
 
     at._response_downloaded(response, request, spider)
 
 
-def _adjust(crawler, at, spider, download_latency, scope_delay, status=200, body=b""):
+def _adjust(
+    crawler: Crawler,
+    at: AutoThrottle,
+    spider: Spider,
+    download_latency: float,
+    scope_delay: float,
+    status: int = 200,
+    body: bytes = b"",
+) -> float:
     """Drive one response through the extension and return the resulting scope
     delay. The scope is pre-marked as started so *scope_delay* is used verbatim
     as the old delay (no AUTOTHROTTLE_START_DELAY bump)."""
     scope_id = "example.com"
-    assert crawler.throttler is not None
     at._started_scopes.add(scope_id)
     crawler.throttler.get_scope_manager(scope_id).set_base_delay(
         scope_delay, only_increase=False
@@ -182,7 +196,7 @@ def test_adjustment(download_latency, target_concurrency, scope_delay, expected)
     settings = {"AUTOTHROTTLE_TARGET_CONCURRENCY": target_concurrency}
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
 
     delay = _adjust(crawler, at, spider, download_latency, scope_delay)
@@ -208,7 +222,7 @@ def test_adjustment_limits(mindelay, maxdelay, expected):
     }
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
 
     delay = _adjust(crawler, at, spider, download_latency, scope_delay)
@@ -230,7 +244,7 @@ def test_adjustment_bad_response(
     settings = {"AUTOTHROTTLE_TARGET_CONCURRENCY": target_concurrency}
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
 
     delay = _adjust(crawler, at, spider, download_latency, scope_delay, status=400)
@@ -243,9 +257,8 @@ def test_start_delay_applied_once_per_scope():
     # before adjusting; subsequent responses adjust from the current scope delay.
     crawler = get_crawler({"AUTOTHROTTLE_START_DELAY": 5.0})
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
-    assert crawler.throttler is not None
     scope_id = "example.com"
     request = Request(f"https://{scope_id}", meta={"download_latency": 5.0})
     at._response_downloaded(Response(request.url), request, spider)
@@ -260,9 +273,8 @@ def test_adjusts_every_scope_the_request_was_sent_under():
     # otherwise have its latency applied to a scope nothing is throttled by.
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
-    assert crawler.throttler is not None
     scopes = ["api-budget", "example.com"]
     for scope_id in scopes:
         at._started_scopes.add(scope_id)
@@ -283,9 +295,8 @@ def test_adjusts_every_scope_the_request_was_sent_under():
 def test_ignores_the_host_name_of_a_custom_scope():
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
-    assert crawler.throttler is not None
     at._started_scopes.add("shared-quota")
     crawler.throttler.get_scope_manager("shared-quota").set_base_delay(
         1.0, only_increase=False
@@ -300,6 +311,7 @@ def test_ignores_the_host_name_of_a_custom_scope():
     # The host name is not a scope of this request, so it is left alone: no
     # state was even created for it.
     assert at._started_scopes == {"shared-quota"}
+    assert isinstance(crawler.throttler, Throttler)
     assert "example.com" not in crawler.throttler._scope_managers
 
 
@@ -307,7 +319,7 @@ def test_debug(caplog):
     settings = {"AUTOTHROTTLE_DEBUG": True}
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
 
     caplog.clear()
@@ -326,7 +338,7 @@ def test_debug(caplog):
 def test_debug_disabled(caplog):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = DefaultSpider()
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
 
     caplog.clear()

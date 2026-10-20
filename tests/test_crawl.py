@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from ipaddress import IPv4Address
+from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urlparse
@@ -15,11 +17,14 @@ from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
-from scrapy.http import Request
+from scrapy.http import BodyFileResponse, Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.engine import format_engine_status, get_engine_status
-from scrapy.utils.python import to_unicode
+from scrapy.utils.engine import (
+    format_engine_status,
+    get_engine_status,
+    print_engine_status,
+)
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.spiders import (
@@ -40,6 +45,7 @@ from tests.spiders import (
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
     CrawlSpiderWithAsyncGeneratorCallback,
+    CrawlSpiderWithCallbackException,
     CrawlSpiderWithErrback,
     CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
@@ -57,8 +63,38 @@ from tests.spiders import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from scrapy.statscollectors import StatsCollector
     from tests.mockserver.http import MockServer
+
+
+class CloseSpiderProcessRequestMiddleware:
+    def process_request(self, request):
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
+
+
+class CloseSpiderProcessResponseMiddleware:
+    def process_response(self, request, response):
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
+
+
+class BodyFileSpider(Spider):
+    name = "body_file"
+
+    def __init__(self, url: str, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.url = url
+        self.body: bytes | None = None
+
+    async def start(self) -> AsyncIterator[Any]:
+        yield Request(self.url, meta={"body_file": True})
+
+    def parse(self, response: Response) -> None:
+        assert isinstance(response, BodyFileResponse)
+        body_file = Path(response.body_file)
+        self.body = body_file.read_bytes()
+        body_file.unlink()
 
 
 class TestCrawl:
@@ -71,11 +107,11 @@ class TestCrawl:
 
     @coroutine_test
     async def test_fixed_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.2)
+        await self._test_delay(mockserver, total=10, delay=0.2)
 
     @coroutine_test
     async def test_randomized_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.1, randomize=True)
+        await self._test_delay(mockserver, total=10, delay=0.1, randomize=True)
 
     @staticmethod
     async def _test_delay(
@@ -345,16 +381,16 @@ with multiples lines
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
         # start() doesn't set Referer header
-        echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][0].body))
+        echo0 = json.loads(crawler.spider.meta["responses"][0].body.decode())
         assert "Referer" not in echo0["headers"]
         # following request sets Referer to the source request url
-        echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
+        echo1 = json.loads(crawler.spider.meta["responses"][1].body.decode())
         assert echo1["headers"].get("Referer") == [req0.url]
         # next request avoids Referer header
-        echo2 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
+        echo2 = json.loads(crawler.spider.meta["responses"][2].body.decode())
         assert "Referer" not in echo2["headers"]
         # last request explicitly sets a Referer header
-        echo3 = json.loads(to_unicode(crawler.spider.meta["responses"][3].body))
+        echo3 = json.loads(crawler.spider.meta["responses"][3].body.decode())
         assert echo3["headers"].get("Referer") == ["http://example.com"]
 
     @coroutine_test
@@ -362,7 +398,6 @@ with multiples lines
         est: list[list[tuple[str, Any]]] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(get_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -376,11 +411,27 @@ with multiples lines
         assert s["len(engine.scraper.slot.active)"] == 1
 
     @coroutine_test
+    async def test_print_engine_status(
+        self, mockserver: MockServer, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        def cb(response):
+            assert crawler.engine
+            print_engine_status(crawler.engine)
+
+        crawler = get_crawler(SingleRequestSpider)
+        await crawler.crawl_async(
+            seed=mockserver.url("/"), callback_func=cb, mockserver=mockserver
+        )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        out = capsys.readouterr().out
+        assert out.startswith("Execution engine status")
+        assert re.search(rf"engine\.spider\.name +: {crawler.spider.name}\n", out)
+
+    @coroutine_test
     async def test_format_engine_status(self, mockserver: MockServer) -> None:
         est: list[str] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(format_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -434,6 +485,15 @@ with multiples lines
         assert not crawler.crawling
 
     @coroutine_test
+    async def test_body_file(self, mockserver: MockServer) -> None:
+        crawler = get_crawler(BodyFileSpider)
+        await crawler.crawl_async(mockserver.url("/text"))
+        assert isinstance(crawler.spider, BodyFileSpider)
+        assert crawler.spider.body == b"Works"
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/response_bytes")
+
+    @coroutine_test
     async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:
         crawler = get_crawler(SimpleSpider)
         await crawler.crawl_async("foo://bar")
@@ -455,7 +515,6 @@ class TestCrawlSpider:
         await crawler.crawl_async(
             mockserver.url("/status?n=200"), mockserver=mockserver
         )
-        assert crawler.stats
         return items, crawler.stats
 
     @coroutine_test
@@ -521,8 +580,20 @@ class TestCrawlSpider:
         # so the failure is dropped silently and the crawl finishes normally.
         assert "[parse] status 200 (foo: None)" in caplog.text
         assert "[errback]" not in caplog.text
-        assert crawler.stats
         assert crawler.stats.get_value("downloader/response_status_count/404") == 1
+
+    @coroutine_test
+    async def test_crawlspider_with_callback_exception(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithCallbackException)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        # The link is followed even though parse_start_url() raised, and the
+        # exception is still logged as a spider error.
+        assert "[parse] status 200 (foo: None)" in caplog.text
+        assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
 
     @coroutine_test
     async def test_crawlspider_process_request_cb_kwargs(
@@ -694,20 +765,7 @@ class TestCrawlSpider:
     @pytest.mark.filterwarnings(
         r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
     )
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no certificate",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ssl_certificate(
         self, mockserver: MockServer, url: str
@@ -726,20 +784,7 @@ class TestCrawlSpider:
             assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
             assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no ip_address",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer, url: str) -> None:
         crawler = get_crawler(SingleRequestSpider)
@@ -1019,3 +1064,26 @@ class TestCrawlSpider:
             await crawler.crawl_async(seed=mockserver.url("/"), callback_func=cb)
         assert "Closing spider (my_reason)" in caplog.text
         assert "Spider error processing" not in caplog.text
+
+    @pytest.mark.parametrize(
+        "middleware",
+        [CloseSpiderProcessRequestMiddleware, CloseSpiderProcessResponseMiddleware],
+    )
+    @pytest.mark.parametrize("error", [False, True])
+    @coroutine_test
+    async def test_raise_closespider_downloader_middleware(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        middleware: type,
+        error: bool,
+    ) -> None:
+        crawler = get_crawler(
+            SingleRequestSpider, {"DOWNLOADER_MIDDLEWARES": {middleware: 1}}
+        )
+        seed = Request(mockserver.url("/"), meta={"close_error": error})
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(seed=seed)
+        assert "Closing spider (my_reason)" in caplog.text
+        assert "Error downloading" not in caplog.text
+        assert crawler.stats.get_value("finish_reason_error") is error

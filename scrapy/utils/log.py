@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import pprint
+import re
 import sys
+import warnings
 from collections.abc import MutableMapping
 from logging.config import dictConfig
 from typing import TYPE_CHECKING, Any, cast
@@ -12,8 +14,11 @@ from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
-from scrapy.utils.versions import get_versions
+from scrapy.utils._colorize import tty_supports_color
+from scrapy.utils._versions import get_versions
+from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -62,7 +67,20 @@ class TopLevelFormatter(logging.Filter):
         return True
 
 
-DEFAULT_LOGGING = {
+class _SpiderRecordDefaultFilter(logging.Filter):
+    """Default the ``spider`` log record attribute to ``"-"``.
+
+    This lets :setting:`LOG_FORMAT` reference ``%(spider)s`` even for log
+    records that were not given a ``spider`` via ``extra``.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "spider"):
+            record.spider = "-"
+        return True
+
+
+DEFAULT_LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "loggers": {
@@ -78,6 +96,9 @@ DEFAULT_LOGGING = {
         "httpx": {
             "level": "WARNING",
         },
+        "parso": {
+            "level": "ERROR",
+        },
         "scrapy": {
             "level": "DEBUG",
         },
@@ -90,7 +111,7 @@ DEFAULT_LOGGING = {
 
 def configure_logging(
     settings: Settings | dict[str, Any] | None = None,
-    install_root_handler: bool = True,
+    install_root_handler: bool | None = None,
 ) -> None:
     """
     Initialize logging defaults for Scrapy.
@@ -100,21 +121,35 @@ def configure_logging(
     :type settings: dict, :class:`~scrapy.settings.Settings` object or ``None``
 
     :param install_root_handler: whether to install root logging handler
-        (default: True)
+        (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
     :type install_root_handler: bool
 
     This function does:
 
     - Route warnings and twisted logging through Python standard logging
-    - Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively
+    - Set log levels for the Scrapy, Twisted and third-party loggers, which
+      :setting:`LOG_LEVELS` can override
     - Route stdout to log if LOG_STDOUT setting is True
 
-    When ``install_root_handler`` is True (default), this function also
-    creates a handler for the root logger according to given settings
-    (see :ref:`topics-logging-settings`). You can override default options
-    using ``settings`` argument. When ``settings`` is empty or None, defaults
-    are used.
+    When installing a root logging handler, this function also creates a
+    handler for the root logger according to given settings (see
+    :ref:`topics-logging-settings`). You can override default options using
+    ``settings`` argument. When ``settings`` is empty or None, defaults are
+    used.
     """
+    if isinstance(settings, dict) or settings is None:
+        settings = Settings(settings)
+
+    if install_root_handler is None:
+        install_root_handler = settings.getbool("LOG_INSTALL_ROOT_HANDLER")
+    else:
+        warnings.warn(
+            "The install_root_handler parameter is deprecated. Set the "
+            "LOG_INSTALL_ROOT_HANDLER setting instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
     if not sys.warnoptions:
         # Route warnings through python logging
         logging.captureWarnings(True)
@@ -122,16 +157,20 @@ def configure_logging(
     observer = twisted_log.PythonLoggingObserver("twisted")
     observer.start()
 
-    dictConfig(DEFAULT_LOGGING)
-
-    if isinstance(settings, dict) or settings is None:
-        settings = Settings(settings)
+    _configure_logger_levels(settings)
 
     if settings.getbool("LOG_STDOUT"):
         sys.stdout = StreamLogger(logging.getLogger("stdout"))
 
     if install_root_handler:
         install_scrapy_root_handler(settings)
+
+
+def _configure_logger_levels(settings: Settings) -> None:
+    loggers = DEFAULT_LOGGING["loggers"] | {
+        name: {"level": level} for name, level in settings.getdict("LOG_LEVELS").items()
+    }
+    dictConfig(DEFAULT_LOGGING | {"loggers": loggers})
 
 
 _scrapy_root_handler: logging.Handler | None = None
@@ -162,6 +201,49 @@ def get_scrapy_root_handler() -> logging.Handler | None:
     return _scrapy_root_handler
 
 
+class _ColoredFormatter(logging.Formatter):
+    """Colorizes the output of *formatter* by log level with *colorizer*, a
+    :class:`colorlog.ColoredFormatter` that only renders the message.
+    """
+
+    def __init__(self, formatter: logging.Formatter, colorizer: logging.Formatter):
+        super().__init__()
+        self._formatter = formatter
+        self._colorizer = colorizer
+
+    def format(self, record: logging.LogRecord) -> str:
+        formatted = logging.makeLogRecord(
+            {
+                **record.__dict__,
+                "msg": self._formatter.format(record),
+                "args": None,
+                "exc_info": None,
+                "exc_text": None,
+                "stack_info": None,
+            }
+        )
+        return self._colorizer.format(formatted)
+
+
+def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Formatter:
+    formatter: logging.Formatter = load_object(settings["LOG_ROOT_FORMATTER"])(settings)
+    if (
+        isinstance(handler, logging.StreamHandler)
+        and not isinstance(handler, logging.FileHandler)
+        and settings.getbool("LOG_COLOR")
+        and handler.stream.isatty()
+        and tty_supports_color()
+    ):
+        try:
+            from colorlog import ColoredFormatter  # noqa: PLC0415
+        except ImportError:
+            pass
+        else:
+            colorizer = ColoredFormatter("%(log_color)s%(message)s")
+            return _ColoredFormatter(formatter, colorizer)
+    return formatter
+
+
 def _get_handler(settings: Settings) -> logging.Handler:
     """Return a log handler object according to settings"""
     filename = settings.get("LOG_FILE")
@@ -175,11 +257,9 @@ def _get_handler(settings: Settings) -> logging.Handler:
     else:
         handler = logging.NullHandler()
 
-    formatter = logging.Formatter(
-        fmt=settings.get("LOG_FORMAT"), datefmt=settings.get("LOG_DATEFORMAT")
-    )
-    handler.setFormatter(formatter)
+    handler.setFormatter(_get_formatter(handler, settings))
     handler.setLevel(settings.get("LOG_LEVEL"))
+    handler.addFilter(_SpiderRecordDefaultFilter())
     if settings.getbool("LOG_SHORT_NAMES"):
         handler.addFilter(TopLevelFormatter(["scrapy"]))
     return handler
@@ -239,13 +319,15 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
-        assert self.crawler.stats
         self.crawler.stats.inc_value(sname)
+
+
+_MSG_MAPPING_PLACEHOLDER = re.compile(r"%\(\w+\)")
 
 
 def logformatter_adapter(
     logkws: LogFormatterResult,
-) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
+) -> tuple[Any, ...]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls.
@@ -253,15 +335,32 @@ def logformatter_adapter(
 
     level = logkws.get("level", logging.INFO)
     message = logkws.get("msg") or ""
-    # NOTE: This also handles 'args' being an empty dict, that case doesn't
-    # play well in logger.log calls
-    args = cast("dict[str, Any]", logkws) if not logkws.get("args") else logkws["args"]
-
+    args = logkws.get("args")
+    # logging interpolates the message whenever it receives any positional
+    # argument, so empty args are left out. Tuple args become one positional
+    # argument each, while a dict is a single positional argument.
+    if not args:
+        if _MSG_MAPPING_PLACEHOLDER.search(message):
+            # The log formatter method has already returned, so there is no
+            # frame of it left in the stack to point at. msg is part of the
+            # warning message instead, so that each offending method gets its
+            # own warning.
+            warnings.warn(
+                f"A log formatter method returned msg {message!r} with "
+                f"%(name)s placeholders and no args. Interpolating msg with "
+                f"the returned dict is deprecated, return those values under "
+                f"args instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=1,
+            )
+            return (level, message, logkws)
+        return (level, message)
+    if isinstance(args, tuple):
+        return (level, message, *args)
     return (level, message, args)
 
 
-# LoggerAdapter is only parameterized since Python 3.11
-class SpiderLoggerAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
+class SpiderLoggerAdapter(logging.LoggerAdapter[logging.Logger]):
     def process(
         self, msg: str, kwargs: MutableMapping[str, Any]
     ) -> tuple[str, MutableMapping[str, Any]]:

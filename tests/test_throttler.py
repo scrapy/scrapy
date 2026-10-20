@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 import warnings
 from collections import ChainMap
-from typing import TYPE_CHECKING, Any
+from time import monotonic, time
+from typing import TYPE_CHECKING, Any, Self
 from weakref import WeakSet
 
 import pytest
@@ -35,13 +37,11 @@ from scrapy.utils.asyncio import _wait_for_first, call_later, sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
-from tests.spiders import SimpleSpider
+from tests.spiders import MockServerSpider, SimpleSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-
-    from typing_extensions import Self
 
     from scrapy.core.downloader import Downloader
 
@@ -59,7 +59,7 @@ def _manager_with_downloader(
     handler state and the events it fires."""
     crawler = get_crawler(SimpleSpider, settings_dict=settings)
     crawler.throttler = throttler = Throttler.from_crawler(crawler)
-    crawler.engine = ExecutionEngine(crawler, lambda _: None)
+    crawler.engine = ExecutionEngine(crawler)
     return throttler, crawler.engine.downloader
 
 
@@ -190,7 +190,6 @@ class TestThrottler:
 
         crawler = get_crawler(SimpleSpider, {"THROTTLER": NetlocThrottler})
         throttler = crawler.throttler
-        assert throttler is not None
         # A request that chooses its own scopes still gets them, so a custom
         # hook does not cost throttling_scopes support.
         request = Request("https://example.com/a", meta={"throttling_scopes": "chosen"})
@@ -794,7 +793,7 @@ class TestUnscheduledRequests:
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
 
     @coroutine_test
-    async def test_borrow_debug_logging_without_stats(
+    async def test_borrow_debug_logging(
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
     ) -> None:
         manager = _manager(
@@ -803,9 +802,6 @@ class TestUnscheduledRequests:
                 "THROTTLER_DEBUG": True,
             }
         )
-        # Borrowing is reported through debug logging, and works without a stats
-        # collector to count it.
-        monkeypatch.setattr(manager.crawler, "stats", None)
         holder = Request("http://example.com/1")
         await self._acquire(manager, holder)
         self._hold_in_middlewares(monkeypatch, manager, holder)
@@ -939,14 +935,24 @@ class TestThrottlingScopeManager:
         scope._record_done(now=0.0)
         assert not event.called
 
-    def test_set_concurrency_rejects_non_positive(self):
+    def test_set_concurrency_rejects_negative(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 4})
-        # A scope always enforces a limit, so there is no value that lifts it.
-        with pytest.raises(ValueError, match="must be 1 or higher"):
-            scope.set_concurrency(0)
+        with pytest.raises(ValueError, match="must be 0 or higher"):
+            scope.set_concurrency(-1)
         assert scope._concurrency == 4
         scope.set_concurrency(5)
         assert scope._concurrency == 5
+
+    @pytest.mark.parametrize(
+        ("global_concurrency", "expected"), [(16, 16), (0, sys.maxsize)]
+    )
+    def test_set_concurrency_zero(self, global_concurrency, expected):
+        scope = _scope_manager(
+            {"CONCURRENT_REQUESTS": global_concurrency},
+            {"id": "x", "concurrency": 4},
+        )
+        scope.set_concurrency(0)
+        assert scope.get_concurrency() == expected
 
 
 class TestThrottlerScopeLoad:
@@ -1042,24 +1048,42 @@ class TestThrottlerEdges:
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(r2)))
         assert r2 in manager._reserved
 
+    @pytest.mark.parametrize("debug", [False, True])
     @coroutine_test
-    async def test_delay_request(self):
-        manager = _manager({"THROTTLER_DEBUG": True})
-        request = Request("http://example.com/a", meta={"delay": 0.01})
-        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
-        assert request.meta["_throttler_delay_deadline"] is None
-        manager.release(request)
-        # A second pass is a no-op (the request was already delayed).
-        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
+    async def test_delay_meta(self, debug: bool) -> None:
+        delay = 0.2
+        manager = _manager({"THROTTLER_DEBUG": debug})
+        request = Request("http://example.com/a", meta={"delay": delay})
+
+        async def held() -> float:
+            start = monotonic()
+            await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
+            manager.release(request)
+            return monotonic() - start
+
+        delayed = await held()
+        assert "delay" not in request.meta
+        # Acquiring the same request again does not hold it again, but setting
+        # the key again does.
+        assert await held() < delay
+        request.meta["delay"] = delay
+        assert await held() >= delay
+        assert delayed >= delay
+        assert request.meta["delayed"] == [delay, delay]
 
     @coroutine_test
-    async def test_delay_request_without_debug(self):
-        # Same as above but with debug logging off, so the delay is applied
-        # without emitting the debug message.
+    async def test_delay_meta_stale_deadline(self) -> None:
+        delay = 0.2
         manager = _manager()
-        request = Request("http://example.com/a", meta={"delay": 0.01})
+        # A deadline from a different run of the crawl, restored from a disk
+        # queue, is capped at the delay.
+        request = Request(
+            "http://example.com/a",
+            meta={"_delay_deadline": (delay, time() + 10 * delay)},
+        )
+        start = monotonic()
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
-        assert request.meta["_throttler_delay_deadline"] is None
+        assert delay <= monotonic() - start < 2 * delay
 
     @coroutine_test
     async def test_wait_for_slot_discards_unfired_events(self):
@@ -1219,7 +1243,6 @@ class TestConcurrencyBridging:
         # throttler is limited by.
         with pytest.warns(ScrapyDeprecationWarning, match="is deprecated"):
             crawler = get_crawler(SimpleSpider, {"CONCURRENT_REQUESTS_PER_DOMAIN": 3})
-        assert crawler.throttler is not None
         manager = crawler.throttler.get_scope_manager("example.com")
         assert manager.get_concurrency() == 3
 
@@ -1336,7 +1359,6 @@ class TestJitterBridging:
     def test_randomize_reaches_the_scope_manager(self):
         with pytest.warns(ScrapyDeprecationWarning, match="is deprecated"):
             crawler = get_crawler(SimpleSpider, {"RANDOMIZE_DOWNLOAD_DELAY": False})
-        assert crawler.throttler is not None
         assert crawler.throttler.get_scope_manager("example.com")._jitter == 0.0
 
     def test_warns_when_randomize_set(self):
@@ -1359,8 +1381,7 @@ class TestIgnoredPerIPConcurrency:
         with pytest.warns(
             ScrapyDeprecationWarning, match="no longer has any effect"
         ) as records:
-            crawler = get_crawler(SimpleSpider, {"CONCURRENT_REQUESTS_PER_IP": 2})
-        assert crawler.throttler is not None
+            get_crawler(SimpleSpider, {"CONCURRENT_REQUESTS_PER_IP": 2})
         assert sum("CONCURRENT_REQUESTS_PER_IP" in str(r.message) for r in records) == 1
 
     def test_silent_when_unset(self):
@@ -1371,42 +1392,53 @@ class TestIgnoredPerIPConcurrency:
 
 
 class TestScopeConcurrencyValidation:
-    """A throttling scope always enforces a concurrency limit: a non-positive
-    one would leave it with no slot to give and hold its requests back forever,
-    so it is rejected when the throttler is built."""
-
     @pytest.mark.parametrize(
         "setting",
         ["THROTTLING_SCOPE_CONCURRENCY", "CONCURRENT_REQUESTS_PER_DOMAIN"],
     )
-    def test_rejects_a_non_positive_default(self, setting):
+    def test_rejects_a_negative_default(self, setting):
         # Whichever of the two settings is in effect (see
         # _default_scope_concurrency_setting) is the one checked and named.
         settings = Settings()
-        settings.set(setting, 0, priority="spider")
+        settings.set(setting, -1, priority="spider")
         assert _default_scope_concurrency_setting(settings) == setting
-        with pytest.raises(ValueError, match=f"{setting} must be 1 or higher"):
+        with pytest.raises(ValueError, match=f"{setting} must be 0 or higher"):
             _check_scope_concurrency(settings, {})
 
     @pytest.mark.parametrize(
         "settings",
         [
-            {"THROTTLING_SCOPES": {"example.com": {"concurrency": 0}}},
+            {"THROTTLING_SCOPES": {"example.com": {"concurrency": -1}}},
             # A limit bridged in from the deprecated setting is checked too.
             {"DOWNLOAD_SLOTS": {"example.com": {"concurrency": -1}}},
         ],
         ids=["throttling-scopes", "download-slots"],
     )
-    def test_rejects_a_non_positive_scope_limit(self, settings):
+    def test_rejects_a_negative_scope_limit(self, settings):
         with pytest.raises(
             ValueError,
-            match=r"concurrency of throttling scope 'example\.com' must be 1 or higher",
+            match=r"concurrency of throttling scope 'example\.com' must be 0 or higher",
         ):
             _manager(settings)
 
     def test_accepts_one(self):
         manager = _manager({"THROTTLING_SCOPE_CONCURRENCY": 1})
         assert _scope(manager, "example.com")._concurrency == 1
+
+    @pytest.mark.parametrize(
+        ("global_concurrency", "expected"), [(16, 16), (0, sys.maxsize)]
+    )
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            {"THROTTLING_SCOPE_CONCURRENCY": 0},
+            {"THROTTLING_SCOPES": {"example.com": {"concurrency": 0}}},
+        ],
+        ids=["default", "scope"],
+    )
+    def test_zero_means_no_limit(self, settings, global_concurrency, expected):
+        manager = _manager({**settings, "CONCURRENT_REQUESTS": global_concurrency})
+        assert _scope(manager, "example.com").get_concurrency() == expected
 
 
 class TestScopeConfigValidation:
@@ -1510,7 +1542,7 @@ class _UnscheduledFloodSpider(Spider):
     async def parse(self, response: Response) -> None:
         await asyncio.gather(
             *(
-                self.crawler.engine.download_async(  # type: ignore[union-attr]
+                self.crawler.engine.download_async(
                     Request(
                         self.url_template.format(i=i),  # type: ignore[attr-defined]
                         callback=NO_CALLBACK,
@@ -1533,7 +1565,38 @@ class _TwoRequestSpider(Spider):
         return
 
 
+class _DelaySpider(MockServerSpider):
+    name = "delay_meta"
+    custom_settings = {"CONCURRENT_REQUESTS": 1}
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.times: list[float] = []
+        self.start_time: float = monotonic()
+
+    async def start(self) -> AsyncIterator[Request]:
+        assert self.mockserver
+        # The slow request keeps the delayed one waiting for its turn for longer
+        # than its delay.
+        yield Request(self.mockserver.url("/delay?n=1"))
+        yield Request(self.mockserver.url("/status?n=200"), meta={"delay": 0.9})
+
+    def parse(self, response: Response) -> None:
+        self.times.append(monotonic() - self.start_time)
+
+
 class TestThrottlerIntegration:
+    @coroutine_test
+    async def test_delay_meta_countdown_starts_when_scheduled(self, mockserver):
+        crawler = get_crawler(_DelaySpider)
+        await crawler.crawl_async(mockserver=mockserver)
+        spider = crawler.spider
+        assert isinstance(spider, _DelaySpider)
+        assert len(spider.times) == 2
+        # The delay ran while the request waited for its turn, so it was sent as
+        # soon as it got one, rather than 0.9s later.
+        assert spider.times[1] < spider.times[0] + 0.5
+
     @coroutine_test
     async def test_robotstxt_does_not_wait_for_a_concurrency_slot(self, mockserver):
         """A robots.txt request is downloaded from a downloader middleware,

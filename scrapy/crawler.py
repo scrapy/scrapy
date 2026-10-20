@@ -8,20 +8,24 @@ import signal
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Spider
 from scrapy.addons import AddonManager
-from scrapy.core.engine import ExecutionEngine
+from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
-from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils._ossignals import install_shutdown_handlers, signal_names
+from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
+from scrapy.utils.asyncio import _get_running_or_installed_loop, _has_running_loop
+from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro, ensure_awaitable
 from scrapy.utils.log import (
+    _configure_logger_levels,
     configure_logging,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
@@ -29,11 +33,10 @@ from scrapy.utils.log import (
     log_scrapy_info,
 )
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
+    _is_asyncio_reactor_installed,
     install_reactor,
-    is_asyncio_reactor_installed,
     is_reactor_installed,
     set_asyncio_event_loop,
     verify_installed_asyncio_event_loop,
@@ -46,7 +49,8 @@ from scrapy.utils.reactorless import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Generator, Iterable
+    from collections.abc import Awaitable, Callable, Generator, Iterable
+    from types import FrameType
 
     from scrapy.logformatter import LogFormatter
     from scrapy.statscollectors import StatsCollector
@@ -58,8 +62,88 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 
+# Reactor settings that are applied when starting the reactor, i.e. once per
+# process, and so can only take the value of one of the crawlers.
+_REACTOR_SETTINGS = (
+    "DNSCACHE_ENABLED",
+    "DNSCACHE_SIZE",
+    "DNS_RESOLVER",
+    "DNS_TIMEOUT",
+    "REACTOR_THREADPOOL_MAXSIZE",
+    "TWISTED_DNS_RESOLVER",
+)
+
+
+class _LateAttribute(Generic[_T]):
+    """Descriptor for a :class:`Crawler` attribute that only gets a value once
+    the crawl starts.
+
+    The value is kept in an attribute of the same name prefixed with an
+    underscore, and reading it before it is set raises :exc:`RuntimeError`.
+    This way the public attribute can be annotated as always set, and its
+    users, both in Scrapy and in third-party code, do not need to narrow its
+    type on every use. Code that runs before the crawl starts reads the
+    underscore-prefixed attribute instead.
+    """
+
+    def __set_name__(self, owner: type[Crawler], name: str) -> None:
+        self._name = name
+        self._private_name = f"_{name}"
+
+    @overload
+    def __get__(self, instance: None, owner: type[Crawler]) -> _LateAttribute[_T]: ...
+
+    @overload
+    def __get__(self, instance: Crawler, owner: type[Crawler]) -> _T: ...
+
+    def __get__(
+        self, instance: Crawler | None, owner: type[Crawler]
+    ) -> _LateAttribute[_T] | _T:
+        if instance is None:
+            return self
+        value: _T | None = getattr(instance, self._private_name)
+        if value is None:
+            raise RuntimeError(
+                f"Crawler.{self._name} is not set yet. It is set when the "
+                "crawl starts, so it can only be used from then on, e.g. "
+                "from the spider_opened signal handler onwards."
+            )
+        return value
+
+    def __set__(self, instance: Crawler, value: _T) -> None:
+        setattr(instance, self._private_name, value)
+
 
 class Crawler:
+    engine: _LateAttribute[ExecutionEngine] = _LateAttribute()
+    """The execution engine, which coordinates the core crawling logic between
+    the scheduler, downloader and spiders.
+
+    Some extensions may want to access the Scrapy engine to inspect or modify
+    the downloader and scheduler behaviour, although this is an advanced use
+    and this API is not yet stable.
+    """
+    extensions: _LateAttribute[ExtensionManager] = _LateAttribute()
+    logformatter: _LateAttribute[LogFormatter] = _LateAttribute()
+    """The log formatter of this crawler.
+
+    This is used from extensions & middlewares to build the messages that they
+    log about crawling events.
+
+    For the API see the :class:`~scrapy.logformatter.LogFormatter` class.
+    """
+    request_fingerprinter: _LateAttribute[RequestFingerprinterProtocol] = (
+        _LateAttribute()
+    )
+    stats: _LateAttribute[StatsCollector] = _LateAttribute()
+    throttler: _LateAttribute[ThrottlerProtocol] = _LateAttribute()
+    """The throttler of this crawler, an instance of :setting:`THROTTLER`.
+
+    Components can use it to inspect or drive :ref:`throttling <throttling>` at
+    run time, e.g. through
+    :meth:`~scrapy.throttler.ThrottlerProtocol.get_scope_manager`.
+    """
+
     def __init__(
         self,
         spidercls: type[Spider],
@@ -75,7 +159,7 @@ class Crawler:
         self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
-        self._update_root_log_handler()
+        self._update_logging()
 
         self.addons: AddonManager = AddonManager(self)
         self.signals: SignalManager = SignalManager(self)
@@ -84,23 +168,28 @@ class Crawler:
         self.crawling: bool = False
         self._started: bool = False
 
-        self.extensions: ExtensionManager | None = None
-        self.stats: StatsCollector | None = None
-        self.logformatter: LogFormatter | None = None
-        self.request_fingerprinter: RequestFingerprinterProtocol | None = None
-        self.throttler: ThrottlerProtocol | None = None
-        """The throttler of this crawler, an instance of
-        :setting:`THROTTLER`.
-
-        It is ``None`` until the crawl starts. Components can use it to inspect
-        or drive :ref:`throttling <throttling>` at run time, e.g. through
-        :meth:`~scrapy.throttler.ThrottlerProtocol.get_scope_manager`."""
         self.spider: Spider | None = None
-        self.engine: ExecutionEngine | None = None
+        self._force_stop_callback: (
+            Callable[[], Awaitable[None] | Deferred[None] | None] | None
+        ) = None
 
-    def _update_root_log_handler(self) -> None:
+        self._engine: ExecutionEngine | None = None
+        self._extensions: ExtensionManager | None = None
+        self._logformatter: LogFormatter | None = None
+        self._request_fingerprinter: RequestFingerprinterProtocol | None = None
+        self._stats: StatsCollector | None = None
+        self._throttler: ThrottlerProtocol | None = None
+
+    def _set_force_stop_callback(
+        self,
+        callback: Callable[[], Awaitable[None] | Deferred[None] | None] | None,
+    ) -> None:
+        self._force_stop_callback = callback
+
+    def _update_logging(self) -> None:
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
+            _configure_logger_levels(self.settings)
             install_scrapy_root_handler(self.settings)
 
     def _apply_settings(self) -> None:
@@ -108,6 +197,7 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        log_scrapy_info(self.settings)
         self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
         self._apply_deprecated_spider_attr(
             "max_concurrent_requests", "THROTTLING_SCOPE_CONCURRENCY"
@@ -115,7 +205,7 @@ class Crawler:
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
-        self.logformatter = lf_cls.from_crawler(self)
+        self.logformatter = build_from_crawler(lf_cls, self)
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
@@ -149,7 +239,7 @@ class Crawler:
             if reactor_class:
                 # We need to check that the correct reactor is installed.
                 verify_installed_reactor(reactor_class)
-                if is_asyncio_reactor_installed() and event_loop:
+                if _is_asyncio_reactor_installed() and event_loop:
                     verify_installed_asyncio_event_loop(event_loop)
 
             if self._init_reactor or reactor_class:
@@ -163,7 +253,7 @@ class Crawler:
             logger.debug("Not using a Twisted reactor")
             self._apply_reactorless_default_settings()
 
-        self.extensions = ExtensionManager.from_crawler(self)
+        self.extensions = build_from_crawler(ExtensionManager, self)
         self.settings.freeze()
 
         d = dict(overridden_settings(self.settings))
@@ -205,9 +295,12 @@ class Crawler:
         self.settings.set("TELNETCONSOLE_ENABLED", False, priority="default")
         for scheme in ("http", "https"):
             self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
-                "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler"
+                "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler"
             )
-        self.settings["DOWNLOAD_HANDLERS_BASE"]["ftp"] = None
+        for scheme in ("ftp", "ftps"):
+            self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
+                "scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler"
+            )
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside
@@ -231,15 +324,19 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
-            self._update_root_log_handler()
-            self.engine = self._create_engine()
+            self._update_logging()
+            self.engine = ExecutionEngine(self)
             yield deferred_from_coro(self.engine.open_spider_async())
-            yield deferred_from_coro(self.engine.start_async())
+            # The spider may have been closed already, e.g. by an
+            # extension, in which case the engine is already stopped.
+            if self.engine.state is EngineState.SPIDER_OPEN:
+                yield deferred_from_coro(self.engine.start_async())
         except Exception:
-            self.crawling = False
-            if self.engine is not None:
-                yield deferred_from_coro(self.engine.close_async())
+            if self._engine is not None:
+                yield deferred_from_coro(self._engine.close_async())
             raise
+        finally:
+            self.crawling = False
 
     async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
         """Start the crawler by instantiating its spider class with the given
@@ -261,46 +358,73 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
-            self._update_root_log_handler()
-            self.engine = self._create_engine()
+            self._update_logging()
+            self.engine = ExecutionEngine(self)
             await self.engine.open_spider_async()
-            await self.engine.start_async()
+            # The spider may have been closed already, e.g. by an
+            # extension, in which case the engine is already stopped.
+            if self.engine.state is EngineState.SPIDER_OPEN:
+                await self.engine.start_async()
         except Exception:
-            self.crawling = False
-            if self.engine is not None:
-                await self.engine.close_async()
+            if self._engine is not None:
+                await self._engine.close_async()
             raise
+        finally:
+            self.crawling = False
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
-    def _create_engine(self) -> ExecutionEngine:
-        return ExecutionEngine(self, lambda _: self.stop_async())
-
-    def stop(self) -> Deferred[None]:
-        """Start a graceful stop of the crawler and return a deferred that is
-        fired when the crawler is stopped."""
+    def stop(self, *, mode: _StopMode = "graceful") -> Deferred[None]:
+        """Stop the crawler."""
         warnings.warn(
             "Crawler.stop() is deprecated, use stop_async() instead",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return deferred_from_coro(self.stop_async())
+        return deferred_from_coro(self.stop_async(mode=mode))
 
-    async def stop_async(self) -> None:
-        """Start a graceful stop of the crawler and complete when the crawler is stopped.
+    async def stop_async(self, *, mode: _StopMode = "graceful") -> None:
+        """Stop the crawler.
 
         .. versionadded:: 2.14
+
+        .. versionchanged:: VERSION
+            Calling it while the spider is being opened now closes the spider
+            as soon as it is open.
+
+        Completes when the crawl has finished, except when the spider is still
+        being opened or the crawler is already stopping, in which case it
+        completes immediately, and when :signal:`engine_started` handlers are
+        still running, in which case it completes once the spider is closed.
         """
-        if self.crawling:
-            self.crawling = False
-            assert self.engine
-            if self.engine.running:
-                await self.engine.stop_async()
+        mode = _normalize_stop_mode(mode)
+        was_crawling = self.crawling
+        self.crawling = False
+
+        if not was_crawling and mode == "graceful":
+            return
+
+        if mode == "force":
+            if self._force_stop_callback is not None:
+                await ensure_awaitable(self._force_stop_callback())
+                return
+            logger.warning(
+                "Force stop requested, but no process-level force stop callback is available. Falling back to fast stop."
+            )
+            mode = "fast"
+
+        if self._engine is None or self._engine.state is EngineState.CREATED:
+            # Nothing has been opened yet, so there is nothing to stop.
+            return
+
+        # A no-op if the spider is already closing or closed, except that a
+        # fast stop still drops the in-flight downloads.
+        await self._engine.stop_async(mode=mode)
 
     @staticmethod
     def _get_component(
-        component_class: type[_T], components: Iterable[Any]
+        component_class: type[_T], components: Iterable[object]
     ) -> _T | None:
         for component in components:
             if isinstance(component, component_class):
@@ -325,7 +449,7 @@ class Crawler:
         This method can only be called after the crawl engine has been created,
         e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
         """
-        if not self.engine:
+        if self._engine is None:
             raise RuntimeError(
                 "Crawler.get_downloader_middleware() can only be called after "
                 "the crawl engine has been created."
@@ -343,7 +467,7 @@ class Crawler:
         created, e.g. at signals :signal:`engine_started` or
         :signal:`spider_opened`.
         """
-        if not self.extensions:
+        if self._extensions is None:
             raise RuntimeError(
                 "Crawler.get_extension() can only be called after the "
                 "extension manager has been created."
@@ -360,7 +484,7 @@ class Crawler:
         This method can only be called after the crawl engine has been created,
         e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
         """
-        if not self.engine:
+        if self._engine is None:
             raise RuntimeError(
                 "Crawler.get_item_pipeline() can only be called after the "
                 "crawl engine has been created."
@@ -377,7 +501,7 @@ class Crawler:
         This method can only be called after the crawl engine has been created,
         e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
         """
-        if not self.engine:
+        if self._engine is None:
             raise RuntimeError(
                 "Crawler.get_spider_middleware() can only be called after the "
                 "crawl engine has been created."
@@ -394,6 +518,8 @@ class CrawlerRunnerBase(ABC):
         self.spider_loader: SpiderLoaderProtocol = get_spider_loader(settings)
         self._crawlers: set[Crawler] = set()
         self.bootstrap_failed = False
+        """``True`` if any crawl started by :meth:`crawl` was interrupted by an
+        exception, including a failure to create the spider object."""
 
     @property
     def crawlers(self) -> set[Crawler]:
@@ -519,13 +645,18 @@ class CrawlerRunner(CrawlerRunnerBase):
             self._active.discard(d)
             self.bootstrap_failed |= not getattr(crawler, "spider", None) or failed
 
-    def stop(self) -> Deferred[Any]:
+    def stop(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
         """
         Stops simultaneously all the crawling jobs taking place.
 
-        Returns a deferred that is fired when they all have ended.
+        Returns a deferred that is fired when all their
+        :meth:`Crawler.stop_async() <scrapy.crawler.Crawler.stop_async>` calls
+        have completed.
         """
-        return DeferredList(deferred_from_coro(c.stop_async()) for c in self.crawlers)
+        mode = _normalize_stop_mode(mode)
+        return DeferredList(
+            deferred_from_coro(c.stop_async(mode=mode)) for c in self.crawlers
+        )
 
     @inlineCallbacks
     def join(self) -> Generator[Deferred[Any], Any, None]:
@@ -550,8 +681,8 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
     When the :setting:`TWISTED_REACTOR_ENABLED` setting is set to ``True``,
     this class requires a reactor to be installed and uses it, otherwise it
-    requires a reactor to not be installed but requires an asyncio event loop
-    to be installed and uses it.
+    requires a reactor to not be installed but requires a running asyncio
+    event loop and uses it.
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -604,7 +735,7 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 raise RuntimeError(
                     "We expected a Twisted reactor to be installed but it isn't."
                 )
-            if not is_asyncio_reactor_installed():
+            if not _is_asyncio_reactor_installed():
                 raise RuntimeError(
                     f"When TWISTED_REACTOR_ENABLED is True, {type(self).__name__} "
                     f"requires that the installed Twisted reactor is "
@@ -631,10 +762,21 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         self.crawlers.discard(crawler)
         self.bootstrap_failed |= not getattr(crawler, "spider", None)
 
+    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
+        if self.settings.getbool("TWISTED_REACTOR_ENABLED") or _has_running_loop():
+            return _get_running_or_installed_loop()
+        warnings.warn(
+            f"Calling {type(self).__name__}.crawl() without a running asyncio"
+            f" event loop when TWISTED_REACTOR_ENABLED is False is deprecated."
+            f" Call it from a coroutine that runs in the event loop instead,"
+            f" e.g. one passed to asyncio.run().",
+            ScrapyDeprecationWarning,
+            stacklevel=4,
+        )
+        return asyncio.get_event_loop()
+
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
-        # At this point the asyncio loop has been installed either by the user
-        # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
-        loop = asyncio.get_event_loop()
+        loop = self._get_event_loop()
         self.crawlers.add(crawler)
 
         task = loop.create_task(self._crawl_and_track(crawler, *args, **kwargs))
@@ -643,15 +785,17 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
         return task
 
-    async def stop(self) -> None:
+    async def stop(self, *, mode: _StopMode = "graceful") -> None:
         """
         Stops simultaneously all the crawling jobs taking place.
 
-        Completes when they all have ended.
+        Completes when all their :meth:`Crawler.stop_async()
+        <scrapy.crawler.Crawler.stop_async>` calls have completed.
         """
+        mode = _normalize_stop_mode(mode)
         if self.crawlers:
             await asyncio.wait(
-                [asyncio.create_task(c.stop_async()) for c in self.crawlers]
+                [asyncio.create_task(c.stop_async(mode=mode)) for c in self.crawlers]
             )
 
     async def join(self) -> None:
@@ -667,11 +811,19 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def __init__(
         self,
         settings: dict[str, Any] | Settings | None = None,
-        install_root_handler: bool = True,
+        install_root_handler: bool | None = None,
     ):
         super().__init__(settings)
+        self._reactor_crawler: Crawler | None = None
         configure_logging(self.settings, install_root_handler)
-        log_scrapy_info(self.settings)
+
+    def _create_crawler(self, spidercls: str | type[Spider]) -> Crawler:
+        crawler = super()._create_crawler(spidercls)
+        crawler._set_force_stop_callback(self._force_stop)
+        return crawler
+
+    def _force_stop(self) -> None:
+        self._stop_reactor()
 
     @abstractmethod
     def start(
@@ -679,25 +831,71 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     ) -> None:
         raise NotImplementedError
 
-    def _signal_shutdown(self, signum: int, _: Any) -> None:
+    def create_crawler(
+        self, crawler_or_spidercls: type[Spider] | str | Crawler
+    ) -> Crawler:
+        crawler = super().create_crawler(crawler_or_spidercls)
+        if self._reactor_crawler is None:
+            self._reactor_crawler = crawler
+        else:
+            ignored = [
+                setting
+                for setting in _REACTOR_SETTINGS
+                if self._reactor_crawler.settings[setting] != crawler.settings[setting]
+            ]
+            if ignored:
+                warnings.warn(
+                    f"Spider {crawler.spidercls.__name__} defines a different "
+                    f"value than spider "
+                    f"{self._reactor_crawler.spidercls.__name__} for the "
+                    f"following reactor settings: {', '.join(ignored)}. Only "
+                    f"the value of the first spider is used, since the "
+                    f"reactor is shared by every spider in a process.",
+                    stacklevel=2,
+                )
+        return crawler
+
+    def _signal_shutdown(self, signum: int, _: FrameType | None) -> None:
+        from twisted.internet import reactor
+
+        install_shutdown_handlers(self._signal_fast_shutdown)
+        reactor.callFromThread(self._log_shutdown, signum)
+        reactor.callFromThread(self._graceful_stop_reactor)
+
+    def _signal_fast_shutdown(self, signum: int, _: FrameType | None) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(self._signal_kill)
-        self._log_shutdown(signum)
-        reactor.callFromThread(self._graceful_stop_reactor)
+        reactor.callFromThread(self._log_fast_shutdown, signum)
+        reactor.callFromThread(self._fast_stop_reactor)
 
-    def _signal_kill(self, signum: int, _: Any) -> None:
+    def _signal_kill(self, signum: int, _: FrameType | None) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(signal.SIG_IGN)
-        self._log_kill(signum)
-        reactor.callFromThread(self._stop_reactor)
+        reactor.callFromThread(self._log_kill, signum)
+        # Give the log line a moment to actually reach its output before the
+        # process exits, since nothing else delays that exit past this point.
+        reactor.callLater(_DEFER_DELAY, self._stop_reactor)
+
+    # Logging cannot happen in a signal handler: the interrupted code may be
+    # in the middle of writing to the same stream, and writing to it again
+    # raises RuntimeError, which would leave the shutdown unfinished. These
+    # two methods must be called from the reactor or event loop thread.
 
     @staticmethod
     def _log_shutdown(signum: int) -> None:
         signame = signal_names[signum]
         logger.info(
-            "Received %(signame)s, shutting down gracefully. Send again to force ",
+            "Received %(signame)s, shutting down gracefully. Send again to stop faster.",
+            {"signame": signame},
+        )
+
+    @staticmethod
+    def _log_fast_shutdown(signum: int) -> None:
+        signame = signal_names[signum]
+        logger.info(
+            "Received %(signame)s twice, dropping downloader requests. Send again to force unclean shutdown",
             {"signame": signame},
         )
 
@@ -705,13 +903,20 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def _log_kill(signum: int) -> None:
         signame = signal_names[signum]
         logger.info(
-            "Received %(signame)s twice, forcing unclean shutdown", {"signame": signame}
+            "Received %(signame)s three times, forcing unclean shutdown",
+            {"signame": signame},
         )
 
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
 
-        dns_priority = self.settings.getpriority("DNS_RESOLVER") or 0
+        # Reactor settings are read from the first crawler, so that they can be
+        # defined from a spider, and fall back to the process settings when no
+        # crawler has been created yet.
+        crawler: Crawler | CrawlerProcessBase = self._reactor_crawler or self
+        settings = crawler.settings
+
+        dns_priority = settings.getpriority("DNS_RESOLVER") or 0
         default_priority = SETTINGS_PRIORITIES["default"]
 
         if dns_priority > default_priority:
@@ -722,24 +927,20 @@ class CrawlerProcessBase(CrawlerRunnerBase):
                 stacklevel=2,
             )
 
-            twisted_dns_priority = (
-                self.settings.getpriority("TWISTED_DNS_RESOLVER") or 0
-            )
+            twisted_dns_priority = settings.getpriority("TWISTED_DNS_RESOLVER") or 0
             if twisted_dns_priority > dns_priority:
-                resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+                resolver_cls_path = settings["TWISTED_DNS_RESOLVER"]
             else:
-                resolver_cls_path = self.settings["DNS_RESOLVER"]
+                resolver_cls_path = settings["DNS_RESOLVER"]
         else:
-            resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+            resolver_cls_path = settings["TWISTED_DNS_RESOLVER"]
 
         resolver_class = load_object(resolver_cls_path)
 
-        # We pass self, which is CrawlerProcess, instead of Crawler here,
-        # which works because the default resolvers only use crawler.settings.
-        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[call-overload]
+        resolver = build_from_crawler(resolver_class, crawler, reactor=reactor)  # type: ignore[call-overload]
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
-        tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
+        tp.adjustPoolsize(maxthreads=settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
         reactor.addSystemEventTrigger("before", "shutdown", self._stop_dfd)
         if install_signal_handlers:
             reactor.addSystemEventTrigger(
@@ -747,13 +948,30 @@ class CrawlerProcessBase(CrawlerRunnerBase):
             )
 
     @abstractmethod
-    def _stop_dfd(self) -> Deferred[Any]:
+    def _stop_dfd(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _join_dfd(self) -> Deferred[Any]:
         raise NotImplementedError
 
     @inlineCallbacks
     def _graceful_stop_reactor(self) -> Generator[Deferred[Any], Any, None]:
         try:
-            yield self._stop_dfd()
+            yield self._stop_dfd(mode="graceful")
+            # Crawler.stop_async() returns as soon as the stop is under way
+            # (a spider close already in progress finishes it), so wait for
+            # the crawls to actually end before stopping the reactor. The next
+            # signal stops it regardless.
+            yield self._join_dfd()
+        finally:
+            self._stop_reactor()
+
+    @inlineCallbacks
+    def _fast_stop_reactor(self) -> Generator[Deferred[Any], Any, None]:
+        try:
+            yield self._stop_dfd(mode="fast")
+            yield self._join_dfd()  # see _graceful_stop_reactor()
         finally:
             self._stop_reactor()
 
@@ -782,7 +1000,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
     :class:`~scrapy.settings.Settings` object.
 
     :param install_root_handler: whether to install root logging handler
-        (default: True)
+        (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -795,7 +1013,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
     def __init__(
         self,
         settings: dict[str, Any] | Settings | None = None,
-        install_root_handler: bool = True,
+        install_root_handler: bool | None = None,
     ):
         super().__init__(settings, install_root_handler)
         self._initialized_reactor: bool = False
@@ -806,10 +1024,15 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
-        return Crawler(spidercls, self.settings, init_reactor=init_reactor)
+        crawler = Crawler(spidercls, self.settings, init_reactor=init_reactor)
+        crawler._set_force_stop_callback(self._force_stop)
+        return crawler
 
-    def _stop_dfd(self) -> Deferred[Any]:
-        return self.stop()
+    def _stop_dfd(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
+        return self.stop(mode=mode)
+
+    def _join_dfd(self) -> Deferred[Any]:
+        return self.join()
 
     def start(
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
@@ -862,7 +1085,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     to not be installed but installs an asyncio event loop and uses it.
 
     :param install_root_handler: whether to install root logging handler
-        (default: True)
+        (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -876,7 +1099,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     def __init__(
         self,
         settings: dict[str, Any] | Settings | None = None,
-        install_root_handler: bool = True,
+        install_root_handler: bool | None = None,
     ):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
@@ -903,12 +1126,32 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             if loop_path:
                 verify_installed_asyncio_event_loop(loop_path)
         else:
-            install_reactor(_asyncio_reactor_path, loop_path)
+            install_reactor(event_loop_path=loop_path)
         self._initialized_reactor = True
         self._reactorless_main_task: asyncio.Future[None] | None = None
 
-    def _stop_dfd(self) -> Deferred[Any]:
-        return deferred_from_coro(self.stop())
+    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
+        # crawl() can be called before start() runs the loop installed by
+        # __init__().
+        if self._reactorless_loop is not None:
+            return self._reactorless_loop
+        return super()._get_event_loop()
+
+    def _force_stop(self) -> None:
+        if self.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            self._stop_reactor()
+            return
+
+        if (loop := self._reactorless_loop) is None:
+            return
+        if (task := self._reactorless_main_task) is not None:
+            loop.call_soon_threadsafe(task.cancel)
+
+    def _stop_dfd(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
+        return deferred_from_coro(self.stop(mode=mode))
+
+    def _join_dfd(self) -> Deferred[Any]:
+        return deferred_from_coro(self.join())
 
     def start(
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
@@ -1057,37 +1300,50 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                     }
                 )
 
-    def _signal_shutdown_reactorless(self, signum: int, _: Any) -> None:
-        install_shutdown_handlers(self._signal_kill_reactorless)
-        self._log_shutdown(signum)
+    def _schedule_reactorless_shutdown(self, *, mode: _StopMode, signum: int) -> None:
         if (loop := self._reactorless_loop) is None:
             return
 
-        loop.call_soon_threadsafe(self._create_shutdown_task)
+        log_func = self._log_fast_shutdown if mode == "fast" else self._log_shutdown
+        loop.call_soon_threadsafe(log_func, signum)
 
-    def _create_shutdown_task(self) -> None:
-        assert self._reactorless_loop
-        coro = self._shutdown_graceful_reactorless()
-        try:
-            self._reactorless_loop.create_task(coro)
-        except RuntimeError:
-            coro.close()
+        def _create_shutdown_task() -> None:
+            coro = self._shutdown_reactorless(mode=mode)
+            try:
+                loop.create_task(coro)
+            except RuntimeError:
+                coro.close()
 
-    async def _shutdown_graceful_reactorless(self) -> None:
-        await self.stop()
+        loop.call_soon_threadsafe(_create_shutdown_task)
+
+    def _signal_shutdown_reactorless(self, signum: int, _: FrameType | None) -> None:
+        install_shutdown_handlers(self._signal_fast_shutdown_reactorless)
+        self._schedule_reactorless_shutdown(mode="graceful", signum=signum)
+
+    def _signal_fast_shutdown_reactorless(
+        self, signum: int, _: FrameType | None
+    ) -> None:
+        install_shutdown_handlers(self._signal_kill_reactorless)
+        self._schedule_reactorless_shutdown(mode="fast", signum=signum)
+
+    async def _shutdown_reactorless(self, *, mode: _StopMode) -> None:
+        await self.stop(mode=mode)
         if not self._stop_after_crawl:
             # wait until crawl tasks finish and cancel the future
             await self.join()
             if self._reactorless_main_task and not self._reactorless_main_task.done():
                 self._reactorless_main_task.cancel()
 
-    def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
+    def _signal_kill_reactorless(self, signum: int, _: FrameType | None) -> None:
         install_shutdown_handlers(signal.SIG_IGN)
-        self._log_kill(signum)
         if (loop := self._reactorless_loop) is None:
             return
+        loop.call_soon_threadsafe(self._log_kill, signum)
         if (task := self._reactorless_main_task) is not None:
-            loop.call_soon_threadsafe(task.cancel)
+            # Give the log line a moment to actually reach its output before
+            # the process exits, since nothing else delays that exit past
+            # this point.
+            loop.call_later(_DEFER_DELAY, task.cancel)
 
     def _start_twisted(
         self, stop_after_crawl: bool, install_signal_handlers: bool
@@ -1095,7 +1351,8 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         from twisted.internet import reactor
 
         if stop_after_crawl:
-            loop = asyncio.get_event_loop()
+            # The loop of the installed asyncio reactor, which isn't running yet.
+            loop = _get_running_or_installed_loop()
             join_task = loop.create_task(self.join())
             join_task.add_done_callback(self._stop_reactor)
 

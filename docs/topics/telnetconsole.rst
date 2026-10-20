@@ -1,4 +1,4 @@
-.. currentmodule:: scrapy.extensions.telnet
+.. module:: scrapy.extensions.telnet
 
 .. _topics-telnetconsole:
 
@@ -7,7 +7,7 @@ Telnet Console
 ==============
 
 Scrapy comes with a built-in telnet console for inspecting and controlling a
-Scrapy running process. The telnet console is just a regular python shell
+Scrapy running process. The telnet console is just a regular Python shell
 running inside the Scrapy process, so you can do literally anything from it.
 
 The telnet console is a :ref:`built-in Scrapy extension
@@ -29,7 +29,7 @@ disable it if you want. For more information about the extension itself see
 .. note::
     This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
-.. seealso:: :ref:`security-telnet`
+.. seealso:: :ref:`security-telnet`, :ref:`using-mcp-server`
 
 .. highlight:: none
 
@@ -121,8 +121,8 @@ engine status::
     engine.spider_is_idle()                         : False
     engine._slot.closing                            : False
     len(engine._slot.inprogress)                    : 16
-    len(engine._slot.scheduler.dqs or [])           : 0
-    len(engine._slot.scheduler.mqs)                 : 92
+    len(engine.scheduler.dqs or [])                 : 0
+    len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.queue)                  : 0
     len(engine.scraper.slot.active)                 : 0
     engine.scraper.slot.active_size                 : 0
@@ -150,6 +150,30 @@ To stop::
     telnet localhost 6023
     >>> engine.stop()
     Connection closed by foreign host.
+
+
+.. _telnet-concurrency:
+
+Change concurrency and delays
+-----------------------------
+
+The downloader and the throttler check their concurrency and delay limits for
+every request they send, so you can speed a crawl up or slow it down while it
+runs::
+
+    telnet localhost 6023
+    >>> engine.downloader.total_concurrency = 32
+    >>> scope = crawler.throttler.get_scope_manager("example.com")
+    >>> scope.set_concurrency(4)
+    >>> scope.set_base_delay(0.5, only_increase=False)
+    >>>
+
+``total_concurrency`` is :setting:`CONCURRENT_REQUESTS`, and
+:meth:`~scrapy.throttler.ThrottlerProtocol.get_scope_manager` returns the
+run-time state of a :ref:`throttling scope <throttling-scopes>`, whose
+concurrency and delay start from its :ref:`configuration
+<per-domain-throttling>`. A scope used again after being idle for a while
+starts from its configuration again.
 
 .. skip: end
 

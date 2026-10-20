@@ -20,6 +20,7 @@ async def main() -> None:
     runner = AsyncCrawlerRunner(
         settings={
             "TWISTED_REACTOR_ENABLED": False,
+            "MEMUSAGE_ENABLED": False,
             # Pinned to silence the CONCURRENT_REQUESTS_PER_DOMAIN transition warning.
             "THROTTLING_SCOPE_CONCURRENCY": 1,
         }

@@ -43,6 +43,48 @@ for additional schemes and to replace or disable default ones:
     :ref:`security-local-resources`, for the security implications of the
     default ``http``, ``ftp``, ``file`` and ``data`` handlers.
 
+.. _download-handler-ids:
+
+Choosing a download handler per request
+---------------------------------------
+
+.. versionadded:: VERSION
+
+The :setting:`DOWNLOAD_HANDLERS_BY_NAME` setting registers handlers under a
+name instead of a URL scheme. Such handlers are only used by requests that ask
+for them through the :reqmeta:`download_handler` metadata key:
+
+.. code-block:: python
+
+    DOWNLOAD_HANDLERS_BY_NAME = {
+        "playwright": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    }
+
+.. invisible-code-block: python
+
+    from scrapy import Request
+
+.. code-block:: python
+
+    Request("https://example.com", meta={"download_handler": "playwright"})
+
+:reqmeta:`download_handler` also accepts a URL scheme, e.g. ``"https"``, to use
+a handler from :setting:`DOWNLOAD_HANDLERS` on a request whose URL uses a
+different scheme.
+
+Requests keep their :reqmeta:`download_handler` across redirects and retries,
+and :ref:`robots.txt <topics-dlmw-robots>` requests inherit it from the request
+that triggers them. To fetch ``robots.txt`` differently, use a :ref:`downloader
+middleware <topics-downloader-middleware>` that acts on requests with the
+:reqmeta:`is_robotstxt_request` metadata key:
+
+.. code-block:: python
+
+    class DirectRobotsTxtMiddleware:
+        def process_request(self, request):
+            if request.meta.get("is_robotstxt_request"):
+                request.meta.pop("download_handler", None)
+
 Replacing HTTP(S) download handlers
 -----------------------------------
 
@@ -130,17 +172,63 @@ using different handlers.
 Here is a comparison of some features of the built-in HTTP handlers, see the
 individual handler docs for more differences:
 
-================== ================= ===================== ====================
-Feature            H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
-================== ================= ===================== ====================
-Requires asyncio   No                No                    Yes
-Requires a reactor Yes               Yes                   No
-HTTP/1.1           No                Yes                   Yes
-HTTP/2             Yes               No                    Yes
-TLS implementation ``cryptography``  ``cryptography``      Stdlib ``ssl``
-HTTP proxies       No                Yes                   Yes
-SOCKS proxies      No                No                    Yes
-================== ================= ===================== ====================
+.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
+
+   * - Handler
+     - Requirements
+     - HTTP
+     - Proxies
+     - Bad headers
+     - TLS
+     - IPv6
+     - Header case
+   * - :class:`Aiohttp <scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler>`
+     - asyncio
+     - 1.1
+     - HTTP
+     - Fail
+     - Stdlib ``ssl``
+     - Yes
+     - As written
+   * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
+     - Reactor, :ref:`twisted-http2 <extras>` extra
+     - 2
+     - None
+     - Not applicable
+     - ``cryptography``
+     - Needs a setting
+     - Lowercase
+   * - :class:`HTTP11 <scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler>`
+     - Reactor
+     - 1.1
+     - HTTP
+     - Skip bad
+     - ``cryptography``
+     - Needs a setting
+     - Capitalized
+   * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
+     - asyncio, :ref:`httpx <extras>` extra
+     - 1.1, 2
+     - HTTP, SOCKS
+     - Fail
+     - Stdlib ``ssl``
+     - Yes, except through a proxy
+     - As written
+
+Bad header handling is what a handler does when a response has a bad header
+line, e.g. one with no colon in it, which some servers send. Handlers that skip
+bad header lines, like web browsers do, still parse the header lines that follow
+them; other handlers also lose those, or cannot download such responses at all.
+
+Handlers that require a reactor resolve hosts, including proxy hosts and IPv6
+address literals such as ``https://[::1]/``, with the resolver set in
+:setting:`TWISTED_DNS_RESOLVER`, whose default value only supports IPv4. To use
+IPv6 with them, set it to ``scrapy.resolver.CachingHostnameResolver``.
+
+Because HTTP/2 requires lowercase header names, handlers only keep the case of
+your header names over HTTP/1.1.
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
@@ -149,6 +237,60 @@ later Scrapy version but can already be used. Please refer to the documentation
 of this package for more information.
 
 .. _scrapy-download-handlers-incubator: https://github.com/scrapy-plugins/scrapy-download-handlers-incubator
+
+.. _aiohttp-handler:
+
+AiohttpDownloadHandler
+----------------------
+
+.. versionadded:: 2.19.0
+
+.. versionchanged:: VERSION
+    In earlier versions, the handler was not lazy.
+
+.. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
+
+| Supported schemes: ``http``, ``https``.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``http://host/path`` and ``https://host/path`` URLs and
+uses the HTTP/1.1 protocol for them.
+
+It's implemented using the aiohttp_ library.
+
+.. _aiohttp: https://docs.aiohttp.org/
+
+If you want to use this handler you need to replace the default ones for the
+``http`` and ``https`` schemes:
+
+.. code-block:: python
+
+    DOWNLOAD_HANDLERS = {
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+    }
+
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This handler is experimental, and not yet recommended for production
+    environments. Future Scrapy versions may introduce related changes without
+    a deprecation period or warning or even remove it altogether.
+
+=========================== =======================================
+HTTP proxies                Yes
+SOCKS proxies               No (not supported by the library)
+HTTP/2                      No (not supported by the library)
+Bad header handling         Fail (not supported by the library)
+``response.certificate``    DER bytes
+Per-request ``bindaddress`` No (not supported by the library)
+:reqmeta:`body_file`        Yes
+TLS implementation          Standard library ``ssl``
+=========================== =======================================
 
 .. _twisted-http2-handler:
 
@@ -181,18 +323,14 @@ If you want to use this handler you need to replace the default one for the
 Features and limitations
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. warning::
-
-    This handler is experimental, and not yet recommended for production
-    environments. Future Scrapy versions may introduce related changes without
-    a deprecation period or warning.
-
 =========================== ================================================
 HTTP proxies                No (not implemented)
 SOCKS proxies               No (not supported by the library)
 HTTP/2                      Yes
+Bad header handling         Not applicable (HTTP/2 only)
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
+:reqmeta:`body_file`        No (not implemented)
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
@@ -203,20 +341,13 @@ Other limitations:
 -   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
     to ``scrapy.resolver.CachingHostnameResolver``.
 
--   No support for the :signal:`bytes_received` and :signal:`headers_received`
-    signals.
-
 Known limitations of the HTTP/2 support:
 
 -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
     HTTP/2 unencrypted (refer `http2 faq`_).
 
--   No setting to specify a maximum `frame size`_ larger than the default
-    value, 16384. Connections to servers that send a larger frame will fail.
-
 -   No support for `server pushes`_, which are ignored.
 
-.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
@@ -242,10 +373,16 @@ Features and limitations
 HTTP proxies                Yes
 SOCKS proxies               No (not supported by the library)
 HTTP/2                      No (implemented as a separate handler)
+Bad header handling         Skip bad, like web browsers do
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
+:reqmeta:`body_file`        Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
+
+.. versionchanged:: 2.18.0
+   Bad header lines with no colon in them are now skipped, instead of making
+   the whole response impossible to download.
 
 Other limitations:
 
@@ -253,6 +390,9 @@ Other limitations:
     to ``scrapy.resolver.CachingHostnameResolver``.
 
 -   HTTPS proxies to HTTPS destinations are not supported.
+
+-   A ``Content-Length`` request header is sent in addition to the one built
+    from the request body, and most servers reject requests with two.
 
 .. _httpx-handler:
 
@@ -300,8 +440,10 @@ Features and limitations
 HTTP proxies                Yes
 SOCKS proxies               Yes (SOCKS5)
 HTTP/2                      Yes
+Bad header handling         Fail (not supported by the library)
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
+:reqmeta:`body_file`        Yes
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
@@ -310,6 +452,15 @@ Other limitations:
 -   The handler creates a separate connection pool for each proxy URL (due to
     limitations of ``httpx``) which may lead to higher resource usage when
     using proxy rotation.
+
+-   Requests to a URL with an IPv6 address literal, such as
+    ``https://[::1]/``, `do not work through a proxy
+    <https://github.com/pydantic/httpx2/pull/1091>`__.
+
+Unlike the Twisted-based handlers, this handler does not use the resolver
+configured with :setting:`TWISTED_DNS_RESOLVER`, so it resolves IPv6 hosts
+without needing that setting changed, and it is not affected by
+:setting:`DNS_TIMEOUT` or by the :setting:`DNSCACHE_ENABLED` cache.
 
 .. setting:: HTTPX_HTTP2_ENABLED
 
@@ -324,6 +475,51 @@ Whether to enable HTTP/2 support in this handler.
 
 Built-in non-HTTP download handlers reference
 =============================================
+
+.. _aioftp-handler:
+
+AioftpDownloadHandler
+---------------------
+
+.. versionadded:: VERSION
+
+.. autoclass:: scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler
+
+| Supported schemes: ``ftp``, ``ftps``.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``ftp://host/path`` FTP URIs and ``ftps://host/path``
+FTPS URIs. FTPS uses `implicit TLS`_ on port 990 and `explicit TLS`_ on any
+other port.
+
+.. _implicit TLS: https://en.wikipedia.org/wiki/FTPS#Implicit
+.. _explicit TLS: https://en.wikipedia.org/wiki/FTPS#Explicit
+
+It's implemented using the aioftp_ library.
+
+.. _aioftp: https://aioftp.rtfd.io/
+
+A path ending in ``/`` is listed instead of downloaded. The response body is
+the plain-text output of the FTP ``NLST`` command, one file or directory name
+per line.
+
+It supports SOCKS4 and SOCKS5 :reqmeta:`proxies <proxy>` if you install the
+:ref:`socks <extras>` extra.
+
+.. warning::
+
+    This handler is experimental, and not yet recommended for production
+    environments. Future Scrapy versions may introduce related changes without
+    a deprecation period or warning or even remove it altogether.
+
+Limitations:
+
+-   Only passive mode is supported: the handler cannot be used if
+    :setting:`FTP_PASSIVE_MODE` is ``False``, and requests that set the
+    :reqmeta:`ftp_passive` request meta key to ``False`` are downloaded in
+    passive mode, with an error logged.
 
 DataURIDownloadHandler
 ----------------------
@@ -363,6 +559,10 @@ FTPDownloadHandler
 This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
+
+A path ending in ``/`` is listed instead of downloaded. The response
+body is the plain-text output of the FTP ``NLST`` command, one file or
+directory name per line.
 
 .. _s3-handler:
 

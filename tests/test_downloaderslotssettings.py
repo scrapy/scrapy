@@ -2,8 +2,7 @@ import asyncio
 import logging
 import warnings
 from types import SimpleNamespace
-from typing import Any
-from urllib.parse import urlparse
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -20,11 +19,14 @@ from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider, SimpleSpider
 from tests.utils.decorators import coroutine_test
 
+if TYPE_CHECKING:
+    from scrapy.core.engine import ExecutionEngine
+
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
     name = "downloader_slots"
 
-    custom_settings = {
+    custom_settings: dict[str, Any] = {
         "DOWNLOAD_SLOTS": {
             "quotes.toscrape.com": {"concurrency": 1},
             "books.toscrape.com": {"concurrency": 2},
@@ -34,10 +36,11 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         assert self.mockserver
-        self.default_slot = urlparse(self.mockserver.url("/")).hostname
+        self.default_slot = self.mockserver.host
         self.times: dict[str, list[float]] = {}
 
     async def start(self):
+        assert self.mockserver
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
@@ -45,6 +48,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
             yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
+        assert self.mockserver
         slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(response.meta.get("download_latency"))
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
@@ -180,9 +184,9 @@ async def test_a_request_queued_for_a_download_handler_lends_nothing():
     )
     crawler.spider = crawler._create_spider()
     throttler = crawler.throttler
-    assert throttler is not None
+    assert isinstance(throttler, Throttler)
     downloader = Downloader(crawler)
-    crawler.engine = SimpleNamespace(downloader=downloader)
+    crawler.engine = cast("ExecutionEngine", SimpleNamespace(downloader=downloader))
 
     # Unrelated traffic takes every download handler slot.
     fillers = [Request(f"https://b.example/{i}") for i in range(4)]
@@ -233,9 +237,9 @@ async def test_a_lender_waits_for_its_loan_before_reaching_a_download_handler():
     )
     crawler.spider = crawler._create_spider()
     throttler = crawler.throttler
-    assert throttler is not None
+    assert isinstance(throttler, Throttler)
     downloader = Downloader(crawler)
-    crawler.engine = SimpleNamespace(downloader=downloader)
+    crawler.engine = cast("ExecutionEngine", SimpleNamespace(downloader=downloader))
 
     # A request of the scope takes its only slot and waits on the middlewares.
     lender = Request("https://a.example/1")
@@ -278,9 +282,9 @@ async def test_download_handler_gate_ignores_unthrottled_requests():
     crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 4})
     crawler.spider = crawler._create_spider()
     throttler = crawler.throttler
-    assert throttler is not None
+    assert isinstance(throttler, Throttler)
     downloader = Downloader(crawler)
-    crawler.engine = SimpleNamespace(downloader=downloader)
+    crawler.engine = cast("ExecutionEngine", SimpleNamespace(downloader=downloader))
     # A request that reserved nothing (dont_throttle, or no scopes at all) has no
     # scope to exceed.
     excluded = Request("https://a.example/1", meta={"dont_throttle": True})
@@ -296,7 +300,7 @@ async def test_download_handler_gate_without_an_engine():
     )
     crawler.spider = crawler._create_spider()
     throttler = crawler.throttler
-    assert throttler is not None
+    assert isinstance(throttler, Throttler)
     # With no engine there is no downloader, and hence no download handler to
     # hold the request off.
     request = Request("https://a.example/1")
@@ -315,9 +319,9 @@ async def test_download_handler_gate_logs_when_debugging(caplog):
     )
     crawler.spider = crawler._create_spider()
     throttler = crawler.throttler
-    assert throttler is not None
+    assert isinstance(throttler, Throttler)
     downloader = Downloader(crawler)
-    crawler.engine = SimpleNamespace(downloader=downloader)
+    crawler.engine = cast("ExecutionEngine", SimpleNamespace(downloader=downloader))
 
     # Two requests hold a slot of a scope that has room for one, which is what
     # lending a slot out leads to (see
@@ -521,13 +525,17 @@ async def test_await_download_handler_after_close():
 
 @coroutine_test
 async def test_deprecated_downloader_properties():
-    crawler = get_crawler(
-        DefaultSpider,
-        settings_dict={
-            "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
-            "DOWNLOAD_DELAY_JITTER": 0.5,
-        },
-    )
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated",
+    ):
+        crawler = get_crawler(
+            DefaultSpider,
+            settings_dict={
+                "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
+                "DOWNLOAD_DELAY_JITTER": 0.5,
+            },
+        )
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
     with pytest.warns(
@@ -681,6 +689,7 @@ async def test_cross_host_redirect_gets_the_scope_of_its_own_host():
     assert crawler.stats.get_value("downloader/request_count") == 2
     throttler = crawler.throttler
     assert isinstance(throttler, Throttler)
+    assert isinstance(throttler, Throttler)
     assert set(throttler._scope_managers) == {"127.0.0.1", "localhost"}
 
 
@@ -702,6 +711,7 @@ async def test_user_download_slot_survives_a_cross_host_redirect():
     assert crawler.stats.get_value("downloader/request_count") == 2
     throttler = crawler.throttler
     assert isinstance(throttler, Throttler)
+    assert isinstance(throttler, Throttler)
     assert set(throttler._scope_managers) == {"custom"}
 
 
@@ -718,7 +728,6 @@ async def test_delay_deprecated():
     assert any("DOWNLOAD_SLOTS setting is deprecated" in m for m in messages)
     # The deprecated per-slot delay/randomize_delay are translated into a
     # throttling scope.
-    assert crawler.throttler is not None
     scope = crawler.throttler.get_scope_manager("example.com")
     assert scope.get_base_delay() == 2.0
     downloader.close()

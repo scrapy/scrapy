@@ -14,7 +14,6 @@ from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules_iter
 from scrapy.utils.project import get_project_settings, inside_project
-from scrapy.utils.python import garbage_collect
 from scrapy.utils.reactor import _asyncio_reactor_path
 
 if TYPE_CHECKING:
@@ -26,6 +25,7 @@ _P = ParamSpec("_P")
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
+    # the return type is list[tuple[Action | None, str, str | None, str | None]] | None on 3.12+
     def _parse_optional(
         self, arg_string: str
     ) -> tuple[argparse.Action | None, str, str | None] | None:
@@ -66,7 +66,7 @@ def _get_commands_from_entry_points(
     cmds: dict[str, ScrapyCommand] = {}
     for entry_point in entry_points(group=group):
         obj = entry_point.load()
-        if inspect.isclass(obj):
+        if inspect.isclass(obj) and issubclass(obj, ScrapyCommand):
             cmds[entry_point.name] = obj()
         else:
             raise ValueError(f"Invalid entry point {entry_point.name}")
@@ -150,6 +150,21 @@ def _print_unknown_command(
     print('Use "scrapy" to see available commands')
 
 
+def _build_parser(
+    cmd: ScrapyCommand, cmdname: str, settings: Settings
+) -> ScrapyArgumentParser:
+    parser = ScrapyArgumentParser(
+        formatter_class=ScrapyHelpFormatter,
+        usage=f"scrapy {cmdname} {cmd.syntax()}",
+        conflict_handler="resolve",
+        description=cmd.long_desc(),
+    )
+    settings.setdict(cmd.default_settings, priority="command")
+    cmd.settings = settings
+    cmd.add_options(parser)
+    return parser
+
+
 def _run_print_help(
     parser: argparse.ArgumentParser,
     func: Callable[_P, None],
@@ -191,15 +206,7 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
         sys.exit(2)
 
     cmd = cmds[cmdname]
-    parser = ScrapyArgumentParser(
-        formatter_class=ScrapyHelpFormatter,
-        usage=f"scrapy {cmdname} {cmd.syntax()}",
-        conflict_handler="resolve",
-        description=cmd.long_desc(),
-    )
-    settings.setdict(cmd.default_settings, priority="command")
-    cmd.settings = settings
-    cmd.add_options(parser)
+    parser = _build_parser(cmd, cmdname, settings)
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
@@ -233,10 +240,4 @@ def _run_command_profiled(
 
 
 if __name__ == "__main__":
-    try:
-        execute()
-    finally:
-        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect() on exit:
-        # http://doc.pypy.org/en/latest/cpython_differences.html
-        # ?highlight=gc.collect#differences-related-to-garbage-collection-strategies
-        garbage_collect()
+    execute()

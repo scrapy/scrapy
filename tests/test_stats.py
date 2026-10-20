@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -10,6 +10,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector, StatsCollector
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 from tests.utils.decorators import coroutine_test
@@ -38,10 +39,10 @@ class TestCoreStatsExtension:
         crawler: Crawler,
         spider: Spider,
     ) -> None:
-        fixed_datetime = datetime(2019, 12, 1, 11, 38)
+        fixed_datetime = datetime(2019, 12, 1, 11, 38, tzinfo=UTC)
         mock_datetime.now = mock.Mock(return_value=fixed_datetime)
         crawler.stats = StatsCollector(crawler)
-        ext = CoreStats.from_crawler(crawler)
+        ext = build_from_crawler(CoreStats, crawler)
         ext.spider_opened(spider)
         ext.item_scraped({}, spider)
         ext.response_received(spider)
@@ -55,6 +56,7 @@ class TestCoreStatsExtension:
             "item_dropped_count": 1,
             "item_dropped_reasons_count/ZeroDivisionError": 1,
             "finish_reason": "finished",
+            "finish_reason_error": False,
             "elapsed_time_seconds": 0.0,
         }
 
@@ -62,7 +64,7 @@ class TestCoreStatsExtension:
         self, crawler: Crawler, spider: Spider
     ) -> None:
         crawler.stats = DummyStatsCollector(crawler)
-        ext = CoreStats.from_crawler(crawler)
+        ext = build_from_crawler(CoreStats, crawler)
         ext.spider_opened(spider)
         ext.item_scraped({}, spider)
         ext.response_received(spider)
@@ -118,6 +120,42 @@ class TestStatsCollector:
         stats.set_value("test", "value")
         assert stats.get_stats() == {}
         stats.close_spider()
+
+    def test_mapping(self, crawler: Crawler) -> None:
+        stats = StatsCollector(crawler)
+        assert stats
+        assert len(stats) == 0
+        with pytest.raises(KeyError):
+            stats["a"]
+        stats["a"] = 1
+        stats.update(b=2)
+        assert stats["a"] == 1
+        assert "a" in stats
+        assert list(stats) == ["a", "b"]
+        assert len(stats) == 2
+        del stats["a"]
+        assert stats.get_stats() == {"b": 2}
+        with pytest.raises(KeyError):
+            del stats["a"]
+
+    def test_mapping_identity(self, crawler: Crawler) -> None:
+        stats1 = StatsCollector(crawler)
+        stats2 = StatsCollector(crawler)
+        assert stats1 != stats2
+        assert stats1 != {}
+        assert len({stats1, stats2}) == 2
+
+    def test_dummy_mapping(self) -> None:
+        crawler = get_crawler(Spider, {"STATS_DUMP": False})
+        stats = DummyStatsCollector(crawler)
+        stats["a"] = 1
+        assert stats
+        assert len(stats) == 0
+        assert "a" not in stats
+        with pytest.raises(KeyError):
+            stats["a"]
+        with pytest.raises(KeyError):
+            del stats["a"]
 
     def test_deprecated_spider_arg(self, crawler: Crawler, spider: Spider) -> None:
         stats = StatsCollector(crawler)
@@ -178,13 +216,13 @@ class TestStatsCollector:
     @coroutine_test
     async def test_deprecated_spider_arg_custom_collector_subclass(self) -> None:
         class CustomStatsCollector(StatsCollector):
-            def open_spider(self, spider):  # pylint: disable=signature-differs
+            def open_spider(self, spider):  # type: ignore[override]  # pylint: disable=signature-differs
                 super().open_spider(spider)
 
             def inc_value(self, key, count=1, start=0, spider=None):  # pylint: disable=useless-parent-delegation
                 super().inc_value(key, count, start, spider)
 
-            def close_spider(self, spider, reason):  # pylint: disable=signature-differs
+            def close_spider(self, spider, reason):  # type: ignore[override]  # pylint: disable=signature-differs
                 super().close_spider(spider, reason)
 
         crawler = get_crawler(SimpleSpider, {"STATS_CLASS": CustomStatsCollector})

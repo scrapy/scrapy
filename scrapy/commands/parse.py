@@ -10,21 +10,18 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from w3lib.url import is_url
 
-from scrapy.commands import BaseRunSpiderCommand
+from scrapy.commands import BaseRunSpiderCommand, _add_curl_option, _request_from_curl
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
-from scrapy.utils import display
+from scrapy.utils import _colorize
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import _schedule_coro, aiter_errback, deferred_from_coro
-from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.defer import _aiter_errback, _schedule_coro, deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
 
 if TYPE_CHECKING:
     import argparse
     from collections.abc import AsyncGenerator, AsyncIterator, Coroutine, Iterable
-
-    from twisted.python.failure import Failure
 
     from scrapy.http.request import CallbackT
     from scrapy.spiders import Spider
@@ -51,8 +48,14 @@ class Command(BaseRunSpiderCommand):
     def short_desc(self) -> str:
         return "Parse URL (using its spider) and print the results"
 
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest == "spider":
+            return self._spider_names()
+        return super().complete_option(dest)
+
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)
+        _add_curl_option(parser)
         parser.add_argument(
             "--spider",
             dest="spider",
@@ -129,10 +132,11 @@ class Command(BaseRunSpiderCommand):
             max_requests = max(self.requests)
         return max(max_items, max_requests)
 
-    def handle_exception(self, _failure: Failure) -> None:
+    @staticmethod
+    def handle_exception(exc: Exception) -> None:
         logger.error(
             "An error is caught while iterating the async iterable",
-            exc_info=failure_to_exc_info(_failure),
+            exc_info=exc,
         )
 
     @overload
@@ -147,7 +151,7 @@ class Command(BaseRunSpiderCommand):
         d: Deferred[Any]
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
-                collect_asyncgen(aiter_errback(result, self.handle_exception))
+                collect_asyncgen(_aiter_errback(result, self.handle_exception))
             )
             return d.addCallback(self.iterate_spider_output)
         d = deferred_from_coro(result)
@@ -170,7 +174,7 @@ class Command(BaseRunSpiderCommand):
             items = self.items.get(lvl, [])
 
         print("# Scraped Items ", "-" * 60)
-        display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
+        _colorize.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
     def print_requests(self, lvl: int | None = None, colour: bool = True) -> None:
         if lvl is not None:
@@ -181,7 +185,7 @@ class Command(BaseRunSpiderCommand):
             requests = []
 
         print("# Requests ", "-" * 65)
-        display.pprint(requests, colorize=colour)
+        _colorize.pprint(requests, colorize=colour)
 
     def print_results(self, opts: argparse.Namespace) -> None:
         colour = not opts.nocolour
@@ -242,7 +246,7 @@ class Command(BaseRunSpiderCommand):
             )
         return None
 
-    def set_spidercls(self, url: str, opts: argparse.Namespace) -> None:
+    def set_spidercls(self, request: Request, opts: argparse.Namespace) -> None:
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
         if opts.spider:
@@ -253,12 +257,12 @@ class Command(BaseRunSpiderCommand):
                     "Unable to find spider: %(spider)s", {"spider": opts.spider}
                 )
         else:
-            self.spidercls = spidercls_for_request(spider_loader, Request(url))
+            self.spidercls = spidercls_for_request(spider_loader, request)
             if not self.spidercls:
-                logger.error("Unable to find spider for: %(url)s", {"url": url})
+                logger.error("Unable to find spider for: %(url)s", {"url": request.url})
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
-            yield self.prepare_request(spider, Request(url), opts)
+            yield self.prepare_request(spider, request, opts)
 
         if self.spidercls:
             self.spidercls.start = start  # type: ignore[assignment,method-assign]
@@ -266,9 +270,11 @@ class Command(BaseRunSpiderCommand):
     def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
         assert self.crawler_process
         assert self.spidercls
-        self.crawler_process.crawl(self.spidercls, **opts.spargs)
-        self.pcrawler = next(iter(self.crawler_process.crawlers))
+        self.pcrawler = self._create_crawler(self.spidercls)
+        self.crawler_process.crawl(self.pcrawler, **opts.spargs)
         self.crawler_process.start()
+        if self.crawler_process.bootstrap_failed:
+            self.exitcode = 1
 
         if not self.first_response:
             logger.error("No response downloaded for: %(url)s", {"url": url})
@@ -281,7 +287,6 @@ class Command(BaseRunSpiderCommand):
     ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
-            assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
                 for item in items:
@@ -403,12 +408,18 @@ class Command(BaseRunSpiderCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # parse arguments
-        if not len(args) == 1 or not is_url(args[0]):
-            raise UsageError
-        url = args[0]
+        if opts.curl:
+            if args:
+                raise UsageError("--curl cannot be combined with a URL argument")
+            request = _request_from_curl(opts.curl)
+        else:
+            if not len(args) == 1 or not is_url(args[0]):
+                raise UsageError
+            request = Request(args[0])
+        url = request.url
 
         # prepare spidercls
-        self.set_spidercls(url, opts)
+        self.set_spidercls(request, opts)
 
         if self.spidercls and opts.depth > 0:
             self.start_parsing(url, opts)

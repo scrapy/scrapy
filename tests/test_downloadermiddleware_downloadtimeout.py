@@ -5,6 +5,7 @@ from typing import Any
 from scrapy.downloadermiddlewares.downloadtimeout import DownloadTimeoutMiddleware
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
@@ -12,7 +13,7 @@ def get_request_spider_mw(settings: dict[str, Any] | None = None):
     crawler = get_crawler(Spider, settings)
     spider = crawler._create_spider("foo")
     request = Request("http://scrapytest.org/")
-    return request, spider, DownloadTimeoutMiddleware.from_crawler(crawler)
+    return request, spider, build_from_crawler(DownloadTimeoutMiddleware, crawler)
 
 
 def test_default_download_timeout():

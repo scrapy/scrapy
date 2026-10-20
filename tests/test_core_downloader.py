@@ -6,41 +6,70 @@ from typing import TYPE_CHECKING, cast
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
+from twisted.internet.defer import CancelledError, Deferred
+from twisted.internet.endpoints import HostnameEndpoint
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol as TxProtocol
 from twisted.internet.ssl import AcceptableCiphers, optionsForClientTLS
 from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
 from twisted.web import server, static
-from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
+from twisted.web.client import (
+    URI,
+    Agent,
+    BrowserLikePolicyForHTTPS,
+    _StandardEndpointFactory,
+    readBody,
+)
 from twisted.web.client import Response as TxResponse
 
-from scrapy import Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.core.downloader import Downloader, Slot, tls
+from scrapy.core.downloader._idna_patch import (
+    _install_twisted_idna_fallbacks,
+    _safe_hostname_bytes,
+)
 from scrapy.core.downloader.contextfactory import (
+    _get_creator_context,
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
 )
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils._deps_compat import (
-    PYOPENSSL_SET_CIPHER_LIST_TMP_CONN,
-    TWISTED_TLS_NEW_IMPL,
+from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
+from scrapy.http import Response
+from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
+from scrapy.utils.asyncio import sleep
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
 )
-from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+from tests import IDNA_REJECTED_HOSTNAMES
 from tests.mockserver.http_resources import PayloadResource, put_child
 from tests.mockserver.utils import ssl_context_factory
+from tests.spiders import SimpleSpider
+from tests.utils.cmdline import proc
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from twisted.internet.defer import Deferred
-    from twisted.internet.interfaces import IListeningPort
+    from pathlib import Path
+
+    from twisted.internet.interfaces import IConsumer, IListeningPort
+    from twisted.python.failure import Failure
     from twisted.web.iweb import IBodyProducer
 
-    from scrapy.http import Response
+    from scrapy.crawler import Crawler
+    from tests.mockserver.http import MockServer
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _twisted_idna_fallbacks() -> None:
+    """The download handlers install these when built; the tests below exercise
+    the patched Twisted helpers directly, so they need them installed too."""
+    _install_twisted_idna_fallbacks()
 
 
 class TestSlot:
@@ -53,7 +82,7 @@ class TestSlot:
             ScrapyDeprecationWarning, match="inherits from the deprecated Slot"
         ):
 
-            class MySlot(Slot):  # type: ignore[misc]
+            class MySlot(Slot):  # type: ignore[misc, valid-type]
                 pass
 
 
@@ -133,19 +162,15 @@ class TestContextFactory(TestContextFactoryBase):
     ) -> None:
         s = "0123456789" * 10
         body = await self.get_page(server_url + "payload", factory, body=s)
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
-    @pytest.mark.skipif(
-        TWISTED_TLS_NEW_IMPL,
-        reason="The context is not stored on this Twisted version",
-    )
     def test_no_context_sharing(self, factory: _ScrapyClientContextFactory) -> None:
         """Every call to creatorForNetloc() should give a fresh context."""
         creator1 = factory.creatorForNetloc(b"website1.tld", 443)
         assert creator1._hostnameBytes == b"website1.tld"
         creator2 = factory.creatorForNetloc(b"website2.tld", 443)
         assert creator2._hostnameBytes == b"website2.tld"
-        assert creator1._ctx is not creator2._ctx  # type: ignore[attr-defined]
+        assert _get_creator_context(creator1) is not _get_creator_context(creator2)
 
     def test_no_context_sharing_with_conn(
         self, factory: _ScrapyClientContextFactory
@@ -182,6 +207,64 @@ class TestContextFactory(TestContextFactoryBase):
             )
             factory.creatorForNetloc(b"website.tld", 443)
 
+    @pytest.mark.parametrize("hostname", [h.encode() for h in IDNA_REJECTED_HOSTNAMES])
+    def test_idna_rejected_hostname(
+        self, factory: _ScrapyClientContextFactory, hostname: bytes
+    ) -> None:
+        """Hostnames rejected by the idna package, such as punycode emoji
+        domains or domains with underscores, should work."""
+        creator = factory.creatorForNetloc(hostname, 443)
+        assert creator._hostnameBytes == hostname
+        assert creator._hostnameASCII == hostname.decode("ascii")
+        assert creator._hostnameIsDnsName is True
+        conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
+        assert conn is not None
+
+    @pytest.mark.parametrize("hostname", [h.encode() for h in IDNA_REJECTED_HOSTNAMES])
+    def test_idna_rejected_hostname_verify_certificates(self, hostname: bytes) -> None:
+        """Same as test_idna_rejected_hostname() but with certificate
+        verification enabled, which uses plain optionsForClientTLS()."""
+        crawler = get_crawler(settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": True})
+        factory = cast(
+            "_ScrapyClientContextFactory", _load_context_factory_from_settings(crawler)
+        )
+        creator = factory.creatorForNetloc(hostname, 443)
+        assert creator._hostnameBytes == hostname
+        assert creator._hostnameASCII == hostname.decode("ascii")
+
+    @pytest.mark.parametrize("verify_certs", [False, True])
+    def test_keylog(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        verify_certs: bool,
+    ) -> None:
+        """The key log callback should be set with and without verification."""
+        monkeypatch.setenv("SSLKEYLOGFILE", str(tmp_path / "keylog"))
+        crawler = get_crawler(
+            settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": verify_certs}
+        )
+        factory: _ScrapyClientContextFactory = _load_context_factory_from_settings(
+            crawler
+        )
+        creator = factory.creatorForNetloc(b"website.tld", 443)
+        conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
+        assert conn.get_context()._keylog_callback is not None
+
+    def test_keylog_ignore_environment(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mockserver: MockServer,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        _, out, err = proc(
+            "fetch", mockserver.url("/text", is_secure=True), python_args=("-E",)
+        )
+        assert out.strip() == "Works", err
+        assert not keylog_file.exists()
+
     def test_ctx_flags(self, factory: _ScrapyClientContextFactory) -> None:
         """The context should have the expected flags set."""
         creator = factory.creatorForNetloc(b"website.tld", 443)
@@ -200,7 +283,7 @@ class TestContextFactoryCiphers(TestContextFactoryBase):
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     def test_default(self) -> None:
         """The default 'DEFAULT' value is passed to Twisted as is."""
@@ -243,7 +326,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     @coroutine_test
     async def test_setting_default(self, server_url: str) -> None:
@@ -325,6 +408,88 @@ def test_needs_backout(concurrency: int, active: int, expected: bool) -> None:
     downloader.close()
 
 
+class TestSafeHostnameBytes:
+    """Tests for the workarounds for hostnames rejected by the idna
+    package."""
+
+    @pytest.mark.parametrize(
+        ("hostname", "expected"),
+        [
+            ("example.com", b"example.com"),
+            ("xn--i-7iq.ws", b"xn--i-7iq.ws"),  # i❤.ws
+            ("i❤.ws", b"xn--i-7iq.ws"),
+            ("ü.example", b"xn--tda.example"),
+            ("foo_bar.example", b"foo_bar.example"),
+            # overlong ASCII label, rejected by the stdlib codec
+            ("a" * 64 + ".com", b"a" * 64 + b".com"),
+        ],
+    )
+    def test_valid(self, hostname: str, expected: bytes) -> None:
+        assert _safe_hostname_bytes(hostname) == expected
+
+    @pytest.mark.parametrize(
+        "hostname",
+        [
+            "❤" * 200 + ".ws",
+            # not hostnames at all: Twisted parses ":" out of a bracketless
+            # IPv6 netloc on old versions
+            ":",
+            "[::1]",
+        ],
+    )
+    def test_invalid(self, hostname: str) -> None:
+        with pytest.raises(UnicodeError):
+            _safe_hostname_bytes(hostname)
+
+    @pytest.mark.parametrize(
+        ("host", "expected"),
+        [
+            ("xn--i-7iq.ws", (False, b"xn--i-7iq.ws", "xn--i-7iq.ws")),
+            ("i❤.ws", (False, b"xn--i-7iq.ws", "i❤.ws")),
+            ("foo_bar.example", (False, b"foo_bar.example", "foo_bar.example")),
+            ("example.com", (False, b"example.com", "example.com")),
+            # bytes hostnames are decoded instead of encoded
+            (b"xn--i-7iq.ws", (False, b"xn--i-7iq.ws", "i❤.ws")),
+            (b"foo_bar.example", (False, b"foo_bar.example", "foo_bar.example")),
+            (b"example.com", (False, b"example.com", "example.com")),
+            # invalid hostnames must stay invalid, or Twisted resolves them
+            # instead of failing early
+            (":", (True, b":", ":")),
+            ("[::1]", (True, b"[::1]", "[::1]")),
+            (b":", (True, b":", ":")),
+        ],
+    )
+    def test_host_as_bytes_and_text(
+        self, host: bytes | str, expected: tuple[bool, bytes, str]
+    ) -> None:
+        """HostnameEndpoint should consider only invalid hostnames invalid."""
+        assert HostnameEndpoint._hostAsBytesAndText(host) == expected
+
+
+@pytest.mark.requires_reactor
+class TestIdnaRejectedEndpoints:
+    """Endpoints for hostnames rejected by the idna package, such as emoji
+    domains or domains with underscores, should be connectable."""
+
+    @pytest.mark.parametrize("scheme", ["http", "https"])
+    @pytest.mark.parametrize("hostname", IDNA_REJECTED_HOSTNAMES)
+    def test_endpoint_for_uri(self, scheme: str, hostname: str) -> None:
+        from twisted.internet import reactor
+
+        crawler = get_crawler()
+        endpoint_factory = _StandardEndpointFactory(
+            reactor, _load_context_factory_from_settings(crawler), 10, None
+        )
+        endpoint = endpoint_factory.endpointForURI(
+            URI.fromBytes(f"{scheme}://{hostname}/".encode())
+        )
+        # https endpoints are wrapped by wrapClientTLS()
+        hostname_endpoint = getattr(endpoint, "_wrappedEndpoint", endpoint)
+        assert hostname_endpoint._badHostname is False
+        assert hostname_endpoint._hostBytes == hostname.encode("ascii")
+        assert hostname_endpoint._hostText == hostname
+
+
 @coroutine_test
 async def test_fetch_deprecated_spider_arg():
     class CustomDownloader(Downloader):
@@ -340,6 +505,117 @@ async def test_fetch_deprecated_spider_arg():
         match=r"The fetch\(\) method of .+\.CustomDownloader requires a spider argument",
     ):
         await crawler.crawl_async()
+
+
+@coroutine_test
+async def test_stop_rejects_new_requests() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+
+    await downloader.stop()
+
+    with pytest.raises(
+        DownloadCancelledError,
+        match="not accepting new requests",
+    ):
+        await downloader._enqueue_request(Request("https://example.com"))
+
+
+@coroutine_test
+async def test_stop_cancels_pending_download_tasks() -> None:
+    crawler = get_crawler(DefaultSpider)
+    downloader = Downloader(crawler)
+
+    done_dfd: Deferred[Response] = Deferred()
+    done_dfd.callback(Response("https://done.example"))
+
+    pending_dfd: Deferred[Response] = Deferred()
+    failures: list[Failure] = []
+    pending_dfd.addErrback(failures.append)
+
+    downloader._download_tasks[Request("https://done.example")] = done_dfd
+    downloader._download_tasks[Request("https://pending.example")] = pending_dfd
+
+    dropped = await downloader.stop()
+
+    assert dropped == 1
+    assert len(failures) == 1
+    assert failures[0].check(CancelledError)
+
+
+@coroutine_test
+async def test_fast_stop_with_download_in_flight(mockserver: MockServer) -> None:
+    crawler = get_crawler(SimpleSpider)
+    crawl_dfd = deferred_from_coro(
+        crawler.crawl_async(url=mockserver.url("/delay?n=10"))
+    )
+    await crawler.signals.wait_for(signals.headers_received)
+    # Let the download handler start waiting for the response body.
+    await sleep(0)
+    await crawler.stop_async(mode="fast")
+    await maybe_deferred_to_future(crawl_dfd)
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_dropped_count") == 1
+    assert crawler.stats.get_value("response_received_count") is None
+
+
+@coroutine_test
+async def test_fast_stop_before_download_starts() -> None:
+    """A fast stop that cancels a download before the download starts ends
+    the crawl and frees the slot."""
+    crawler = get_crawler(SimpleSpider)
+
+    def stop(request: Request, spider: Spider) -> None:
+        # With asyncio, the stop runs before the download task that the
+        # downloader creates right after this signal.
+        _schedule_coro(crawler.stop_async(mode="fast"))
+
+    crawler.signals.connect(stop, signals.request_reached_downloader)
+    await crawler.crawl_async(url="data:,")
+    assert not crawler.engine.downloader.active
+    assert not crawler.engine.downloader._in_download_handler
+
+
+class ConcurrencyRecordingHandler(BaseDownloadHandler):
+    """Download handler that keeps each download in progress for a moment and
+    records the most downloads it had in progress at once."""
+
+    def __init__(self, crawler: Crawler):
+        super().__init__(crawler)
+        self._in_progress = 0
+
+    async def download_request(self, request: Request) -> Response:
+        self._in_progress += 1
+        self.crawler.stats.max_value("test/max_in_progress", self._in_progress)
+        await sleep(0.05)
+        self._in_progress -= 1
+        return Response(request.url)
+
+
+class ManyRequestsSpider(Spider):
+    name = "many_requests"
+
+    async def start(self):
+        for i in range(10):
+            yield Request(f"https://example.com/{i}")
+
+    def parse(self, response):
+        pass
+
+
+@coroutine_test
+async def test_slot_concurrency() -> None:
+    crawler = get_crawler(
+        ManyRequestsSpider,
+        {
+            "THROTTLING_SCOPE_CONCURRENCY": 2,
+            "DOWNLOAD_HANDLERS": {"https": ConcurrencyRecordingHandler},
+        },
+    )
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("test/max_in_progress") == 2
+    assert crawler.stats.get_value("response_received_count") == 10
 
 
 def test_deprecated_tls_module_names() -> None:
@@ -360,3 +636,22 @@ def test_deprecated_tls_module_names() -> None:
         assert tls.DEFAULT_CIPHERS._ciphers == (
             AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")._ciphers
         )
+
+
+@coroutine_test
+async def test_request_body_producer() -> None:
+    class Consumer:
+        def __init__(self) -> None:
+            self.written: list[bytes] = []
+
+        def write(self, data: bytes) -> None:
+            self.written.append(data)
+
+    producer = _RequestBodyProducer(b"body")
+    assert producer.length == 4
+    consumer = Consumer()
+    await maybe_deferred_to_future(producer.startProducing(cast("IConsumer", consumer)))
+    assert consumer.written == [b"body"]
+    # The body is written in a single call, so there is nothing to pause or stop.
+    producer.pauseProducing()
+    producer.stopProducing()

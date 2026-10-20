@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import sys
+import gc
 from io import StringIO
 from unittest import mock
 
 import pytest
 
 from scrapy.utils import trackref
-from scrapy.utils.python import garbage_collect
 
 
 class Foo(trackref.object_ref):
@@ -66,57 +65,21 @@ Foo                                 1   oldest: 0s ago\n\n"""
     )
 
 
-_IS_PYPY = "PyPy" in sys.version
-
-
 def test_get_oldest():
-    """
-    Verify that `get_oldest` returns the oldest live instance of a class.
-
-    The test runs in two passes to expose differences between:
-    - CPython (reference counting, immediate destruction)
-    - PyPy (tracing GC, delayed destruction)
-
-    Since `trackref` relies on weak references, delayed GC on PyPy can leave
-    stale entries in `live_refs`, affecting results unless explicitly cleared.
-    """
-
-    def _delete_o1() -> None:
-        """Delete `o1` and ensure it is actually collected on PyPy."""
-        nonlocal o1  # type: ignore[misc]
-        del o1
-
-        if _IS_PYPY:
-            # On PyPy, `del` only removes the local reference. The object may
-            # still exist until the GC runs, so we force a collection cycle.
-            garbage_collect()
-
-    def _do_asserts() -> None:
-        assert trackref.get_oldest("Foo") is o1
-        assert trackref.get_oldest("Bar") is o2
-        # Ensure the newer Foo is not incorrectly considered the oldest
-        assert trackref.get_oldest("Foo") is not o3
-        assert trackref.get_oldest("XXX") is None
-
+    """Verify that `get_oldest` returns the oldest live instance of a class."""
     o1, o2, o3 = Foo(), Bar(), Foo()
-
-    _do_asserts()
-
-    # Remove the oldest Foo instance; o3 should now become the oldest
-    _delete_o1()
+    assert trackref.get_oldest("Foo") is o1
+    assert trackref.get_oldest("Bar") is o2
+    assert trackref.get_oldest("XXX") is None
+    del o1
     assert trackref.get_oldest("Foo") is o3
 
-    # PyPy-specific behavior where stale references may persist
-    # unless the registry is explicitly cleared.
-    if _IS_PYPY:
-        trackref.live_refs.clear()
 
-    o1, o2, o3 = Foo(), Bar(), Foo()
-
-    _do_asserts()
-
-    _delete_o1()
-    assert trackref.get_oldest("Foo") is o3
+def test_get_oldest_all_dead():
+    o1 = Foo()
+    del o1
+    # Foo is still a key of live_refs, but it no longer tracks any instance.
+    assert trackref.get_oldest("Foo") is None
 
 
 def test_iter_all():
@@ -124,3 +87,14 @@ def test_iter_all():
     o2 = Bar()  # noqa: F841
     o3 = Foo()
     assert set(trackref.iter_all("Foo")) == {o1, o3}
+    assert list(trackref.iter_all("XXX")) == []
+
+
+def test_run_time_classes() -> None:
+    for _ in range(10):
+        base = type("Baz", (trackref.object_ref,), {})
+        base()
+    del base
+    gc.collect()
+    assert not list(trackref.iter_all("Baz"))
+    assert sum(1 for cls in trackref.live_refs if cls.__name__ == "Baz") == 0

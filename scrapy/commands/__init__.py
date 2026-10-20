@@ -6,15 +6,19 @@ from __future__ import annotations
 
 import argparse
 import builtins
+import logging
 import os
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from twisted.python import failure
-
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.extensions.feedexport import FeedExporter
+from scrapy.http import Request
+from scrapy.spiderloader import get_spider_loader
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
@@ -22,11 +26,49 @@ from scrapy.utils.python import global_object_name
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler, CrawlerProcessBase
     from scrapy.settings import Settings
 
 
+logger = logging.getLogger(__name__)
+
+
+def _add_curl_option(parser: argparse.ArgumentParser) -> None:
+    """Register the ``--curl`` option on commands that accept a URL."""
+    parser.add_argument(
+        "--curl",
+        metavar="COMMAND",
+        default=None,
+        help="build the request from a curl command, e.g. "
+        "--curl 'curl -d a=1 https://example.com'; cannot be combined "
+        "with a URL argument",
+    )
+
+
+def _request_from_curl(curl_command: str, **kwargs: Any) -> Request:
+    """Build a :class:`~scrapy.Request` from a curl command, reporting parsing
+    errors as :exc:`~scrapy.exceptions.UsageError`."""
+    try:
+        return Request.from_curl(curl_command, **kwargs)
+    except ValueError as e:
+        raise UsageError(str(e), print_help=False) from e
+
+
+class _PdbHandler(logging.Handler):
+    """Start a post-mortem debugging session on every logged record that comes
+    with an exception traceback."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.exc_info and record.exc_info[2]:
+            import pdb  # noqa: T100,PLC0415
+
+            pdb.post_mortem(record.exc_info[2])
+
+
 class ScrapyCommand(ABC):
+    """Base class for all Scrapy commands."""
+
     requires_project: bool = False
     requires_crawler_process: bool = True
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
@@ -58,16 +100,12 @@ class ScrapyCommand(ABC):
         self._crawler: Crawler = crawler
 
     def syntax(self) -> str:
-        """
-        Command syntax (preferably one-line). Do not include command name.
-        """
+        """Command syntax (preferably one-line). Do not include command name."""
         return ""
 
     @abstractmethod
     def short_desc(self) -> str:
-        """
-        A short description of the command
-        """
+        """A short description of the command."""
         return ""
 
     def long_desc(self) -> str:
@@ -86,9 +124,7 @@ class ScrapyCommand(ABC):
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
-        """
-        Populate option parse with options available for this command
-        """
+        """Populate the option parser with the options available for this command."""
         assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
@@ -119,9 +155,47 @@ class ScrapyCommand(ABC):
             metavar="NAME=VALUE",
             help="set/override setting (may be repeated)",
         )
-        group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
+        group.add_argument(
+            "--pdb",
+            action="store_true",
+            help="enable pdb on failure (uses ipdb if installed)",
+        )
+
+    def complete_argument(self, args: list[str]) -> Iterable[str]:
+        """Return shell completion candidates for the positional argument
+        being typed, where *args* are the positional arguments typed before
+        it.
+
+        .. versionadded:: VERSION
+
+        See :ref:`completion`.
+        """
+        return ()
+
+    def complete_option(self, dest: str) -> Iterable[str]:
+        """Return shell completion candidates for the value of the option
+        being typed, identified by *dest*, i.e. the name under which its value
+        is available in the ``opts`` parameter of ``run()``.
+
+        .. versionadded:: VERSION
+
+        See :ref:`completion`.
+        """
+        if dest == "loglevel":
+            return ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
+        return ()
+
+    def _spider_names(self) -> list[str]:
+        assert self.settings is not None
+        try:
+            return sorted(get_spider_loader(self.settings).list())
+        except Exception:
+            # Completion runs on incomplete command lines and outside
+            # projects, where loading spiders is expected to fail.
+            return []
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        """Set settings based on the command line options."""
         assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
@@ -147,17 +221,21 @@ class ScrapyCommand(ABC):
             )
 
         if opts.pdb:
-            failure.startDebugMode()
+            try:
+                import ipdb  # noqa: T100,PLC0415
+            except ImportError:
+                pass
+            else:
+                sys.modules["pdb"] = ipdb
+            logging.root.addHandler(_PdbHandler(level=logging.ERROR))
 
     @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        """
-        Entry point for running commands
-        """
+        """Entry point for running commands."""
         raise NotImplementedError
 
 
-class BaseRunSpiderCommand(ScrapyCommand):
+class BaseRunSpiderCommand(ScrapyCommand, ABC):
     """
     Common class used to share functionality between the crawl, parse and runspider commands
     """
@@ -206,6 +284,36 @@ class BaseRunSpiderCommand(ScrapyCommand):
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
 
+    def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
+        assert self.crawler_process is not None
+        crawler = self.crawler_process.create_crawler(spidercls)
+        crawler.signals.connect(
+            self._warn_if_feeds_unused, signal=signals.engine_started
+        )
+        return crawler
+
+    def _run_crawler(
+        self, spidercls: type[Spider] | str, opts: argparse.Namespace
+    ) -> None:
+        assert self.crawler_process is not None
+        crawler = self._create_crawler(spidercls)
+        self.crawler_process.crawl(crawler, **opts.spargs)
+        self.crawler_process.start()
+        if self.crawler_process.bootstrap_failed or crawler.stats.get_value(
+            "finish_reason_error", False
+        ):
+            self.exitcode = 1
+
+    def _warn_if_feeds_unused(self, sender: Crawler, **kwargs: Any) -> None:
+        if (
+            sender.settings.getdict("FEEDS")
+            and sender.get_extension(FeedExporter) is None
+        ):
+            logger.warning(
+                "The FeedExporter extension is not enabled, so no item will be "
+                "exported to the configured feeds (FEEDS, -o, -O)."
+            )
+
 
 class ScrapyHelpFormatter(argparse.HelpFormatter):
     """
@@ -236,13 +344,15 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         Underline and title case command line help message headers.
         """
         if part_strings and part_strings[0].startswith("usage: "):
-            part_strings[0] = "Usage\n=====\n  " + part_strings[0][len("usage: ") :]
+            part_strings[0] = "Usage\n=====\n  " + part_strings[0].removeprefix(
+                "usage: "
+            )
         headings = [
             i for i in range(len(part_strings)) if part_strings[i].endswith(":\n")
         ]
         for index in reversed(headings):
             char = "-" if "Global Options" in part_strings[index] else "="
-            part_strings[index] = part_strings[index][:-2].title()
+            part_strings[index] = part_strings[index].removesuffix(":\n").title()
             underline = "".join(["\n", (char * len(part_strings[index])), "\n"])
             part_strings.insert(index + 1, underline)
         return part_strings

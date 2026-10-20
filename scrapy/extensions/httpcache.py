@@ -3,20 +3,22 @@ from __future__ import annotations
 import gzip
 import logging
 import pickle
-from email.utils import mktime_tz, parsedate_tz
+from datetime import UTC
+from email.utils import parsedate_to_datetime
 from importlib import import_module
 from pathlib import Path
 from time import time
 from typing import IO, TYPE_CHECKING, Any, Concatenate, cast
+from urllib.parse import quote
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 
-from scrapy.http import Headers, Response
-from scrapy.responsetypes import responsetypes
+from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.python import to_unicode
+from scrapy.utils.response import response_from_dict
 
 if TYPE_CHECKING:
     import os
@@ -30,6 +32,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _get_scope(settings: BaseSettings, supported: tuple[str, ...]) -> str:
+    scope: str = settings["HTTPCACHE_SCOPE"]
+    if scope not in supported:
+        supported_repr = ", ".join(repr(value) for value in supported)
+        raise ValueError(
+            f"Unsupported HTTPCACHE_SCOPE value: {scope!r}. The cache storage "
+            f"in use supports the following values: {supported_repr}."
+        )
+    return scope
 
 
 class DummyPolicy:
@@ -66,7 +79,7 @@ class RFC2616Policy:
             Request | Response, dict[bytes, bytes | None]
         ] = WeakKeyDictionary()
         self.ignore_response_cache_controls: list[bytes] = [
-            to_bytes(cc)
+            cc.encode()
             for cc in settings.getlist("HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS")
         ]
 
@@ -250,9 +263,11 @@ class DbmCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.dbmodule: ModuleType = import_module(settings["HTTPCACHE_DBM_MODULE"])
         self.db: Any = None  # the real type is private
+        self._scope = _get_scope(settings, ("spider", "none"))
 
     def open_spider(self, spider: Spider) -> None:
-        dbpath = Path(self.cachedir, f"{spider.name}.db")
+        name = spider.name if self._scope == "spider" else "httpcache"
+        dbpath = Path(self.cachedir, f"{name}.db")
         self.db = self.dbmodule.open(str(dbpath), "c")
 
         logger.debug(
@@ -261,7 +276,6 @@ class DbmCacheStorage:
             extra={"spider": spider},
         )
 
-        assert spider.crawler.request_fingerprinter
         self._fingerprinter: RequestFingerprinterProtocol = (
             spider.crawler.request_fingerprinter
         )
@@ -270,41 +284,35 @@ class DbmCacheStorage:
         self.db.close()
 
     def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
-        data = self._read_data(spider, request)
-        if data is None:
+        result = self._read_data(spider, request)
+        if result is None:
             return None  # not cached
-        url = data["url"]
-        status = data["status"]
-        headers = Headers(data["headers"])
-        body = data["body"]
-        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        return respcls(url=url, headers=headers, status=status, body=body)
+        data, ts = result
+        request.meta["cache_timestamp"] = ts
+        return response_from_dict(data)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
     ) -> None:
         key = self._fingerprinter.fingerprint(request).hex()
-        data = {
-            "status": response.status,
-            "url": response.url,
-            "headers": dict(response.headers),
-            "body": response.body,
-        }
-        self.db[f"{key}_data"] = pickle.dumps(data, protocol=4)
+        self.db[f"{key}_data"] = pickle.dumps(response.to_dict(), protocol=4)
         self.db[f"{key}_time"] = str(time())
 
-    def _read_data(self, spider: Spider, request: Request) -> dict[str, Any] | None:
+    def _read_data(
+        self, spider: Spider, request: Request
+    ) -> tuple[dict[str, Any], float] | None:
         key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = f"{key}_time"
         if tkey not in db:
             return None  # not found
 
-        ts = db[tkey]
-        if 0 < self.expiration_secs < time() - float(ts):
+        ts = float(db[tkey])
+        if 0 < self.expiration_secs < time() - ts:
             return None  # expired
 
-        return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        data = cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        return data, ts
 
 
 class FilesystemCacheStorage:
@@ -312,6 +320,7 @@ class FilesystemCacheStorage:
         self.cachedir: str = data_path(settings["HTTPCACHE_DIR"])
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
+        self._scope = _get_scope(settings, ("spider", "none", "domain"))
         # https://github.com/python/mypy/issues/10740
         self._open: Callable[
             Concatenate[str | os.PathLike[str], str, ...], IO[bytes]
@@ -326,7 +335,6 @@ class FilesystemCacheStorage:
             extra={"spider": spider},
         )
 
-        assert spider.crawler.request_fingerprinter
         self._fingerprinter = spider.crawler.request_fingerprinter
 
     def close_spider(self, spider: Spider) -> None:
@@ -342,11 +350,18 @@ class FilesystemCacheStorage:
             body = f.read()
         with self._open(rpath / "response_headers", "rb") as f:
             rawheaders = f.read()
-        url = metadata["response_url"]
-        status = metadata["status"]
-        headers = Headers(headers_raw_to_dict(rawheaders))
-        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        return respcls(url=url, headers=headers, status=status, body=body)
+        data = {
+            "url": metadata["response_url"],
+            "status": metadata["status"],
+            "headers": headers_raw_to_dict(rawheaders),
+            "body": body,
+        }
+        datapath = rpath / "response_data"
+        if datapath.exists():
+            with self._open(datapath, "rb") as f:
+                data.update(pickle.load(f))  # noqa: S301
+        request.meta["cache_timestamp"] = metadata["timestamp"]
+        return response_from_dict(data)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -363,13 +378,20 @@ class FilesystemCacheStorage:
             "timestamp": time(),
         }
         with self._open(rpath / "meta", "wb") as f:
-            f.write(to_bytes(repr(metadata)))
+            f.write(repr(metadata).encode())
         with self._open(rpath / "pickled_meta", "wb") as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(rpath / "response_headers", "wb") as f:
             f.write(headers_dict_to_raw(response.headers))
         with self._open(rpath / "response_body", "wb") as f:
             f.write(response.body)
+        data = {
+            key: value
+            for key, value in response.to_dict().items()
+            if key not in {"url", "status", "headers", "body"}
+        }
+        with self._open(rpath / "response_data", "wb") as f:
+            pickle.dump(data, f, protocol=4)
         with self._open(rpath / "request_headers", "wb") as f:
             f.write(headers_dict_to_raw(request.headers))
         with self._open(rpath / "request_body", "wb") as f:
@@ -377,7 +399,17 @@ class FilesystemCacheStorage:
 
     def _get_request_path(self, spider: Spider, request: Request) -> str:
         key = self._fingerprinter.fingerprint(request).hex()
-        return str(Path(self.cachedir, spider.name, key[0:2], key))
+        scope_path = self._get_scope_path(spider, request)
+        return str(Path(self.cachedir, scope_path, key[0:2], key))
+
+    def _get_scope_path(self, spider: Spider, request: Request) -> str:
+        if self._scope == "spider":
+            return spider.name
+        if self._scope == "domain":
+            # quote() covers hostnames that are not valid path components,
+            # such as IPv6 addresses.
+            return quote(urlparse_cached(request).hostname or "_", safe="")
+        return ""
 
     def _read_meta(self, spider: Spider, request: Request) -> dict[str, Any] | None:
         rpath = Path(self._get_request_path(spider, request))
@@ -412,8 +444,17 @@ def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:
 
 
 def rfc1123_to_epoch(date_str: str | bytes | None) -> int | None:
+    # The HTTP time format (which is how we use this function) is actually in
+    # RFC 7231 §7.1.1.1, it refers to RFC 5322 and also requires support for
+    # two obsolete formats (RFC 850 and asctime()). email.utils evidently
+    # supports all three.
+    if date_str is None:
+        return None
     try:
-        date_str = to_unicode(date_str, encoding="ascii")  # type: ignore[arg-type]
-        return mktime_tz(parsedate_tz(date_str))  # type: ignore[arg-type]
+        date_str = to_unicode(date_str, encoding="ascii")
+        date = parsedate_to_datetime(date_str)
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=UTC)
+        return int(date.timestamp())
     except Exception:
         return None

@@ -12,11 +12,12 @@ from scrapy.commands import ScrapyCommand
 from scrapy.commands.edit import _edit_file
 from scrapy.exceptions import UsageError
 from scrapy.spiderloader import get_spider_loader
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils._template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
     import argparse
     import os
+    from collections.abc import Iterable
 
 
 def sanitize_module_name(module_name: str) -> str:
@@ -53,6 +54,11 @@ class Command(ScrapyCommand):
     def short_desc(self) -> str:
         return "Generate new spider using pre-defined templates"
 
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest in {"dump", "template"}:
+            return self._template_names()
+        return super().complete_option(dest)
+
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)
         parser.add_argument(
@@ -81,7 +87,7 @@ class Command(ScrapyCommand):
             "--template",
             dest="template",
             default="basic",
-            help="Uses a custom template.",
+            help="Uses a custom template, given by name or by path to a .tmpl file.",
         )
         parser.add_argument(
             "--force",
@@ -120,7 +126,7 @@ class Command(ScrapyCommand):
                 module, name, url, opts.template, template_file
             )
             if opts.edit:
-                self.exitcode = _edit_file(self.settings["EDITOR"], spider_file)
+                self.exitcode = _edit_file(self.settings["EDITOR"], spider_file)  # pylint: disable=unsubscriptable-object
 
     def _generate_template_variables(
         self,
@@ -153,7 +159,7 @@ class Command(ScrapyCommand):
         assert self.settings is not None
         tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
-            spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
+            spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])  # pylint: disable=unsubscriptable-object
             assert spiders_module.__file__
             spiders_dir = Path(spiders_module.__file__).parent.resolve()
         else:
@@ -171,23 +177,27 @@ class Command(ScrapyCommand):
         return Path(spider_file)
 
     def _find_template(self, template: str) -> Path | None:
-        template_file = Path(self.templates_dir, f"{template}.tmpl")
-        if template_file.exists():
-            return template_file
+        filename = template if template.endswith(".tmpl") else f"{template}.tmpl"
+        for template_file in (Path(filename), Path(self.templates_dir, filename)):
+            if template_file.exists():
+                return template_file
         print(
             f"Unable to find template: {template}\n",
             'Use "scrapy genspider --list" to see all available templates.',
         )
         return None
 
+    def _template_names(self) -> list[str]:
+        return [
+            file.stem
+            for file in sorted(Path(self.templates_dir).iterdir())
+            if file.suffix == ".tmpl"
+        ]
+
     def _list_templates(self) -> None:
         print(
             "Available templates:\n",
-            "\n".join(
-                f"  {file.stem}"
-                for file in sorted(Path(self.templates_dir).iterdir())
-                if file.suffix == ".tmpl"
-            ),
+            "\n".join(f"  {name}" for name in self._template_names()),
         )
 
     def _spider_exists(self, name: str) -> bool:
@@ -214,7 +224,7 @@ class Command(ScrapyCommand):
             return True
 
         # a file with the same name exists in the target directory
-        spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
+        spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])  # pylint: disable=unsubscriptable-object
         spiders_dir = Path(cast("str", spiders_module.__file__)).parent
         spiders_dir_abs = spiders_dir.resolve()
         path = spiders_dir_abs / (name + ".py")
@@ -229,7 +239,7 @@ class Command(ScrapyCommand):
         assert self.settings is not None
         return str(
             Path(
-                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),
+                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),  # pylint: disable=unsubscriptable-object
                 "spiders",
             )
         )

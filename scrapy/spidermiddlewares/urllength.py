@@ -7,15 +7,12 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy.exceptions import NotConfigured
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
 
@@ -48,6 +45,5 @@ class UrlLengthMiddleware(BaseSpiderMiddleware):
             {"maxlength": self.maxlength, "url": request.url},
             extra={"spider": self.crawler.spider},
         )
-        assert self.crawler.stats
         self.crawler.stats.inc_value("urllength/request_ignored_count")
         return None

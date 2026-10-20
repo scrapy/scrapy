@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.response import _body_size
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.throttler import ThrottlingScopeManager
@@ -60,7 +58,6 @@ class AutoThrottle:
         self, response: Response, request: Request, spider: Spider
     ) -> None:
         throttler = self.crawler.throttler
-        assert throttler is not None
         latency = request.meta.get("download_latency")
         if (
             latency is None
@@ -82,7 +79,7 @@ class AutoThrottle:
                     f"delay:{newdelay * 1000:5.0f} ms "
                     f"({(newdelay - olddelay) * 1000:+.0f}) | "
                     f"latency:{latency * 1000:5.0f} ms | "
-                    f"size:{len(response.body):6d} bytes",
+                    f"size:{_body_size(response):6d} bytes",
                     extra={"spider": spider},
                 )
 

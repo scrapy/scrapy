@@ -11,11 +11,6 @@ Sending too many requests too quickly can `overwhelm websites`_.
 
 .. _overwhelm websites: https://en.wikipedia.org/wiki/Denial-of-service_attack
 
-.. seealso::
-
-    :ref:`topics-autothrottle`
-        Adjust scope delays dynamically based on response latencies.
-
 .. _basic-throttling:
 .. _throttling-scopes:
 
@@ -39,11 +34,8 @@ The main throttling :ref:`settings <topics-settings>` are:
     :setting:`THROTTLING_SCOPE_CONCURRENCY` (default: ``1``)
 
     Default maximum number of simultaneous requests per :ref:`throttling scope
-    <throttling-scopes>`. Requests are grouped by domain by default, so this is
-    the maximum number of simultaneous requests per domain.
-
-    Must be ``1`` or higher. Unlike :setting:`CONCURRENT_REQUESTS`, it cannot be
-    set to ``0``: a throttling scope always enforces a concurrency limit.
+    <throttling-scopes>`, ``0`` for no limit. Requests are grouped by domain by
+    default, so this is the maximum number of simultaneous requests per domain.
 
 -   .. setting:: DOWNLOAD_DELAY
 
@@ -139,24 +131,16 @@ throttling for such requests:
 .. note:: These custom throttling groups persist through redirects. For
     redirect-aware throttling assignment, see :ref:`custom-throttler`.
 
-.. reqmeta:: delay
-
 Delaying a single request
 -------------------------
 
 To hold a single request for a fixed number of seconds before it is sent,
-regardless of its scopes, set the ``delay`` request metadata key:
+regardless of its scopes, set the :reqmeta:`delay` request metadata key.
 
-.. code-block:: python
-
-    Request("https://example.com/slow", meta={"delay": 5.0})
-
-The delay is applied once, the first time the request is throttled.
-
-``delay`` defines only the *earliest* time the request may be sent,
-not the exact time: once the delay elapses, the request still competes with
-every other pending request for its scopes. If you want it sent **as soon as**
-its delay elapses, give it a higher :attr:`~scrapy.Request.priority` too:
+The delay defines only the *earliest* time the request may be sent, not the
+exact time: once the delay elapses, the request still competes with every other
+pending request for its scopes. If you want it sent **as soon as** its delay
+elapses, give it a higher :attr:`~scrapy.Request.priority` too:
 
 .. code-block:: python
 

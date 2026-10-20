@@ -3,14 +3,13 @@ from __future__ import annotations
 import json
 import logging
 import random
+import sys
 import time
 import warnings
 from collections import OrderedDict
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Protocol, Self, TypedDict, cast
 from weakref import WeakKeyDictionary, WeakSet
-
-from typing_extensions import Self
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
@@ -35,8 +34,7 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     """Accepted keys of :setting:`THROTTLING_SCOPES` entries."""
 
     concurrency: int
-    """Per-scope override of :setting:`THROTTLING_SCOPE_CONCURRENCY`. Must be
-    ``1`` or higher: a scope always enforces a concurrency limit."""
+    """Per-scope override of :setting:`THROTTLING_SCOPE_CONCURRENCY`."""
 
     delay: float
     """Per-scope override of :setting:`DOWNLOAD_DELAY`."""
@@ -83,9 +81,9 @@ def _default_scope_concurrency_setting(settings: BaseSettings) -> str:
     :func:`_warn_on_deprecated_concurrency`)."""
     domain_priority = _effective_priority(settings, "CONCURRENT_REQUESTS_PER_DOMAIN")
     scope_priority = _effective_priority(settings, "THROTTLING_SCOPE_CONCURRENCY")
-    if domain_priority > scope_priority or (
-        domain_priority == scope_priority
-        and domain_priority <= SETTINGS_PRIORITIES["default"]
+    if (
+        domain_priority > scope_priority
+        or scope_priority == domain_priority <= SETTINGS_PRIORITIES["default"]
     ):
         return "CONCURRENT_REQUESTS_PER_DOMAIN"
     return "THROTTLING_SCOPE_CONCURRENCY"
@@ -246,20 +244,19 @@ def _warn_on_unachievable_concurrency(
 def _check_scope_concurrency(
     settings: BaseSettings, scopes_config: dict[str, dict[str, Any]]
 ) -> None:
-    """Reject non-positive throttling scope concurrency limits, which would
-    leave a scope with no slot to give and hold its requests back forever. Call
-    once per crawl (see :meth:`Throttler.__init__`)."""
+    """Reject negative throttling scope concurrency limits. Call once per crawl
+    (see :meth:`Throttler.__init__`)."""
     name = _default_scope_concurrency_setting(settings)
     concurrency = settings.getint(name)
-    if concurrency < 1:
-        raise ValueError(f"{name} must be 1 or higher, got {concurrency!r}.")
+    if concurrency < 0:
+        raise ValueError(f"{name} must be 0 or higher, got {concurrency!r}.")
     for scope_id, config in scopes_config.items():
         if config.get("concurrency") is None:
             continue
         concurrency = int(config["concurrency"])
-        if concurrency < 1:
+        if concurrency < 0:
             raise ValueError(
-                f"The concurrency of throttling scope {scope_id!r} must be 1 or "
+                f"The concurrency of throttling scope {scope_id!r} must be 0 or "
                 f"higher, got {concurrency!r}."
             )
 
@@ -378,16 +375,28 @@ _APPLIED_SCOPES_META_KEY = "_throttler_applied_scopes"
 # Throttler._resolve_scopes_sync.
 _STAMPED_SLOT_META_KEY = "_throttler_stamped_download_slot"
 
-# Request.meta key tracking the state of the 'delay' meta key: the deadline that
-# delay set, or None once it has been honored (see
-# Throttler._request_delay_deadline).
-_DELAY_DEADLINE_META_KEY = "_throttler_delay_deadline"
+# Request.meta key holding the delay of a request and the time before which it
+# must not be sent because of it. The deadline is a wall-clock time, so that it
+# survives a crawl being resumed from a disk queue.
+_DELAY_DEADLINE_META_KEY = "_delay_deadline"
 
 
-def _mark_request_delayed(request: Request) -> None:
-    """Record that the :reqmeta:`delay` of *request* has been honored, so that it
-    is not delayed again, e.g. on resuming a crawl."""
-    request.meta[_DELAY_DEADLINE_META_KEY] = None
+def _start_delay_countdown(request: Request) -> None:
+    """Turn the ``delay`` meta key of *request*, if any, into a deadline.
+
+    Requests are stamped as they are scheduled, so that their delay runs while
+    they wait for their turn instead of only once they get it.
+
+    ``delay`` is consumed, so that a copy of the request, such as a retry or a
+    redirect, is not held again, while setting the key again asks for a new
+    delay. What the request has been through is left on ``delayed``.
+    """
+    delay = request.meta.pop("delay", None)
+    if not delay:
+        return
+    delay = float(delay)
+    request.meta[_DELAY_DEADLINE_META_KEY] = (delay, time.time() + delay)
+    request.meta["delayed"] = [*request.meta.get("delayed", []), delay]
 
 
 class Throttler(ThrottlerProtocol):
@@ -451,9 +460,10 @@ class Throttler(ThrottlerProtocol):
 
         Each ``DOWNLOAD_SLOTS`` entry is translated to a throttling scope keyed
         by the same slot name (the default manager keys domain scopes by host
-        name, matching how download slots are keyed): ``concurrency`` and
-        ``delay`` map directly, and the ``randomize_delay`` boolean maps to a
-        ``jitter`` magnitude (±50%, or none). An explicit
+        name, matching how download slots are keyed): ``concurrency``,
+        ``delay`` and ``jitter`` map directly, and the deprecated
+        ``randomize_delay`` boolean maps to a ``jitter`` magnitude (±50%, or
+        none). An explicit
         ``THROTTLING_SCOPES`` entry for the same scope takes precedence over the
         translated one. The deprecation warning is emitted by the downloader.
 
@@ -472,7 +482,9 @@ class Throttler(ThrottlerProtocol):
                 translated["concurrency"] = slot_config["concurrency"]
             if "delay" in slot_config:
                 translated["delay"] = slot_config["delay"]
-            if "randomize_delay" in slot_config:
+            if "jitter" in slot_config:
+                translated["jitter"] = slot_config["jitter"]
+            elif "randomize_delay" in slot_config:
                 translated["jitter"] = 0.5 if slot_config["randomize_delay"] else 0.0
             scopes[slot_id] = {**translated, **scopes.get(slot_id, {})}
         return scopes
@@ -613,8 +625,7 @@ class Throttler(ThrottlerProtocol):
             del self._scope_managers[scope_id]
 
     async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
-        if request.meta.get("delay"):
-            await self._delay_request(request)
+        await self._delay_request(request)
         # The scopes are resolved (and persisted, see _resolve_scopes) even for a
         # request excluded from throttling, because its outcome still backs off
         # its scopes, and get_applied_scopes() is how a middleware finds them.
@@ -746,7 +757,7 @@ class Throttler(ThrottlerProtocol):
     # -- Unscheduled requests ---------------------------------------------------
 
     def _downloader(self) -> Downloader | None:
-        engine = self.crawler.engine
+        engine = self.crawler._engine
         return None if engine is None else engine.downloader
 
     def _in_downloader_middlewares(self, request: Request) -> bool:
@@ -814,8 +825,7 @@ class Throttler(ThrottlerProtocol):
     ) -> None:
         """Reserve the *scopes* of *request*, borrowing an unused slot from each
         scope in *borrowed*, which has none free."""
-        if self.crawler.stats:
-            self.crawler.stats.inc_value("throttler/borrowed_slots")
+        self.crawler.stats.inc_value("throttler/borrowed_slots")
         if self._debug:
             logger.debug(
                 f"Letting {request} borrow a concurrency slot of every scope in "
@@ -840,11 +850,9 @@ class Throttler(ThrottlerProtocol):
         )
 
     def _scopes_allow(self, request: Request, *, skip: ScopeID | None = None) -> bool:
-        """Return whether the :reqmeta:`delay` of *request* has elapsed and every
-        one of its scopes, except *skip*, allows it through right now."""
+        """Return whether every scope of *request*, except *skip*, allows it
+        through right now."""
         now = time.monotonic()
-        if self._request_delay_deadline(request, now) > now:
-            return False
         for scope_id in self.get_applied_scopes(request):
             if scope_id == skip:
                 continue
@@ -917,33 +925,28 @@ class Throttler(ThrottlerProtocol):
             downloader._discard_downloader_middlewares_event(middlewares_event)
 
     async def _delay_request(self, request: Request) -> None:
-        """Honor the :reqmeta:`delay` meta key by holding *request* for the
-        requested number of seconds the first time it is processed."""
-        now = time.monotonic()
-        wait = self._request_delay_deadline(request, now) - now
+        """Hold *request* until the deadline of its :reqmeta:`delay`.
+
+        The wait happens before the request gets a concurrency slot, so it does
+        not take one.
+        """
+        # A request that skipped the scheduler, e.g. one from
+        # ExecutionEngine.download_async(), starts its countdown here.
+        _start_delay_countdown(request)
+        countdown = request.meta.pop(_DELAY_DEADLINE_META_KEY, None)
+        if countdown is None:
+            return
+        delay, deadline = countdown
+        # A deadline further away than the delay means the clock moved backwards
+        # since it was set, which takes a crawl resumed from a disk queue, e.g.
+        # on a machine with a lagging clock. Capping keeps the wait to what the
+        # delay asked for.
+        wait = min(deadline - time.time(), delay)
         if wait <= 0:
             return
-        await sleep(wait)
-        _mark_request_delayed(request)
-
-    def _request_delay_deadline(self, request: Request, now: float) -> float:
-        """Return the monotonic time before which *request* must not be sent due
-        to its :reqmeta:`delay`, or ``0.0`` if it has none.
-
-        The deadline is computed once, the first time the request is throttled,
-        and stored so later reads reuse it. A request whose delay was already
-        honored (a ``None`` deadline) is never delayed again, so a resumed crawl
-        does not re-block on a stale deadline."""
-        delay = request.meta.get("delay")
-        if not delay:
-            return 0.0
-        if _DELAY_DEADLINE_META_KEY in request.meta:
-            return request.meta[_DELAY_DEADLINE_META_KEY] or 0.0
-        deadline = now + float(delay)
-        request.meta[_DELAY_DEADLINE_META_KEY] = deadline
         if self._debug:
-            logger.debug(f"Holding {request} for {delay:.2f}s (delay)")
-        return deadline
+            logger.debug(f"Holding {request} for {wait:.2f}s (delay)")
+        await sleep(wait)
 
 
 class ThrottlingScopeManager:
@@ -962,7 +965,6 @@ class ThrottlingScopeManager:
 
     -   No more than ``"concurrency"`` requests (defaulting to
         :setting:`THROTTLING_SCOPE_CONCURRENCY`) are allowed in flight at once.
-        There is no way to lift this limit.
     """
 
     @classmethod
@@ -983,12 +985,16 @@ class ThrottlingScopeManager:
             config["jitter"] if "jitter" in config else _default_jitter(settings)
         )
 
-        # Concurrency. Always limited: a scope has no way to express "no limit"
-        # (see _check_scope_concurrency), so this is a positive integer.
-        self._concurrency: int = int(
-            config["concurrency"]
-            if "concurrency" in config
-            else _default_scope_concurrency(settings)
+        # Concurrency. 0 means no per-scope limit, so CONCURRENT_REQUESTS
+        # applies, with sys.maxsize standing in for no limit at all.
+        self._no_limit: int = settings.getint("CONCURRENT_REQUESTS") or sys.maxsize
+        self._concurrency: int = (
+            int(
+                config["concurrency"]
+                if "concurrency" in config
+                else _default_scope_concurrency(settings)
+            )
+            or self._no_limit
         )
 
         # State.
@@ -1077,19 +1083,22 @@ class ThrottlingScopeManager:
 
     def get_concurrency(self) -> int:
         """Return the maximum number of concurrent requests allowed for this
-        scope."""
+        scope.
+
+        For a scope with no limit, that is :setting:`CONCURRENT_REQUESTS`, or
+        :data:`sys.maxsize` if that is ``0`` too.
+        """
         return self._concurrency
 
     def set_concurrency(self, concurrency: int) -> None:
         """Set the maximum number of concurrent requests allowed for this scope,
-        which must be ``1`` or higher: there is no way to lift the limit, a scope
-        always enforces one."""
+        ``0`` for no limit."""
         concurrency = int(concurrency)
-        if concurrency < 1:
+        if concurrency < 0:
             raise ValueError(
-                f"Scope concurrency must be 1 or higher, got {concurrency!r}."
+                f"Scope concurrency must be 0 or higher, got {concurrency!r}."
             )
-        self._concurrency = concurrency
+        self._concurrency = concurrency or self._no_limit
         self._wake_waiters()
 
     def _is_idle(self, now: float) -> bool:

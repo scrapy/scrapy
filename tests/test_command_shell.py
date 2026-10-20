@@ -13,13 +13,14 @@ import pytest
 from pexpect.popen_spawn import PopenSpawn
 
 from scrapy import Spider
+from scrapy.core.engine import EngineState
 from scrapy.http import Request, Response
 from scrapy.shell import Shell, inspect_response
 from scrapy.utils.reactor import _asyncio_reactor_path
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.utils.bases.commands import TestProjectBase
-from tests.utils.cmdline import proc
+from tests.utils.cmdline import proc, stop_spawn
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -41,6 +42,34 @@ class TestShellCommand:
     def test_response_body(self, mockserver: MockServer) -> None:
         _, out, _ = proc("shell", mockserver.url("/text"), "-c", "response.body")
         assert "Works" in out
+
+    def test_curl(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/echo")
+        _, out, _ = proc(
+            "shell",
+            "--curl",
+            f"curl -d a=1 {url}",
+            "-c",
+            "(request.method, request.body)",
+        )
+        assert "('POST', b'a=1')" in out
+
+    def test_curl_no_redirect(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/redirect-no-meta-refresh")
+        _, out, _ = proc(
+            "shell",
+            "--no-redirect",
+            "--curl",
+            f"curl {url}",
+            "-c",
+            "response.status",
+        )
+        assert out.strip().endswith("302")
+
+    def test_curl_with_url(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/echo")
+        code, _, _ = proc("shell", "--curl", f"curl {url}", url, "-c", "url")
+        assert code != 0
 
     def test_response_type_text(self, mockserver: MockServer) -> None:
         _, out, _ = proc("shell", mockserver.url("/text"), "-c", "type(response)")
@@ -157,10 +186,28 @@ class TestShellCommand:
     def test_fetch_request_with_callbacks(self, mockserver: MockServer) -> None:
         url = mockserver.url("/text")
         code = (
-            f"fetch(scrapy.Request('{url}', callback=lambda r: r, errback=lambda f: f))"
+            f"fetch(scrapy.Request('{url}', callback=lambda r: print('CALLBACK'), "
+            "errback=lambda f: print('ERRBACK')))"
         )
-        ret, out, _ = proc("shell", "-c", code)
+        ret, out, err = proc("shell", "-c", code)
         assert ret == 0, out
+        assert "CALLBACK" not in out
+        assert "ERRBACK" not in out
+        assert (
+            "UserWarning: Callbacks and errbacks of Request objects passed to fetch() are ignored"
+            in err
+        )
+
+    def test_redirect_referer(self, mockserver: MockServer) -> None:
+        """Redirects set the Referer header even in the shell."""
+        url = mockserver.url("/redirect-no-meta-refresh")
+        code = f"fetch('{url}') or response.request.headers.get('Referer')"
+        _, out, _ = proc("shell", "-c", code)
+        assert url in out
+
+    def test_engine_not_started(self) -> None:
+        _, out, _ = proc("shell", "-c", "crawler.engine.running")
+        assert out.strip() == "False"
 
 
 class TestShellCommandWithSpider(TestProjectBase):
@@ -169,9 +216,22 @@ class TestShellCommandWithSpider(TestProjectBase):
         (proj_path / self.project_name / "spiders" / "myspider.py").write_text(
             """
 import scrapy
+from scrapy.exceptions import CloseSpider
 
 class MySpider(scrapy.Spider):
     name = "myspider"
+
+class ClosingSpider(scrapy.Spider):
+    name = "closing"
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.spider_opened, scrapy.signals.spider_opened)
+        return spider
+
+    def spider_opened(self):
+        raise CloseSpider("unavailable")
 """,
             encoding="utf-8",
         )
@@ -189,8 +249,26 @@ class MySpider(scrapy.Spider):
         assert ret == 0, err
         assert out.strip() == "myspider"
 
+    def test_spider_closed_on_open(
+        self, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        ret, _, err = proc(
+            "shell",
+            "--spider",
+            "closing",
+            mockserver.url("/text"),
+            "-c",
+            "response",
+            cwd=proj_path,
+        )
+        assert ret == 1
+        assert "Closing spider (unavailable)" in err
+        assert "RuntimeError: Spider 'closing' was closed while opening" in err
+
 
 class TestInteractiveShell:
+    TIMEOUT = 10
+
     def test_fetch(self, mockserver: MockServer) -> None:
         args = (
             sys.executable,
@@ -201,18 +279,13 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
         p.sendline("type(response)")
         p.expect_exact("HtmlResponse")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -235,11 +308,10 @@ class TestInteractiveShell:
     def _run_interactive_shell(self, env: dict[str, str]) -> str:
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         return logfile.read().decode()
 
@@ -256,7 +328,7 @@ class TestInteractiveShell:
         self._isolate_config(env, config_home)
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=10)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         # The standard Python shell never imports IPython, whereas the IPython
@@ -264,8 +336,7 @@ class TestInteractiveShell:
         # shell=python was honored, regardless of platform-specific prompts.
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
         p.expect_exact("IPYMODULE False")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -275,6 +346,28 @@ class TestInteractiveShell:
         env = os.environ.copy()
         self._isolate_config(env, config_home)
         assert "Traceback" not in self._run_interactive_shell(env)
+
+    @pytest.mark.skipif(
+        importlib.util.find_spec("IPython") is None, reason="IPython is not installed"
+    )
+    def test_shell_ipython(self, tmp_path: Path) -> None:
+        # Reaching the embedded IPython shell requires selecting it explicitly,
+        # since ptpython takes precedence when both are installed.
+        config_home = tmp_path / "config"
+        config_home.mkdir()
+        env = os.environ.copy()
+        self._isolate_config(env, config_home)
+        env["SCRAPY_PYTHON_SHELL"] = "ipython"
+        args = (sys.executable, "-m", "scrapy.cmdline", "shell")
+        logfile = BytesIO()
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
+        p.logfile_read = logfile
+        p.expect_exact("Available Scrapy objects")
+        p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
+        p.expect_exact("IPYMODULE True")
+        stop_spawn(p)
+        logfile.seek(0)
+        assert "Traceback" not in logfile.read().decode()
 
 
 @pytest.fixture
@@ -364,8 +457,9 @@ class TestShell:
         crawler = get_crawler()
         crawler.engine = MagicMock()
         crawler.engine.open_spider_async = AsyncMock()
+        crawler.engine.state = EngineState.SPIDER_OPEN
         shell = Shell(crawler)
-        spider = Spider("test")
+        spider = Spider.from_crawler(crawler, "test")
         await shell._open_spider(spider)
         assert shell.spider is spider
         assert crawler.spider is spider

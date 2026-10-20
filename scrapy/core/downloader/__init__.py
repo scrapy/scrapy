@@ -5,22 +5,23 @@ import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from twisted.internet.defer import Deferred, inlineCallbacks
+from formerly import deprecated_class
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
 from scrapy.throttler import _STAMPED_SLOT_META_KEY, _default_jitter
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
-    _defer_sleep_async,
     _Event,
+    _process_pending_io,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -45,12 +46,13 @@ class _Slot:
     randomize_delay: bool
 
 
-Slot = create_deprecated_class(
+Slot = deprecated_class(
     "Slot",
     _Slot,
-    old_class_path="scrapy.core.downloader.Slot",
-    subclass_warn_message=("{cls} inherits from the deprecated Slot class."),
-    instance_warn_message=("The Slot class is deprecated."),
+    category=ScrapyDeprecationWarning,
+    old_path="scrapy.core.downloader.Slot",
+    subclass_message="{cls} inherits from the deprecated Slot class.",
+    instance_message="The Slot class is deprecated.",
 )
 
 
@@ -159,9 +161,11 @@ class Downloader:
         self._closed: bool = False
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
-        self.middleware: DownloaderMiddlewareManager = (
-            DownloaderMiddlewareManager.from_crawler(crawler)
+        self.middleware: DownloaderMiddlewareManager = build_from_crawler(
+            DownloaderMiddlewareManager, crawler
         )
+        self._accepting_requests: bool = True
+        self._download_tasks: dict[Request, Deferred[Response]] = {}
         self._per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
@@ -261,7 +265,6 @@ class Downloader:
             stacklevel=2,
         )
         throttler = self.crawler.throttler
-        assert throttler is not None
         return {
             key: _DeprecatedSlotView(self, key, throttler)
             for key in {
@@ -272,7 +275,6 @@ class Downloader:
         }
 
     def _get_slot_key(self, request: Request) -> str:
-        assert self.crawler.throttler is not None
         return self.crawler.throttler.get_scopes_key(request)
 
     def get_slot_key(self, request: Request) -> str:
@@ -292,6 +294,10 @@ class Downloader:
         return urlparse_cached(request).hostname or ""
 
     async def _enqueue_request(self, request: Request) -> Response:
+        if not self._accepting_requests:
+            raise DownloadCancelledError(
+                "The downloader is shutting down and not accepting new requests"
+            )
         key = self._get_slot_key(request)
         # Stamp the value as ours, so that a request that inherits it (a
         # redirect, a retry) resolves its own throttling scopes instead of
@@ -308,7 +314,13 @@ class Downloader:
             request=request,
             spider=self.crawler.spider,
         )
-        return await self._download(request)
+        # A task of its own, so that stop() can cancel it.
+        download_dfd = deferred_from_coro(self._download(request))
+        self._download_tasks[request] = download_dfd
+        try:
+            return await maybe_deferred_to_future(download_dfd)
+        finally:
+            del self._download_tasks[request]
 
     def _download_handler_slots_full(self) -> bool:
         """Return whether every download handler slot
@@ -358,8 +370,7 @@ class Downloader:
             self._awaiting_download_handler.discard(request)
 
     def _download_handler_blocked(self, request: Request) -> bool:
-        throttler = self.crawler.throttler
-        return throttler is not None and throttler.download_handler_blocked(request)
+        return self.crawler.throttler.download_handler_blocked(request)
 
     async def _wait_for_download_handler_exit(self) -> None:
         """Wait for a request to leave a download handler, which is what frees
@@ -424,7 +435,7 @@ class Downloader:
             # The handler is done with the request, so free its slot before
             # giving up control below rather than a reactor turn later.
             self._leave_download_handler(request)
-            await _defer_sleep_async()
+            await _process_pending_io()
             raise
         finally:
             self._leave_download_handler(request)
@@ -434,7 +445,25 @@ class Downloader:
                 spider=self.crawler.spider,
             )
 
+    async def stop(self) -> int:
+        self._accepting_requests = False
+        cancelled_dfds = [
+            download_dfd
+            for download_dfd in self._download_tasks.values()
+            if not download_dfd.called
+        ]
+        for download_dfd in cancelled_dfds:
+            download_dfd.cancel()
+        if cancelled_dfds:
+            # Wait for the cancellations themselves to settle instead of
+            # guessing how many event loop iterations that takes.
+            await maybe_deferred_to_future(
+                DeferredList(cancelled_dfds, consumeErrors=True)
+            )
+        return len(cancelled_dfds)
+
     def close(self) -> None:
+        self._accepting_requests = False
         # Release anything waiting for a request to leave a download handler or
         # to reach the downloader middlewares, since neither will happen again.
         self._closed = True

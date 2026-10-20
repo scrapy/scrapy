@@ -13,16 +13,13 @@ import sys
 import threading
 import traceback
 from pdb import Pdb
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy.utils.engine import format_engine_status
 from scrapy.utils.trackref import format_live_refs
 
 if TYPE_CHECKING:
     from types import FrameType
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 
@@ -45,7 +42,6 @@ class StackTraceDump:
         return cls(crawler)
 
     def dump_stacktrace(self, signum: int, frame: FrameType | None) -> None:
-        assert self.crawler.engine
         log_args = {
             "stackdumps": self._thread_stacks(),
             "enginestatus": format_engine_status(self.crawler.engine),

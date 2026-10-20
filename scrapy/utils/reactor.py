@@ -10,6 +10,7 @@ from warnings import catch_warnings, filterwarnings
 from twisted.internet import asyncioreactor, error
 from twisted.internet.defer import Deferred
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 
@@ -27,27 +28,38 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
-def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # noqa: RET503
+def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
     """Like reactor.listenTCP but tries different ports in a range."""
-    from twisted.internet import reactor
-
     if len(portrange) > 2:
         raise ValueError(f"invalid portrange: {portrange}")
     if len(portrange) == 2 and portrange[0] > portrange[1]:
         raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
-        return reactor.listenTCP(0, factory, interface=host)  # type: ignore[no-any-return]
-    if len(portrange) == 1:
-        return reactor.listenTCP(portrange[0], factory, interface=host)  # type: ignore[no-any-return]
-    for x in range(portrange[0], portrange[1] + 1):
+        return _listen_tcp(0, host, factory)
+    for x in range(portrange[0], portrange[-1]):
         try:
-            return reactor.listenTCP(x, factory, interface=host)  # type: ignore[no-any-return]
+            return _listen_tcp(x, host, factory)
         except error.CannotListenError:
-            if x == portrange[1]:
-                raise
+            pass
+    # The last port of the range is tried outside the loop so that its
+    # CannotListenError propagates to the caller.
+    return _listen_tcp(portrange[-1], host, factory)
 
 
-class CallLaterOnce(Generic[_T]):
+def _listen_tcp(port: int, host: str, factory: ServerFactory) -> Port:
+    from twisted.internet import reactor
+
+    try:
+        return reactor.listenTCP(port, factory, interface=host)  # type: ignore[no-any-return]
+    except OSError as e:
+        # Twisted raises CannotListenError for bind() errors but lets listen()
+        # errors through. With SO_REUSEADDR, which Twisted sets on POSIX,
+        # several processes can bind the same port, and all but the first to
+        # call listen() on it get EADDRINUSE.
+        raise error.CannotListenError(host, port, e) from e
+
+
+class CallLaterOnce(Generic[_P, _T]):
     """Schedule a function to be called in the next reactor loop, but only if
     it hasn't been already scheduled since the last time it ran.
     """
@@ -102,7 +114,7 @@ def set_asyncio_event_loop_policy() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=r"'asyncio\.(get_event_loop_policy|WindowsSelectorEventLoopPolicy)' is deprecated",
+            message=r"'asyncio\.(get_event_loop_policy|set_event_loop_policy|WindowsSelectorEventLoopPolicy)' is deprecated",
             category=DeprecationWarning,
         )
         policy = asyncio.get_event_loop_policy()
@@ -111,10 +123,17 @@ def set_asyncio_event_loop_policy() -> None:
             asyncio.set_event_loop_policy(policy)
 
 
-def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> None:
+def install_reactor(
+    reactor_path: str | None = None, event_loop_path: str | None = None
+) -> None:
     """Installs the :mod:`~twisted.internet.reactor` with the specified
     import path. Also installs the asyncio event loop with the specified import
-    path if the asyncio reactor is enabled"""
+    path if the asyncio reactor is enabled.
+
+    If `reactor_path` is `None`, the asyncio reactor will be installed.
+    """
+    if reactor_path is None:
+        reactor_path = _asyncio_reactor_path
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         set_asyncio_event_loop_policy()
@@ -144,7 +163,7 @@ def set_asyncio_event_loop(event_loop_path: str | None) -> AbstractEventLoop:
     else:
         try:
             with catch_warnings():
-                # In Python 3.10.9, 3.11.1, 3.12 and 3.13, a DeprecationWarning
+                # In Python 3.11.1-3.13.x, a DeprecationWarning
                 # is emitted about the lack of a current event loop, because in
                 # Python 3.14 and later `get_event_loop` will raise a
                 # RuntimeError in that event. Because our code is already
@@ -217,27 +236,34 @@ def is_reactor_installed() -> bool:
     return "twisted.internet.reactor" in sys.modules
 
 
-def is_asyncio_reactor_installed() -> bool:
+def _is_asyncio_reactor_installed() -> bool:
     """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
-
-    In a future Scrapy version, when Scrapy supports running without a Twisted
-    reactor, this function won't be useful for checking if it's possible to use
-    asyncio features, so the code that that doesn't directly require a Twisted
-    reactor should use :func:`scrapy.utils.asyncio.is_asyncio_available`
-    instead of this function.
-
-    .. versionchanged:: 2.13
-       In earlier Scrapy versions this function silently installed the default
-       reactor if there was no reactor installed. Now it raises an exception to
-       prevent silent problems in this case.
     """
     if not is_reactor_installed():
         raise RuntimeError(
-            "is_asyncio_reactor_installed() called without an installed reactor."
+            "_is_asyncio_reactor_installed() called without an installed reactor."
         )
 
     from twisted.internet import reactor
 
     return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)
+
+
+def is_asyncio_reactor_installed() -> bool:
+    """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+
+    Raise a :exc:`RuntimeError` if no reactor is installed.
+    """
+    warnings.warn(
+        "is_asyncio_reactor_installed() is deprecated."
+        " If you need to check for asyncio support, use is_asyncio_available()."
+        " If you need to check whether a reactor is installed or not,"
+        " use is_reactor_installed() or is_reactorless()."
+        " If you need to check that specifically the asyncio reactor (or the non-asyncio one)"
+        " is installed, use is_reactor_installed() and is_asyncio_available().",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _is_asyncio_reactor_installed()

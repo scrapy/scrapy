@@ -1,21 +1,29 @@
 from __future__ import annotations
 
+import inspect
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydispatch import dispatcher
 from twisted.internet.defer import Deferred
 
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils import signal as _signal
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.python import global_object_name
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class SignalManager:
-    def __init__(self, sender: Any = dispatcher.Anonymous):
-        self.sender: Any = sender
+    def __init__(self, sender: object = dispatcher.Anonymous):
+        self.sender: object = sender
 
-    def connect(self, receiver: Any, signal: Any, **kwargs: Any) -> None:
+    def connect(
+        self, receiver: Callable[..., Any], signal: object, **kwargs: Any
+    ) -> None:
         """
         Connect a receiver function to a signal.
 
@@ -29,10 +37,13 @@ class SignalManager:
         :param signal: the signal to connect to
         :type signal: object
         """
+        _warn_unknown_args(receiver, signal)
         kwargs.setdefault("sender", self.sender)
         dispatcher.connect(receiver, signal, **kwargs)
 
-    def disconnect(self, receiver: Any, signal: Any, **kwargs: Any) -> None:
+    def disconnect(
+        self, receiver: Callable[..., Any], signal: object, **kwargs: Any
+    ) -> None:
         """
         Disconnect a receiver function from a signal. This has the
         opposite effect of the :meth:`connect` method, and the arguments
@@ -41,7 +52,9 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         dispatcher.disconnect(receiver, signal, **kwargs)
 
-    def send_catch_log(self, signal: Any, **kwargs: Any) -> list[tuple[Any, Any]]:
+    def send_catch_log(
+        self, signal: object, **kwargs: Any
+    ) -> list[tuple[Callable[..., Any], Any]]:
         """
         Send a signal, catch exceptions and log them.
 
@@ -52,8 +65,8 @@ class SignalManager:
         return _signal.send_catch_log(signal, **kwargs)
 
     def send_catch_log_deferred(
-        self, signal: Any, **kwargs: Any
-    ) -> Deferred[list[tuple[Any, Any]]]:  # pragma: no cover
+        self, signal: object, **kwargs: Any
+    ) -> Deferred[list[tuple[Callable[..., Any], Any]]]:  # pragma: no cover
         """
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
         handlers <signal-deferred>`.
@@ -73,8 +86,8 @@ class SignalManager:
         return _signal._send_catch_log_deferred(signal, **kwargs)
 
     async def send_catch_log_async(
-        self, signal: Any, **kwargs: Any
-    ) -> list[tuple[Any, Any]]:
+        self, signal: object, **kwargs: Any
+    ) -> list[tuple[Callable[..., Any], Any]]:
         """
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
         handlers <signal-deferred>`.
@@ -91,7 +104,7 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         return await _signal.send_catch_log_async(signal, **kwargs)
 
-    def disconnect_all(self, signal: Any, **kwargs: Any) -> None:
+    def disconnect_all(self, signal: object, **kwargs: Any) -> None:
         """
         Disconnect all receivers from the given signal.
 
@@ -101,7 +114,7 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         _signal.disconnect_all(signal, **kwargs)
 
-    async def wait_for(self, signal: Any) -> None:
+    async def wait_for(self, signal: object) -> None:
         """Await the next *signal*.
 
         See :ref:`start-requests-lazy` for an example.
@@ -114,3 +127,34 @@ class SignalManager:
 
         self.connect(handle, signal)
         await maybe_deferred_to_future(d)
+
+
+def _warn_unknown_args(receiver: Callable[..., Any], signal: object) -> None:
+    sent = signals._signal_args.get(signal)
+    if sent is None:
+        return
+    try:
+        parameters = inspect.signature(receiver).parameters.values()
+    except (TypeError, ValueError):
+        return
+    if any(p.kind is p.VAR_KEYWORD for p in parameters):
+        return
+    unknown = {
+        p.name
+        for p in parameters
+        if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
+        and p.name not in sent
+        and p.name not in {"signal", "sender"}
+    }
+    if not unknown:
+        return
+    try:
+        receiver_name = global_object_name(receiver)
+    except AttributeError:
+        receiver_name = repr(receiver)
+    signal_name = next(k for k, v in vars(signals).items() if v is signal)
+    warnings.warn(
+        f"Signal handler {receiver_name} declares {', '.join(sorted(unknown))},"
+        f" which scrapy.signals.{signal_name} does not send.",
+        stacklevel=3,
+    )

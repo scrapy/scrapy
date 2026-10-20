@@ -9,7 +9,10 @@ class IPv6Spider(scrapy.Spider):
     """
 
     name = "ipv6_spider"
-    start_urls = ["http://[::1]"]
+
+    async def start(self):
+        # w3lib older than 2.4.1 strips the brackets, making the URL invalid.
+        yield scrapy.Request("http://[::1]", meta={"verbatim_url": True})
 
 
 if __name__ == "__main__":

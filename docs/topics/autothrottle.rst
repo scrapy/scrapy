@@ -21,13 +21,8 @@ Design goals
 How it works
 ============
 
-Scrapy allows defining the concurrency and delay of different :ref:`throttling
-scopes <throttling-scopes>`, e.g. through the :setting:`THROTTLING_SCOPES`
-setting. By default requests are assigned to scopes based on their URL domain,
-although it is possible to customize the throttling scopes of any request.
-
-The AutoThrottle extension adjusts the delay of each throttling scope
-dynamically, to make your spider send
+The AutoThrottle extension adjusts the delay of each :ref:`throttling scope
+<throttling-scopes>` dynamically, to make your spider send
 :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` concurrent requests on average to
 each remote website.
 
