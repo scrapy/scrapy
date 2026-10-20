@@ -20,8 +20,14 @@ from twisted.python.failure import Failure
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS
 from zope.interface import implementer
 
+try:
+    import resource
+except ImportError:
+    resource = None  # type: ignore[assignment]
+
 from scrapy import Request, Spider
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
+from scrapy.core.downloader.handlers._base_http import _auto_connection_limit
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
     TunnelError,
@@ -94,6 +100,63 @@ def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         build_from_crawler(HTTP11DownloadHandler, crawler)
+
+
+@asynccontextmanager
+async def _get_dh(
+    settings_dict: dict[str, Any] | None = None,
+) -> AsyncGenerator[HTTP11DownloadHandler]:
+    crawler = get_crawler(DefaultSpider, settings_dict)
+    crawler.spider = crawler._create_spider()
+    dh = build_from_crawler(HTTP11DownloadHandler, crawler)
+    try:
+        yield dh
+    finally:
+        await dh.close()
+
+
+@coroutine_test
+async def test_connection_limit_auto() -> None:
+    async with _get_dh({}) as dh:
+        assert dh._pool._limit == _auto_connection_limit()
+
+
+@coroutine_test
+@pytest.mark.parametrize("limit", [0, 20])
+async def test_connection_limit_explicit(limit: int) -> None:
+    async with _get_dh({"CONCURRENT_CONNECTIONS_PER_HANDLER": limit}) as dh:
+        assert dh._pool._limit == limit
+
+
+@coroutine_test
+async def test_connection_limit_below_concurrent_requests(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    settings_dict = {
+        "CONCURRENT_CONNECTIONS_PER_HANDLER": 4,
+        "CONCURRENT_REQUESTS": 8,
+    }
+    with caplog.at_level("WARNING"):
+        async with _get_dh(settings_dict):
+            pass
+    assert "CONCURRENT_CONNECTIONS_PER_HANDLER (4)" in caplog.text
+
+
+@pytest.mark.skipif(resource is None, reason="No file descriptor limit")
+@coroutine_test
+async def test_connection_limit_auto_without_file_descriptor_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    infinity = resource.RLIM_INFINITY
+    monkeypatch.setattr(resource, "getrlimit", lambda _: (infinity, infinity))
+    async with _get_dh({}) as dh:
+        assert dh._pool._limit == 0
+
+
+@coroutine_test
+async def test_keepalive_timeout() -> None:
+    async with _get_dh({"CONNECTION_KEEPALIVE_TIMEOUT": 5}) as dh:
+        assert dh._pool.cachedConnectionTimeout == 5
 
 
 @pytest.mark.parametrize(
@@ -473,17 +536,6 @@ async def _canned_proxy(response: bytes, split_at: int = 0) -> AsyncGenerator[st
         yield f"http://127.0.0.1:{port.getHost().port}"
     finally:
         await maybe_deferred_to_future(port.stopListening())
-
-
-@asynccontextmanager
-async def _get_dh() -> AsyncGenerator[HTTP11DownloadHandler]:
-    crawler = get_crawler(DefaultSpider)
-    crawler.spider = crawler._create_spider()
-    dh = build_from_crawler(HTTP11DownloadHandler, crawler)
-    try:
-        yield dh
-    finally:
-        await dh.close()
 
 
 class TestTunnelingErrors:

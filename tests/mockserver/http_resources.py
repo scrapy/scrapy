@@ -488,13 +488,26 @@ _connection_ids = itertools.count()
 
 
 class ConnectionId(LeafResource):
-    """Return the identifier of the connection serving the request.
+    """Return the identifier of the connection serving the request, after the
+    number of seconds given in the ``delay`` argument.
 
     Two responses carrying the same identifier were served over the same
     connection, which lets tests tell connection reuse from reconnection.
     """
 
-    def render_GET(self, request: Request) -> bytes:
+    def render_GET(self, request: Request) -> int | bytes:
+        delay = getarg(request, b"delay", 0, type_=float)
+        if not delay:
+            return self._connection_id(request)
+        self.deferRequest(request, delay, self._delayedRender, request)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request: Request) -> None:
+        request.write(self._connection_id(request))
+        request.finish()
+
+    @staticmethod
+    def _connection_id(request: Request) -> bytes:
         # under HTTP/2 the channel of a request is its stream, so the
         # connection has to be reached through it
         channel: Any = getattr(request.channel, "_conn", request.channel)
