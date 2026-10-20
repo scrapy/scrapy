@@ -89,6 +89,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
         self._ssl_context: ssl.SSLContext = _make_ssl_context(crawler.settings)
         connector = _TCPConnector(
             local_addr=self._bind_address,
+            # hard limit on open connections, idle ones included
             limit=self._pool_size_total,
             # hard limit on simultaneous connections per host
             limit_per_host=self._pool_size_per_host,
