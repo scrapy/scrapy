@@ -749,7 +749,11 @@ class ExecutionEngine:
         # middlewares run.
         with _active_crawler_scope(self.crawler):
             try:
-                yield self._acquire_throttler(request, unscheduled)
+                acquired = self._acquire_throttler(request, unscheduled)
+                # A request let through right away needs no trip through
+                # inlineCallbacks.
+                if not acquired.called or isinstance(acquired.result, Failure):
+                    yield acquired
                 result: Response | Request
                 if self._downloader_fetch_needs_spider:
                     result = yield self.downloader.fetch(request, self.spider)

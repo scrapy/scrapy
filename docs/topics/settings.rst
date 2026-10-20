@@ -643,8 +643,10 @@ Default: ``16``
 
 Maximum number of total concurrent requests allowed, ``0`` for no limit.
 
-It is possible to change this setting per domain by using
-:setting:`THROTTLING_SCOPES`.
+High values may exceed the limit that your operating system sets on the number
+of open file descriptors per process, causing errors. Some systems allow that
+limit to be raised or removed, e.g. with the `ulimit`_ shell built-in or, for
+services, with systemd’s `LimitNOFILE`_; otherwise, lower this setting.
 
 .. setting:: CONNECTION_KEEPALIVE_TIMEOUT
 
@@ -2618,3 +2620,5 @@ environments.
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _Google Cloud Storage: https://cloud.google.com/storage/
+.. _LimitNOFILE: https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#LimitNOFILE=
+.. _ulimit: https://www.gnu.org/software/bash/manual/bash.html#index-ulimit

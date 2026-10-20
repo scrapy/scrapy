@@ -562,12 +562,12 @@ class Throttler(ThrottlerProtocol):
         return scope_ids
 
     def get_scopes_key(self, request: Request) -> str:
-        scope_ids = sorted(self._resolve_scopes(request))
+        scope_ids = self._resolve_scopes(request)
         if not scope_ids:
             return ""
         if len(scope_ids) == 1:
             return scope_ids[0]
-        return json.dumps(scope_ids)
+        return json.dumps(sorted(scope_ids))
 
     def get_applied_scopes(self, request: Request) -> list[ScopeID]:
         if _APPLIED_SCOPES_META_KEY in request.meta:
@@ -600,6 +600,8 @@ class Throttler(ThrottlerProtocol):
         soon as it creates a manager and only spares the scope it created:
         one at a time, a scope of this request could evict another one.
         """
+        if len(scope_ids) == 1:
+            return [(scope_ids[0], self.get_scope_manager(scope_ids[0]))]
         self._resolving.update(scope_ids)
         try:
             return [
@@ -711,7 +713,11 @@ class Throttler(ThrottlerProtocol):
         if request in self._reserved:
             return None
         scopes = self._resolve_scope_slots(scope_ids)
-        wait = max((manager._can_send() for _, manager in scopes), default=0.0)
+        wait = (
+            scopes[0][1]._can_send()
+            if len(scopes) == 1
+            else max(manager._can_send() for _, manager in scopes)
+        )
         if wait > 0:
             if self._debug:
                 logger.debug(
