@@ -401,7 +401,7 @@ class ExecutionEngine:
         """
         if self._state is EngineState.CREATED:
             # Only the downloader needs closing.
-            self.downloader.close()
+            await self._close_downloader()
             self._transition_to(EngineState.STOPPED)
             return
         await self.close_spider_async(reason=reason, error=error)
@@ -875,6 +875,12 @@ class ExecutionEngine:
             extra={"spider": self.spider},
         )
 
+    async def _close_downloader(self) -> None:
+        if hasattr(self.downloader, "_close_async"):
+            await self.downloader._close_async()
+        else:
+            self.downloader.close()
+
     # pylint: disable=too-many-statements
     async def close_spider_async(  # noqa: PLR0912, PLR0915
         self,
@@ -967,7 +973,7 @@ class ExecutionEngine:
             logger.exception("Slot close failure", extra={"spider": spider})
 
         try:
-            self.downloader.close()
+            await self._close_downloader()
         except Exception:
             logger.exception("Downloader close failure", extra={"spider": spider})
 
