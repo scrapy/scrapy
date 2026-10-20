@@ -838,6 +838,7 @@ Those are:
 * :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
 * :reqmeta:`proxy_headers`
+* :reqmeta:`redirect_http_codes`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_times`
 * :reqmeta:`redirect_ttl`
