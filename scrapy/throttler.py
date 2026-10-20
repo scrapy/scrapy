@@ -490,10 +490,29 @@ class Throttler(ThrottlerProtocol):
         return scopes
 
     def get_scopes(self, request: Request) -> RequestScopes:
-        """Return the :ref:`throttling scopes <throttling-scopes>` of *request*
-        when it does not choose its own through the :reqmeta:`throttling_scopes`
-        metadata key: its host name.
+        """Return the :ref:`throttling scopes <throttling-scopes>` of *request*:
+        its :reqmeta:`throttling_scopes` metadata key if set, and otherwise its
+        host name.
         """
+        meta = request.meta
+        scopes: RequestScopes = meta.get("throttling_scopes")
+        if scopes is not None:
+            return scopes
+        download_slot: RequestScopes = meta.get("download_slot")
+        # A value the downloader stamped (see Downloader._enqueue_request) is
+        # bookkeeping rather than intent: honoring the one a derived request (a
+        # redirect, a retry) inherits would keep it in the scope of a different
+        # host. Anything else is a user's choice of scope.
+        if download_slot is not None and download_slot != meta.get(
+            _STAMPED_SLOT_META_KEY
+        ):
+            warnings.warn(
+                "The 'download_slot' request meta key is deprecated. Use "
+                "'throttling_scopes' instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            return download_slot
         return urlparse_cached(request).hostname or ""
 
     def _resolve_scopes(self, request: Request) -> list[ScopeID]:
@@ -502,36 +521,13 @@ class Throttler(ThrottlerProtocol):
         reads them back, and whence they survive the request being serialized to
         and restored from a :ref:`disk queue <topics-jobs>`.
 
-        The scopes are the :reqmeta:`throttling_scopes` metadata key if the
-        request sets one, and otherwise the output of :meth:`get_scopes`.
-
         Every call resolves anew, so a request that inherited ``request.meta``
         from another one (e.g. a redirect built with :meth:`Request.replace()
         <scrapy.Request.replace>`, which copies ``meta``) replaces the inherited
         scopes with its own.
         """
-        meta = request.meta
-        scopes: Any = meta.get("throttling_scopes")
-        if scopes is None:
-            download_slot = meta.get("download_slot")
-            # A value the downloader stamped (see Downloader._enqueue_request) is
-            # bookkeeping rather than intent: honoring the one a derived request
-            # (a redirect, a retry) inherits would keep it in the scope of a
-            # different host. Anything else is a user's choice of scope.
-            if download_slot is not None and download_slot != meta.get(
-                _STAMPED_SLOT_META_KEY
-            ):
-                warnings.warn(
-                    "The 'download_slot' request meta key is deprecated. Use "
-                    "'throttling_scopes' instead.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-                scopes = download_slot
-            else:
-                scopes = self.get_scopes(request)
-        scope_ids = _normalize_scopes(scopes)
-        meta[_APPLIED_SCOPES_META_KEY] = scope_ids
+        scope_ids = _normalize_scopes(self.get_scopes(request))
+        request.meta[_APPLIED_SCOPES_META_KEY] = scope_ids
         return scope_ids
 
     def get_scopes_key(self, request: Request) -> str:

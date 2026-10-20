@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -12,7 +11,11 @@ from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
-from scrapy.throttler import _STAMPED_SLOT_META_KEY, _default_jitter
+from scrapy.throttler import (
+    _STAMPED_SLOT_META_KEY,
+    ThrottlingScopeManager,
+    _default_jitter,
+)
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _Event,
@@ -30,7 +33,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
-    from scrapy.throttler import ThrottlerProtocol, ThrottlingScopeManager
+    from scrapy.throttler import ThrottlerProtocol
 
 
 @dataclass(slots=True, eq=False)
@@ -43,7 +46,32 @@ class _Slot:
 
     concurrency: int
     delay: float
-    randomize_delay: bool
+    jitter: float
+
+    # Hand-written to also accept randomize_delay, a boolean alternative to
+    # jitter.
+    def __init__(
+        self,
+        concurrency: int,
+        delay: float,
+        jitter: float | None = None,
+        randomize_delay: bool | None = None,
+    ) -> None:
+        if isinstance(jitter, bool):
+            # randomize_delay used to be the third positional parameter, and a
+            # boolean would otherwise pass for a magnitude, True meaning ±100%.
+            jitter, randomize_delay = None, jitter
+        self.concurrency = concurrency
+        self.delay = delay
+        self.jitter = jitter if jitter is not None else 0.5 * bool(randomize_delay)
+
+    @property
+    def randomize_delay(self) -> bool:
+        return bool(self.jitter)
+
+    @randomize_delay.setter
+    def randomize_delay(self, value: bool) -> None:
+        self.jitter = 0.5 if value else 0.0
 
 
 Slot = deprecated_class(
@@ -91,9 +119,6 @@ class _DeprecatedSlotView:
             if r.meta.get(Downloader.DOWNLOAD_SLOT) == self._key
         }
 
-    # The jitter and last-seen accessors below read private attributes of the
-    # scope manager: they are read-only compatibility accessors, so they do not
-    # warrant public members on it.
     @property
     def lastseen(self) -> float:
         return self._scope._last_seen or 0.0
@@ -107,27 +132,22 @@ class _DeprecatedSlotView:
         self._scope.set_base_delay(value, only_increase=False)
 
     @property
+    def jitter(self) -> float:
+        return self._scope._jitter
+
+    @property
     def randomize_delay(self) -> bool:
-        return bool(self._scope._jitter)
+        return bool(self.jitter)
 
     @property
     def concurrency(self) -> int:
-        warnings.warn(
-            "Slot.concurrency is deprecated. Per-slot concurrency limits are "
-            "now managed by the throttling system.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return self._scope.get_concurrency()
 
     def free_transfer_slots(self) -> int:
         return self._scope.get_concurrency() - len(self.transferring)
 
     def download_delay(self) -> float:
-        delay = self.delay
-        if self.randomize_delay:
-            return random.uniform(0.5 * delay, 1.5 * delay)  # noqa: S311
-        return delay
+        return ThrottlingScopeManager._apply_jitter(self.delay, self.jitter)
 
     def close(self) -> None:
         pass
@@ -469,3 +489,8 @@ class Downloader:
         self._closed = True
         self._download_handler_exit.fire()
         self._downloader_middlewares_entry.fire()
+
+    async def _close_async(self) -> None:
+        """Close the downloader and its download handlers."""
+        self.close()
+        await self.handlers._close()

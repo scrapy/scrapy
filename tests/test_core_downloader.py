@@ -85,6 +85,27 @@ class TestSlot:
             class MySlot(Slot):  # type: ignore[misc, valid-type]
                 pass
 
+    @pytest.mark.filterwarnings("ignore:The Slot class is deprecated")
+    def test_jitter(self):
+        slot = Slot(concurrency=8, delay=2.0, jitter=0.2)
+        assert slot.jitter == 0.2
+        assert slot.randomize_delay is True
+        slot.randomize_delay = False
+        assert slot.jitter == 0.0
+
+    @pytest.mark.filterwarnings("ignore:The Slot class is deprecated")
+    @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+    @pytest.mark.parametrize("positional", [False, True])
+    def test_randomize_delay_param(
+        self, positional: bool, value: bool, expected: float
+    ):
+        slot = (
+            Slot(8, 2.0, value)
+            if positional
+            else Slot(concurrency=8, delay=2.0, randomize_delay=value)
+        )
+        assert slot.jitter == expected
+
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
 class TestContextFactoryBase:

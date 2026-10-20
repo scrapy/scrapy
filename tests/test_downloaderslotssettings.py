@@ -576,13 +576,13 @@ async def test_deprecated_slot_view():
     slot = slots["example.com"]
     assert repr(slot) == "_DeprecatedSlotView('example.com')"
     assert slot.delay == 2.0
+    assert slot.jitter == 0.5
     assert slot.randomize_delay is True
     assert slot.lastseen == 0.0
     assert request in slot.active
     assert slot.free_transfer_slots() == 3
     assert 1.0 <= slot.download_delay() <= 3.0
-    with pytest.warns(ScrapyDeprecationWarning, match="Slot.concurrency is deprecated"):
-        assert slot.concurrency == 3
+    assert slot.concurrency == 3
     # The delay setter writes through to the scope manager.
     slot.delay = 5.0
     assert slot.delay == 5.0
@@ -611,6 +611,7 @@ async def test_deprecated_slot_view_without_randomization():
         slots = downloader.slots
     slot = slots["example.com"]
     # Without randomization the reported delay is the plain scope delay.
+    assert slot.jitter == 0
     assert slot.randomize_delay is False
     assert slot.download_delay() == 2.0
 

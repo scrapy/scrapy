@@ -6,7 +6,7 @@ import sys
 import warnings
 from collections import ChainMap
 from time import monotonic, time
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, cast
 from weakref import WeakSet
 
 import pytest
@@ -183,17 +183,14 @@ class TestThrottler:
         assert throttler.get_scopes_key(request) == "example.com:8080"
         assert throttler.get_applied_scopes(request) == ["example.com:8080"]
 
-    def test_get_scopes_yields_to_the_meta_key(self):
-        class NetlocThrottler(Throttler):
+    def test_get_scopes_override_can_extend_the_meta_key(self):
+        class ExtendingThrottler(Throttler):
             def get_scopes(self, request: Request) -> RequestScopes:
-                return "unused"
+                return [cast("str", super().get_scopes(request)), "extra"]
 
-        crawler = get_crawler(SimpleSpider, {"THROTTLER": NetlocThrottler})
-        throttler = crawler.throttler
-        # A request that chooses its own scopes still gets them, so a custom
-        # hook does not cost throttling_scopes support.
+        crawler = get_crawler(SimpleSpider, {"THROTTLER": ExtendingThrottler})
         request = Request("https://example.com/a", meta={"throttling_scopes": "chosen"})
-        assert throttler.get_scopes_key(request) == "chosen"
+        assert crawler.throttler.get_applied_scopes(request) == ["chosen", "extra"]
 
     def test_release_frees_concurrency(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})

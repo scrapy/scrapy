@@ -184,9 +184,9 @@ string):
     THROTTLER = "myproject.throttling.MyThrottler"
 
 The simplest way is to subclass :class:`~scrapy.throttler.Throttler` and
-override :meth:`~scrapy.throttler.Throttler.get_scopes`, which decides the
-scopes of a request that does not choose its own through the
-:reqmeta:`throttling_scopes` metadata key:
+override :meth:`~scrapy.throttler.Throttler.get_scopes`. To keep the scopes
+that requests choose through the :reqmeta:`throttling_scopes` metadata key,
+return those of the parent method for such requests:
 
 .. code-block:: python
     :caption: :file:`myproject/throttling.py`
@@ -197,6 +197,8 @@ scopes of a request that does not choose its own through the
 
     class MyThrottler(Throttler):
         def get_scopes(self, request):
+            if "throttling_scopes" in request.meta:
+                return super().get_scopes(request)
             # One scope per host *and port*, rather than one per host name, so
             # that e.g. example.com:8080 is throttled separately from
             # example.com.
@@ -206,6 +208,11 @@ scopes of a request that does not choose its own through the
 
 Examples
 ========
+
+For readability, the :meth:`~scrapy.throttler.Throttler.get_scopes`
+implementations below ignore the :reqmeta:`throttling_scopes` metadata key. In
+your own implementation, keep the scopes that requests choose through it, as
+shown in :ref:`custom-throttler`.
 
 .. _alternative-domain-throttling:
 
@@ -336,36 +343,34 @@ to:
         :caption: :file:`settings.py`
 
         THROTTLING_SCOPES = {
-            "api.example": {"concurrency": 1000, "delay": 0.08},
+            "api.example": {"concurrency": 100, "delay": 0.02},
         }
 
--   Implement a :ref:`throttler <custom-throttler>` that:
+-   Implement a :ref:`throttler <custom-throttler>` that adds a throttling
+    scope for the URL being scraped.
 
-    -   Adds a throttling scope for the URL being scraped.
+    For example, ``https://api.example/?url=https://example.com`` gets an
+    ``api.example`` throttling scope by default, but it should also get the
+    ``example.com`` throttling scope:
 
-        For example, if you request
-        ``https://api.example/?url=https://example.com``, by default it
-        will get an ``api.example`` throttling scope, but it should also
-        get the ``example.com`` throttling scope:
+    .. code-block:: python
 
-        .. code-block:: python
+        from urllib.parse import urlparse
 
-            from urllib.parse import urlparse
-
-            from scrapy.throttler import Throttler
-            from scrapy.utils.httpobj import urlparse_cached
-            from w3lib.url import url_query_parameter
+        from scrapy.throttler import Throttler
+        from scrapy.utils.httpobj import urlparse_cached
+        from w3lib.url import url_query_parameter
 
 
-            class MyThrottler(Throttler):
-                def get_scopes(self, request):
-                    api_domain = urlparse_cached(request).netloc
-                    if api_domain != "api.example":
-                        return super().get_scopes(request)
-                    target_url = url_query_parameter(request.url, "url")
-                    if not target_url:
-                        return api_domain
-                    return [api_domain, urlparse(target_url).netloc]
+        class MyThrottler(Throttler):
+            def get_scopes(self, request):
+                api_domain = urlparse_cached(request).netloc
+                if api_domain != "api.example":
+                    return super().get_scopes(request)
+                target_url = url_query_parameter(request.url, "url")
+                if not target_url:
+                    return api_domain
+                return [api_domain, urlparse(target_url).netloc]
 
 
 .. _throttling-per-ip:
