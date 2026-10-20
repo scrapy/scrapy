@@ -393,6 +393,29 @@ class TestCsvItemExporter(TestBaseItemExporter):
             expected=b"22,John\xc2\xa3\r\n",
         )
 
+    @pytest.mark.parametrize("include_headers_line", [False, True])
+    @pytest.mark.parametrize(
+        ("second_item", "expected_row"),
+        [
+            ({"age": 40, "name": "Bob"}, b"Bob,40\r\n"),
+            ({"age": 40}, b",40\r\n"),
+        ],
+    )
+    def test_column_alignment(
+        self,
+        include_headers_line: bool,
+        second_item: dict[str, Any],
+        expected_row: bytes,
+    ) -> None:
+        output = BytesIO()
+        exporter = CsvItemExporter(output, include_headers_line=include_headers_line)
+        exporter.start_exporting()
+        exporter.export_item({"name": "Alice", "age": 30})
+        exporter.export_item(second_item)
+        exporter.finish_exporting()
+        expected = b"name,age\r\n" if include_headers_line else b""
+        assert output.getvalue() == expected + b"Alice,30\r\n" + expected_row
+
     @pytest.mark.parametrize("cls", [FriendsItem, dict])
     def test_join_multivalue(self, cls: type) -> None:
         self.assertExportResult(
@@ -431,9 +454,10 @@ class TestCsvItemExporter(TestBaseItemExporter):
             errors="xmlcharrefreplace",
         )
 
-    def test_csv_dropped_fields_warning(self, caplog):
+    @pytest.mark.parametrize("include_headers_line", [False, True])
+    def test_csv_dropped_fields_warning(self, caplog, include_headers_line):
         out = BytesIO()
-        exporter = CsvItemExporter(out)
+        exporter = CsvItemExporter(out, include_headers_line=include_headers_line)
         exporter.start_exporting()
 
         exporter.export_item({"name": "Apple"})

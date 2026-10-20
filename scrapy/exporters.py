@@ -379,11 +379,11 @@ class CsvItemExporter(BaseItemExporter):
                 yield s
 
     def _write_headers_and_set_fields_to_export(self, item: Any) -> None:
+        if not self.fields_to_export:
+            # use declared field names, or keys if the item is a dict
+            self.fields_to_export = ItemAdapter(item).field_names()
+            self._autodetected_fields = True
         if self.include_headers_line:
-            if not self.fields_to_export:
-                # use declared field names, or keys if the item is a dict
-                self.fields_to_export = ItemAdapter(item).field_names()
-                self._autodetected_fields = True
             fields: Iterable[str]
             if isinstance(self.fields_to_export, Mapping):
                 fields = self.fields_to_export.values()
