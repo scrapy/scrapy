@@ -19,7 +19,9 @@ from .http_resources import (
     ChunkedResource,
     ClientIPResource,
     Compress,
+    ConnectionId,
     ContentLengthHeaderResource,
+    Created,
     Delay,
     Drop,
     DuplicateHeaderResource,
@@ -67,7 +69,9 @@ class Root(BaseResource):
         put_child(self, b"alpayload", ArbitraryLengthPayloadResource())
         put_child(self, b"static", File(str(Path(tests_datadir, "test_site/"))))
         put_child(self, b"redirect-to", RedirectTo())
+        put_child(self, b"created", Created())
         put_child(self, b"text", Data(b"Works", "text/plain"))
+        put_child(self, b"connection-id", ConnectionId())
         put_child(
             self,
             b"html",
@@ -81,12 +85,15 @@ class Root(BaseResource):
             b"enc-gb18030",
             Data(b"<p>gb18030 encoding</p>", "text/html; charset=gb18030"),
         )
+        put_child(
+            self, b"robots.txt", Data(b"User-agent: *\nDisallow: /deny\n", "text/plain")
+        )
         put_child(self, b"redirect", Redirect(b"/redirected"))
         put_child(
             self, b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected")
         )
         put_child(self, b"redirected", Data(b"Redirected here", "text/plain"))
-        numbers = [str(x).encode("utf8") for x in range(2**18)]
+        numbers = [str(x).encode() for x in range(2**18)]
         put_child(self, b"numbers", Data(b"".join(numbers), "text/plain"))
         put_child(self, b"wait", ForeverTakingResource())
         put_child(self, b"hang-after-headers", ForeverTakingResource(write=True))

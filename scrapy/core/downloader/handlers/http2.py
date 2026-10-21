@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
@@ -7,13 +8,15 @@ from urllib.parse import urldefrag
 from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
 from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
-from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.core.downloader.handlers._base_http import BaseHttpDownloadHandler
 from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
+    ResponseDataLossError,
     UnsupportedURLSchemeError,
 )
 from scrapy.utils._download_handlers import (
+    get_dataloss_msg,
     normalize_bind_address,
     wrap_twisted_exceptions,
 )
@@ -30,7 +33,10 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-class H2DownloadHandler(BaseDownloadHandler):
+logger = logging.getLogger(__name__)
+
+
+class H2DownloadHandler(BaseHttpDownloadHandler):
     lazy = True
 
     def __init__(self, crawler: Crawler):
@@ -40,9 +46,10 @@ class H2DownloadHandler(BaseDownloadHandler):
         super().__init__(crawler)
         self._crawler = crawler
 
-        self._pool = H2ConnectionPool(crawler)
+        self._pool = H2ConnectionPool(crawler, self._pool_size_total)
         self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
+        self._fail_on_dataloss_warned = False
 
     async def download_request(self, request: Request) -> Response:
         if urlparse_cached(request).scheme == "http":
@@ -56,10 +63,16 @@ class H2DownloadHandler(BaseDownloadHandler):
             crawler=self._crawler,
         )
         assert self._crawler.spider
-        with wrap_twisted_exceptions():
-            return await maybe_deferred_to_future(
-                agent.download_request(request, self._crawler.spider)
-            )
+        try:
+            with wrap_twisted_exceptions():
+                return await maybe_deferred_to_future(
+                    agent.download_request(request, self._crawler.spider)
+                )
+        except ResponseDataLossError:
+            if not self._fail_on_dataloss_warned:
+                logger.warning(get_dataloss_msg(request.url))
+                self._fail_on_dataloss_warned = True
+            raise
 
     async def close(self) -> None:
         self._pool.close_connections()

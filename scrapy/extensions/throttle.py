@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.response import _body_size
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.core.downloader import Slot
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -74,7 +72,7 @@ class AutoThrottle:
         self._adjust_delay(slot, latency, response)
         if self.debug:
             diff = slot.delay - olddelay
-            size = len(response.body)
+            size = _body_size(response)
             conc = len(slot.transferring)
             logger.info(
                 "slot: %(slot)s | conc:%(concurrency)2d | "

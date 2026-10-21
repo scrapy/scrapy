@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import ipaddress
+import socket
 import ssl
+import sys
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, ClassVar, cast
 
@@ -18,6 +19,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers
+from scrapy.utils._download_handlers import get_proxy_headers
 from scrapy.utils._ssl import _log_sslobj_debug_info, _make_ssl_context
 
 from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
@@ -25,8 +27,54 @@ from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from aiohttp.abc import ResolveResult
+    from aiohttp.client_proto import ResponseHandler
+    from aiohttp.client_reqrep import ClientRequest
+    from aiohttp.tracing import Trace
+
     from scrapy import Request
     from scrapy.crawler import Crawler
+
+
+class _AsyncResolver(aiohttp.AsyncResolver):
+    """Resolves only the host and sets the requested port on the results.
+
+    Workaround for https://github.com/c-ares/c-ares/issues/1374.
+    """
+
+    async def resolve(
+        self, host: str, port: int = 0, family: socket.AddressFamily = socket.AF_INET
+    ) -> list[ResolveResult]:
+        results = await super().resolve(host, 0, family)
+        for result in results:
+            result["port"] = port
+        return results
+
+
+class _TCPConnector(aiohttp.TCPConnector):
+    """Counts idle connections toward the connection limit, closing the least
+    recently used one when a new connection would otherwise exceed it."""
+
+    async def _create_connection(
+        self,
+        req: ClientRequest,
+        traces: list[Trace],
+        timeout: aiohttp.ClientTimeout,  # noqa: ASYNC109
+    ) -> ResponseHandler:
+        # the connection about to be created is already counted in _acquired
+        while (
+            self._limit
+            and len(self._acquired) + sum(map(len, self._conns.values())) > self._limit
+        ):
+            self._evict()
+        return await super()._create_connection(req, traces, timeout)
+
+    def _evict(self) -> None:
+        _, key = min((conns[0][1], key) for key, conns in self._conns.items())
+        protocol, _ = self._conns[key].popleft()
+        if not self._conns[key]:
+            del self._conns[key]
+        protocol.close()
 
 
 class _ClientResponse(aiohttp.ClientResponse):
@@ -52,16 +100,23 @@ class _ClientResponse(aiohttp.ClientResponse):
 
 class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     experimental: ClassVar[bool] = True
+    lazy = True
 
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
         self._ssl_context: ssl.SSLContext = _make_ssl_context(crawler.settings)
-        connector = aiohttp.TCPConnector(
+        self._resolver: _AsyncResolver | None = (
+            _AsyncResolver() if sys.platform == "win32" else None
+        )
+        connector = _TCPConnector(
+            resolver=self._resolver,
             local_addr=self._bind_address,
-            # hard limit on simultaneous connections
+            # hard limit on open connections, idle ones included
             limit=self._pool_size_total,
             # hard limit on simultaneous connections per host
             limit_per_host=self._pool_size_per_host,
+            keepalive_timeout=self._keepalive_timeout or None,
+            force_close=not self._keepalive_timeout,
         )
         self._session: aiohttp.ClientSession = aiohttp.ClientSession(
             connector=connector,
@@ -78,10 +133,18 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @asynccontextmanager
     async def _make_request(
-        self, request: Request, timeout: float
+        self,
+        request: Request,
+        timeout: float,  # noqa: ASYNC109
     ) -> AsyncIterator[_ClientResponse]:
         proxy = self._extract_proxy_url_with_creds(request)
-        headers = self._request_headers(request).to_tuple_list()
+        proxy_headers = get_proxy_headers(request)
+        headers = self._utf8_request_headers(request)
+        if proxy_headers and not request.url.startswith("https:"):
+            # without a tunnel the proxy reads the request headers, so the
+            # headers meant for it travel among them, and it is up to the proxy
+            # not to pass them on to the target server
+            headers.extend(proxy_headers)
         url: str | yarl.URL = request.url
         if request.meta.get("verbatim_url"):
             # encoded=True disables the percent-encoding normalization that
@@ -97,9 +160,10 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
                 ssl=self._ssl_context,
                 allow_redirects=False,
                 proxy=proxy,
+                proxy_headers=dict(proxy_headers) or None,
             ) as response:
                 yield cast("_ClientResponse", response)
-        except (TimeoutError, asyncio.TimeoutError) as e:
+        except TimeoutError as e:
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
             ) from e
@@ -117,7 +181,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
 
     @staticmethod
     def _extract_headers(response: _ClientResponse) -> Headers:
-        return Headers(list(response.headers.items()))
+        return Headers(response.raw_headers)
 
     @staticmethod
     def _build_base_response_args(
@@ -156,5 +220,11 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
     def _is_dataloss_exception(exc: Exception) -> bool:
         return isinstance(exc, aiohttp.ClientPayloadError)
 
+    @staticmethod
+    def _is_timeout_exception(exc: Exception) -> bool:
+        return isinstance(exc, TimeoutError)
+
     async def close(self) -> None:
         await self._session.close()
+        if self._resolver is not None:
+            await self._resolver.close()

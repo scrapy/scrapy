@@ -1,3 +1,4 @@
+import contextvars
 import warnings
 from abc import ABC, abstractmethod
 from typing import Any
@@ -6,7 +7,7 @@ import pytest
 from twisted.python.failure import Failure
 
 from scrapy.http import Headers, Request, Response
-from scrapy.http.request import NO_CALLBACK
+from scrapy.http.request import NO_CALLBACK, _in_download_handler
 from scrapy.utils.request import request_to_curl
 
 
@@ -294,6 +295,27 @@ class TestRequestBase(ABC):
         assert isinstance(r5, custom_request_cls)
         assert r5.url == r1.url
 
+    def test_id(self):
+        requests = [self.request_class("http://www.example.com") for _ in range(3)]
+        ids = [r.id for r in requests]
+        assert len(set(ids)) == len(ids)
+        assert requests[0].parent_id is None
+        with pytest.raises(AttributeError):
+            requests[0].id = 1  # type: ignore[misc]
+
+    def test_parent_id(self):
+        r = self.request_class("http://www.example.com", parent_id=1)
+        assert r.parent_id == 1
+
+    @pytest.mark.parametrize("method", ["copy", "replace"])
+    def test_copy_lineage(self, method):
+        r1 = self.request_class("http://www.example.com", parent_id=1)
+        r2 = getattr(r1, method)()
+        assert r2.id != r1.id
+        assert r2.parent_id == r1.id
+        r3 = r1.replace(parent_id=None)
+        assert r3.parent_id is None
+
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method="POST")
         assert isinstance(r.method, str)
@@ -352,6 +374,42 @@ class TestRequestBase(ABC):
                 errback="a_function",  # type: ignore[arg-type]
             )
 
+    def test_await_needs_active_crawler(self):
+        request = self.request_class("http://example.com")
+        with pytest.raises(RuntimeError, match="can only be awaited"):
+            contextvars.Context().run(request.__await__)
+        assert request.callback is None
+
+    def test_await_rejects_download_handler_scope(self):
+        request = self.request_class("http://example.com")
+        token = _in_download_handler.set(True)
+        try:
+            with pytest.raises(RuntimeError, match="download handler"):
+                request.__await__()
+        finally:
+            _in_download_handler.reset(token)
+
+    def test_await_rejects_callback(self):
+        def a_callback(response: Response) -> None:
+            pass
+
+        request = self.request_class("http://example.com", callback=a_callback)
+        with pytest.raises(ValueError, match="callback or an errback"):
+            request.__await__()
+
+    def test_await_rejects_errback(self):
+        def an_errback(failure: Failure) -> None:
+            pass
+
+        request = self.request_class("http://example.com", errback=an_errback)
+        with pytest.raises(ValueError, match="callback or an errback"):
+            request.__await__()
+
+    def test_await_allows_no_callback(self):
+        request = self.request_class("http://example.com", callback=NO_CALLBACK)
+        with pytest.raises(RuntimeError, match="can only be awaited"):
+            contextvars.Context().run(request.__await__)
+
     def test_setters(self):
         request = self.request_class("http://example.com")
 
@@ -380,7 +438,7 @@ class TestRequestBase(ABC):
 
         assert request._flags is None
         assert request.flags == []
-        assert request.flags is request.flags
+        assert request.flags is request.flags  # pylint: disable=comparison-with-itself
         assert request._flags == []
         original_flags = request.flags
         request.flags = None
@@ -390,7 +448,7 @@ class TestRequestBase(ABC):
 
         assert request._cookies is None
         assert request.cookies == {}
-        assert request.cookies is request.cookies
+        assert request.cookies is request.cookies  # pylint: disable=comparison-with-itself
         assert request._cookies == {}
         original_cookies = request.cookies
         request.cookies = None
@@ -405,7 +463,7 @@ class TestRequestBase(ABC):
         else:
             assert request._headers is None
             assert request.headers == {}
-        assert request.headers is request.headers
+        assert request.headers is request.headers  # pylint: disable=comparison-with-itself
         assert isinstance(request.headers, Headers)
         assert isinstance(request._headers, Headers)
         original_headers = request.headers

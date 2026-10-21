@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from time import get_clock_info, monotonic, time
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
@@ -23,7 +24,7 @@ from twisted.web.client import (
 )
 from twisted.web.client import Response as TxResponse
 
-from scrapy import Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader._idna_patch import (
     _install_twisted_idna_fallbacks,
@@ -34,18 +35,25 @@ from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
 )
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
+from scrapy.http import Response
 from scrapy.resolver import dnscache
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.asyncio import sleep
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import IDNA_REJECTED_HOSTNAMES
 from tests.mockserver.http_resources import PayloadResource, put_child
 from tests.mockserver.utils import ssl_context_factory
+from tests.spiders import MockServerSpider, SimpleSpider
 from tests.utils.cmdline import proc
 from tests.utils.decorators import coroutine_test
 
@@ -56,7 +64,7 @@ if TYPE_CHECKING:
     from twisted.python.failure import Failure
     from twisted.web.iweb import IBodyProducer
 
-    from scrapy.http import Response
+    from scrapy.crawler import Crawler
     from tests.mockserver.http import MockServer
 
 
@@ -182,6 +190,93 @@ class TestDownloaderStop:
         assert not downloader._download_tasks
 
 
+def _downloader() -> Downloader:
+    crawler = get_crawler(DefaultSpider, {"DOWNLOADER_MIDDLEWARES_BASE": {}})
+    crawler.spider = crawler._create_spider()
+    return Downloader(crawler)
+
+
+# asyncio runs timers that are due within one tick of the monotonic clock, so a
+# delay can end up to one tick early, which is 15.6 ms on Windows before Python
+# 3.13.
+_DELAY_TOLERANCE = get_clock_info("monotonic").resolution
+
+
+@coroutine_test
+async def test_delay_meta() -> None:
+    delay = 0.2
+    downloader = _downloader()
+    request = Request("data:,", meta={"delay": delay})
+    try:
+        start = monotonic()
+        await maybe_deferred_to_future(downloader.fetch(request))
+        delayed = monotonic() - start
+        await maybe_deferred_to_future(downloader.fetch(request))
+        held_again = monotonic() - start - delayed
+        request.meta["delay"] = delay
+        await maybe_deferred_to_future(downloader.fetch(request))
+        held_for_the_new_delay = monotonic() - start - delayed - held_again
+    finally:
+        downloader.close()
+    assert delayed >= delay - _DELAY_TOLERANCE
+    assert "delay" not in request.meta
+    # Downloading the same request again does not hold it again, but setting the
+    # key again does.
+    assert held_again < delay
+    assert held_for_the_new_delay >= delay - _DELAY_TOLERANCE
+    assert request.meta["delayed"] == [delay, delay]
+
+
+@coroutine_test
+async def test_delay_meta_stale_deadline() -> None:
+    delay = 0.2
+    downloader = _downloader()
+    # A deadline from a different run of the crawl, restored from a disk queue,
+    # is capped at the delay.
+    request = Request("data:,", meta={"_delay_deadline": (delay, time() + 10 * delay)})
+    try:
+        start = monotonic()
+        await maybe_deferred_to_future(downloader.fetch(request))
+        elapsed = monotonic() - start
+    finally:
+        downloader.close()
+    assert delay - _DELAY_TOLERANCE <= elapsed < 2 * delay
+
+
+class DelaySpider(MockServerSpider):
+    name = "delay_meta"
+    custom_settings = {"CONCURRENT_REQUESTS": 1}
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.times: list[float] = []
+        self.start_time: float = monotonic()
+
+    async def start(self):
+        assert self.mockserver
+        # The slow request keeps the delayed one waiting for its turn for longer
+        # than its delay.
+        yield Request(self.mockserver.url("/delay?n=1"))
+        yield Request(self.mockserver.url("/status?n=200"), meta={"delay": 0.9})
+
+    def parse(self, response):
+        self.times.append(monotonic() - self.start_time)
+
+
+@coroutine_test
+async def test_delay_meta_countdown_starts_when_scheduled(
+    mockserver: MockServer,
+) -> None:
+    crawler = get_crawler(DelaySpider)
+    await crawler.crawl_async(mockserver=mockserver)
+    spider = crawler.spider
+    assert isinstance(spider, DelaySpider)
+    assert len(spider.times) == 2
+    # The delay ran while the request waited for its turn, so it was sent as
+    # soon as it got one, rather than 0.9s later.
+    assert spider.times[1] < spider.times[0] + 0.5
+
+
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
 class TestContextFactoryBase:
     @async_yield_fixture
@@ -258,7 +353,7 @@ class TestContextFactory(TestContextFactoryBase):
     ) -> None:
         s = "0123456789" * 10
         body = await self.get_page(server_url + "payload", factory, body=s)
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     def test_no_context_sharing(self, factory: _ScrapyClientContextFactory) -> None:
         """Every call to creatorForNetloc() should give a fresh context."""
@@ -379,7 +474,7 @@ class TestContextFactoryCiphers(TestContextFactoryBase):
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     def test_default(self) -> None:
         """The default 'DEFAULT' value is passed to Twisted as is."""
@@ -422,7 +517,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
-        assert body == to_bytes(s)
+        assert body == s.encode()
 
     @coroutine_test
     async def test_setting_default(self, server_url: str) -> None:
@@ -714,6 +809,81 @@ async def test_stop_cancels_pending_download_tasks() -> None:
     assert dropped == 1
     assert len(failures) == 1
     assert failures[0].check(CancelledError)
+
+
+@coroutine_test
+async def test_fast_stop_with_download_in_flight(mockserver: MockServer) -> None:
+    crawler = get_crawler(SimpleSpider)
+    crawl_dfd = deferred_from_coro(
+        crawler.crawl_async(url=mockserver.url("/delay?n=10"))
+    )
+    await crawler.signals.wait_for(signals.headers_received)
+    # Let the download handler start waiting for the response body.
+    await sleep(0)
+    await crawler.stop_async(mode="fast")
+    await maybe_deferred_to_future(crawl_dfd)
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_dropped_count") == 1
+    assert crawler.stats.get_value("response_received_count") is None
+
+
+@coroutine_test
+async def test_fast_stop_before_download_starts() -> None:
+    """A fast stop that cancels a download before the download starts ends
+    the crawl and frees the slot."""
+    crawler = get_crawler(SimpleSpider)
+
+    def stop(request: Request, spider: Spider) -> None:
+        # With asyncio, the stop runs before the download task that the
+        # downloader creates right after this signal.
+        _schedule_coro(crawler.stop_async(mode="fast"))
+
+    crawler.signals.connect(stop, signals.request_reached_downloader)
+    await crawler.crawl_async(url="data:,")
+    (slot,) = crawler.engine.downloader.slots.values()
+    assert not slot.active
+    assert not slot.transferring
+
+
+class ConcurrencyRecordingHandler(BaseDownloadHandler):
+    """Download handler that keeps each download in progress for a moment and
+    records the most downloads it had in progress at once."""
+
+    def __init__(self, crawler: Crawler):
+        super().__init__(crawler)
+        self._in_progress = 0
+
+    async def download_request(self, request: Request) -> Response:
+        self._in_progress += 1
+        self.crawler.stats.max_value("test/max_in_progress", self._in_progress)
+        await sleep(0.05)
+        self._in_progress -= 1
+        return Response(request.url)
+
+
+class ManyRequestsSpider(Spider):
+    name = "many_requests"
+
+    async def start(self):
+        for i in range(10):
+            yield Request(f"https://example.com/{i}")
+
+    def parse(self, response):
+        pass
+
+
+@coroutine_test
+async def test_slot_concurrency() -> None:
+    crawler = get_crawler(
+        ManyRequestsSpider,
+        {
+            "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+            "DOWNLOAD_HANDLERS": {"https": ConcurrencyRecordingHandler},
+        },
+    )
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("test/max_in_progress") == 2
+    assert crawler.stats.get_value("response_received_count") == 10
 
 
 def test_deprecated_tls_module_names() -> None:

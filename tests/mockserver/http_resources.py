@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import itertools
 import json
 import random
 from typing import TYPE_CHECKING, Any, ClassVar, ParamSpec, TypeVar, cast
@@ -11,7 +12,6 @@ from twisted.web import resource, server
 from twisted.web.server import NOT_DONE_YET
 from twisted.web.util import Redirect, redirectTo
 
-from scrapy.utils.python import to_bytes, to_unicode
 from tests import get_testdata
 
 if TYPE_CHECKING:
@@ -102,7 +102,7 @@ class ClientIPResource(BaseResource):
         client_address = request.getClientAddress()
         if client_address is None or client_address.host is None:
             return b""
-        return to_bytes(client_address.host)
+        return cast("bytes", client_address.host.encode())
 
 
 class PayloadResource(BaseResource):
@@ -167,11 +167,11 @@ class Follow(LeafResource):
         assert request.args is not None
         args = request.args.copy()
         for nl in nlist:
-            args[b"n"] = [to_bytes(str(nl))]
+            args[b"n"] = [str(nl).encode()]
             argstr = urlencode(args, doseq=True)
             s += f"<a href='/follow?{argstr}'>follow {nl}</a><br>"
         s += """</body>"""
-        request.write(to_bytes(s))
+        request.write(s.encode())
         request.finish()
 
 
@@ -207,7 +207,7 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request: Request, n: float) -> None:
-        request.write(to_bytes(f"Response delayed for {n:.3f} seconds\n"))
+        request.write(f"Response delayed for {n:.3f} seconds\n".encode())
         request.finish()
 
 
@@ -273,12 +273,14 @@ class Echo(LeafResource):
         assert request.content
         output = {
             "headers": {
-                to_unicode(k): [to_unicode(v) for v in vs]
+                k.decode(errors="surrogateescape"): [
+                    v.decode(errors="surrogateescape") for v in vs
+                ]
                 for k, vs in request.requestHeaders.getAllRawHeaders()
             },
-            "body": to_unicode(request.content.read()),
+            "body": request.content.read().decode(),
         }
-        return to_bytes(json.dumps(output))
+        return json.dumps(output).encode()
 
     render_POST = render_GET
 
@@ -292,6 +294,16 @@ class RedirectTo(LeafResource):
         # provides the IRequest interface.
         redirectTo(goto, request)  # type: ignore[arg-type]
         return b"redirecting..."
+
+
+class Created(LeafResource):
+    """Emulate a server that creates a resource on the fly, reporting it with an
+    empty 201 response that points at the created resource through Location."""
+
+    def render(self, request: Request) -> bytes:
+        request.setResponseCode(201)
+        request.setHeader(b"Location", getarg(request, b"goto", b"/"))
+        return b""
 
 
 class Partial(LeafResource):
@@ -438,14 +450,19 @@ class UriResource(BaseResource):
 
 
 class ResponseHeadersResource(BaseResource):
-    """Return a response with headers set from the JSON request body"""
+    """Return a response with headers set from the JSON request body, and the
+    status code set from the *n* URL parameter, 200 by default."""
 
     def render(self, request: Request) -> bytes:
         assert request.content
         body = json.loads(request.content.read().decode())
+        request.setResponseCode(getarg(request, b"n", 200, type_=int))
         for header_name, header_value in body.items():
-            request.responseHeaders.setRawHeaders(header_name, [header_value])
-        return json.dumps(body).encode("utf-8")
+            # surrogateescape lets tests send bytes that are not valid UTF-8
+            request.responseHeaders.setRawHeaders(
+                header_name, [header_value.encode("utf-8", "surrogateescape")]
+            )
+        return json.dumps(body).encode()
 
 
 class Compress(BaseResource):
@@ -477,6 +494,38 @@ class SetCookie(BaseResource):
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
                 request.setHeader(b"Set-Cookie", cookie)
         return b""
+
+
+_connection_ids = itertools.count()
+
+
+class ConnectionId(LeafResource):
+    """Return the identifier of the connection serving the request, after the
+    number of seconds given in the ``delay`` argument.
+
+    Two responses carrying the same identifier were served over the same
+    connection, which lets tests tell connection reuse from reconnection.
+    """
+
+    def render_GET(self, request: Request) -> int | bytes:
+        delay = getarg(request, b"delay", 0, type_=float)
+        if not delay:
+            return self._connection_id(request)
+        self.deferRequest(request, delay, self._delayedRender, request)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request: Request) -> None:
+        request.write(self._connection_id(request))
+        request.finish()
+
+    @staticmethod
+    def _connection_id(request: Request) -> bytes:
+        # under HTTP/2 the channel of a request is its stream, so the
+        # connection has to be reached through it
+        channel: Any = getattr(request.channel, "_conn", request.channel)
+        if not hasattr(channel, "_mockserver_connection_id"):
+            channel._mockserver_connection_id = next(_connection_ids)
+        return str(channel._mockserver_connection_id).encode()
 
 
 def _h2_connection(request: Request) -> H2Connection:

@@ -136,10 +136,34 @@ and defines some attributes and methods:
   the scraped data as dicts and also finding new URLs to
   follow and creating new requests (:class:`~scrapy.Request`) from them.
 
+Crawling faster for this tutorial
+---------------------------------
+
+The :file:`tutorial/settings.py` file of your project makes Scrapy crawl
+politely: it sends at most one request at a time to each website
+(:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`), waiting about one second between
+requests (:setting:`DOWNLOAD_DELAY`). That keeps you from overwhelming
+websites, but it also makes crawling slow, and it means the requests above are
+sent one after another rather than in parallel.
+
+``quotes.toscrape.com`` is a sandbox meant for scraping practice, so we can
+safely crawl it faster. Open :file:`tutorial/settings.py` and add a
+:setting:`DOWNLOAD_SLOTS` entry that raises the concurrency and lowers the
+delay for that domain only:
+
+.. code-block:: python
+
+    DOWNLOAD_SLOTS = {
+        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
+    }
+
+The polite defaults still apply to every other website.
+
 How to run our spider
 ---------------------
 
-To put our spider to work, go to the project's top level directory and run::
+To put our spider to work, go to the project's top level directory, the one
+that contains :file:`scrapy.cfg`, and run::
 
    scrapy crawl quotes
 
@@ -416,8 +440,8 @@ We get a list of selectors for the quote HTML elements with:
 .. code-block:: pycon
 
     >>> response.css("div.quote")
-    [<Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-    <Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    [<Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    <Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
     ...]
 
 Each of the selectors returned by the query above allows us to run further
@@ -768,10 +792,10 @@ much because of a programming mistake. This can be configured in the
 Hopefully by now you have a good understanding of how to use the mechanism
 of following links and callbacks with Scrapy.
 
-As yet another example spider that leverages the mechanism of following links,
-check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
-spider that implements a small rules engine that you can use to write your
-crawlers on top of it.
+If the link following of a crawl can be expressed as a set of declarative
+rules, the :class:`~scrapy.spiders.CrawlSpider` class implements a small rules
+engine that handles it for you. For anything else, keep following links from
+your callbacks, as shown above.
 
 Also, a common pattern is to build an item with data from more than one page,
 using a :ref:`trick to pass additional data to the callbacks
@@ -837,6 +861,9 @@ You can continue from the section :ref:`section-basics` to know more about the
 command-line tool, spiders, selectors and other things the tutorial hasn't covered like
 modeling the scraped data. If you'd prefer to play with an example project, check
 the :ref:`intro-examples` section.
+
+To turn whole pages into clean text or markdown, or to turn the strings you
+select into dates, prices or other values, see :ref:`extraction`.
 
 If you are using a coding agent, see :ref:`agents`.
 

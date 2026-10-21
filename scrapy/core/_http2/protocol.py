@@ -4,7 +4,7 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -84,8 +84,6 @@ class MethodNotAllowed405(H2Error):
 
 @implementer(IHandshakeListener)
 class H2ClientProtocol(Protocol, TimeoutMixin):
-    IDLE_TIMEOUT = 240
-
     def __init__(
         self,
         uri: URI,
@@ -107,8 +105,12 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._crawler: Crawler = crawler
         self._conn_lost_deferred: Deferred[None] = conn_lost_deferred
         self._tls_verbose_logging: bool = tls_verbose_logging
+        self._idle_timeout: float = crawler.settings.getfloat(
+            "CONNECTION_KEEPALIVE_TIMEOUT"
+        )
+        self.closing: bool = False
 
-        config = H2Configuration(client_side=True, header_encoding="utf-8")
+        config = H2Configuration(client_side=True)
         self.conn = H2Connection(config=config)
 
         # ID of the next request stream
@@ -193,6 +195,8 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         stream = self.streams.pop(stream_id)
         self.metadata["active_streams"] -= 1
         self._send_pending_requests()
+        if not self._idle_timeout and not self.metadata["active_streams"]:
+            self._close_idle()
         return stream
 
     def _new_stream(self, request: Request, spider: Spider) -> Stream:
@@ -252,7 +256,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         sending some data now: we should open with the connection preamble.
         """
         # Initialize the timeout
-        self.setTimeout(self.IDLE_TIMEOUT)  # type: ignore[no-untyped-call]
+        self.setTimeout(self._idle_timeout or None)  # type: ignore[no-untyped-call]
 
         assert self.transport is not None  # typing
         destination = self.transport.getPeer()
@@ -268,9 +272,15 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     def _lose_connection_with_error(self, errors: list[BaseException]) -> None:
         """Helper function to lose the connection with the error sent as a
         reason"""
+        self.closing = True
         self._conn_lost_errors.extend(errors)
         assert self.transport is not None  # typing
         self.transport.loseConnection()
+
+    def _close_idle(self) -> None:
+        self.conn.close_connection(error_code=ErrorCodes.NO_ERROR)
+        self._write_to_transport()
+        self._lose_connection_with_error([])
 
     def handshakeCompleted(self) -> None:
         """
@@ -346,7 +356,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._lose_connection_with_error(
             [
                 DownloadTimeoutError(
-                    f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s"
+                    f"Connection was IDLE for more than {self._idle_timeout}s"
                 )
             ]
         )
@@ -358,7 +368,8 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         # Cancel the timeout if not done yet
         self.setTimeout(None)  # type: ignore[no-untyped-call]
 
-        self._conn_lost_errors.append(reason)
+        assert reason.value is not None
+        self._conn_lost_errors.append(reason.value)
 
         # Notify the connection pool instance such that no new requests are
         # sent over current connection
@@ -421,7 +432,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         except KeyError:
             pass  # We ignore server-initiated events
         else:
-            stream.receive_headers(cast("list[tuple[str, str]]", event.headers))
+            stream.receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata["settings_acknowledged"] = True

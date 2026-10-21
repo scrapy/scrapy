@@ -11,7 +11,6 @@ from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.pipelines.media import (
-    FileException,
     FileInfo,
     FileInfoOrError,
     MediaPipeline,
@@ -98,76 +97,6 @@ class TestBaseMediaPipeline:
         request = Request("http://url")
         self.pipe._modify_media_request(request)
         assert request.meta == {"handle_httpstatus_all": True}
-
-    def test_should_remove_req_res_references_before_caching_the_results(self):
-        """Regression test case to prevent a memory leak in the Media Pipeline.
-
-        The memory leak is triggered when an exception is raised when a Response
-        scheduled by the Media Pipeline is being returned. For example, when a
-        FileException('download-error') is raised because the Response status
-        code is not 200 OK.
-
-        It happens because we are keeping a reference to the Response object
-        inside the FileException context. This is caused by the way Twisted
-        return values from inline callbacks. It raises a custom exception
-        encapsulating the original return value.
-
-        The solution is to remove the exception context when this context is a
-        _DefGen_Return instance, the BaseException used by Twisted to pass the
-        returned value from those inline callbacks.
-
-        Maybe there's a better and more reliable way to test the case described
-        here, but it would be more complicated and involve running - or at least
-        mocking - some async steps from the Media Pipeline. The current test
-        case is simple and detects the problem very fast. On the other hand, it
-        would not detect another kind of leak happening due to old object
-        references being kept inside the Media Pipeline cache.
-
-        This problem does not occur in Python 2.7 since we don't have Exception
-        Chaining (https://www.python.org/dev/peps/pep-3134/).
-        """
-        # Create sample pair of Request and Response objects
-        request = Request("http://url")
-        response = Response("http://url", body=b"", request=request)
-
-        # Simulate the Media Pipeline behavior to produce a Twisted Failure
-        try:
-            # Simulate a Twisted inline callback returning a Response
-            raise StopIteration(response)
-        except StopIteration as exc:
-            def_gen_return_exc = exc
-            try:
-                # Simulate the media_downloaded callback raising a FileException
-                # This usually happens when the status code is not 200 OK
-                raise FileException("download-error")
-            except Exception as exc:
-                file_exc = exc
-                # Simulate Twisted capturing the FileException
-                # It encapsulates the exception inside a Twisted Failure
-                failure = Failure(file_exc)
-
-        # The Failure should encapsulate a FileException ...
-        assert failure.value == file_exc
-        # ... and it should have the StopIteration exception set as its context
-        assert failure.value.__context__ == def_gen_return_exc
-
-        # Let's calculate the request fingerprint and fake some runtime data...
-        fp = self.fingerprint(request)
-        info = self.pipe.spiderinfo
-        info.downloading.add(fp)
-        info.waiting[fp] = []
-
-        # When calling the method that caches the Request's result ...
-        self.pipe._cache_result_and_execute_waiters(failure, fp, info)
-        # ... it should store the Twisted Failure ...
-        downloaded = info.downloaded[fp]
-        assert downloaded == failure
-        # ... encapsulating the original FileException ...
-        assert isinstance(downloaded, Failure)
-        assert downloaded.value == file_exc
-        # ... but it should not store the StopIteration exception on its context
-        context = getattr(downloaded.value, "__context__", None)
-        assert context is None
 
     def test_default_item_completed(self, caplog: pytest.LogCaptureFixture) -> None:
         item = {"name": "name"}
@@ -455,6 +384,32 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         new_item = await self.pipe.process_item(item)
         assert new_item["results"] == [(True, {}), (True, {})]
 
+    @pytest.mark.parametrize(
+        ("size", "prefixed", "cached_urls"),
+        [
+            (2, False, ["http://url1", "http://url3"]),
+            (2, True, ["http://url1", "http://url3"]),
+            (0, False, []),
+            (-1, False, ["http://url2", "http://url1", "http://url3"]),
+        ],
+    )
+    @coroutine_test
+    async def test_cache_size(self, size: int, prefixed: bool, cached_urls: list[str]):
+        key = "MEDIA_CACHE_SIZE"
+        if prefixed:
+            key = f"{self.pipeline_class.__name__.upper()}_{key}"
+        crawler = get_crawler(DefaultSpider, {key: size})
+        crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=mocked_download_func)
+        pipe = build_from_crawler(self.pipeline_class, crawler)
+        pipe.open_spider()
+        for url in ["http://url1", "http://url2", "http://url1", "http://url3"]:
+            req = Request(url, meta={"response": Response(url)})
+            await pipe.process_item({"requests": req})
+        assert list(pipe.spiderinfo.downloaded) == [
+            self.fingerprint(Request(url)) for url in cached_urls
+        ]
+
     @coroutine_test
     async def test_use_media_to_download_result(self):
         req = Request("http://url", meta={"result": "ITSME"})
@@ -485,7 +440,7 @@ class TestAsyncMediaDownloaded(TestMediaPipeline):
 
 
 class TestMediaPipelineAllowRedirectSettings:
-    def _assert_request_no3xx(
+    def _assert_redirect_statuses_not_handled(
         self, pipeline_class: type[MediaPipeline], settings: dict[str, Any]
     ) -> None:
         pipe = pipeline_class(crawler=get_crawler(None, settings))
@@ -495,6 +450,8 @@ class TestMediaPipelineAllowRedirectSettings:
         assert "handle_httpstatus_list" in request.meta
         for status, check in [
             (200, True),
+            # 201 is not in REDIRECT_HTTP_CODES by default
+            (201, True),
             # These are the status codes we want
             # the downloader to handle itself
             (301, False),
@@ -513,12 +470,31 @@ class TestMediaPipelineAllowRedirectSettings:
                 assert status not in request.meta["handle_httpstatus_list"]
 
     def test_subclass_standard_setting(self):
-        self._assert_request_no3xx(UserDefinedPipeline, {"MEDIA_ALLOW_REDIRECTS": True})
+        self._assert_redirect_statuses_not_handled(
+            UserDefinedPipeline, {"MEDIA_ALLOW_REDIRECTS": True}
+        )
 
     def test_subclass_specific_setting(self):
-        self._assert_request_no3xx(
+        self._assert_redirect_statuses_not_handled(
             UserDefinedPipeline, {"USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS": True}
         )
+
+    def test_custom_redirect_http_codes(self):
+        """Statuses added to REDIRECT_HTTP_CODES are also left to
+        RedirectMiddleware."""
+        crawler = get_crawler(
+            None,
+            {
+                "MEDIA_ALLOW_REDIRECTS": True,
+                "REDIRECT_HTTP_CODES": [201, 301, 302, 303, 307, 308],
+            },
+        )
+        request = Request("http://url")
+        UserDefinedPipeline(crawler=crawler)._modify_media_request(request)
+
+        assert 201 not in request.meta["handle_httpstatus_list"]
+        assert 302 not in request.meta["handle_httpstatus_list"]
+        assert 200 in request.meta["handle_httpstatus_list"]
 
 
 class TestBuildFromCrawler:

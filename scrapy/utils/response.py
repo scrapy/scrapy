@@ -10,6 +10,7 @@ import os
 import re
 import tempfile
 import webbrowser
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from weakref import WeakKeyDictionary
 
@@ -17,13 +18,20 @@ from twisted.web import http
 from w3lib import html
 
 from scrapy.http.headers import Headers
+from scrapy.http.response.body_file import BodyFileResponse
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from scrapy.http import Response, TextResponse
+
+
+def _body_size(response: Response) -> int:
+    if isinstance(response, BodyFileResponse):
+        return Path(response.body_file).stat().st_size
+    return len(response.body)
+
 
 _baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
 
@@ -83,8 +91,8 @@ def response_from_dict(d: dict[str, Any]) -> Response:
 def response_status_message(status: bytes | float | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
-    message = http.RESPONSES.get(status_int, "Unknown Status")
-    return f"{status_int} {to_unicode(message)}"
+    message = http.RESPONSES.get(status_int, b"Unknown Status").decode()
+    return f"{status_int} {message}"
 
 
 _DOCTYPE_RE = re.compile(rb"\s*<!doctype[^<>]*>", re.IGNORECASE)
@@ -126,15 +134,13 @@ def open_in_browser(
         # any base tag of the response, and matches it when there is one.
         doctype = _DOCTYPE_RE.match(body)
         index = doctype.end() if doctype else 0
-        base_tag = to_bytes(f'<base href="{get_base_url(response)}">')
+        base_tag = f'<base href="{get_base_url(response)}">'.encode()
         body = body[:index] + base_tag + body[index:]
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
-        content_type = to_unicode(
-            response.headers.get(b"Content-Type") or b"", encoding="latin-1"
-        )
+        content_type = (response.headers.get(b"Content-Type") or b"").decode("latin-1")
         mimetype = content_type.split(";")[0].strip().lower()
         ext = mimetypes.guess_extension(mimetype) or ""
         if not ext:

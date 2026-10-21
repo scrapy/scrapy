@@ -4,11 +4,21 @@ from __future__ import annotations
 
 import inspect
 import logging
+import os
 import warnings
+from pathlib import Path
+from tempfile import mkstemp
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import NotConfigured, NotSupported, ScrapyDeprecationWarning
+from scrapy.exceptions import (
+    NotConfigured,
+    NotSupported,
+    ScrapyDeprecationWarning,
+    StopDownload,
+)
+from scrapy.http import BodyFileResponse
+from scrapy.http.request import _in_download_handler_scope
 from scrapy.utils.defer import (
     deferred_from_coro,
     ensure_awaitable,
@@ -44,7 +54,8 @@ class DownloadHandlerProtocol(Protocol):
 
     Besides implementing this protocol, the contract of a download handler
     includes **never** calling :meth:`crawler.engine.download_async()
-    <scrapy.core.engine.ExecutionEngine.download_async>`.
+    <scrapy.core.engine.ExecutionEngine.download_async>`, including
+    indirectly by awaiting a :class:`~scrapy.Request` object.
     """
 
     lazy: bool
@@ -61,44 +72,63 @@ class DownloadHandlerProtocol(Protocol):
 class DownloadHandlers:
     def __init__(self, crawler: Crawler):
         self._crawler: Crawler = crawler
-        # stores acceptable schemes on instancing
-        self._schemes: dict[str, str | Callable[..., Any]] = {}
-        # stores instanced handlers for schemes
+        # stores class paths by handler ID
+        self._paths: dict[str, str | Callable[..., Any]] = {}
+        # handler IDs that are also acceptable URL schemes
+        self._schemes: set[str] = set()
+        # stores instanced handlers by handler ID
         self._handlers: dict[str, DownloadHandlerProtocol] = {}
         # remembers failed handlers
         self._notconfigured: dict[str, str] = {}
         # remembers handlers with Deferred-based download_request()
         self._old_style_handlers: set[str] = set()
-        handlers: dict[str, str | Callable[..., Any]] = without_none_values(
+        self._closed: bool = False
+        scheme_handlers: dict[str, str | Callable[..., Any]] = without_none_values(
             cast(
                 "dict[str, str | Callable[..., Any]]",
                 crawler.settings.getwithbase("DOWNLOAD_HANDLERS"),
             )
         )
-        for scheme, clspath in handlers.items():
-            self._schemes[scheme] = clspath
-            self._load_handler(scheme, skip_lazy=True)
+        named_handlers: dict[str, str | Callable[..., Any]] = without_none_values(
+            cast(
+                "dict[str, str | Callable[..., Any]]",
+                crawler.settings.getdict("DOWNLOAD_HANDLERS_BY_NAME"),
+            )
+        )
+        if clashes := scheme_handlers.keys() & named_handlers.keys():
+            raise ValueError(
+                f"The following download handler IDs are defined both in "
+                f"DOWNLOAD_HANDLERS and in DOWNLOAD_HANDLERS_BY_NAME: "
+                f"{', '.join(sorted(clashes))}."
+            )
+        self._schemes.update(scheme_handlers)
+        for handler_id, clspath in (scheme_handlers | named_handlers).items():
+            self._paths[handler_id] = clspath
+            self._load_handler(handler_id, skip_lazy=True)
 
+        # Downloader closes the handlers when the engine closes it. This signal
+        # handler closes them for custom downloaders that don't subclass the
+        # default one.
         crawler.signals.connect(self._close, signals.engine_stopped)
 
-    def _get_handler(self, scheme: str) -> DownloadHandlerProtocol | None:
-        """Lazy-load the downloadhandler for a scheme
-        only on the first request for that scheme.
+    def _get_handler(self, handler_id: str) -> DownloadHandlerProtocol | None:
+        """Lazy-load the download handler with the given ID only on its first
+        request.
         """
-        if scheme in self._handlers:
-            return self._handlers[scheme]
-        if scheme in self._notconfigured:
+        if handler_id in self._handlers:
+            return self._handlers[handler_id]
+        if handler_id in self._notconfigured:
             return None
-        if scheme not in self._schemes:
-            self._notconfigured[scheme] = "no handler available for that scheme"
+        if handler_id not in self._paths:
+            self._notconfigured[handler_id] = "no handler with that ID"
             return None
 
-        return self._load_handler(scheme)
+        return self._load_handler(handler_id)
 
     def _load_handler(
-        self, scheme: str, skip_lazy: bool = False
+        self, handler_id: str, skip_lazy: bool = False
     ) -> DownloadHandlerProtocol | None:
-        path = self._schemes[scheme]
+        path = self._paths[handler_id]
         try:
             dhcls: type[DownloadHandlerProtocol] = load_object(path)
             if skip_lazy:
@@ -117,17 +147,17 @@ class DownloadHandlers:
                 self._crawler,
             )
         except NotConfigured as ex:
-            self._notconfigured[scheme] = str(ex)
+            self._notconfigured[handler_id] = str(ex)
             return None
         except Exception as ex:
             logger.exception(
-                'Loading "%(clspath)s" for scheme "%(scheme)s"',
-                {"clspath": path, "scheme": scheme},
+                'Loading "%(clspath)s" for handler ID "%(handler_id)s"',
+                {"clspath": path, "handler_id": handler_id},
                 extra={"crawler": self._crawler},
             )
-            self._notconfigured[scheme] = str(ex)
+            self._notconfigured[handler_id] = str(ex)
             return None
-        self._handlers[scheme] = dh
+        self._handlers[handler_id] = dh
         if not inspect.iscoroutinefunction(dh.download_request):  # pragma: no cover
             warnings.warn(
                 f"{global_object_name(dh.download_request)} is not a coroutine function."
@@ -136,7 +166,7 @@ class DownloadHandlers:
                 category=ScrapyDeprecationWarning,
                 stacklevel=1,
             )
-            self._old_style_handlers.add(scheme)
+            self._old_style_handlers.add(handler_id)
         return dh
 
     def download_request(
@@ -150,23 +180,78 @@ class DownloadHandlers:
         return deferred_from_coro(self.download_request_async(request))
 
     async def download_request_async(self, request: Request) -> Response:
-        scheme = urlparse_cached(request).scheme
-        handler = self._get_handler(scheme)
-        if not handler:
-            raise NotSupported(
-                f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
-            )
-        assert self._crawler.spider
-        if scheme in self._old_style_handlers:  # pragma: no cover
-            return await maybe_deferred_to_future(
-                cast(
-                    "Deferred[Response]",
-                    handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+        handler_id = request.meta.get("download_handler")
+        if handler_id is None:
+            scheme = urlparse_cached(request).scheme
+            # Handler IDs from DOWNLOAD_HANDLERS_BY_NAME are only reachable
+            # through the download_handler request metadata key, so that
+            # registering one does not make a new URL scheme downloadable.
+            if scheme in self._schemes:
+                handler = self._get_handler(scheme)
+            else:
+                handler = None
+                self._notconfigured.setdefault(
+                    scheme, "no handler available for that scheme"
                 )
-            )
-        return await handler.download_request(request)
+            if not handler:
+                raise NotSupported(
+                    f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
+                )
+            handler_id = scheme
+        else:
+            handler = self._get_handler(handler_id)
+            if not handler:
+                raise NotSupported(
+                    f"Unusable download handler {handler_id!r}: "
+                    f"{self._notconfigured[handler_id]}"
+                )
+        if not request.meta.get("body_file"):
+            return await self._download(handler_id, handler, request)
+        return await self._download_to_file(handler_id, handler, request)
+
+    async def _download(
+        self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
+    ) -> Response:
+        assert self._crawler.spider
+        with _in_download_handler_scope():
+            if handler_id in self._old_style_handlers:  # pragma: no cover
+                return await maybe_deferred_to_future(
+                    cast(
+                        "Deferred[Response]",
+                        handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+                    )
+                )
+            return await handler.download_request(request)
+
+    async def _download_to_file(
+        self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
+    ) -> Response:
+        temporary = request.meta["body_file"] is True
+        if temporary:
+            fd, request.meta["body_file"] = mkstemp()
+            os.close(fd)
+        try:
+            response = await self._download(handler_id, handler, request)
+            if not isinstance(response, BodyFileResponse):
+                raise NotSupported(
+                    f"{global_object_name(type(handler))} does not support the "
+                    f"body_file request meta key."
+                )
+        except StopDownload:
+            # Its response, which points to the body file, reaches errbacks.
+            raise
+        except BaseException:
+            if temporary:
+                Path(request.meta["body_file"]).unlink()  # noqa: ASYNC240
+                # Retries of the request get a new temporary file.
+                request.meta["body_file"] = True
+            raise
+        return response
 
     async def _close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         for dh in self._handlers.values():
             if not hasattr(dh, "close"):  # pragma: no cover
                 warnings.warn(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-from unittest import TextTestResult
+from unittest import TestCase, TextTestResult, TextTestRunner
 
 import pytest
 from twisted.python import failure
@@ -329,6 +329,34 @@ class CustomContractFailSpider(Spider):
 
 class InheritsDemoSpider(DemoSpider):
     name = "inherits_demo_spider"
+
+
+class UnregisteredAtLineSpider(Spider):
+    """Spider whose docstrings contain ``@`` lines that are not contracts."""
+
+    name = "unregistered_at_line_spider"
+
+    @classmethod
+    def update_settings(cls, settings):
+        """Docstring with a decorator in a code example:
+
+        .. code-block:: python
+
+            @classmethod
+            def update_settings(cls, settings): ...
+        """
+        super().update_settings(settings)
+
+    def parse(self, response):
+        """
+        @url http://example.com
+        @returns items 1 1
+
+        An unregistered line must not break the registered ones:
+
+            @classmethod
+        """
+        yield {"name": "test"}
 
 
 class TestContractsManager:
@@ -666,6 +694,25 @@ class TestContractsManager:
         _call(request, response)
         self.should_succeed()
 
+    def test_unregistered_at_line_is_not_a_tested_method(self):
+        # A docstring line starting with @ that does not name a registered
+        # contract, e.g. a decorator in a code example, must be ignored.
+        tested_methods = self.conman.tested_methods_from_spidercls(
+            UnregisteredAtLineSpider
+        )
+        assert tested_methods == ["parse"]
+
+    def test_unregistered_at_line_is_skipped(self):
+        (contracts,) = self.conman.extract_contracts(UnregisteredAtLineSpider().parse)
+        assert [type(contract) for contract in contracts] == [
+            UrlContract,
+            ReturnsContract,
+        ]
+
+    def test_unregistered_at_line_does_not_break_checks(self):
+        self.conman.from_spider(UnregisteredAtLineSpider(), self.results)
+        self.should_succeed()
+
     def test_custom_contracts(self):
         self.conman.from_spider(CustomContractSuccessSpider(), self.results)
         self.should_succeed()
@@ -818,11 +865,20 @@ class PostProcessErrorContract(Contract):
         raise ValueError("post-process error")
 
 
+class _TrackingTestResult(TextTestResult):
+    def __init__(self) -> None:
+        runner = TextTestRunner(descriptions=False, verbosity=0)
+        super().__init__(runner.stream, runner.descriptions, runner.verbosity)
+        self.stopped_tests: list[TestCase] = []
+
+    def stopTest(self, test: TestCase) -> None:
+        self.stopped_tests.append(test)
+        super().stopTest(test)
+
+
 class TestCustomContractPrePostProcess:
     def setup_method(self):
-        self.results = TextTestResult(  # type: ignore[type-var]
-            stream=None, descriptions=False, verbosity=0
-        )
+        self.results = _TrackingTestResult()
 
     def test_pre_hook_keyboard_interrupt(self):
         spider = DemoSpider()
@@ -837,6 +893,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     def test_post_hook_keyboard_interrupt(self):
         spider = DemoSpider()
@@ -851,6 +908,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_post) == 1
 
     def test_pre_hook_success(self):
         spider = DemoSpider()
@@ -864,6 +922,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     def test_pre_hook_assertion_failure(self):
         spider = DemoSpider()
@@ -877,6 +936,7 @@ class TestCustomContractPrePostProcess:
 
         assert self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     def test_pre_hook_error(self):
         spider = DemoSpider()
@@ -889,6 +949,7 @@ class TestCustomContractPrePostProcess:
         _call(request, response)
 
         assert self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     @coroutine_test
     async def test_pre_hook_async_callback(self):
@@ -943,6 +1004,7 @@ class TestCustomContractPrePostProcess:
         _call(request, response)
 
         assert self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_post) == 1
 
 
 class LegacyHookContract(Contract):

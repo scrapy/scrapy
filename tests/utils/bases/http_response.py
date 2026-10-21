@@ -187,7 +187,7 @@ class TestResponseBase(ABC):
 
         assert response._flags is None
         assert response.flags == []
-        assert response.flags is response.flags
+        assert response.flags is response.flags  # pylint: disable=comparison-with-itself
         assert response._flags == []
         original_flags = response.flags
         response.flags = None
@@ -197,7 +197,7 @@ class TestResponseBase(ABC):
 
         assert response._headers is None
         assert response.headers == {}
-        assert response.headers is response.headers
+        assert response.headers is response.headers  # pylint: disable=comparison-with-itself
         assert isinstance(response.headers, Headers)
         assert isinstance(response._headers, Headers)
         original_headers = response.headers
@@ -278,6 +278,56 @@ class TestResponseBase(ABC):
         res = self.response_class("http://example.com/")
         fol = res.follow("http://example.com/", flags=["cached", "allowed"])
         assert fol.flags == ["cached", "allowed"]
+
+    # Response.follow_redirect
+
+    @pytest.mark.parametrize(
+        ("location", "target_url"),
+        [
+            ("http://foo.example.com/x", "http://foo.example.com/x"),
+            ("/foo", "http://example.com/foo"),
+            ("foo", "http://example.com/dir/foo"),
+            (b"//foo.example.com/x", "http://foo.example.com/x"),
+            (b"/a\xe7\xe3o", "http://example.com/a%E7%E3o"),
+        ],
+    )
+    def test_follow_redirect(self, location, target_url):
+        response = self.response_class(
+            "http://example.com/dir/index", headers={"Location": location}
+        )
+        request = response.follow_redirect()
+        assert request.url == target_url
+        assert request.method == "GET"
+
+    def test_follow_redirect_keeps_fragment(self):
+        response = self.response_class(
+            "http://example.com/index#frag", headers={"Location": "/foo"}
+        )
+        assert response.follow_redirect().url == "http://example.com/foo#frag"
+
+    def test_follow_redirect_no_location(self):
+        response = self.response_class("http://example.com")
+        with pytest.raises(ValueError, match="has no Location header"):
+            response.follow_redirect()
+
+    def test_follow_redirect_kwargs(self):
+        response = self.response_class(
+            "http://example.com/index", headers={"Location": "/foo"}
+        )
+        request = response.follow_redirect(
+            method="HEAD", meta={"foo": "bar"}, flags=["cached"]
+        )
+        assert request.url == "http://example.com/foo"
+        assert request.method == "HEAD"
+        assert request.meta["foo"] == "bar"
+        assert request.flags == ["cached"]
+
+    def test_follow_parent_id(self):
+        assert self.response_class("http://example.com").follow("foo").parent_id is None
+        request = Request("http://example.com")
+        res = self.response_class("http://example.com", request=request)
+        assert res.follow("foo").parent_id == request.id
+        assert [r.parent_id for r in res.follow_all(["foo"])] == [request.id]
 
     # Response.follow_all
 

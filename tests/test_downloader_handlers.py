@@ -28,10 +28,12 @@ from scrapy.exceptions import (
     DownloadFailedError,
     DownloadTimeoutError,
     NotConfigured,
+    NotSupported,
     ScrapyDeprecationWarning,
+    StopDownload,
     UnsupportedURLSchemeError,
 )
-from scrapy.http import Request, TextResponse
+from scrapy.http import BodyFileResponse, Request, Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._download_handlers import wrap_twisted_exceptions
 from scrapy.utils.boto import is_botocore_available
@@ -45,6 +47,32 @@ class DummyDH:
 
     async def download_request(self, request):
         pass
+
+
+class NamedDH:
+    lazy = False
+
+    async def download_request(self, request):
+        return Response(request.url, body=b"named")
+
+
+class SchemeDH:
+    lazy = False
+
+    async def download_request(self, request):
+        return Response(request.url, body=b"scheme")
+
+
+class BodyFileDH:
+    lazy = False
+
+    async def download_request(self, request):
+        Path(request.meta["body_file"]).write_bytes(b"body")
+        if request.url.endswith("/fail"):
+            raise DownloadFailedError
+        if request.url.endswith("/stop"):
+            raise StopDownload(fail=True)
+        return BodyFileResponse(request.url, body_file=request.meta["body_file"])
 
 
 class DummyLazyDH:
@@ -100,7 +128,7 @@ class TestLoad:
         assert "scheme" not in dh._handlers
         assert "scheme" in dh._notconfigured
         assert (
-            'Loading "<class \'tests.test_downloader_handlers.BuggyDH\'>" for scheme "scheme"'
+            'Loading "<class \'tests.test_downloader_handlers.BuggyDH\'>" for handler ID "scheme"'
             in caplog.text
         )
 
@@ -129,6 +157,162 @@ class TestLoad:
         assert handler
         assert "scheme" in dh._handlers
         assert "scheme" not in dh._notconfigured
+
+
+class AwaitRequestDH:
+    lazy = False
+
+    async def download_request(self, request):
+        return await Request(request.url)
+
+
+class TestDownloadHandlerAwaitProhibited:
+    @coroutine_test
+    async def test_await_request_prohibited(self) -> None:
+        crawler = get_crawler(
+            settings_dict={"DOWNLOAD_HANDLERS": {"scheme": AwaitRequestDH}}
+        )
+        crawler.spider = crawler._create_spider()
+        dh = DownloadHandlers(crawler)
+        request = Request("scheme://example.com")
+        with pytest.raises(RuntimeError, match="download handler"):
+            await dh.download_request_async(request)
+
+
+class TestHandlerID:
+    @staticmethod
+    def _get_dh() -> DownloadHandlers:
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOAD_HANDLERS": {"https": SchemeDH},
+                "DOWNLOAD_HANDLERS_BY_NAME": {"named": NamedDH},
+            }
+        )
+        crawler.spider = crawler._create_spider()
+        return DownloadHandlers(crawler)
+
+    def test_clashing_ids(self) -> None:
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOAD_HANDLERS": {"https": SchemeDH},
+                "DOWNLOAD_HANDLERS_BY_NAME": {"https": NamedDH},
+            }
+        )
+        with pytest.raises(ValueError, match="defined both in DOWNLOAD_HANDLERS"):
+            DownloadHandlers(crawler)
+
+    @coroutine_test
+    async def test_name_not_a_scheme(self) -> None:
+        dh = self._get_dh()
+        with pytest.raises(NotSupported, match="Unsupported URL scheme 'named'"):
+            await dh.download_request_async(Request("named://example.com"))
+
+    @coroutine_test
+    async def test_name_in_meta(self) -> None:
+        dh = self._get_dh()
+        request = Request("https://example.com", meta={"download_handler": "named"})
+        response = await dh.download_request_async(request)
+        assert response.body == b"named"
+
+    @coroutine_test
+    async def test_scheme_in_meta(self) -> None:
+        dh = self._get_dh()
+        request = Request("ftp://example.com", meta={"download_handler": "https"})
+        response = await dh.download_request_async(request)
+        assert response.body == b"scheme"
+
+    @coroutine_test
+    async def test_unknown_id_in_meta(self) -> None:
+        dh = self._get_dh()
+        request = Request("https://example.com", meta={"download_handler": "nmaed"})
+        with pytest.raises(
+            NotSupported, match="Unusable download handler 'nmaed': no handler with"
+        ):
+            await dh.download_request_async(request)
+
+
+class TestBodyFile:
+    @staticmethod
+    def _get_dh() -> DownloadHandlers:
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOAD_HANDLERS": {"https": BodyFileDH},
+                "DOWNLOAD_HANDLERS_BY_NAME": {"named": NamedDH},
+            }
+        )
+        crawler.spider = crawler._create_spider()
+        return DownloadHandlers(crawler)
+
+    @coroutine_test
+    async def test_path(self, tmp_path: Path) -> None:
+        body_file = tmp_path / "body"
+        request = Request("https://example.com", meta={"body_file": body_file})
+        response = await self._get_dh().download_request_async(request)
+        assert isinstance(response, BodyFileResponse)
+        assert response.body_file == body_file
+        assert body_file.read_bytes() == b"body"
+
+    @coroutine_test
+    async def test_temporary(self) -> None:
+        request = Request("https://example.com", meta={"body_file": True})
+        response = await self._get_dh().download_request_async(request)
+        assert isinstance(response, BodyFileResponse)
+        body_file = Path(response.body_file)
+        assert request.meta["body_file"] == response.body_file
+        assert body_file.read_bytes() == b"body"
+        body_file.unlink()
+
+    @pytest.mark.parametrize(
+        ("url", "meta", "exception"),
+        [
+            ("https://example.com/fail", {}, DownloadFailedError),
+            ("https://example.com", {"download_handler": "named"}, NotSupported),
+        ],
+    )
+    @coroutine_test
+    async def test_temporary_failure(
+        self, url: str, meta: dict[str, str], exception: type[Exception]
+    ) -> None:
+        request = Request(url, meta={**meta, "body_file": True})
+        created: list[str] = []
+        real_mkstemp = mkstemp
+
+        def mock_mkstemp() -> tuple[int, str]:
+            fd, path = real_mkstemp()
+            created.append(path)
+            return fd, path
+
+        with (
+            mock.patch("scrapy.core.downloader.handlers.mkstemp", mock_mkstemp),
+            pytest.raises(exception),
+        ):
+            await self._get_dh().download_request_async(request)
+        assert request.meta["body_file"] is True
+        assert len(created) == 1
+        assert not Path(created[0]).exists()
+
+    @coroutine_test
+    async def test_temporary_stop_download(self) -> None:
+        request = Request("https://example.com/stop", meta={"body_file": True})
+        with pytest.raises(StopDownload):
+            await self._get_dh().download_request_async(request)
+        body_file = Path(request.meta["body_file"])
+        assert body_file.read_bytes() == b"body"
+        body_file.unlink()
+
+    @coroutine_test
+    async def test_unsupported(self, tmp_path: Path) -> None:
+        body_file = tmp_path / "body"
+        request = Request(
+            "https://example.com",
+            meta={"body_file": body_file, "download_handler": "named"},
+        )
+        with pytest.raises(
+            NotSupported,
+            match="NamedDH does not support the body_file request meta key",
+        ):
+            await self._get_dh().download_request_async(request)
+        assert not body_file.exists()
 
 
 class TestFile:

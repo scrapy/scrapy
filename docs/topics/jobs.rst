@@ -114,6 +114,15 @@ version that wrote them. A job must be resumed with the same Scrapy version
 that paused it; after upgrading or downgrading Scrapy, start a new job with a
 new job directory.
 
+Feed exports
+------------
+
+When a job is resumed, the :ref:`feeds <topics-feed-exports>` of the previous
+run already exist, so their :ref:`mode <feed-mode>` determines what happens to
+the items of the resumed run: ``"append"`` adds them to those feeds,
+``"overwrite"`` replaces the items of the previous run with them, and
+``"create"`` does not write them anywhere.
+
 Cookie expiration
 -----------------
 
@@ -176,9 +185,8 @@ Where:
 
 -   :class:`~scrapy.core.scheduler.Scheduler` creates the ``requests.queue/``
     directory and the ``active.json`` file, the latter containing the state
-    data returned by :meth:`DownloaderAwarePriorityQueue.close()
-    <scrapy.pqueues.DownloaderAwarePriorityQueue.close>` the last time the job
-    was paused.
+    data of :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue`, written
+    when the job stops and, with :setting:`JOBDIR_SYNC_EVERY`, as it runs.
 
 -   :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` creates the
     ``{hostname}-{hash}`` directories.

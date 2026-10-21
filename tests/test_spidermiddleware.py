@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gc
+import weakref
 from collections.abc import AsyncIterator, Iterable
 from inspect import isasyncgen
 from typing import TYPE_CHECKING, Any, cast
@@ -103,6 +105,26 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
         it = await self._scrape_response()
         with pytest.raises(ZeroDivisionError):
             await collect_asyncgen(it)
+
+    @coroutine_test
+    async def test_response_refcounting(self):
+        class RaiseExceptionProcessSpiderOutputMiddleware:
+            async def process_spider_output(self, response, result):
+                1 / 0
+                yield
+
+        self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
+        it = await self._scrape_response()
+        ref = weakref.ref(self.response)
+        del self.response
+        gc.disable()
+        try:
+            with pytest.raises(ZeroDivisionError):
+                await collect_asyncgen(it)
+            del it
+            assert ref() is None
+        finally:
+            gc.enable()
 
 
 class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):

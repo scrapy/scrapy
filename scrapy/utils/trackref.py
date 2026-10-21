@@ -5,11 +5,6 @@ If you want live objects for a particular class to be tracked, you only have to
 subclass from object_ref (instead of object).
 
 This library has a minimal performance impact.
-
-.. note:: PyPy uses a tracing garbage collector, so objects may
-    remain in the ``live_refs`` longer than expected, even after they
-    go out of scope. If deterministic behavior is required, you may need
-    to explicitly trigger garbage collection or call ``trackref.live_refs.clear()``.
 """
 
 from __future__ import annotations
@@ -17,14 +12,11 @@ from __future__ import annotations
 from operator import itemgetter
 from time import monotonic_ns
 from types import NoneType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from weakref import WeakKeyDictionary
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
 
 live_refs: WeakKeyDictionary[type, WeakKeyDictionary[object, float]] = (

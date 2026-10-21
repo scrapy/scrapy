@@ -156,6 +156,9 @@ use :func:`twisted.internet.task.react` to start and stop the reactor, though
 it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess` or
 :class:`~scrapy.crawler.CrawlerProcess` instead.
 
+Exceptions that interrupt a crawl reach the code that awaits that task or that
+adds callbacks to that Deferred, which is where you should handle them.
+
 Here's an example of using :class:`~scrapy.crawler.AsyncCrawlerRunner` together
 with simple reactor management code:
 
@@ -578,6 +581,31 @@ run:
 
 Because :setting:`SPIDER_MODULES` is a list setting, you can include multiple
 modules by separating them with commas.
+
+.. _crawl-bottlenecks:
+
+Identifying crawl bottlenecks
+=============================
+
+The :stat:`request_backout_seconds/concurrency`,
+:stat:`request_backout_seconds/response_max_active_size` and
+:stat:`request_backout_seconds/total` stats show how long request scheduling
+was paused during a crawl, and why.
+
+For example, after a crawl you might see::
+
+    2025-01-01 00:00:00 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+    {'request_backout_seconds/concurrency': 12.5,
+     'request_backout_seconds/response_max_active_size': 45.2,
+     'request_backout_seconds/total': 57.7,
+     ...}
+
+In this case, the spider spent about 45 seconds paused due to large responses
+in memory. You could:
+
+- Increase :setting:`RESPONSE_MAX_ACTIVE_SIZE` if your machine has enough RAM.
+- Check that your code doesn't hold strong references to
+  :class:`~scrapy.http.Response` objects longer than necessary.
 
 .. _bans:
 

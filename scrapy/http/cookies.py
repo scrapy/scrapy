@@ -1,19 +1,16 @@
 from __future__ import annotations
 
+import itertools
 import re
 import time
 from http.cookiejar import Cookie, CookiePolicy, DefaultCookiePolicy
 from http.cookiejar import CookieJar as _CookieJar
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Self, cast
 
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy import Request
     from scrapy.http import Response
@@ -23,6 +20,32 @@ if TYPE_CHECKING:
 # https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
 IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
+# Stands in for the creation time of RFC 6265. A counter, unlike a clock,
+# never gives the same value to two cookies.
+_creation_indexes = itertools.count()
+
+
+class _CreationOrderCookieJar(_CookieJar):
+    """Cookie jar that lists cookies in the ``Cookie`` header by descending
+    path length, then by ascending creation time, as :rfc:`6265#section-5.4`
+    requires.
+    """
+
+    def set_cookie(self, cookie: Cookie) -> None:
+        try:
+            # A cookie that replaces another one keeps its creation time.
+            old_cookie = self._cookies[cookie.domain][cookie.path][cookie.name]  # type: ignore[attr-defined]
+        except KeyError:
+            cookie._creation_index = next(_creation_indexes)  # type: ignore[attr-defined]
+        else:
+            cookie._creation_index = getattr(old_cookie, "_creation_index", -1)  # type: ignore[attr-defined]
+        super().set_cookie(cookie)
+
+    def _cookie_attrs(self, cookies: list[Cookie]) -> list[str]:
+        # super() then sorts by path length, and its sort is stable.
+        cookies.sort(key=lambda c: getattr(c, "_creation_index", -1))
+        return super()._cookie_attrs(cookies)  # type: ignore[misc,no-any-return]
+
 
 class CookieJar:
     def __init__(
@@ -31,7 +54,7 @@ class CookieJar:
         check_expired_frequency: int = 10000,
     ):
         self.policy: CookiePolicy = policy or DefaultCookiePolicy()
-        self.jar: _CookieJar = _CookieJar(self.policy)
+        self.jar: _CookieJar = _CreationOrderCookieJar(self.policy)
         self.jar._cookies_lock = _DummyLock()  # type: ignore[attr-defined]
         self.check_expired_frequency: int = check_expired_frequency
         self.processed: int = 0
@@ -185,13 +208,13 @@ class WrappedRequest:
 
     def get_header(self, name: str, default: str | None = None) -> str | None:
         value = self.request.headers.get(name, default)
-        return to_unicode(value, errors="replace") if value is not None else None
+        return value.decode(errors="replace") if value is not None else None
 
     def header_items(self) -> list[tuple[str, list[str]]]:
         return [
             (
-                to_unicode(k, errors="replace"),
-                [to_unicode(x, errors="replace") for x in v],
+                k.decode(errors="replace"),
+                [x.decode(errors="replace") for x in v],
             )
             for k, v in self.request.headers.items()
         ]
@@ -208,6 +231,4 @@ class WrappedResponse:
         return self
 
     def get_all(self, name: str, default: object = None) -> list[str]:
-        return [
-            to_unicode(v, errors="replace") for v in self.response.headers.getlist(name)
-        ]
+        return [v.decode(errors="replace") for v in self.response.headers.getlist(name)]

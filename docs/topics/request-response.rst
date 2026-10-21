@@ -25,65 +25,6 @@ Request objects
 
 .. autoclass:: scrapy.Request
 
-    :param url: the URL of this request
-
-        If the URL is invalid, a :exc:`ValueError` exception is raised.
-    :type url: str
-
-    :param callback: sets :attr:`callback`, defaults to ``None``.
-    :type callback: Callable[Concatenate[Response, ...], Any] | None
-
-    :param method: the HTTP method of this request. Defaults to ``'GET'``.
-    :type method: str
-
-    :param meta: the initial values for the :attr:`.Request.meta` attribute. If
-       given, the dict passed in this parameter will be shallow copied.
-    :type meta: dict
-
-    :param body: the request body. If a string is passed, then it's encoded as
-      bytes using the ``encoding`` passed (which defaults to ``utf-8``). If
-      ``body`` is not given, an empty bytes object is stored. Regardless of the
-      type of this argument, the final value stored will be a bytes object
-      (never a string or ``None``).
-    :type body: bytes or str
-
-    :param headers: the headers of this request. The dict values can be strings
-       (for single valued headers) or lists (for multi-valued headers). If
-       ``None`` is passed as value, the HTTP header will not be sent at all.
-
-       .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-           :ref:`cookie middleware <cookies>`. If you need to set cookies for a
-           request, use the ``cookies`` argument.
-
-    :type headers: dict
-
-    :param cookies: the request cookies, as a dict of cookie names and values
-        or as a list of dicts with a cookie each. See :ref:`cookies`.
-    :type cookies: dict or list
-
-    :param encoding: the encoding of this request (defaults to ``'utf-8'``).
-       This encoding will be used to percent-encode the URL and to convert the
-       body to bytes (if given as a string).
-
-       To disable URL percent-encoding for a request, use the
-       :reqmeta:`verbatim_url` request meta key.
-    :type encoding: str
-
-    :param priority: sets :attr:`priority`, defaults to ``0``.
-    :type priority: int
-
-    :param dont_filter: sets :attr:`dont_filter`, defaults to ``False``.
-    :type dont_filter: bool
-
-    :param errback: sets :attr:`errback`, defaults to ``None``.
-    :type errback: Callable[[Failure], Any] | None
-
-    :param flags:  Flags sent to the request, can be used for logging or similar purposes.
-    :type flags: list
-
-    :param cb_kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
-    :type cb_kwargs: dict
-
     .. attribute:: Request.url
 
         A string containing the URL of this request.
@@ -106,6 +47,13 @@ Request objects
 
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the request headers.
+
+        .. versionchanged:: VERSION
+            Header names keep the case you write them in, instead of being
+            converted to ``Title-Case``.
+
+        Lookups are case-insensitive. Whether your case reaches the server
+        depends on the :ref:`download handler <download-handlers-ref>`.
 
     .. attribute:: Request.body
 
@@ -192,20 +140,20 @@ Request objects
 
     .. autoattribute:: dont_filter
 
+    .. autoattribute:: id
+
+    .. autoattribute:: parent_id
+
     .. autoattribute:: Request.attributes
+
+    .. automethod:: __await__
 
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
        :ref:`callback-data`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs, cls])
-
-       Return a Request object with the same members, except for those members
-       given new values by whichever keyword arguments are specified. The
-       :attr:`~scrapy.Request.cb_kwargs` and :attr:`~scrapy.Request.meta` attributes are shallow
-       copied by default (unless new values are given as arguments). See also
-       :ref:`callback-data`.
+    .. automethod:: replace
 
     .. automethod:: from_curl
 
@@ -378,6 +326,35 @@ account:
         def fingerprint(self, request):
             return fingerprint(request, include_headers=["X-ID"])
 
+To deduplicate repeated query string parameters, such as those some sites
+add on every redirect and can otherwise cause redirect loops, build the
+deduplicated URL yourself and delegate the rest to
+:func:`scrapy.utils.request.fingerprint`:
+
+.. code-block:: python
+
+    # my_project/settings.py
+    REQUEST_FINGERPRINTER_CLASS = "my_project.utils.RequestFingerprinter"
+
+    # my_project/utils.py
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+    from weakref import WeakKeyDictionary
+
+    from scrapy.utils.request import fingerprint
+
+
+    class RequestFingerprinter:
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                parts = urlsplit(request.url)
+                query = urlencode(list(set(parse_qsl(parts.query))))
+                deduped_url = urlunsplit(parts._replace(query=query))
+                deduped_request = request.replace(url=deduped_url)
+                self.cache[request] = fingerprint(deduped_request)
+            return self.cache[request]
+
 You can also write your own fingerprinting logic from scratch.
 
 However, if you do not use :func:`scrapy.utils.request.fingerprint`, make sure
@@ -399,8 +376,6 @@ URL canonicalization or taking the request method or body into account:
     from hashlib import sha1
     from weakref import WeakKeyDictionary
 
-    from scrapy.utils.python import to_bytes
-
 
     class RequestFingerprinter:
         cache = WeakKeyDictionary()
@@ -408,7 +383,7 @@ URL canonicalization or taking the request method or body into account:
         def fingerprint(self, request):
             if request not in self.cache:
                 fp = sha1()
-                fp.update(to_bytes(request.url))
+                fp.update(request.url.encode())
                 self.cache[request] = fp.digest()
             return self.cache[request]
 
@@ -437,7 +412,6 @@ the following request fingerprinter:
     from hashlib import sha1
     from weakref import WeakKeyDictionary
 
-    from scrapy.utils.python import to_bytes
     from w3lib.url import canonicalize_url
 
 
@@ -447,8 +421,8 @@ the following request fingerprinter:
         def fingerprint(self, request):
             if request not in self.cache:
                 fp = sha1()
-                fp.update(to_bytes(request.method))
-                fp.update(to_bytes(canonicalize_url(request.url)))
+                fp.update(request.method.encode())
+                fp.update(canonicalize_url(request.url).encode())
                 fp.update(request.body or b"")
                 self.cache[request] = fp.digest()
             return self.cache[request]
@@ -474,7 +448,9 @@ The following built-in Scrapy components have such restrictions:
     :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
     the following directory structure is created:
 
-    -   :attr:`.Spider.name`
+    -   the partition that :setting:`HTTPCACHE_SCOPE` selects, i.e.
+        :attr:`.Spider.name` or the request host, and no folder at all with
+        ``'none'``
 
         -   first byte of a request fingerprint as hexadecimal
 
@@ -831,8 +807,11 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`body_file`
 * :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
+* :reqmeta:`delay`
+* :reqmeta:`delayed`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`
 * :reqmeta:`dont_merge_cookies`
@@ -860,6 +839,8 @@ Those are:
 * :reqmeta:`max_retry_times`
 * :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
+* :reqmeta:`proxy_headers`
+* :reqmeta:`redirect_http_codes`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_times`
 * :reqmeta:`redirect_ttl`
@@ -867,6 +848,7 @@ Those are:
 * :reqmeta:`referrer_policy`
 * :reqmeta:`retry_times`
 * :reqmeta:`rule`
+* :reqmeta:`skip_dupefilter_once`
 * :reqmeta:`verbatim_url`
 
 Scrapy components also use meta keys whose name starts with an underscore, such
@@ -912,6 +894,88 @@ This meta key is not supported by
 :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
 :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
 the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
+
+.. reqmeta:: body_file
+
+body_file
+---------
+
+.. versionadded:: VERSION
+
+Path of a file where the response body is written as it is downloaded, or
+``True`` to write it to a new temporary file, so that responses of any size can
+be downloaded without fitting them in memory:
+
+.. code-block:: python
+
+    Request("https://example.com/big.zip", meta={"body_file": "big.zip"})
+
+The response is then a :class:`BodyFileResponse`.
+
+Each download attempt, e.g. a retry or a redirect, writes the file from the
+start. If the download fails, e.g. because the response exceeds
+:setting:`DOWNLOAD_MAXSIZE`, the file may hold part of the body, except for
+temporary files, which Scrapy deletes. Deleting temporary files of successful
+downloads is up to you.
+
+Scrapy does not ask for a compressed response, and does not decompress the file
+if the server sends one anyway, as indicated by the ``Content-Encoding``
+response header.
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` skips
+these requests.
+
+Download handlers that do not support this key, such as :ref:`some built-in
+ones <download-handlers-ref>`, make the request fail with
+:exc:`~scrapy.exceptions.NotSupported`.
+
+.. reqmeta:: delay
+
+delay
+-----
+
+.. versionadded:: VERSION
+
+Number of seconds to hold a request before sending it:
+
+.. code-block:: python
+
+    Request("https://example.com/slow", meta={"delay": 5.0})
+
+The delay is a minimum: once it elapses, the request competes with the other
+pending requests as usual, subject to e.g. its
+:attr:`~scrapy.Request.priority`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+:setting:`DOWNLOAD_DELAY`.
+
+Scrapy removes this key as soon as the countdown starts, so that a copy of the
+request, e.g. a retry or a redirect, is not held again, and so that setting the
+key again asks for a new delay. See also :reqmeta:`delayed`.
+
+.. reqmeta:: delayed
+
+delayed
+-------
+
+.. versionadded:: VERSION
+
+Delays, in seconds, that a request has been held for because of
+:reqmeta:`delay`. Read-only.
+
+.. code-block:: python
+
+    def parse(self, response):
+        delays = response.meta.get("delayed", [])
+        self.logger.info(f"Held {len(delays)} times, {sum(delays)}s in total")
+
+.. reqmeta:: download_handler
+
+download_handler
+----------------
+
+.. versionadded:: VERSION
+
+ID of the :ref:`download handler <topics-download-handlers>` to use for this
+request, either a name from :setting:`DOWNLOAD_HANDLERS_BY_NAME` or a URL
+scheme from :setting:`DOWNLOAD_HANDLERS`. See :ref:`download-handler-ids`.
 
 .. reqmeta:: download_timeout
 
@@ -969,6 +1033,10 @@ http_auth_domain
 
 Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
 
+If this key is not set, :reqmeta:`http_user` and :reqmeta:`http_pass` are only
+sent to the origin (scheme, host and port) of the request where they were first
+used, e.g. they are not sent after a cross-origin redirect.
+
 .. reqmeta:: http_pass
 
 http_pass
@@ -987,6 +1055,18 @@ http_user
 
 Overrides :setting:`HTTPAUTH_USER` for this request.
 
+.. reqmeta:: is_robotstxt_request
+
+is_robotstxt_request
+--------------------
+
+.. versionadded:: VERSION
+
+``True`` on the ``robots.txt`` requests that
+:class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` sends, so
+that :ref:`downloader middlewares <topics-downloader-middleware>` can tell them
+apart from other requests.
+
 .. reqmeta:: max_retry_times
 
 max_retry_times
@@ -995,6 +1075,55 @@ max_retry_times
 The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: proxy_headers
+
+proxy_headers
+-------------
+
+.. versionadded:: VERSION
+
+Headers for the proxy set in the :reqmeta:`proxy` metadata key, as a mapping,
+e.g. ``{"X-Proxy-Country": "us"}``.
+
+.. code-block:: python
+
+    Request(
+        "https://example.com",
+        meta={
+            "proxy": "http://proxy.example:8080",
+            "proxy_headers": {"X-Proxy-Country": "us"},
+        },
+    )
+
+For HTTPS URLs these headers are sent in the ``CONNECT`` request that opens the
+tunnel through the proxy, which the target server cannot see. For other URLs
+there is no tunnel, so they are sent among the request headers, and it is up to
+the proxy to consume them instead of passing them on to the target server.
+
+.. note::
+
+    Handling of this metadata key needs to be implemented inside the
+    :ref:`download handler <topics-download-handlers>`, so it's not guaranteed
+    to be supported by all 3rd-party handlers. Among the built-in handlers,
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`,
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
+    support it for HTTP and HTTPS proxies.
+
+.. reqmeta:: skip_dupefilter_once
+
+skip_dupefilter_once
+--------------------
+
+.. versionadded:: VERSION
+
+Set this key to ``True`` to skip :setting:`duplicate filtering
+<DUPEFILTER_CLASS>` for this request. The :ref:`scheduler <topics-scheduler>`
+removes this key, so requests derived from this request, e.g. redirects, are
+filtered as usual.
+
+:func:`~scrapy.downloadermiddlewares.retry.get_retry_request` sets this key.
 
 .. reqmeta:: verbatim_url
 
@@ -1296,6 +1425,8 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.follow_redirect
+
     .. automethod:: Response.to_dict
 
     .. automethod:: Response.from_dict
@@ -1490,6 +1621,12 @@ JsonResponse objects
     that is used when the response has a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type`
     header.
+
+BodyFileResponse objects
+------------------------
+
+.. autoclass:: BodyFileResponse
+    :members: body_file
 
 
 Other functions related to responses

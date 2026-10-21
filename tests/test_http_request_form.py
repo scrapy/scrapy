@@ -10,7 +10,6 @@ import pytest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, HtmlResponse
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_unicode
 from tests.utils.bases.http_request import TestRequestBase
 
 if TYPE_CHECKING:
@@ -38,7 +37,7 @@ def _qs_unicode(req: Request, encoding: str = "utf-8") -> dict[str, list[str]]:
 
 
 def _assert_query_equal(first: bytes, second: bytes) -> None:
-    assert sorted(to_unicode(first).split("&")) == sorted(to_unicode(second).split("&"))
+    assert sorted(first.decode().split("&")) == sorted(second.decode().split("&"))
 
 
 # FormRequest.from_response() is deprecated in favor of form2request, so the
@@ -1008,20 +1007,21 @@ class TestFormRequest(TestRequestBase):
         with pytest.raises(ValueError, match="No <form> element found with"):
             self.request_class.from_response(response, formcss="input[name='abc']")
 
-    def test_from_response_valid_form_methods(self):
-        form_methods = [
-            [method, method] for method in self.request_class.valid_form_methods
-        ]
-        form_methods.append(["UNKNOWN", "GET"])
-
-        for method, expected in form_methods:
-            response = _buildresponse(
-                f'<form action="post.php" method="{method}">'
-                '<input type="hidden" name="one" value="1">'
-                "</form>"
-            )
-            r = self.request_class.from_response(response)
-            assert r.method == expected
+    @pytest.mark.parametrize(
+        ("method", "expected"),
+        [
+            *((method, method) for method in FormRequest.valid_form_methods),
+            ("UNKNOWN", "GET"),
+        ],
+    )
+    def test_from_response_valid_form_methods(self, method: str, expected: str) -> None:
+        response = _buildresponse(
+            f'<form action="post.php" method="{method}">'
+            '<input type="hidden" name="one" value="1">'
+            "</form>"
+        )
+        r = self.request_class.from_response(response)
+        assert r.method == expected
 
     def test_form_response_with_invalid_formdata_type_error(self):
         """Test that a ValueError is raised for non-iterable and non-dict formdata input"""

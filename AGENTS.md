@@ -11,6 +11,11 @@ This file adds what agents tend to get wrong.
   docstrings. CI runs these first and skips the test matrix when they fail.
 - Run the tests you touched: `tox -e py -- tests/test_foo.py`. Anything after
   `tox -e py --` is passed to pytest.
+- If the change depends on what a dependency exposes, run the tests under the
+  matching `min-` environment too (see `tox.ini`), e.g.
+  `tox -e min-botocore -- tests/test_foo.py`. They pin the oldest supported
+  version, which can be years older than the one you have and expose less, so
+  assert only on what it has as well.
 - Review your own diff. Remove whatever the change does not need: unused
   parameters, dead code, leftover debugging, comments that restate the code.
 
@@ -69,9 +74,10 @@ This file adds what agents tend to get wrong.
 - Give new anchors short names without the `topics-` prefix. Keep existing
   anchors.
 - Wrap paragraphs at 79 characters.
-- `sphinx-scrapy` is pinned in three places that must match: `tox.ini`,
-  `docs/requirements.in` (then run `uv pip compile requirements.in -o
-  requirements.txt` in `docs/`) and the `rev` in `.pre-commit-config.yaml`.
+- To upgrade `sphinx-scrapy`, change its `rev` in `.pre-commit-config.yaml`,
+  run `pre-commit run sphinx-scrapy --all-files` to sync `tox.ini` and
+  `docs/requirements.in`, then run `uv pip compile requirements.in -o
+  requirements.txt` in `docs/`.
 
 ## Git and GitHub
 

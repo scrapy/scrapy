@@ -244,6 +244,9 @@ on the item in your spider, and read it back from the item in
 Supported Storage
 =================
 
+Use :setting:`UPLOAD_TIMEOUT` to limit how long uploads to a remote storage
+backend may take.
+
 File system storage
 -------------------
 
@@ -314,6 +317,28 @@ policy:
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
+To send custom headers with the uploaded files, subclass ``S3FilesStore``
+with a different ``HEADERS`` class attribute, and point the ``s3`` scheme to it
+with :setting:`MEDIA_STORAGES`:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import S3FilesStore
+
+
+    class CustomS3FilesStore(S3FilesStore):
+        HEADERS = {
+            "Cache-Control": "max-age=172800",
+            "X-Amz-Storage-Class": "STANDARD_IA",
+        }
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"s3": "myproject.storages.CustomS3FilesStore"}
+
+Supported headers are those that the installed botocore version models for
+the `PutObject`_ operation; any other header raises :exc:`TypeError`.
+
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
 `Zenko CloudServer`_. All you need to do is set the endpoint option in your
 Scrapy settings:
@@ -334,6 +359,7 @@ To reuse connections for as many files as you check or upload in parallel, set
 
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
+.. _PutObject: https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 
@@ -375,6 +401,63 @@ policy:
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
 .. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
+
+.. _media-pipeline-custom-storage:
+
+Custom storage
+--------------
+
+.. versionadded:: VERSION
+
+.. setting:: MEDIA_STORAGES
+
+The :setting:`MEDIA_STORAGES` setting maps URL schemes to storage classes, so
+that you can support additional schemes or replace a built-in storage:
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"myscheme": "myproject.storages.MyStorage"}
+    FILES_STORE = "myscheme://example.com/files/"
+
+.. setting:: MEDIA_STORAGES_BASE
+
+It is merged into :setting:`MEDIA_STORAGES_BASE`, which holds the built-in
+storages:
+
+.. code-block:: python
+
+    {
+        "": "scrapy.pipelines.files.FSFilesStore",
+        "file": "scrapy.pipelines.files.FSFilesStore",
+        "ftp": "scrapy.pipelines.files.FTPFilesStore",
+        "gs": "scrapy.pipelines.files.GCSFilesStore",
+        "s3": "scrapy.pipelines.files.S3FilesStore",
+    }
+
+A storage class receives the :setting:`FILES_STORE` or :setting:`IMAGES_STORE`
+value, and must define ``stat_file`` and ``persist_file``:
+
+.. code-block:: python
+
+    class MyStorage:
+        def __init__(self, uri, *, acl=None):
+            self.uri = uri
+            self.acl = acl
+
+        @classmethod
+        def from_crawler(cls, crawler, uri, *, get_setting_name):
+            return cls(uri, acl=crawler.settings[get_setting_name("ACL")])
+
+        def stat_file(self, path, info): ...
+
+        def persist_file(self, path, buf, info, meta=None, headers=None): ...
+
+*get_setting_name* adds the prefix of the pipeline being built to a setting
+name, so that a single storage class can be configured separately for files and
+for images: ``get_setting_name("ACL")`` returns ``"FILES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.files.FilesPipeline` and ``"IMAGES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.images.ImagesPipeline`, and takes :ref:`per-class
+setting names <media-pipeline-class-settings>` into account.
 
 Usage example
 =============
@@ -430,6 +513,8 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
 
+.. _media-pipeline-class-settings:
+
 If you have multiple image pipelines inheriting from :class:`ImagesPipeline`
 and you want to have different settings in different pipelines you can set
 setting keys preceded with uppercase name of your pipeline class. E.g. if your
@@ -454,13 +539,16 @@ adjust this retention delay use the :setting:`FILES_EXPIRES` setting (or
 :setting:`IMAGES_EXPIRES`, in case of Images Pipeline), which
 specifies the delay in number of days:
 
+.. versionchanged:: VERSION
+   Fractional numbers of days are now supported.
+
 .. code-block:: python
 
     # 120 days of delay for files expiration
     FILES_EXPIRES = 120
 
-    # 30 days of delay for images expiration
-    IMAGES_EXPIRES = 30
+    # 12 hours of delay for images expiration
+    IMAGES_EXPIRES = 0.5
 
 The default value for both settings is 90 days. A negative value disables
 expiration, i.e. files are never re-downloaded once fetched.
@@ -476,6 +564,33 @@ and the pipeline class MyPipeline will have an expiration time set to 180.
 
 The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.
+
+.. _checksum-algorithm:
+
+Checksum algorithm
+------------------
+
+.. versionadded:: VERSION
+
+.. setting:: FILES_CHECKSUM_ALGORITHM
+.. setting:: IMAGES_CHECKSUM_ALGORITHM
+
+Checksums are `MD5 hashes <MD5 hash_>`_ by default. To use a different
+algorithm, set :setting:`FILES_CHECKSUM_ALGORITHM` (or
+:setting:`IMAGES_CHECKSUM_ALGORITHM`, in case of the Images Pipeline) to the
+name of any algorithm supported by :func:`hashlib.new`:
+
+.. code-block:: python
+
+    FILES_CHECKSUM_ALGORITHM = "sha256"
+
+Amazon S3 and Google Cloud Storage cannot calculate checksums of stored files
+on demand, and only report MD5 hashes, so with a different algorithm files that
+are not downloaded again, because they have not expired yet, get no checksum.
+
+A :ref:`custom storage <media-pipeline-custom-storage>` that calculates
+checksums in ``stat_file`` must use the algorithm that the pipeline sets as its
+``checksum_algorithm`` attribute.
 
 .. _topics-images-thumbnails:
 
@@ -521,6 +636,26 @@ Example of image files stored using ``small`` and ``big`` thumbnail names::
 
 The first one is the full image, as downloaded from the site.
 
+.. _preserving-image-format:
+
+Preserving the original image format
+------------------------------------
+
+.. setting:: IMAGES_PRESERVE_FORMAT
+
+By default, the Images Pipeline converts every image to JPEG, flattening
+transparency onto a white background. Set :setting:`IMAGES_PRESERVE_FORMAT`
+to ``True`` to keep each image, and its thumbnails, in the format it was
+downloaded in instead:
+
+.. code-block:: python
+
+    IMAGES_PRESERVE_FORMAT = True
+
+Stored files then get no extension, since the actual format is only known
+once the image has been downloaded; see :ref:`file-naming-response` to
+derive one from the response instead.
+
 Filtering out small images
 --------------------------
 
@@ -562,6 +697,47 @@ To handle media redirections, set this setting to ``True``:
 .. code-block:: python
 
     MEDIA_ALLOW_REDIRECTS = True
+
+Media files created on the fly
+------------------------------
+
+.. versionchanged:: VERSION
+   Added support for HTTP 201 responses.
+
+Some servers create media files on the fly and report that with an HTTP 201
+(Created) response instead of an HTTP 200 (OK) one. Media pipelines treat both
+as successful downloads.
+
+If such a response has an empty body, the media file must be requested
+separately, from the URL in its ``Location`` header. To do that, add ``201`` to
+:setting:`REDIRECT_HTTP_CODES`, so that
+:class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware` follows that
+header, and enable :setting:`MEDIA_ALLOW_REDIRECTS`, so that media requests may
+be redirected:
+
+.. code-block:: python
+
+    REDIRECT_HTTP_CODES = [201, 301, 302, 303, 307, 308]
+    MEDIA_ALLOW_REDIRECTS = True
+
+Limiting the result cache
+-------------------------
+
+.. setting:: MEDIA_CACHE_SIZE
+
+Media pipelines remember the outcome of every media request they handle, so
+that a file referenced by several items is downloaded once. By default every
+outcome is kept for the whole crawl, which takes about 600 bytes per distinct
+media URL.
+
+.. versionadded:: VERSION
+
+To cap that memory, set :setting:`MEDIA_CACHE_SIZE` to the number of most
+recently used outcomes to keep, or to ``0`` to keep none:
+
+.. code-block:: python
+
+    MEDIA_CACHE_SIZE = 10000
 
 .. _topics-media-pipeline-override:
 
@@ -647,7 +823,8 @@ See here the methods that you can override in your custom Files Pipeline:
         * ``path`` - the path (relative to :setting:`FILES_STORE`) where the file
           was stored
 
-        * ``checksum`` - a `MD5 hash`_ of the image contents
+        * ``checksum`` - a `MD5 hash`_ of the file contents, unless a different
+          :ref:`checksum algorithm <checksum-algorithm>` is configured
 
         * ``status`` - the file status indication.
 

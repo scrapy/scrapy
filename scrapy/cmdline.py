@@ -14,7 +14,6 @@ from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules_iter
 from scrapy.utils.project import get_project_settings, inside_project
-from scrapy.utils.python import garbage_collect
 from scrapy.utils.reactor import _asyncio_reactor_path
 
 if TYPE_CHECKING:
@@ -151,6 +150,21 @@ def _print_unknown_command(
     print('Use "scrapy" to see available commands')
 
 
+def _build_parser(
+    cmd: ScrapyCommand, cmdname: str, settings: Settings
+) -> ScrapyArgumentParser:
+    parser = ScrapyArgumentParser(
+        formatter_class=ScrapyHelpFormatter,
+        usage=f"scrapy {cmdname} {cmd.syntax()}",
+        conflict_handler="resolve",
+        description=cmd.long_desc(),
+    )
+    settings.setdict(cmd.default_settings, priority="command")
+    cmd.settings = settings
+    cmd.add_options(parser)
+    return parser
+
+
 def _run_print_help(
     parser: argparse.ArgumentParser,
     func: Callable[_P, None],
@@ -192,15 +206,7 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
         sys.exit(2)
 
     cmd = cmds[cmdname]
-    parser = ScrapyArgumentParser(
-        formatter_class=ScrapyHelpFormatter,
-        usage=f"scrapy {cmdname} {cmd.syntax()}",
-        conflict_handler="resolve",
-        description=cmd.long_desc(),
-    )
-    settings.setdict(cmd.default_settings, priority="command")
-    cmd.settings = settings
-    cmd.add_options(parser)
+    parser = _build_parser(cmd, cmdname, settings)
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
@@ -234,10 +240,4 @@ def _run_command_profiled(
 
 
 if __name__ == "__main__":
-    try:
-        execute()
-    finally:
-        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect() on exit:
-        # http://doc.pypy.org/en/latest/cpython_differences.html
-        # ?highlight=gc.collect#differences-related-to-garbage-collection-strategies
-        garbage_collect()
+    execute()
