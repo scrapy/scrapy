@@ -97,6 +97,17 @@ def test_delete_and_contains() -> None:
     assert "Content-Type" not in h
 
 
+def test_pop() -> None:
+    h = Headers({"Content-Type": "text/html", "X-Forwarded-For": ["ip1", "ip2"]})
+    olist = h.getlist("X-Forwarded-For")
+    assert h.pop("x-forwarded-for") is olist
+    assert olist == [b"ip1", b"ip2"]
+    assert list(h.keys()) == [b"Content-Type"]
+    assert h.pop("X-Forwarded-For", None) is None
+    with pytest.raises(KeyError):
+        h.pop("X-Forwarded-For")
+
+
 def test_setdefault() -> None:
     h = Headers()
     hlist = ["ip1", "ip2"]
@@ -215,6 +226,26 @@ def test_invalid_value() -> None:
         Headers().setdefault("foo", object())
     with pytest.raises(TypeError, match="Unsupported value type"):
         Headers()["foo"] = [object()]
+
+
+@pytest.mark.parametrize(
+    ("headers", "expected"),
+    [
+        ([], b""),
+        ([("X-Removed", None)], b""),
+        (
+            [
+                ("Content-Type", "text/html"),
+                ("set-cookie", "a=1"),
+                ("X-Removed", None),
+                ("Set-Cookie", "b=2"),
+            ],
+            b"Content-Type: text/html\r\nset-cookie: a=1\r\nset-cookie: b=2",
+        ),
+    ],
+)
+def test_to_string(headers: list[tuple[str, str | None]], expected: bytes) -> None:
+    assert Headers(headers).to_string() == expected
 
 
 def test_to_unicode_dict_undecodable() -> None:

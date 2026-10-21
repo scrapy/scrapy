@@ -25,8 +25,9 @@ ConnectionKey: TypeAlias = tuple[bytes, bytes, int, tuple[str, int] | None]
 
 
 class H2ConnectionPool:
-    def __init__(self, crawler: Crawler) -> None:
+    def __init__(self, crawler: Crawler, limit: int = 0) -> None:
         self._crawler = crawler
+        self._limit = limit
 
         # Store a dictionary which is used to get the respective
         # H2ClientProtocolInstance using the  key as Tuple(scheme, hostname, port)
@@ -48,9 +49,13 @@ class H2ConnectionPool:
             # Received a request while connecting to remote
             return self._pending_request(key)
 
-        # Check if we already have a connection to the remote
-        conn = self._connections.get(key, None)
+        # Check if we already have a usable connection to the remote, moving
+        # it to the end so that the pool stays ordered from least to most
+        # recently used
+        conn = self._connections.get(key)
         if conn and not conn.closing:
+            del self._connections[key]
+            self._connections[key] = conn
             # Return this connection instance wrapped inside a deferred
             return defer.succeed(conn)
 
@@ -60,6 +65,7 @@ class H2ConnectionPool:
     def _new_connection(
         self, key: ConnectionKey, uri: URI, endpoint: HostnameEndpoint
     ) -> Deferred[H2ClientProtocol]:
+        self._enforce_limit()
         self._pending_requests[key] = deque()
 
         conn_lost_deferred: Deferred[None] = Deferred()
@@ -88,6 +94,26 @@ class H2ConnectionPool:
         d: Deferred[H2ClientProtocol] = Deferred(pending_requests.remove)
         pending_requests.append(d)
         return d
+
+    def _enforce_limit(self) -> None:
+        """Close the least recently used connections that are not serving any
+        stream, to make room for one more connection.
+
+        HTTP/2 multiplexes requests over a single connection per remote, so a
+        connection with active streams is kept even if that leaves the pool
+        over the limit.
+        """
+        if not self._limit:
+            return
+        surplus = len(self._connections) + len(self._pending_requests) + 1 - self._limit
+        for key, conn in list(self._connections.items()):
+            if surplus <= 0:
+                return
+            if conn.metadata["active_streams"]:
+                continue
+            del self._connections[key]
+            conn._close_idle()
+            surplus -= 1
 
     def put_connection(
         self,

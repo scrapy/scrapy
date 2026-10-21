@@ -540,6 +540,11 @@ class Downloader:
             slot.close()
         self._record_backout(None)
 
+    async def _close_async(self) -> None:
+        """Close the downloader and its download handlers."""
+        self.close()
+        await self.handlers._close()
+
     def _slot_gc(self, age: float = 60) -> None:
         mintime = monotonic() - age
         for key, slot in list(self.slots.items()):
