@@ -448,6 +448,16 @@ one per actual value of the placeholder.
 
     Set by :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`.
 
+.. stat:: httpcache/wait
+
+``httpcache/wait``
+    Number of requests that waited for a concurrent request for the same
+    resource to finish downloading.
+
+    .. versionadded:: VERSION
+
+    Set by :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`.
+
 .. stat:: httpcompression/response_bytes
 
 ``httpcompression/response_bytes``
@@ -599,6 +609,24 @@ one per actual value of the placeholder.
     Number of requests dropped for being offsite.
 
     Set by :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`.
+
+.. stat:: request_backout_seconds/concurrency
+
+``request_backout_seconds/concurrency``
+    Seconds during which sending requests to the downloader was paused because
+    :setting:`CONCURRENT_REQUESTS` was reached.
+
+.. stat:: request_backout_seconds/response_max_active_size
+
+``request_backout_seconds/response_max_active_size``
+    Seconds during which sending requests to the downloader was paused because
+    :setting:`RESPONSE_MAX_ACTIVE_SIZE` was reached.
+
+.. stat:: request_backout_seconds/total
+
+``request_backout_seconds/total``
+    Seconds during which sending requests to the downloader was paused, for
+    any of the reasons above.
 
 .. stat:: request_depth_count/{depth}
 

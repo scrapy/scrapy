@@ -646,6 +646,44 @@ project name). This name will be used for the logging too.
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
 
+.. setting:: CONCURRENT_CONNECTIONS_PER_HANDLER
+
+CONCURRENT_CONNECTIONS_PER_HANDLER
+----------------------------------
+
+Default: ``None``
+
+.. versionadded:: VERSION
+
+The maximum number of connections that a single :ref:`download handler
+<topics-download-handlers>` may keep open, whether they are being used for a
+request or kept around for reuse by a later request. Use ``0`` for no limit.
+
+``None`` lets Scrapy pick a limit that fits the system it runs on. How it is
+picked may change in any future Scrapy version, without a deprecation period,
+so set a number if you need it to stay the same.
+
+Scrapy currently picks half of the maximum number of open files allowed for the
+process, or 480 on Windows, where :func:`select.select` handles at most 512
+sockets.
+
+Each download handler applies this limit on its own, so a crawl of both
+``http://`` and ``https://`` URLs may open up to twice as many connections.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
+additionally applies it once per proxy, since httpx `cannot use a different
+proxy per request <https://github.com/pydantic/httpx2/issues/818>`_.
+
+HTTP/2 multiplexes requests over a single connection per remote, so
+:class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` reaches this
+limit only after as many remotes, regardless of concurrency, and it keeps a
+connection that is serving requests even if that leaves it over the limit.
+
+How the limit is reached also depends on the handler: some close the connection
+that has been idle the longest to make room for a new one, others make requests
+wait for a connection to free up. Either way, a value below
+:setting:`CONCURRENT_REQUESTS` keeps the crawl from reaching the configured
+concurrency, and logs a warning.
+
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
@@ -665,6 +703,11 @@ Default: ``16``
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader. Use ``0`` for no limit.
+
+High values may exceed the limit that your operating system sets on the number
+of open file descriptors per process, causing errors. Some systems allow that
+limit to be raised or removed, e.g. with the `ulimit`_ shell built-in or, for
+services, with systemd’s `LimitNOFILE`_; otherwise, lower this setting.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
@@ -2098,6 +2141,53 @@ Adjust redirect request priority relative to original request:
 - **a positive priority adjust (default) means higher priority.**
 - a negative priority adjust means lower priority.
 
+.. setting:: RESPONSE_MAX_ACTIVE_SIZE
+
+RESPONSE_MAX_ACTIVE_SIZE
+------------------------
+
+.. versionadded:: VERSION
+
+Default: ``5_000_000``
+
+Soft limit (in bytes) on the total size of responses being kept in memory.
+
+This counts both the size of response bodies that have passed through
+:ref:`downloader middlewares <topics-downloader-middleware>` and remain in
+memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
+currently being downloaded.
+
+While the total is above this value, Scrapy pauses sending new requests to the
+downloader. A higher value improves crawl speed at the cost of memory usage.
+``0`` disables the limit.
+
+Scrapy logs an info-level message the first time the limit is reached. To see
+how long request processing was paused because of it over a whole crawl, check
+the :stat:`request_backout_seconds/response_max_active_size` stat.
+
+.. caution::
+
+    Responses that your code keeps a strong reference to, e.g. in the
+    :attr:`.Request.meta` of a scheduled request or in a component attribute,
+    count toward this limit until that reference is gone, so accumulating them
+    can pause a crawl indefinitely. So do responses in a reference cycle,
+    until Python's garbage collector frees them. To find out whether your
+    crawl keeps responses alive, see :ref:`topics-leaks`.
+
+.. setting:: RESPONSE_ROUGH_SIZE
+
+RESPONSE_ROUGH_SIZE
+-------------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Estimated size (in bytes) to count toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`
+for each request being downloaded, whose actual response size is not known yet.
+
+``None`` lets Scrapy choose a value. ``0`` counts only responses.
+
 .. setting:: ROBOTSTXT_OBEY
 
 ROBOTSTXT_OBEY
@@ -2260,19 +2350,6 @@ For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
 .. include:: settings.rst
     :start-after: queue-common-starts
     :end-before: queue-common-ends
-
-
-.. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
-
-SCRAPER_SLOT_MAX_ACTIVE_SIZE
-----------------------------
-
-Default: ``5_000_000``
-
-Soft limit (in bytes) for response data being processed.
-
-While the sum of the sizes of all responses being processed is above this value,
-Scrapy does not process new requests.
 
 .. setting:: SPIDER_CONTRACTS
 
@@ -2751,3 +2828,5 @@ environments.
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _Google Cloud Storage: https://cloud.google.com/storage/
+.. _LimitNOFILE: https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#LimitNOFILE=
+.. _ulimit: https://www.gnu.org/software/bash/manual/bash.html#index-ulimit

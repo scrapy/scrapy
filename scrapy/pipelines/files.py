@@ -691,7 +691,7 @@ class FilesPipeline(MediaPipeline):
         self.store.checksum_algorithm = _checksum_algorithm(
             settings, resolve("FILES_CHECKSUM_ALGORITHM")
         )
-        self.expires: int = settings.getint(resolve("FILES_EXPIRES"), self.EXPIRES)
+        self.expires: float = settings.getfloat(resolve("FILES_EXPIRES"), self.EXPIRES)
         if not hasattr(self, "FILES_URLS_FIELD"):
             self.FILES_URLS_FIELD = self.DEFAULT_FILES_URLS_FIELD
         if not hasattr(self, "FILES_RESULT_FIELD"):

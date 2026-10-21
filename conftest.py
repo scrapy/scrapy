@@ -58,7 +58,7 @@ if not H2_ENABLED:
         )
     )
 
-if find_spec("httpx2") is None and find_spec("httpx") is None:
+if find_spec("httpx2") is None:
     collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
 
 if find_spec("pytest_codspeed") is None:

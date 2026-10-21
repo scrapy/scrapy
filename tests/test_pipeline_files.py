@@ -283,6 +283,35 @@ class TestFilesPipeline:
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
 
+    @pytest.mark.parametrize(
+        ("age_hours", "expected_status"), [(6, "uptodate"), (18, "downloaded")]
+    )
+    @coroutine_test
+    async def test_file_expiration_below_one_day(
+        self, age_hours: int, expected_status: str
+    ) -> None:
+        pipeline = self._create_pipeline(FilesPipeline, {"FILES_EXPIRES": 0.5})
+        item_url = f"http://example.com/file-{age_hours}h.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={
+                    "checksum": "abc",
+                    "last_modified": time.time() - age_hours * 60 * 60,
+                },
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+        ):
+            result = await pipeline.process_item(item)
+        assert result["files"][0]["status"] == expected_status
+
     @coroutine_test
     async def test_file_never_expires(self):
         pipeline = self._create_pipeline(FilesPipeline, {"FILES_EXPIRES": -1})
@@ -471,6 +500,24 @@ class TestFilesPipeline:
         assert result["files"][0]["status"] == "downloaded"
         path = Path(self.tempdir) / result["files"][0]["path"]
         assert path.read_bytes() == b"data"
+
+    @coroutine_test
+    async def test_file_created_empty(self, caplog: pytest.LogCaptureFixture) -> None:
+        """A 201 response without a body is an empty download, e.g. because its
+        Location header was not followed, 201 not being in REDIRECT_HTTP_CODES."""
+        item_url = "http://example.com/created-empty.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            caplog.at_level(logging.WARNING),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url, status=201, body=b"")],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"] == []
+        assert "File (empty-content)" in caplog.text
 
     @coroutine_test
     async def test_checksum_algorithm(self) -> None:
@@ -1731,12 +1778,13 @@ def _prepare_request_object(
     flags: list[str] | None = None,
     headers: dict[str, str] | None = None,
     status: int = 200,
+    body: bytes = b"data",
 ) -> Request:
     return Request(
         item_url,
         meta={
             "response": Response(
-                item_url, status=status, body=b"data", flags=flags, headers=headers
+                item_url, status=status, body=body, flags=flags, headers=headers
             )
         },
     )

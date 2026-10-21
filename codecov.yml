@@ -1,6 +1,17 @@
+codecov:
+  notify:
+    # The number of CI jobs with "coverage: true" in
+    # .github/workflows/ci.yml. Until all of them have uploaded their report,
+    # the coverage of a commit is incomplete.
+    after_n_builds: 12
+
 comment:
   layout: "header, diff, tree"
+  after_n_builds: 12
 
 coverage:
   status:
-    project: false
+    patch: false
+    project:
+      default:
+        target: 100%

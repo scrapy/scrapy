@@ -14,6 +14,7 @@ from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from urllib.parse import urlparse
 
+import aiodns
 import pytest
 from cryptography.x509 import load_der_x509_certificate
 from twisted.internet.defer import DeferredList
@@ -52,6 +53,7 @@ from tests import IDNA_REJECTED_HOSTNAMES, NON_EXISTING_RESOLVABLE
 from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.proxy_stalling import StallingProxy
+from tests.mockserver.raw_http import RawHttpServer
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import (
     BytesReceivedCallbackSpider,
@@ -74,6 +76,7 @@ if TYPE_CHECKING:
 
 BadHeaderHandling = Literal["skip-bad", "skip-rest", "fail"]
 NonUtf8RequestHeaderHandling = Literal["send", "replace"]
+HeaderNameCase = Literal["as-is", "canonical"]
 
 
 class TestHttpBase(ABC):
@@ -104,6 +107,15 @@ class TestHttpBase(ABC):
     #         follow it;
     # "fail": the response cannot be downloaded at all.
     handler_bad_header_handling: BadHeaderHandling = "skip-bad"
+    # How the handler writes request header names over HTTP/1.1, compared to
+    # their spelling in Request.headers:
+    # "as-is": unchanged;
+    # "canonical": in the canonical form of Twisted's Headers, e.g. "X-Api-Key"
+    #         for "x-API-key" and "DNT" for "dnt".
+    handler_request_header_name_case: HeaderNameCase = "as-is"
+    # How the handler spells response header names in Response.headers,
+    # compared to their spelling on the wire, with the same options as above.
+    handler_response_header_name_case: HeaderNameCase = "as-is"
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
     default_handler_settings: ClassVar[dict[str, Any]] = {}
@@ -130,24 +142,94 @@ class TestHttpBase(ABC):
             await dh.close()
 
     async def _connection_ids(
-        self, url: str, settings_dict: dict[str, Any]
+        self, urls: list[str], settings_dict: dict[str, Any]
     ) -> set[str]:
-        """Request *url* twice in a row and return the identifiers of the
+        """Request *urls* one after another and return the identifiers of the
         connections that the server used to serve them."""
         async with self.get_dh(settings_dict) as dh:
-            responses = [await dh.download_request(Request(url)) for _ in range(2)]
+            responses = [await dh.download_request(Request(url)) for url in urls]
         return {response.text for response in responses}
+
+    @staticmethod
+    def _other_host(url: str) -> str:
+        """Return *url* pointing at the same server through a different name,
+        so that its connection cannot be reused."""
+        return url.replace("127.0.0.1", "localhost")
 
     @coroutine_test
     async def test_keepalive(self, mockserver: MockServer) -> None:
         url = mockserver.url("/connection-id", is_secure=self.is_secure)
-        assert len(await self._connection_ids(url, {})) == 1
+        assert len(await self._connection_ids([url, url], {})) == 1
 
     @coroutine_test
     async def test_no_keepalive(self, mockserver: MockServer) -> None:
         url = mockserver.url("/connection-id", is_secure=self.is_secure)
         settings_dict = {"CONNECTION_KEEPALIVE_TIMEOUT": 0}
-        assert len(await self._connection_ids(url, settings_dict)) == 2
+        assert len(await self._connection_ids([url, url], settings_dict)) == 2
+
+    @coroutine_test
+    async def test_connection_limit(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        urls = [url, self._other_host(url)] * 2
+
+        assert len(await self._connection_ids(urls, {})) == 2
+
+        settings_dict = {"CONCURRENT_CONNECTIONS_PER_HANDLER": 1}
+        assert len(await self._connection_ids(urls, settings_dict)) == 4
+
+        settings_dict = {"CONCURRENT_CONNECTIONS_PER_HANDLER": 0}
+        assert len(await self._connection_ids(urls, settings_dict)) == 2
+
+    @coroutine_test
+    async def test_connection_limit_spares_connections_in_use(
+        self, mockserver: MockServer
+    ) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        slow_url = mockserver.url("/connection-id?delay=0.5", is_secure=self.is_secure)
+        other_url = self._other_host(url)
+        async with self.get_dh({"CONCURRENT_CONNECTIONS_PER_HANDLER": 1}) as dh:
+            first = await dh.download_request(Request(url))
+            results = await maybe_deferred_to_future(
+                DeferredList(
+                    [
+                        deferred_from_coro(dh.download_request(Request(slow_url))),
+                        deferred_from_coro(dh.download_request(Request(other_url))),
+                    ],
+                    fireOnOneErrback=True,
+                )
+            )
+        ids = {response.text for _, response in results}
+        # the connection serving the slow request was kept even though the
+        # request to the other host had to exceed the limit to get one
+        assert first.text in ids
+        assert len(ids) == 2
+
+    @coroutine_test
+    async def test_connection_limit_with_several_connections_per_host(
+        self, mockserver: MockServer
+    ) -> None:
+        if self.http2:
+            pytest.skip("HTTP/2 uses a single connection per host")
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        slow_url = mockserver.url("/connection-id?delay=0.5", is_secure=self.is_secure)
+        other_url = self._other_host(url)
+        async with self.get_dh({"CONCURRENT_CONNECTIONS_PER_HANDLER": 2}) as dh:
+            results = await maybe_deferred_to_future(
+                DeferredList(
+                    [
+                        deferred_from_coro(dh.download_request(Request(slow_url)))
+                        for _ in range(2)
+                    ],
+                    fireOnOneErrback=True,
+                )
+            )
+            ids = {response.text for _, response in results}
+            assert len(ids) == 2
+            # only one of the two connections to the host makes room for the
+            # connection to the other host, so the other one stays reusable
+            await dh.download_request(Request(other_url))
+            reused = await dh.download_request(Request(url))
+        assert reused.text in ids
 
     @coroutine_test
     async def test_unsupported_scheme(self) -> None:
@@ -327,6 +409,50 @@ class TestHttpBase(ABC):
         assert ("is not valid UTF-8" in caplog.text) == replaced
 
     @coroutine_test
+    async def test_request_header_name_case(self) -> None:
+        if self.is_secure:
+            pytest.skip("RawHttpServer only supports plain HTTP")
+        with RawHttpServer() as server:
+            request = Request(server.url, headers={"x-API-key": "a", "dnt": "1"})
+            async with self.get_dh() as download_handler:
+                await download_handler.download_request(request)
+        sent = sorted(
+            name
+            for name in server.request_header_names()
+            if name.lower() in {b"x-api-key", b"dnt"}
+        )
+        expected = {
+            "as-is": [b"dnt", b"x-API-key"],
+            "canonical": [b"DNT", b"X-Api-Key"],
+        }
+        assert sent == expected[self.handler_request_header_name_case]
+
+    @coroutine_test
+    async def test_response_header_name_case(self) -> None:
+        if self.is_secure:
+            pytest.skip("RawHttpServer only supports plain HTTP")
+        response_headers = [
+            (b"x-custom-HEADER", b"a"),
+            (b"etag", b'"b"'),
+            (b"X-Custom-Header", b"c"),
+        ]
+        with RawHttpServer(response_headers) as server:
+            async with self.get_dh() as download_handler:
+                response = await download_handler.download_request(Request(server.url))
+        received = sorted(
+            name
+            for name in response.headers
+            if name.lower() in {b"x-custom-header", b"etag"}
+        )
+        expected = {
+            # differently-cased names are stored with the first spelling
+            "as-is": [b"etag", b"x-custom-HEADER"],
+            "canonical": [b"ETag", b"X-Custom-Header"],
+        }
+        assert received == expected[self.handler_response_header_name_case]
+        assert response.headers.getlist("X-Custom-Header") == [b"a", b"c"]
+
+    @coroutine_test
     async def test_server_receives_no_extra_headers(
         self, mockserver: MockServer
     ) -> None:
@@ -416,6 +542,20 @@ class TestHttpBase(ABC):
                 f"Response was missing expected header {header_name}"
             )
             assert response.headers.getlist(header_name) == [header_value.encode()]
+
+    @coroutine_test
+    async def test_download_has_correct_response_status_and_headers(
+        self, mockserver: MockServer
+    ) -> None:
+        request = Request(
+            mockserver.url("/response-headers?n=302", is_secure=self.is_secure),
+            headers={"content-type": "application/json"},
+            body=json.dumps({"Set-Cookie": "status=302"}),
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 302
+        assert response.headers.getlist("Set-Cookie") == [b"status=302"]
 
     @coroutine_test
     async def test_download_no_extra_response_headers(
@@ -530,6 +670,16 @@ class TestHttpBase(ABC):
         # httpx goes through anyio and asyncio, which look socket.getaddrinfo
         # up when resolving.
         monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo)
+
+        real_aiodns_getaddrinfo = aiodns.DNSResolver.getaddrinfo
+
+        def aiodns_getaddrinfo(self, host, *args, **kwargs):
+            return real_aiodns_getaddrinfo(self, "127.0.0.1", *args, **kwargs)
+
+        # aiohttp resolves through aiodns (when it is installed), which uses
+        # c-ares instead of socket.getaddrinfo.
+        monkeypatch.setattr(aiodns.DNSResolver, "getaddrinfo", aiodns_getaddrinfo)
+
         previous = None
         if is_reactor_installed():
             # Twisted resolves through a GAIResolver that bound
