@@ -162,7 +162,8 @@ The polite defaults still apply to every other website.
 How to run our spider
 ---------------------
 
-To put our spider to work, go to the project's top level directory and run::
+To put our spider to work, go to the project's top level directory, the one
+that contains :file:`scrapy.cfg`, and run::
 
    scrapy crawl quotes
 
@@ -439,8 +440,8 @@ We get a list of selectors for the quote HTML elements with:
 .. code-block:: pycon
 
     >>> response.css("div.quote")
-    [<Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-    <Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    [<Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    <Selector query="descendant-or-self::div[@class and contains(@class, 'quote') and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
     ...]
 
 Each of the selectors returned by the query above allows us to run further

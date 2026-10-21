@@ -422,6 +422,7 @@ These settings are:
 -   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_LEVELS`
+-   :setting:`LOG_ROOT_FORMATTER`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -585,6 +586,44 @@ project name). This name will be used for the logging too.
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
 
+.. setting:: CONCURRENT_CONNECTIONS_PER_HANDLER
+
+CONCURRENT_CONNECTIONS_PER_HANDLER
+----------------------------------
+
+Default: ``None``
+
+.. versionadded:: VERSION
+
+The maximum number of connections that a single :ref:`download handler
+<topics-download-handlers>` may keep open, whether they are being used for a
+request or kept around for reuse by a later request. Use ``0`` for no limit.
+
+``None`` lets Scrapy pick a limit that fits the system it runs on. How it is
+picked may change in any future Scrapy version, without a deprecation period,
+so set a number if you need it to stay the same.
+
+Scrapy currently picks half of the maximum number of open files allowed for the
+process, or 480 on Windows, where :func:`select.select` handles at most 512
+sockets.
+
+Each download handler applies this limit on its own, so a crawl of both
+``http://`` and ``https://`` URLs may open up to twice as many connections.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
+additionally applies it once per proxy, since httpx `cannot use a different
+proxy per request <https://github.com/pydantic/httpx2/issues/818>`_.
+
+HTTP/2 multiplexes requests over a single connection per remote, so
+:class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` reaches this
+limit only after as many remotes, regardless of concurrency, and it keeps a
+connection that is serving requests even if that leaves it over the limit.
+
+How the limit is reached also depends on the handler: some close the connection
+that has been idle the longest to make room for a new one, others make requests
+wait for a connection to free up. Either way, a value below
+:setting:`CONCURRENT_REQUESTS` keeps the crawl from reaching the configured
+concurrency, and logs a warning.
+
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
@@ -605,6 +644,11 @@ Default: ``16``
 The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader. Use ``0`` for no limit.
 
+High values may exceed the limit that your operating system sets on the number
+of open file descriptors per process, causing errors. Some systems allow that
+limit to be raised or removed, e.g. with the `ulimit`_ shell built-in or, for
+services, with systemd’s `LimitNOFILE`_; otherwise, lower this setting.
+
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
 CONCURRENT_REQUESTS_PER_DOMAIN
@@ -620,6 +664,21 @@ See also: :ref:`topics-autothrottle` and its
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
+
+.. setting:: CONNECTION_KEEPALIVE_TIMEOUT
+
+CONNECTION_KEEPALIVE_TIMEOUT
+----------------------------
+
+.. versionadded:: VERSION
+
+Default: ``240.0``
+
+How long, in seconds, a connection is kept open for reuse after the response it
+was serving is complete. Use ``0`` to close connections as soon as they become
+idle.
+
+Servers usually close idle connections earlier than this on their own.
 
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
@@ -928,6 +987,7 @@ Default:
     {
         "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
         "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
+        "scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware": 200,
         "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
         "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
         "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
@@ -1569,6 +1629,13 @@ Default: ``"guest"``
 The password to use for FTP connections when there is no ``"ftp_password"``
 in ``Request`` meta.
 
+It can be overriden in a request in any of the following ways:
+
+-   Specifying ``ftp_password`` in :attr:`Request.meta <scrapy.http.Request.meta>`
+
+-   Specifying the password in :attr:`Request.url <scrapy.http.Request.url>`
+    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`)
+
 .. note::
     Paraphrasing `RFC 1635`_, although it is common to use either the password
     "guest" or one's e-mail address for anonymous FTP,
@@ -1591,8 +1658,14 @@ FTP_USER
 
 Default: ``"anonymous"``
 
-The username to use for FTP connections when there is no ``"ftp_user"``
-in ``Request`` meta.
+The default username to use for FTP connections.
+
+It can be overriden in a request in any of the following ways:
+
+-   Specifying ``ftp_user`` in :attr:`Request.meta <scrapy.http.Request.meta>`
+
+-   Specifying the username in :attr:`Request.url <scrapy.http.Request.url>`
+    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`)
 
 .. note::
 
@@ -1616,20 +1689,19 @@ HANDLE_HTTP_CODES
 
 .. versionadded:: VERSION
 
-Default: ``None``
+Default: ``False``
 
-Response status codes that your spider handles itself, instead of letting
-Scrapy handle them.
+Response status codes outside the 2xx range that your spider handles itself,
+instead of letting Scrapy handle them.
 
 Supported values are:
 
--   ``None`` or ``False``, to handle no status code yourself. This is the
-    default.
+-   ``False``, to let Scrapy handle all of them.
 
--   ``True``, to handle every status code yourself.
+-   ``True``, to handle all of them yourself.
 
 -   An integer, or a container of integers, to handle only those status codes
-    yourself, e.g. ``404`` or ``[404, 410]``.
+    yourself, e.g. ``404``, ``[404, 410]`` or ``range(400, 500)``.
 
 Handling a status code yourself has 2 effects:
 
@@ -1656,8 +1728,8 @@ status code that you handle. To also stop retries, remove the status code from
 
 Use the ``handle_http_codes`` key of :attr:`Request.meta <scrapy.Request.meta>`
 to set this on a per-request basis. It supports the same values as the setting,
-and it takes precedence over the setting, e.g. ``False`` makes a request handle
-no status code even when the setting is ``True``.
+and it takes precedence over the setting, e.g. ``False`` makes Scrapy handle
+every status code outside the 2xx range even when the setting is ``True``.
 
 .. setting:: HTTP2_MAX_FRAME_SIZE
 
@@ -1820,35 +1892,6 @@ Default: ``True``
 
 If ``False``, the log file specified with :setting:`LOG_FILE` will be
 overwritten (discarding the output from previous runs, if any).
-
-.. note:: This is a :ref:`logging setting <logging-settings>`.
-
-.. setting:: LOG_FORMAT
-
-LOG_FORMAT
-----------
-
-Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
-
-String for formatting log messages. Refer to the
-:ref:`Python logging documentation <logrecord-attributes>` for the whole
-list of available placeholders, plus ``%(spider)s`` for the name of the
-spider that triggered the log message, or ``"-"`` for messages not tied to
-a spider (see :ref:`topics-logging-from-spiders`).
-
-.. note:: This is a :ref:`logging setting <logging-settings>`.
-
-.. setting:: LOG_DATEFORMAT
-
-LOG_DATEFORMAT
---------------
-
-Default: ``'%Y-%m-%d %H:%M:%S'``
-
-String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
-in :setting:`LOG_FORMAT`. Refer to the
-:ref:`Python datetime documentation <strftime-strptime-behavior>` for the
-whole list of available directives.
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
@@ -2738,3 +2781,5 @@ environments.
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _Google Cloud Storage: https://cloud.google.com/storage/
+.. _LimitNOFILE: https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#LimitNOFILE=
+.. _ulimit: https://www.gnu.org/software/bash/manual/bash.html#index-ulimit

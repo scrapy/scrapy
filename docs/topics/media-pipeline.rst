@@ -539,13 +539,16 @@ adjust this retention delay use the :setting:`FILES_EXPIRES` setting (or
 :setting:`IMAGES_EXPIRES`, in case of Images Pipeline), which
 specifies the delay in number of days:
 
+.. versionchanged:: VERSION
+   Fractional numbers of days are now supported.
+
 .. code-block:: python
 
     # 120 days of delay for files expiration
     FILES_EXPIRES = 120
 
-    # 30 days of delay for images expiration
-    IMAGES_EXPIRES = 30
+    # 12 hours of delay for images expiration
+    IMAGES_EXPIRES = 0.5
 
 The default value for both settings is 90 days. A negative value disables
 expiration, i.e. files are never re-downloaded once fetched.
@@ -693,6 +696,32 @@ To handle media redirections, set this setting to ``True``:
 
 .. code-block:: python
 
+    MEDIA_ALLOW_REDIRECTS = True
+
+To override this setting for a single media request, set the
+:reqmeta:`dont_redirect` request meta key in
+:meth:`~scrapy.pipelines.files.FilesPipeline.get_media_requests`.
+
+Media files created on the fly
+------------------------------
+
+.. versionchanged:: VERSION
+   Added support for HTTP 201 responses.
+
+Some servers create media files on the fly and report that with an HTTP 201
+(Created) response instead of an HTTP 200 (OK) one. Media pipelines treat both
+as successful downloads.
+
+If such a response has an empty body, the media file must be requested
+separately, from the URL in its ``Location`` header. To do that, add ``201`` to
+:setting:`REDIRECT_HTTP_CODES`, so that
+:class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware` follows that
+header, and enable :setting:`MEDIA_ALLOW_REDIRECTS`, so that media requests may
+be redirected:
+
+.. code-block:: python
+
+    REDIRECT_HTTP_CODES = [201, 301, 302, 303, 307, 308]
     MEDIA_ALLOW_REDIRECTS = True
 
 Limiting the result cache

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import code
+import sys
 from collections.abc import Callable
 from functools import partial, wraps
 from typing import TYPE_CHECKING, Any, TypeAlias
@@ -66,6 +67,8 @@ def _embed_ptpython_shell(
     namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a ptpython shell"""
+    if sys.platform == "win32" and not sys.stdout.isatty():
+        raise ImportError("ptpython needs a console on Windows")
     import ptpython.repl  # noqa: PLC0415
 
     @wraps(_embed_ptpython_shell)

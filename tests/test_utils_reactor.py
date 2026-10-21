@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 import pytest
 from twisted.internet.error import CannotListenError
@@ -107,3 +108,19 @@ class TestListenTcp:
 
         with pytest.raises(CannotListenError):
             listen_tcp([used_number, used_number], "127.0.0.1", ServerFactory())
+
+    def test_port_taken_on_listen(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Another process can bind the same port and call listen() on it
+        first."""
+        from twisted.internet import reactor
+
+        tried: list[int] = []
+
+        def listen(port: int, factory: ServerFactory, interface: str) -> NoReturn:
+            tried.append(port)
+            raise OSError(errno.EADDRINUSE, "Address already in use")
+
+        monkeypatch.setattr(reactor, "listenTCP", listen)
+        with pytest.raises(CannotListenError):
+            listen_tcp([6023, 6024], "127.0.0.1", ServerFactory())
+        assert tried == [6023, 6024]

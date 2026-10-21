@@ -7,15 +7,16 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any, Self
 
 from scrapy import signals
-from scrapy.exceptions import IgnoreRequest
-from scrapy.utils._httpstatus import StatusHandling
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.utils._httpstatus import StatusHandling, normalize
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Container, Iterable
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -38,6 +39,15 @@ class HttpError(IgnoreRequest):
         super().__init__(*args, **kwargs)
 
 
+def _warn_deprecated_attribute(name: str) -> None:
+    warnings.warn(
+        f"HttpErrorMiddleware.{name} is deprecated, use the HANDLE_HTTP_CODES "
+        f"setting instead.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=3,
+    )
+
+
 class HttpErrorMiddleware:
     """Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
     have to deal with them, which (most of the time) imposes an overhead,
@@ -47,6 +57,32 @@ class HttpErrorMiddleware:
 
     def __init__(self, settings: BaseSettings):
         self._status_handling = StatusHandling(settings, legacy_settings=True)
+
+    @property
+    def handle_httpstatus_all(self) -> bool:
+        _warn_deprecated_attribute("handle_httpstatus_all")
+        return self._status_handling._settings_value is True
+
+    @handle_httpstatus_all.setter
+    def handle_httpstatus_all(self, value: bool) -> None:
+        _warn_deprecated_attribute("handle_httpstatus_all")
+        if value:
+            self._status_handling._settings_value = True
+        elif self._status_handling._settings_value is True:
+            self._status_handling._settings_value = False
+
+    @property
+    def handle_httpstatus_list(self) -> Container[int]:
+        _warn_deprecated_attribute("handle_httpstatus_list")
+        value = self._status_handling._settings_value
+        return [] if isinstance(value, bool) else value
+
+    @handle_httpstatus_list.setter
+    def handle_httpstatus_list(self, value: Container[int]) -> None:
+        _warn_deprecated_attribute("handle_httpstatus_list")
+        # As before, handle_httpstatus_all takes precedence.
+        if self._status_handling._settings_value is not True:
+            self._status_handling._settings_value = normalize(value)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

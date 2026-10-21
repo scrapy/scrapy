@@ -43,9 +43,11 @@ __all__ = [
     "CLOSESPIDER_TIMEOUT_NO_ITEM",
     "COMMANDS_MODULE",
     "COMPRESSION_ENABLED",
+    "CONCURRENT_CONNECTIONS_PER_HANDLER",
     "CONCURRENT_ITEMS",
     "CONCURRENT_REQUESTS",
     "CONCURRENT_REQUESTS_PER_DOMAIN",
+    "CONNECTION_KEEPALIVE_TIMEOUT",
     "COOKIES_DEBUG",
     "COOKIES_ENABLED",
     "CRAWLSPIDER_FOLLOW_LINKS",
@@ -157,6 +159,7 @@ __all__ = [
     "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
     "LOG_LEVELS",
+    "LOG_ROOT_FORMATTER",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
     "LOG_VERSIONS",
@@ -186,6 +189,7 @@ __all__ = [
     "RANDOMIZE_DOWNLOAD_DELAY",
     "REACTOR_THREADPOOL_MAXSIZE",
     "REDIRECT_ENABLED",
+    "REDIRECT_HTTP_CODES",
     "REDIRECT_MAX_TIMES",
     "REDIRECT_PRIORITY_ADJUST",
     "REFERER_ENABLED",
@@ -273,10 +277,14 @@ COMMANDS_MODULE = ""
 
 COMPRESSION_ENABLED = True
 
+CONCURRENT_CONNECTIONS_PER_HANDLER = None
+
 CONCURRENT_ITEMS = 100
 
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
+
+CONNECTION_KEEPALIVE_TIMEOUT = 240.0
 
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
@@ -343,6 +351,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
+    "scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware": 200,
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
     "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
@@ -435,7 +444,7 @@ FTP_PASSWORD = "guest"  # noqa: S105
 
 GCS_PROJECT_ID = None
 
-HANDLE_HTTP_CODES = None
+HANDLE_HTTP_CODES = False
 
 HTTP2_MAX_FRAME_SIZE = 16384
 
@@ -490,6 +499,7 @@ LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
 LOG_LEVELS: dict[str, str] = {}
+LOG_ROOT_FORMATTER = "scrapy.LogRootFormatter"
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
 LOG_VERSIONS = [
@@ -549,6 +559,7 @@ RANDOMIZE_DOWNLOAD_DELAY = True
 REACTOR_THREADPOOL_MAXSIZE = 10
 
 REDIRECT_ENABLED = True
+REDIRECT_HTTP_CODES = [301, 302, 303, 307, 308]
 REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 

@@ -9,6 +9,11 @@ Scrapy VERSION (unreleased)
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-   Scrapy no longer officially supports PyPy. It may still work if you
+    manually remove ``PyDispatcher`` and install ``PyPyDispatcher`` but this is
+    not guaranteed.
+    (TBD)
+
 -   Changes to the ``fetch()`` shortcut of the :ref:`Scrapy shell
     <topics-shell>`:
 

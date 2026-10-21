@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import itertools
 import json
 import random
 from typing import TYPE_CHECKING, Any, ClassVar, ParamSpec, TypeVar, cast
@@ -295,6 +296,16 @@ class RedirectTo(LeafResource):
         return b"redirecting..."
 
 
+class Created(LeafResource):
+    """Emulate a server that creates a resource on the fly, reporting it with an
+    empty 201 response that points at the created resource through Location."""
+
+    def render(self, request: Request) -> bytes:
+        request.setResponseCode(201)
+        request.setHeader(b"Location", getarg(request, b"goto", b"/"))
+        return b""
+
+
 class Partial(LeafResource):
     def render_GET(self, request: Request) -> int:
         request.setHeader(b"Content-Length", b"1024")
@@ -439,11 +450,13 @@ class UriResource(BaseResource):
 
 
 class ResponseHeadersResource(BaseResource):
-    """Return a response with headers set from the JSON request body"""
+    """Return a response with headers set from the JSON request body, and the
+    status code set from the *n* URL parameter, 200 by default."""
 
     def render(self, request: Request) -> bytes:
         assert request.content
         body = json.loads(request.content.read().decode())
+        request.setResponseCode(getarg(request, b"n", 200, type_=int))
         for header_name, header_value in body.items():
             # surrogateescape lets tests send bytes that are not valid UTF-8
             request.responseHeaders.setRawHeaders(
@@ -481,6 +494,38 @@ class SetCookie(BaseResource):
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
                 request.setHeader(b"Set-Cookie", cookie)
         return b""
+
+
+_connection_ids = itertools.count()
+
+
+class ConnectionId(LeafResource):
+    """Return the identifier of the connection serving the request, after the
+    number of seconds given in the ``delay`` argument.
+
+    Two responses carrying the same identifier were served over the same
+    connection, which lets tests tell connection reuse from reconnection.
+    """
+
+    def render_GET(self, request: Request) -> int | bytes:
+        delay = getarg(request, b"delay", 0, type_=float)
+        if not delay:
+            return self._connection_id(request)
+        self.deferRequest(request, delay, self._delayedRender, request)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request: Request) -> None:
+        request.write(self._connection_id(request))
+        request.finish()
+
+    @staticmethod
+    def _connection_id(request: Request) -> bytes:
+        # under HTTP/2 the channel of a request is its stream, so the
+        # connection has to be reached through it
+        channel: Any = getattr(request.channel, "_conn", request.channel)
+        if not hasattr(channel, "_mockserver_connection_id"):
+            channel._mockserver_connection_id = next(_connection_ids)
+        return str(channel._mockserver_connection_id).encode()
 
 
 def _h2_connection(request: Request) -> H2Connection:

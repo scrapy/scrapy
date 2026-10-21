@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from ipaddress import IPv4Address
+from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urlparse
@@ -16,7 +17,7 @@ from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
-from scrapy.http import Request
+from scrapy.http import BodyFileResponse, Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.engine import (
@@ -27,6 +28,7 @@ from scrapy.utils.engine import (
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.spiders import (
+    AsyncAwaitRequestInItemPipelineSpider,
     AsyncDefAsyncioGenComplexSpider,
     AsyncDefAsyncioGenExcSpider,
     AsyncDefAsyncioGenLoopSpider,
@@ -39,6 +41,12 @@ from tests.spiders import (
     AsyncDefDeferredMaybeWrappedSpider,
     AsyncDefDeferredWrappedSpider,
     AsyncDefSpider,
+    AwaitRequestDownloaderMiddleware,
+    AwaitRequestInDownloaderMiddlewareSpider,
+    AwaitRequestInItemPipelineSpider,
+    AwaitRequestInStartSpider,
+    AwaitRequestItemPipeline,
+    AwaitRequestSpider,
     BrokenStartSpider,
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
@@ -49,6 +57,7 @@ from tests.spiders import (
     CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
+    CrawlSpiderWithSyncRequestCallback,
     DelaySpider,
     DuplicateStartSpider,
     FollowAllSpider,
@@ -62,18 +71,38 @@ from tests.spiders import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from scrapy.statscollectors import StatsCollector
     from tests.mockserver.http import MockServer
 
 
 class CloseSpiderProcessRequestMiddleware:
     def process_request(self, request):
-        raise CloseSpider("my_reason")
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
 
 
 class CloseSpiderProcessResponseMiddleware:
     def process_response(self, request, response):
-        raise CloseSpider("my_reason")
+        raise CloseSpider("my_reason", error=request.meta["close_error"])
+
+
+class BodyFileSpider(Spider):
+    name = "body_file"
+
+    def __init__(self, url: str, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.url = url
+        self.body: bytes | None = None
+
+    async def start(self) -> AsyncIterator[Any]:
+        yield Request(self.url, meta={"body_file": True})
+
+    def parse(self, response: Response) -> None:
+        assert isinstance(response, BodyFileResponse)
+        body_file = Path(response.body_file)
+        self.body = body_file.read_bytes()
+        body_file.unlink()
 
 
 class TestCrawl:
@@ -464,6 +493,15 @@ with multiples lines
         assert not crawler.crawling
 
     @coroutine_test
+    async def test_body_file(self, mockserver: MockServer) -> None:
+        crawler = get_crawler(BodyFileSpider)
+        await crawler.crawl_async(mockserver.url("/text"))
+        assert isinstance(crawler.spider, BodyFileSpider)
+        assert crawler.spider.body == b"Works"
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/response_bytes")
+
+    @coroutine_test
     async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:
         crawler = get_crawler(SimpleSpider)
         await crawler.crawl_async("foo://bar")
@@ -473,14 +511,16 @@ with multiples lines
 class TestCrawlSpider:
     @staticmethod
     async def _run_spider(
-        spider_cls: type[Spider], mockserver: MockServer
+        spider_cls: type[Spider],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
     ) -> tuple[list[Any], StatsCollector]:
         items = []
 
         def _on_item_scraped(item):
             items.append(item)
 
-        crawler = get_crawler(spider_cls)
+        crawler = get_crawler(spider_cls, settings)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         await crawler.crawl_async(
             mockserver.url("/status?n=200"), mockserver=mockserver
@@ -510,6 +550,18 @@ class TestCrawlSpider:
         assert "[parse_async] status 200 (foo: None)" in caplog.text
         assert "[parse_async] status 201 (foo: None)" in caplog.text
         assert "[parse_async] status 202 (foo: bar)" in caplog.text
+
+    @coroutine_test
+    async def test_crawlspider_with_sync_request_callback(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithSyncRequestCallback)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        assert "[parse_sync] status 200 (foo: None)" in caplog.text
+        assert "[parse_sync] status 201 (foo: None)" in caplog.text
+        assert "[parse_sync] status 202 (foo: bar)" in caplog.text
 
     @coroutine_test
     async def test_crawlspider_with_async_generator_callback(
@@ -702,6 +754,59 @@ class TestCrawlSpider:
             await self._run_spider(AsyncDefAsyncioReqsReturnSpider, mockserver)
         for req_id in range(3):
             assert f"Got response 200, req_id {req_id}" in caplog.text
+
+    @coroutine_test
+    async def test_await_request(self, mockserver: MockServer) -> None:
+        items, _ = await self._run_spider(AwaitRequestSpider, mockserver)
+        assert items == [{"status": 200}]
+
+    @coroutine_test
+    async def test_await_request_in_start(self, mockserver: MockServer) -> None:
+        items, _ = await self._run_spider(AwaitRequestInStartSpider, mockserver)
+        assert items == [{"status": 200}]
+
+    @coroutine_test
+    async def test_await_request_in_downloader_middleware(
+        self, mockserver: MockServer
+    ) -> None:
+        items, _ = await self._run_spider(
+            AwaitRequestInDownloaderMiddlewareSpider,
+            mockserver,
+            {"DOWNLOADER_MIDDLEWARES": {AwaitRequestDownloaderMiddleware: 1}},
+        )
+        assert items == [{"probed_status": 200}]
+
+    @pytest.mark.parametrize(
+        "spider_cls",
+        [AwaitRequestInItemPipelineSpider, AsyncAwaitRequestInItemPipelineSpider],
+    )
+    @coroutine_test
+    async def test_await_request_in_item_pipeline(
+        self, spider_cls: type[Spider], mockserver: MockServer
+    ) -> None:
+        items, _ = await self._run_spider(
+            spider_cls,
+            mockserver,
+            {"ITEM_PIPELINES": {AwaitRequestItemPipeline: 1}},
+        )
+        assert sorted(item["status"] for item in items) == [200, 201, 202]
+
+    @coroutine_test
+    async def test_await_request_in_signal_handler(
+        self, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(SimpleSpider)
+        results = []
+
+        async def on_spider_opened(spider):
+            response = await Request(mockserver.url("/status?n=200"))
+            results.append(response.status)
+
+        crawler.signals.connect(on_spider_opened, signals.spider_opened)
+        await crawler.crawl_async(
+            mockserver.url("/status?n=200"), mockserver=mockserver
+        )
+        assert results == [200]
 
     @pytest.mark.only_not_asyncio
     @coroutine_test
@@ -1039,17 +1144,21 @@ class TestCrawlSpider:
         "middleware",
         [CloseSpiderProcessRequestMiddleware, CloseSpiderProcessResponseMiddleware],
     )
+    @pytest.mark.parametrize("error", [False, True])
     @coroutine_test
     async def test_raise_closespider_downloader_middleware(
         self,
         caplog: pytest.LogCaptureFixture,
         mockserver: MockServer,
         middleware: type,
+        error: bool,
     ) -> None:
         crawler = get_crawler(
             SingleRequestSpider, {"DOWNLOADER_MIDDLEWARES": {middleware: 1}}
         )
+        seed = Request(mockserver.url("/"), meta={"close_error": error})
         with caplog.at_level(logging.INFO):
-            await crawler.crawl_async(seed=mockserver.url("/"))
+            await crawler.crawl_async(seed=seed)
         assert "Closing spider (my_reason)" in caplog.text
         assert "Error downloading" not in caplog.text
+        assert crawler.stats.get_value("finish_reason_error") is error

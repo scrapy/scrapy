@@ -4,11 +4,21 @@ from __future__ import annotations
 
 import inspect
 import logging
+import os
 import warnings
+from pathlib import Path
+from tempfile import mkstemp
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import NotConfigured, NotSupported, ScrapyDeprecationWarning
+from scrapy.exceptions import (
+    NotConfigured,
+    NotSupported,
+    ScrapyDeprecationWarning,
+    StopDownload,
+)
+from scrapy.http import BodyFileResponse
+from scrapy.http.request import _in_download_handler_scope
 from scrapy.utils.defer import (
     deferred_from_coro,
     ensure_awaitable,
@@ -44,7 +54,8 @@ class DownloadHandlerProtocol(Protocol):
 
     Besides implementing this protocol, the contract of a download handler
     includes **never** calling :meth:`crawler.engine.download_async()
-    <scrapy.core.engine.ExecutionEngine.download_async>`.
+    <scrapy.core.engine.ExecutionEngine.download_async>`, including
+    indirectly by awaiting a :class:`~scrapy.Request` object.
     """
 
     lazy: bool
@@ -71,6 +82,7 @@ class DownloadHandlers:
         self._notconfigured: dict[str, str] = {}
         # remembers handlers with Deferred-based download_request()
         self._old_style_handlers: set[str] = set()
+        self._closed: bool = False
         scheme_handlers: dict[str, str | Callable[..., Any]] = without_none_values(
             cast(
                 "dict[str, str | Callable[..., Any]]",
@@ -94,6 +106,9 @@ class DownloadHandlers:
             self._paths[handler_id] = clspath
             self._load_handler(handler_id, skip_lazy=True)
 
+        # Downloader closes the handlers when the engine closes it. This signal
+        # handler closes them for custom downloaders that don't subclass the
+        # default one.
         crawler.signals.connect(self._close, signals.engine_stopped)
 
     def _get_handler(self, handler_id: str) -> DownloadHandlerProtocol | None:
@@ -190,17 +205,53 @@ class DownloadHandlers:
                     f"Unusable download handler {handler_id!r}: "
                     f"{self._notconfigured[handler_id]}"
                 )
+        if not request.meta.get("body_file"):
+            return await self._download(handler_id, handler, request)
+        return await self._download_to_file(handler_id, handler, request)
+
+    async def _download(
+        self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
+    ) -> Response:
         assert self._crawler.spider
-        if handler_id in self._old_style_handlers:  # pragma: no cover
-            return await maybe_deferred_to_future(
-                cast(
-                    "Deferred[Response]",
-                    handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+        with _in_download_handler_scope():
+            if handler_id in self._old_style_handlers:  # pragma: no cover
+                return await maybe_deferred_to_future(
+                    cast(
+                        "Deferred[Response]",
+                        handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+                    )
                 )
-            )
-        return await handler.download_request(request)
+            return await handler.download_request(request)
+
+    async def _download_to_file(
+        self, handler_id: str, handler: DownloadHandlerProtocol, request: Request
+    ) -> Response:
+        temporary = request.meta["body_file"] is True
+        if temporary:
+            fd, request.meta["body_file"] = mkstemp()
+            os.close(fd)
+        try:
+            response = await self._download(handler_id, handler, request)
+            if not isinstance(response, BodyFileResponse):
+                raise NotSupported(
+                    f"{global_object_name(type(handler))} does not support the "
+                    f"body_file request meta key."
+                )
+        except StopDownload:
+            # Its response, which points to the body file, reaches errbacks.
+            raise
+        except BaseException:
+            if temporary:
+                Path(request.meta["body_file"]).unlink()  # noqa: ASYNC240
+                # Retries of the request get a new temporary file.
+                request.meta["body_file"] = True
+            raise
+        return response
 
     async def _close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         for dh in self._handlers.values():
             if not hasattr(dh, "close"):  # pragma: no cover
                 warnings.warn(

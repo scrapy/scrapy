@@ -185,7 +185,6 @@ class TestHttpErrorMiddlewareValues:
         [
             (True, True),
             (False, False),
-            (None, False),
             (402, True),
             ("402", True),
             ("402,404", True),
@@ -203,6 +202,7 @@ class TestHttpErrorMiddlewareValues:
             (frozenset({402}), True),
             ([], False),
             ([404], False),
+            (range(400, 500), True),
             (SequenceExclude(range(300, 400)), True),
         ],
     )
@@ -236,9 +236,10 @@ class TestHttpErrorMiddlewareValues:
             with pytest.raises(HttpError):
                 mw.process_spider_input(_response(request, 402))
 
-    def test_unsupported_value(self) -> None:
+    @pytest.mark.parametrize("value", [None, object()])
+    def test_unsupported_value(self, value: Any) -> None:
         with pytest.raises(ValueError, match="Unsupported HANDLE_HTTP_CODES value"):
-            _mw({"HANDLE_HTTP_CODES": object()})
+            _mw({"HANDLE_HTTP_CODES": value})
 
 
 class TestHttpErrorMiddlewareDeprecated:
@@ -359,6 +360,43 @@ class TestHttpErrorMiddlewareDeprecated:
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             mw.process_spider_input(_response(request, 404))
+
+    @pytest.mark.parametrize(
+        ("setting", "handle_all", "handle_list"),
+        [(True, True, []), ([402], False, frozenset({402})), (False, False, [])],
+    )
+    def test_attributes_get(
+        self, setting: Any, handle_all: bool, handle_list: Any
+    ) -> None:
+        mw = _mw({"HANDLE_HTTP_CODES": setting})
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_all"):
+            assert mw.handle_httpstatus_all is handle_all
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_list"):
+            assert mw.handle_httpstatus_list == handle_list
+
+    def test_attributes_set(self) -> None:
+        mw = _mw()
+        res402 = _response(Request("http://example.com"), 402)
+        res404 = _response(Request("http://example.com"), 404)
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_list"):
+            mw.handle_httpstatus_list = [402]
+        mw.process_spider_input(res402)
+        with pytest.raises(HttpError):
+            mw.process_spider_input(res404)
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_all"):
+            mw.handle_httpstatus_all = True
+        mw.process_spider_input(res404)
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_list"):
+            mw.handle_httpstatus_list = [404]
+        mw.process_spider_input(res402)
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_all"):
+            mw.handle_httpstatus_all = False
+        with pytest.raises(HttpError):
+            mw.process_spider_input(res402)
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_all"):
+            mw.handle_httpstatus_all = False
+        with pytest.raises(HttpError):
+            mw.process_spider_input(res402)
 
 
 class TestHttpErrorMiddlewareIntegrational:

@@ -135,11 +135,8 @@ class StatusHandling:
 
     @staticmethod
     def _from_settings(settings: BaseSettings, legacy: bool) -> HandledCodes:
-        value = settings.get(SETTING)
-        if value is not None:
-            return normalize(value)
-        if not legacy:
-            return False
+        if not legacy or (settings.getpriority(SETTING) or 0) > 0:
+            return normalize(settings.get(SETTING))
         for name in (_LEGACY_SETTING_ALL, _LEGACY_SETTING_LIST):
             if (settings.getpriority(name) or 0) > 0:
                 warnings.warn(
