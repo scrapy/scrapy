@@ -122,6 +122,32 @@ Disallow: /some/randome/page.html
         await asyncio.gather(c1, c2)
 
     @coroutine_test
+    async def test_robotstxt_concurrent_requests_same_host(self) -> None:
+        # Regression test for https://github.com/scrapy/scrapy/issues/8297:
+        # when several requests to the same host are processed concurrently
+        # while the first robots.txt fetch is still in flight, every waiter
+        # must receive the parsed rules. Previously only the first waiter got
+        # the parser and the rest observed None, so they silently failed open.
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        # One request triggers the robots.txt download (waiter #1); the other
+        # two race it as waiters on the same shared Deferred.
+        c_allowed = middleware.process_request(Request("http://site.local/allowed"))
+        c_disallowed1 = middleware.process_request(
+            Request("http://site.local/admin/main")
+        )
+        c_disallowed2 = middleware.process_request(
+            Request("http://site.local/admin/other")
+        )
+        results = await asyncio.gather(
+            c_allowed, c_disallowed1, c_disallowed2, return_exceptions=True
+        )
+        assert results[0] is None  # allowed path is not blocked
+        assert isinstance(results[1], IgnoreRequest)  # disallowed path is blocked
+        assert isinstance(results[2], IgnoreRequest)  # disallowed path is blocked
+
+    @coroutine_test
     async def test_robotstxt_ready_parser(self):
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()

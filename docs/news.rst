@@ -293,6 +293,12 @@ Improvements
 Bug fixes
 ~~~~~~~~~
 
+-   :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` now
+    applies robots.txt rules to every concurrent request to a host, instead of
+    silently allowing the second and later requests when they race the first
+    robots.txt fetch (which previously failed open for those requests).
+    (:gh:`8297`)
+
 -   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
     now sets :attr:`~scrapy.http.Response.certificate` and
     :attr:`~scrapy.http.Response.ip_address` attributes even for responses

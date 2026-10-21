@@ -205,7 +205,19 @@ class RobotsTxtMiddleware:
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
-            return await maybe_deferred_to_future(parser)
+            await maybe_deferred_to_future(parser)
+            # Re-read the resolved value instead of trusting the awaited
+            # result: when several requests to the same host race the first
+            # robots.txt fetch, each waiter awaits a separate
+            # ``Deferred.asFuture()`` future. Twisted's ``maybeSucceed`` callback
+            # implicitly returns ``None`` after setting its own future, so the
+            # Deferred's chained result becomes ``None`` for the second and later
+            # waiters -- they would observe ``None`` and silently fail open.
+            # ``self._parsers[netloc]`` is always updated to the parsed parser
+            # (or ``None`` on error) by ``_parse_robots`` / ``_robots_error``
+            # before the Deferred fires, so it is the reliable source of truth
+            # for every waiter.
+            parser = self._parsers[netloc]
         return parser
 
     async def _parse_robots(
