@@ -641,29 +641,12 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed by the Scrapy downloader. Use ``0`` for no limit.
+Maximum number of total concurrent requests allowed, ``0`` for no limit.
 
 High values may exceed the limit that your operating system sets on the number
 of open file descriptors per process, causing errors. Some systems allow that
 limit to be raised or removed, e.g. with the `ulimit`_ shell built-in or, for
 services, with systemd’s `LimitNOFILE`_; otherwise, lower this setting.
-
-.. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
-
-CONCURRENT_REQUESTS_PER_DOMAIN
-------------------------------
-
-Default: ``1`` (:ref:`fallback <default-settings>`: ``8``)
-
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed to any single domain.
-
-See also: :ref:`topics-autothrottle` and its
-:setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` option.
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
 
 .. setting:: CONNECTION_KEEPALIVE_TIMEOUT
 
@@ -1044,61 +1027,6 @@ Default: ``True``
 
 Whether to enable downloader stats collection.
 
-.. setting:: DOWNLOAD_DELAY
-
-DOWNLOAD_DELAY
---------------
-
-Default: ``1`` (:ref:`fallback <default-settings>`: ``0``)
-
-Minimum seconds to wait between 2 consecutive requests to the same domain.
-
-Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
-servers too hard.
-
-Decimal numbers are supported. For example, to send a maximum of 4 requests
-every 10 seconds:
-
-.. code-block:: python
-
-    DOWNLOAD_DELAY = 2.5
-
-This setting is also affected by the :setting:`DOWNLOAD_DELAY_JITTER` setting,
-which randomizes delays by ±50% by default.
-
-Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
-concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
-time of a domain is lower than :setting:`DOWNLOAD_DELAY`, the effective
-concurrency for that domain is 1. When testing throttling configurations, it
-usually makes sense to lower :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` first,
-and only increase :setting:`DOWNLOAD_DELAY` once
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is 1 but a higher throttling is
-desired.
-
-.. _spider-download_delay-attribute:
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
-.. setting:: DOWNLOAD_DELAY_JITTER
-
-DOWNLOAD_DELAY_JITTER
----------------------
-
-.. versionadded:: 2.19.0
-
-Default: ``0.5``
-
-Magnitude of the random variation applied to :setting:`DOWNLOAD_DELAY`, e.g.
-``0.2`` spreads delays between 80% and 120% of :setting:`DOWNLOAD_DELAY`. ``0``
-disables randomization.
-
-Randomizing delays makes the time between requests less uniform, resulting in a
-more natural crawling pattern.
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
 .. setting:: DOWNLOAD_BIND_ADDRESS
 
 DOWNLOAD_BIND_ADDRESS
@@ -1217,46 +1145,6 @@ Default: ``{}``
 
 A dict mapping names to :ref:`download handlers <topics-download-handlers>`
 that requests can ask for by name. See :ref:`download-handler-ids`.
-
-
-.. reqmeta:: download_slot
-.. setting:: DOWNLOAD_SLOTS
-
-DOWNLOAD_SLOTS
---------------
-
-Default: ``{}``
-
-Allows to define concurrency/delay parameters on per slot (domain) basis:
-
-    .. code-block:: python
-
-        DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "jitter": 0},
-            "books.toscrape.com": {"delay": 3, "jitter": 0.2},
-        }
-
-.. note::
-
-    For other downloader slots default settings values will be used:
-
-    -   :setting:`DOWNLOAD_DELAY`: ``delay``
-    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`DOWNLOAD_DELAY_JITTER`: ``jitter``
-
-Requests are assigned to a slot based on their URL domain. To assign a request
-to a specific slot instead, set the name of the slot as the ``download_slot``
-:attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
-slot, that key holds the name of the slot.
-
-Redirects and retries are assigned to a slot based on their own URL domain,
-unless the slot of their original request was set through the ``download_slot``
-key, in which case they keep that slot.
-
-.. versionchanged:: VERSION
-   In earlier versions, redirects and retries always kept the slot of their
-   original request, even when they pointed to a different domain.
-
 
 .. setting:: DOWNLOAD_TIMEOUT
 

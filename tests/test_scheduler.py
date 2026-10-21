@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import TYPE_CHECKING, Any, Self
@@ -9,11 +8,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
 from scrapy.crawler import Crawler
 from scrapy.dupefilters import BaseDupeFilter
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.pqueues import ScrapyPriorityQueue
 from scrapy.spiders import Spider
@@ -38,9 +35,13 @@ class MockCrawler(Crawler):
             "SCHEDULER_PRIORITY_QUEUE": priority_queue_cls,
             "JOBDIR": str(jobdir) if jobdir is not None else None,
             "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+            "THROTTLING_SCOPE_CONCURRENCY": 1,
             **settings,
         }
         super().__init__(Spider, settings)
+        self.throttler = build_from_crawler(
+            load_object(self.settings["THROTTLER"]), self
+        )
         self.engine = Mock(downloader=MockDownloader())
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
@@ -300,7 +301,7 @@ class DownloaderAwareSchedulerTestMixin(TestSchedulerBase):
         def _setup(scheduler: Scheduler) -> None:
             for url, slot in _URLS_WITH_SLOTS:
                 request = Request(url)
-                request.meta[Downloader.DOWNLOAD_SLOT] = slot
+                request.meta["throttling_scopes"] = slot
                 scheduler.enqueue_request(request)
 
         def _assert(scheduler: Scheduler) -> None:
@@ -312,13 +313,13 @@ class DownloaderAwareSchedulerTestMixin(TestSchedulerBase):
             while scheduler.has_pending_requests():
                 request = scheduler.next_request()
                 assert request is not None
-                slot = downloader.get_slot_key(request)
+                slot = request.meta["throttling_scopes"]
                 dequeued_slots.append(slot)
                 downloader.increment(slot)
                 requests.append(request)
 
             for request in requests:
-                slot = downloader.get_slot_key(request)
+                slot = request.meta["throttling_scopes"]
                 downloader.decrement(slot)
 
             assert _is_scheduling_fair([s for u, s in _URLS_WITH_SLOTS], dequeued_slots)
@@ -353,7 +354,7 @@ class TestSchedulerWithDownloaderAwareOnDisk(
 
             def enqueue(slot: str, priority: int) -> None:
                 request = Request(f"http://foo.com/{slot}{priority}", priority=priority)
-                request.meta[Downloader.DOWNLOAD_SLOT] = slot
+                request.meta["throttling_scopes"] = slot
                 scheduler.enqueue_request(request)
 
             enqueue("a", 1)
@@ -394,30 +395,6 @@ class TestIntegrationWithDownloaderAwareInMemory:
             assert self.crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )
-
-
-class TestIncompatibility:
-    def _incompatible(self) -> None:
-        settings = {
-            "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.DownloaderAwarePriorityQueue",
-            "CONCURRENT_REQUESTS_PER_IP": 1,
-        }
-        crawler = get_crawler(Spider, settings)
-        scheduler = build_from_crawler(Scheduler, crawler)
-        spider = Spider.from_crawler(crawler, name="spider")
-        scheduler.open(spider)
-
-    def test_incompatibility(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                category=ScrapyDeprecationWarning,
-                message="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
-            )
-            with pytest.raises(
-                ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
-            ):
-                self._incompatible()
 
 
 class _PriorityQueueWithoutNextPriority:

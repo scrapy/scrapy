@@ -469,7 +469,7 @@ finishes before starting the next one:
 
 Every other setting applies to each crawler separately. This includes
 concurrency and politeness settings, such as :setting:`CONCURRENT_REQUESTS`,
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`, and
+:setting:`THROTTLING_SCOPE_CONCURRENCY` and :setting:`DOWNLOAD_DELAY`, and
 :ref:`AutoThrottle <topics-autothrottle>` also throttles each crawler
 separately. When crawling simultaneously, divide those values by the number of
 crawlers to keep the combined load on your hardware and on target websites
@@ -540,7 +540,8 @@ Identifying crawl bottlenecks
 =============================
 
 The :stat:`request_backout_seconds/concurrency`,
-:stat:`request_backout_seconds/response_max_active_size` and
+:stat:`request_backout_seconds/response_max_active_size`,
+:stat:`request_backout_seconds/throttling` and
 :stat:`request_backout_seconds/total` stats show how long request scheduling
 was paused during a crawl, and why.
 

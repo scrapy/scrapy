@@ -54,6 +54,7 @@ if TYPE_CHECKING:
 
     from scrapy.logformatter import LogFormatter
     from scrapy.statscollectors import StatsCollector
+    from scrapy.throttler import ThrottlerProtocol
     from scrapy.utils.request import RequestFingerprinterProtocol
 
 
@@ -135,6 +136,13 @@ class Crawler:
         _LateAttribute()
     )
     stats: _LateAttribute[StatsCollector] = _LateAttribute()
+    throttler: _LateAttribute[ThrottlerProtocol] = _LateAttribute()
+    """The throttler of this crawler, an instance of :setting:`THROTTLER`.
+
+    Components can use it to inspect or drive :ref:`throttling <throttling>` at
+    run time, e.g. through
+    :meth:`~scrapy.throttler.ThrottlerProtocol.get_scope_manager`.
+    """
 
     def __init__(
         self,
@@ -170,6 +178,7 @@ class Crawler:
         self._logformatter: LogFormatter | None = None
         self._request_fingerprinter: RequestFingerprinterProtocol | None = None
         self._stats: StatsCollector | None = None
+        self._throttler: ThrottlerProtocol | None = None
 
     def _set_force_stop_callback(
         self,
@@ -191,7 +200,7 @@ class Crawler:
         log_scrapy_info(self.settings)
         self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
         self._apply_deprecated_spider_attr(
-            "max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"
+            "max_concurrent_requests", "THROTTLING_SCOPE_CONCURRENCY"
         )
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
@@ -200,6 +209,10 @@ class Crawler:
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+            self,
+        )
+        self.throttler = build_from_crawler(
+            load_object(self.settings["THROTTLER"]),
             self,
         )
 
@@ -266,7 +279,7 @@ class Crawler:
             return
         warnings.warn(
             f"The {attr!r} spider attribute is deprecated. Use the {setting} "
-            f"setting instead.",
+            f"setting or THROTTLING_SCOPES instead.",
             category=ScrapyDeprecationWarning,
             stacklevel=3,
         )

@@ -20,7 +20,6 @@ from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import signals
-from scrapy.core.downloader import _start_delay_countdown
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import (
@@ -32,6 +31,7 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Request, Response
 from scrapy.http.request import _active_crawler_scope
+from scrapy.throttler import _start_delay_countdown, _wait_for_throttler
 from scrapy.utils._stopmode import _max_stop_mode, _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -230,6 +230,9 @@ class ExecutionEngine:
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
         ) = None
+        # Requests currently held by the throttler, waiting for their
+        # scopes to allow them through to the downloader, and their waits.
+        self._throttler_waiting: dict[Request, Deferred[None]] = {}
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -519,7 +522,29 @@ class ExecutionEngine:
             or not self._slot
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
+            or self._throttler_needs_backout()
         )
+
+    def _throttler_needs_backout(self) -> bool:
+        """Apply backpressure while requests are held by the throttler.
+
+        Requests waiting on throttling do not occupy a downloader concurrency
+        slot, so without this check the engine would keep draining the
+        scheduler into pending throttling waits. Count them together with the
+        in-flight requests against the global concurrency limit.
+        """
+        if not self._throttler_waiting:
+            return False
+        total_concurrency = self.downloader.total_concurrency
+        if not total_concurrency:  # no global limit to count them against
+            return False
+        if (
+            len(self._throttler_waiting) + len(self.downloader.active)
+            < total_concurrency
+        ):
+            return False
+        self.downloader._record_backout("throttling")
+        return True
 
     def _remove_request(self, _: Any, request: Request) -> None:
         assert self._slot
@@ -687,7 +712,9 @@ class ExecutionEngine:
             self._slot.add_request(request)
             try:
                 response_or_request = await maybe_deferred_to_future(
-                    self._download(request)
+                    # This is the only way to download a request without going
+                    # through the scheduler.
+                    self._download(request, unscheduled=True)
                 )
             finally:
                 self._slot.remove_request(request)
@@ -695,17 +722,46 @@ class ExecutionEngine:
                 return response_or_request
             request = response_or_request
 
+    def _acquire_throttler(self, request: Request, unscheduled: bool) -> Deferred[None]:
+        """Wait for the throttler to allow *request* to be sent, tracking it as
+        held meanwhile.
+        """
+        throttler = self.crawler.throttler
+
+        def released(result: Any) -> Any:
+            self._throttler_waiting.pop(request, None)
+            # While an unscheduled request waits, it claims a free slot of every
+            # one of its scopes, holding back every request that shares them
+            # (see Throttler._unscheduled_claims). Once it stops waiting it
+            # takes one slot per scope, which can leave others free for those
+            # requests, and nothing else would re-run the loop until this
+            # request is done downloading.
+            if unscheduled and self._slot is not None:
+                self._slot.nextcall.schedule()
+            return result
+
+        d = _wait_for_throttler(throttler, request, unscheduled=unscheduled)
+        self._throttler_waiting[request] = d
+        d.addBoth(released)
+        return d
+
     @inlineCallbacks
     def _download(
-        self, request: Request
+        self, request: Request, unscheduled: bool = False
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
         assert self.spider is not None
 
+        throttler = self.crawler.throttler
         # Lets Request.__await__() find this crawler while the downloader
         # middlewares run.
         with _active_crawler_scope(self.crawler):
             try:
+                acquired = self._acquire_throttler(request, unscheduled)
+                # A request let through right away needs no trip through
+                # inlineCallbacks.
+                if not acquired.called or isinstance(acquired.result, Failure):
+                    yield acquired
                 result: Response | Request
                 if self._downloader_fetch_needs_spider:
                     result = yield self.downloader.fetch(request, self.spider)
@@ -734,6 +790,7 @@ class ExecutionEngine:
                     )
                 return result
             finally:
+                throttler.release(request)
                 self._slot.nextcall.schedule()
 
     def open_spider(
@@ -872,6 +929,11 @@ class ExecutionEngine:
             return
 
         self._downloader_fast_stopped = True
+        # Requests held by the throttler have not reached the downloader yet,
+        # so it is up to the engine to drop them.
+        throttled = list(self._throttler_waiting.values())
+        for d in throttled:
+            d.cancel()
         if not hasattr(self.downloader, "stop"):
             logger.warning(
                 f"{type(self.downloader).__qualname__} does not implement "
@@ -880,7 +942,7 @@ class ExecutionEngine:
                 extra={"spider": self.spider},
             )
             return
-        dropped_count = await self.downloader.stop()
+        dropped_count = len(throttled) + await self.downloader.stop()
 
         assert self.crawler.stats
         if dropped_count:

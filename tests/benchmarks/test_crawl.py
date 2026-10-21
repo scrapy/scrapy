@@ -304,7 +304,7 @@ def test_overhead_broad(benchmark: BenchmarkFixture, domains: int, pages: int) -
 
 def test_overhead_concurrency(benchmark: BenchmarkFixture) -> None:
     """Overhead of a crawl limited to 1 request at a time on a single hostname."""
-    settings = {"CONCURRENT_REQUESTS_PER_DOMAIN": 1}
+    settings = {"THROTTLING_SCOPE_CONCURRENCY": 1}
     benchmark(lambda: _crawl_tree(settings, domains=1, pages=REQUESTS))
 
 
