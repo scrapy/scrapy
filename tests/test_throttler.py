@@ -1075,10 +1075,10 @@ class TestThrottlerEdges:
         request = Request("http://example.com/a", meta={"delay": delay})
 
         async def held() -> float:
-            start = monotonic()
+            start = time()
             await maybe_deferred_to_future(_wait_for_throttler(manager, request))
             manager.release(request)
-            return monotonic() - start
+            return time() - start
 
         delayed = await held()
         assert "delay" not in request.meta
@@ -1100,9 +1100,9 @@ class TestThrottlerEdges:
             "http://example.com/a",
             meta={"_delay_deadline": (delay, time() + 10 * delay)},
         )
-        start = monotonic()
+        start = time()
         await maybe_deferred_to_future(_wait_for_throttler(manager, request))
-        assert delay <= monotonic() - start < 2 * delay
+        assert delay <= time() - start < 2 * delay
 
     @coroutine_test
     async def test_wait_discards_the_events_that_did_not_wake_it(self):
