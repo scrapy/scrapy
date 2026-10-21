@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
+from logging import getLogger
+from time import perf_counter
 from typing import TYPE_CHECKING, Any
 
 from formerly import deprecated_class
@@ -34,6 +36,8 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
     from scrapy.throttler import ThrottlerProtocol
+
+logger = getLogger(__name__)
 
 
 @dataclass(slots=True, eq=False)
@@ -196,6 +200,11 @@ class Downloader:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
+        self._stats = crawler.stats
+        # (reason, start_time): current backout reason and when it began, or
+        # (None, None) if not backing out.
+        self._last_backout: tuple[str | None, float | None] = (None, None)
+        self._max_active_size_warned = False
 
     @property
     def per_slot_settings(self) -> dict[str, dict[str, Any]]:
@@ -224,6 +233,7 @@ class Downloader:
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
         self._downloader_middlewares_entry.fire()
+        self.middleware._count_rough_size(request)
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -233,10 +243,50 @@ class Downloader:
             return result
         finally:
             self.active.remove(request)
+            self.middleware._discount_rough_size(request)
+
+    def _record_backout(self, reason: str | None) -> None:
+        last_reason, last_reason_start_time = self._last_backout
+        if last_reason == reason:
+            return
+        current_time = perf_counter()
+        if last_reason is not None and self._stats is not None:
+            assert last_reason_start_time is not None
+            last_reason_seconds = current_time - last_reason_start_time
+            self._stats.inc_value("request_backout_seconds/total", last_reason_seconds)
+            self._stats.inc_value(
+                f"request_backout_seconds/{last_reason}", last_reason_seconds
+            )
+        self._last_backout = (reason, current_time)
 
     def needs_backout(self) -> bool:
         # A total concurrency of 0 means no limit.
-        return 0 < self.total_concurrency <= len(self.active)
+        if 0 < self.total_concurrency <= len(self.active):
+            self._record_backout("concurrency")
+            return True
+        if self._exceeds_max_active_size():
+            self._record_backout("response_max_active_size")
+            if not self._max_active_size_warned:
+                self._max_active_size_warned = True
+                logger.info(
+                    f"Pausing request processing: the active response size "
+                    f"({self.middleware._total_active_size} B) has reached "
+                    f"RESPONSE_MAX_ACTIVE_SIZE "
+                    f"({self.middleware._max_active_size} B). See "
+                    f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+                    f"and the request_backout_seconds/response_max_active_size "
+                    f"stat. This message is only logged once."
+                )
+            return True
+        self._record_backout(None)
+        return False
+
+    def _exceeds_max_active_size(self) -> bool:
+        max_active_size = self.middleware._max_active_size
+        return (
+            bool(max_active_size)
+            and self.middleware._total_active_size >= max_active_size
+        )
 
     def _in_downloader_middlewares(self, request: Request) -> bool:
         """Return whether the downloader middlewares are processing *request*,
@@ -489,6 +539,7 @@ class Downloader:
         self._closed = True
         self._download_handler_exit.fire()
         self._downloader_middlewares_entry.fire()
+        self._record_backout(None)
 
     async def _close_async(self) -> None:
         """Close the downloader and its download handlers."""
