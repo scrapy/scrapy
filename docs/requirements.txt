@@ -21,7 +21,7 @@ babel==2.18.0
     # via sphinx
 brotli==1.2.0
     # via scrapy
-certifi==2026.7.22
+certifi==2026.10.19
     # via requests
 cffi==2.1.1
     # via cryptography

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-from unittest import TextTestResult
+from unittest import TestCase, TextTestResult, TextTestRunner
 
 import pytest
 from twisted.python import failure
@@ -865,11 +865,20 @@ class PostProcessErrorContract(Contract):
         raise ValueError("post-process error")
 
 
+class _TrackingTestResult(TextTestResult):
+    def __init__(self) -> None:
+        runner = TextTestRunner(descriptions=False, verbosity=0)
+        super().__init__(runner.stream, runner.descriptions, runner.verbosity)
+        self.stopped_tests: list[TestCase] = []
+
+    def stopTest(self, test: TestCase) -> None:
+        self.stopped_tests.append(test)
+        super().stopTest(test)
+
+
 class TestCustomContractPrePostProcess:
     def setup_method(self):
-        self.results = TextTestResult(  # type: ignore[type-var]
-            stream=None, descriptions=False, verbosity=0
-        )
+        self.results = _TrackingTestResult()
 
     def test_pre_hook_keyboard_interrupt(self):
         spider = DemoSpider()
@@ -884,6 +893,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     def test_post_hook_keyboard_interrupt(self):
         spider = DemoSpider()
@@ -898,6 +908,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_post) == 1
 
     def test_pre_hook_success(self):
         spider = DemoSpider()
@@ -911,6 +922,7 @@ class TestCustomContractPrePostProcess:
 
         assert not self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     def test_pre_hook_assertion_failure(self):
         spider = DemoSpider()
@@ -924,6 +936,7 @@ class TestCustomContractPrePostProcess:
 
         assert self.results.failures
         assert not self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     def test_pre_hook_error(self):
         spider = DemoSpider()
@@ -936,6 +949,7 @@ class TestCustomContractPrePostProcess:
         _call(request, response)
 
         assert self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_pre) == 1
 
     @coroutine_test
     async def test_pre_hook_async_callback(self):
@@ -990,6 +1004,7 @@ class TestCustomContractPrePostProcess:
         _call(request, response)
 
         assert self.results.errors
+        assert self.results.stopped_tests.count(contract.testcase_post) == 1
 
 
 class LegacyHookContract(Contract):
