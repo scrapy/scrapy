@@ -402,8 +402,6 @@ Other limitations:
 -   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
     to ``scrapy.resolver.CachingHostnameResolver``.
 
--   HTTPS proxies to HTTPS destinations are not supported.
-
 -   A ``Content-Length`` request header is sent in addition to the one built
     from the request body, and most servers reject requests with two.
 

@@ -87,7 +87,7 @@ class ImagesPipeline(FilesPipeline):
         self.store.checksum_algorithm = _checksum_algorithm(
             settings, resolve("IMAGES_CHECKSUM_ALGORITHM")
         )
-        self.expires: int = settings.getint(resolve("IMAGES_EXPIRES"), self.EXPIRES)
+        self.expires: float = settings.getfloat(resolve("IMAGES_EXPIRES"), self.EXPIRES)
 
         if not hasattr(self, "IMAGES_RESULT_FIELD"):
             self.IMAGES_RESULT_FIELD: str = self.DEFAULT_IMAGES_RESULT_FIELD

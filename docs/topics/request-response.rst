@@ -146,6 +146,8 @@ Request objects
 
     .. autoattribute:: Request.attributes
 
+    .. automethod:: __await__
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -808,6 +810,8 @@ Those are:
 * :reqmeta:`body_file`
 * :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
+* :reqmeta:`delay`
+* :reqmeta:`delayed`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`
 * :reqmeta:`dont_merge_cookies`
@@ -836,6 +840,7 @@ Those are:
 * :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
 * :reqmeta:`proxy_headers`
+* :reqmeta:`redirect_http_codes`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_times`
 * :reqmeta:`redirect_ttl`
@@ -922,6 +927,44 @@ these requests.
 Download handlers that do not support this key, such as :ref:`some built-in
 ones <download-handlers-ref>`, make the request fail with
 :exc:`~scrapy.exceptions.NotSupported`.
+
+.. reqmeta:: delay
+
+delay
+-----
+
+.. versionadded:: VERSION
+
+Number of seconds to hold a request before sending it:
+
+.. code-block:: python
+
+    Request("https://example.com/slow", meta={"delay": 5.0})
+
+The delay is a minimum: once it elapses, the request competes with the other
+pending requests as usual, subject to e.g. its
+:attr:`~scrapy.Request.priority`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+:setting:`DOWNLOAD_DELAY`.
+
+Scrapy removes this key as soon as the countdown starts, so that a copy of the
+request, e.g. a retry or a redirect, is not held again, and so that setting the
+key again asks for a new delay. See also :reqmeta:`delayed`.
+
+.. reqmeta:: delayed
+
+delayed
+-------
+
+.. versionadded:: VERSION
+
+Delays, in seconds, that a request has been held for because of
+:reqmeta:`delay`. Read-only.
+
+.. code-block:: python
+
+    def parse(self, response):
+        delays = response.meta.get("delayed", [])
+        self.logger.info(f"Held {len(delays)} times, {sum(delays)}s in total")
 
 .. reqmeta:: download_handler
 
