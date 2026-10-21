@@ -614,9 +614,9 @@ class TestTunnelingErrors:
                     await dh.download_request(request)
 
     @coroutine_test
-    async def test_proxy_connection_refused(self) -> None:
+    async def test_proxy_connection_refused(self, refused_port: int) -> None:
         request = Request(
-            "https://example.com", meta={"proxy": "http://127.0.0.1:65432"}
+            "https://example.com", meta={"proxy": f"http://127.0.0.1:{refused_port}"}
         )
         async with _get_dh() as dh:
             with pytest.raises(DownloadConnectionRefusedError):

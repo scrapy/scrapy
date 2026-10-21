@@ -200,12 +200,15 @@ class TestCrawl:
 
     @coroutine_test
     async def test_retry_conn_failed(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        refused_port: int,
     ) -> None:
         crawler = get_crawler(SimpleSpider)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                "http://localhost:65432/status?n=503", mockserver=mockserver
+                f"http://127.0.0.1:{refused_port}/status?n=503", mockserver=mockserver
             )
         self._assert_retried(caplog.text)
 
