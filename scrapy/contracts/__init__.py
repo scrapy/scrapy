@@ -56,13 +56,14 @@ def _run_hook(
     try:
         results.startTest(testcase)
         process(value)
-        results.stopTest(testcase)
     except AssertionError:
         results.addFailure(testcase, sys.exc_info())
     except Exception:
         results.addError(testcase, sys.exc_info())
     else:
         results.addSuccess(testcase)
+    finally:
+        results.stopTest(testcase)
 
 
 class Contract:
