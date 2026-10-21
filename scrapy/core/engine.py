@@ -626,8 +626,6 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self._throttler_waiting:  # requests held by the throttler
-            return False
         if self._start is not None:  # not all start requests are handled
             return False
         return not self._slot.scheduler.has_pending_requests()

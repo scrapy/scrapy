@@ -844,6 +844,18 @@ class TestUnscheduledRequests:
         await self._acquire(manager, scheduled)
         assert scheduled in manager._reserved
 
+    def test_release_forgets_a_yielded_request(self) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        waiting = Request("http://example.com/1")
+        manager._resolve_scopes(waiting)
+        manager._unscheduled_waiters["example.com"] = WeakSet([waiting])
+        scheduled = Request("http://example.com/2")
+        assert manager.acquire(scheduled, retry=lambda: None) == 0.0
+        # A request released before its next attempt, e.g. on a fast stop,
+        # must not be kept alive by its yield.
+        manager.release(scheduled)
+        assert not manager._yielded
+
     @coroutine_test
     async def test_a_waiter_under_its_own_delay_has_no_claim(self) -> None:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})

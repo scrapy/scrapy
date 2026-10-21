@@ -721,21 +721,27 @@ async def test_user_download_slot_survives_a_cross_host_redirect():
     assert set(throttler._scope_managers) == {"custom"}
 
 
+@pytest.mark.parametrize(
+    ("slot_config", "jitter"),
+    [
+        ({"delay": 2, "randomize_delay": False}, 0.0),
+        ({"delay": 2, "jitter": 0.2}, 0.2),
+    ],
+)
 @coroutine_test
-async def test_delay_deprecated():
-    settings = {
-        "DOWNLOAD_SLOTS": {"example.com": {"delay": 2, "randomize_delay": False}}
-    }
+async def test_delay_deprecated(slot_config: dict[str, Any], jitter: float) -> None:
+    settings = {"DOWNLOAD_SLOTS": {"example.com": slot_config}}
     crawler = get_crawler(DefaultSpider, settings_dict=settings)
     crawler.spider = crawler._create_spider()
     with pytest.warns(ScrapyDeprecationWarning) as warns:
         downloader = Downloader(crawler)
     messages = [str(w.message) for w in warns]
     assert any("DOWNLOAD_SLOTS setting is deprecated" in m for m in messages)
-    # The deprecated per-slot delay/randomize_delay are translated into a
+    # The deprecated per-slot delay/randomize_delay/jitter are translated into a
     # throttling scope.
     scope = crawler.throttler.get_scope_manager("example.com")
     assert scope.get_base_delay() == 2.0
+    assert scope._jitter == jitter
     downloader.close()
 
 
