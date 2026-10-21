@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Any, TypeAlias
@@ -363,6 +365,25 @@ class TestWebSocketDownloadHandler:
             connection = copy._connection
             del copy
             await asyncio.wait_for(connection.wait_closed(), 5)
+
+    def test_dropped_response_after_its_loop_is_closed(
+        self, ws_server: WebSocketMockServer, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        async def download() -> WebSocketResponse:
+            async with _dh() as download_handler:
+                response = await download_handler.download_request(
+                    Request(ws_server.url("/echo"))
+                )
+            assert isinstance(response, WebSocketResponse)
+            return response
+
+        # The reactor loop is already running in this thread.
+        with ThreadPoolExecutor(1) as executor:
+            response = executor.submit(asyncio.run, download()).result()
+        errors: list[Any] = []
+        monkeypatch.setattr(sys, "unraisablehook", errors.append)
+        del response
+        assert not errors
 
     @coroutine_test
     async def test_abandoned_connection_does_not_block_the_shutdown(
