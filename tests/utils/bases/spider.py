@@ -35,12 +35,10 @@ class TestSpiderBase(ABC):
         assert spider.foo == "bar"  # type: ignore[attr-defined]
 
     def test_spider_without_name(self):
-        """``__init__`` raises when the name is not provided."""
-        msg = "must have a name"
-        with pytest.raises(ValueError, match=msg):
-            self.spider_class()
-        with pytest.raises(ValueError, match=msg):
-            self.spider_class(somearg="foo")
+        """Spiders with no name get their class name as name."""
+        assert not hasattr(self.spider_class, "name")
+        spider = self.spider_class()
+        assert spider.name == self.spider_class.__name__
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()
