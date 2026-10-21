@@ -27,6 +27,7 @@ from scrapy.utils.engine import (
 )
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.utils import _free_port
 from tests.spiders import (
     AsyncAwaitRequestInItemPipelineSpider,
     AsyncDefAsyncioGenComplexSpider,
@@ -205,7 +206,7 @@ class TestCrawl:
         crawler = get_crawler(SimpleSpider)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                "http://localhost:65432/status?n=503", mockserver=mockserver
+                f"http://127.0.0.1:{_free_port()}/status?n=503", mockserver=mockserver
             )
         self._assert_retried(caplog.text)
 
