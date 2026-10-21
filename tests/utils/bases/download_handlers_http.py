@@ -55,6 +55,7 @@ from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.proxy_stalling import StallingProxy
 from tests.mockserver.raw_http import RawHttpServer
 from tests.mockserver.simple_https import SimpleMockServer
+from tests.mockserver.utils import _free_port
 from tests.spiders import (
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
@@ -1190,10 +1191,10 @@ class TestHttpBase(ABC):
         assert response.body == b"Works"
 
     @coroutine_test
-    async def test_download_conn_failed(self, refused_port: int) -> None:
+    async def test_download_conn_failed(self) -> None:
         # copy of TestCrawl.test_retry_conn_failed()
         scheme = "https" if self.is_secure else "http"
-        request = Request(f"{scheme}://127.0.0.1:{refused_port}/")
+        request = Request(f"{scheme}://127.0.0.1:{_free_port()}/")
         async with self.get_dh() as download_handler:
             with pytest.raises(DownloadConnectionRefusedError):
                 await download_handler.download_request(request)

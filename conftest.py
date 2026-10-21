@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import socket
 from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -155,18 +154,6 @@ def mockserver_ipv6() -> Generator[MockServer]:
     # an IPv4 one.
     with MockServer("::") as mockserver:
         yield mockserver
-
-
-@pytest.fixture
-def refused_port() -> Generator[int]:
-    """A port on 127.0.0.1 that refuses connections.
-
-    Its socket is bound but not listening, so nothing else can get this port
-    while the test runs.
-    """
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        yield s.getsockname()[1]
 
 
 @pytest.fixture(scope="session")

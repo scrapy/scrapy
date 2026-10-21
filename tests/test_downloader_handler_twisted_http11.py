@@ -52,6 +52,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.utils import _free_port
 from tests.utils import ipv6_loopback_available
 from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
@@ -614,9 +615,9 @@ class TestTunnelingErrors:
                     await dh.download_request(request)
 
     @coroutine_test
-    async def test_proxy_connection_refused(self, refused_port: int) -> None:
+    async def test_proxy_connection_refused(self) -> None:
         request = Request(
-            "https://example.com", meta={"proxy": f"http://127.0.0.1:{refused_port}"}
+            "https://example.com", meta={"proxy": f"http://127.0.0.1:{_free_port()}"}
         )
         async with _get_dh() as dh:
             with pytest.raises(DownloadConnectionRefusedError):
