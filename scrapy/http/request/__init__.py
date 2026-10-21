@@ -67,12 +67,11 @@ _in_download_handler: ContextVar[bool] = ContextVar(
 def _active_crawler_scope(crawler: Crawler) -> Generator[None, None, None]:
     """Set _active_crawler to *crawler* for the duration of the block.
 
-    Restores the previous value with set() instead of reset(): on some
-    supported Twisted versions, the code after an ``await`` may resume in
-    a copied contextvars.Context, where the token from the original set()
-    is invalid. The block may also be exited from an unrelated context, e.g.
-    when an abandoned coroutine is garbage-collected, so the previous value
-    is only restored where the value set here is still in place.
+    Restores the previous value with set() instead of reset(), and only where
+    the value set here is still in place: the block may be exited from an
+    unrelated context, e.g. when an abandoned coroutine is garbage-collected,
+    where the token from the original set() is invalid and the current value
+    belongs to that context.
     """
     previous = _active_crawler.get()
     _active_crawler.set(crawler)
