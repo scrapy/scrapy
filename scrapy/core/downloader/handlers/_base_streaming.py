@@ -87,11 +87,6 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
             logger.warning(
                 f"{type(self).__name__} is experimental and is not recommended for production use."
             )
-        # these are useful for many handlers but used in different ways by them
-        self._pool_size_total: int = crawler.settings.getint("CONCURRENT_REQUESTS")
-        self._pool_size_per_host: int = crawler.settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
 
     @abstractmethod
     def _make_request(

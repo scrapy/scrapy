@@ -45,10 +45,7 @@ _ProxyKey: TypeAlias = tuple[str, tuple[tuple[str, str], ...]]
 HAS_SOCKS = HAS_HTTP2 = False
 
 try:
-    try:
-        import httpx2 as httpx
-    except ImportError:  # pragma: no cover
-        import httpx  # type: ignore[import-not-found,no-redef]
+    import httpx2 as httpx
 except ImportError:  # pragma: no cover
     httpx = None  # type: ignore[assignment]
 else:
@@ -99,7 +96,7 @@ class HttpxDownloadHandler(_Base):
         self._bind_host: str | None = self._get_bind_address_host()
         self._limits: httpx.Limits = httpx.Limits(
             # hard limit on simultaneous connections (None for no limit, which
-            # is what a CONCURRENT_REQUESTS of 0 means)
+            # is what a CONCURRENT_CONNECTIONS_PER_HANDLER of 0 means)
             max_connections=self._pool_size_total or None,
             # total number of idle connections in the pool (extra ones are
             # closed); keeping none of them is how keepalive gets disabled,
@@ -217,7 +214,7 @@ class HttpxDownloadHandler(_Base):
             raise DownloadConnectionRefusedError(str(e)) from e
         except httpx.ProxyError as e:
             raise DownloadConnectionRefusedError(str(e)) from e
-        except DOWNLOAD_FAILED_EXCEPTIONS as e:  # pylint: disable=catching-non-exception
+        except DOWNLOAD_FAILED_EXCEPTIONS as e:
             raise DownloadFailedError(str(e)) from e
 
     @staticmethod

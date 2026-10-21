@@ -314,6 +314,57 @@ class TestWebSocketDownloadHandler:
         assert TwoRequestSpider.order == ["open 0", "close 0", "open 1", "close 1"]
 
     @coroutine_test
+    @pytest.mark.parametrize("dropped", ["received", "awaited", "awaited_in_start"])
+    async def test_dropped_response_closes_its_connection(
+        self, ws_server: WebSocketMockServer, dropped: str
+    ) -> None:
+        url = ws_server.url("/echo")
+
+        class SlotSpider(Spider):
+            name = "slot"
+            custom_settings = {"CONCURRENT_REQUESTS": 1, "CLOSESPIDER_TIMEOUT": 5}
+            parsed: list[int] = []
+
+            async def start(self) -> AsyncIterator[Any]:
+                if dropped == "awaited_in_start":
+                    await Request(url)
+                for index in range(2):
+                    yield Request(url, cb_kwargs={"index": index}, dont_filter=True)
+
+            async def parse(  # type: ignore[override]
+                self, response: WebSocketResponse, index: int
+            ) -> AsyncIterator[Any]:
+                self.parsed.append(index)
+                if dropped != "received":
+                    await response.close()
+                if dropped == "awaited" and index == 0:
+                    await Request(url)
+                return
+                yield
+
+        crawler = get_crawler(SlotSpider)
+        await crawler.crawl_async()
+        assert SlotSpider.parsed == [0, 1]
+
+    @coroutine_test
+    async def test_copy_keeps_the_connection_open(
+        self, ws_server: WebSocketMockServer
+    ) -> None:
+        async with _dh() as download_handler:
+            response = await download_handler.download_request(
+                Request(ws_server.url("/echo"))
+            )
+            assert isinstance(response, WebSocketResponse)
+            copy = response.replace()
+            del response
+            await sleep(0.1)
+            await copy.send("ping")
+            assert await copy.receive() == "ping"
+            connection = copy._connection
+            del copy
+            await asyncio.wait_for(connection.wait_closed(), 5)
+
+    @coroutine_test
     async def test_abandoned_connection_does_not_block_the_shutdown(
         self, ws_server: WebSocketMockServer
     ) -> None:
@@ -341,7 +392,11 @@ class TestWebSocketDownloadHandler:
                 await download_handlers.download_request_async(request)
             handler = download_handlers._handlers["ws"]
             assert isinstance(handler, WebSocketDownloadHandler)
-            assert all(c.close_code is not None for c in handler._connections)
+            connections = list(handler._connections)
+            assert connections
+            await asyncio.wait_for(
+                asyncio.gather(*(c.wait_closed() for c in connections)), 5
+            )
         finally:
             await download_handlers._close()
 

@@ -32,10 +32,11 @@ sends and receives messages over the resulting connection:
 Connection lifetime
 ===================
 
-A connection stays open until you close it, or until the callback that received
-the response is done, whichever happens first. So the spider above keeps
-receiving quotes for as long as the server sends them, and a callback that only
-needs one reply does not have to close anything.
+A connection stays open until you close it, or until nothing references its
+response anymore, e.g. once the callback that received the response, or that
+:ref:`awaited <inline-requests>` its request, is done. So the spider above
+keeps receiving quotes for as long as the server sends them, and a callback
+that only needs one reply does not have to close anything.
 
 While the connection is open, its request keeps occupying a downloader slot,
 which means that :setting:`CONCURRENT_REQUESTS` and
@@ -44,7 +45,7 @@ can have open at a time. Give a spider that keeps several long-lived
 connections open a limit high enough to fit them all, or the remaining requests
 never get their turn.
 
-To close a connection earlier than the end of the callback, call
+To close a connection earlier, call
 :meth:`~scrapy.http.WebSocketResponse.close`, or use the response as an
 asynchronous context manager:
 

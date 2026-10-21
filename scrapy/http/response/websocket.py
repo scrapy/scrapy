@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import weakref
 from typing import TYPE_CHECKING, Any, Self
 
 from scrapy.exceptions import DownloadFailedError
@@ -16,6 +17,40 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class _ConnectionOwner:
+    """Object that every response of a connection holds, which closes the
+    connection once none of those responses is left."""
+
+    __slots__ = ("__weakref__",)
+
+
+# Copies of a response, e.g. from Response.replace(), share the owner of the
+# original response, so the connection stays open while any of them is in use.
+_owners: weakref.WeakValueDictionary[ClientConnection, _ConnectionOwner] = (
+    weakref.WeakValueDictionary()
+)
+
+
+def _get_owner(connection: ClientConnection) -> _ConnectionOwner:
+    owner = _owners.get(connection)
+    if owner is None:
+        owner = _owners[connection] = _ConnectionOwner()
+        weakref.finalize(owner, _close_soon, connection).atexit = False
+    return owner
+
+
+def _close_soon(connection: ClientConnection) -> None:
+    # The handler closes every connection when the crawl ends, so there is
+    # nothing left to close once the loop is closed.
+    if not connection.loop.is_closed():
+        # Garbage collection may happen in any thread.
+        connection.loop.call_soon_threadsafe(_close, connection)
+
+
+def _close(connection: ClientConnection) -> None:
+    connection.loop.create_task(connection.close())
 
 
 class WebSocketResponse(Response):
@@ -40,7 +75,7 @@ class WebSocketResponse(Response):
 
     attributes: tuple[str, ...] = (*Response.attributes, "_connection", "_warnsize")
 
-    __slots__ = ("_connection", "_connection_closed", "_warnsize")
+    __slots__ = ("_connection", "_connection_closed", "_owner", "_warnsize")
 
     def __init__(
         self,
@@ -51,6 +86,7 @@ class WebSocketResponse(Response):
     ):
         super().__init__(*args, **kwargs)
         self._connection: ClientConnection = _connection
+        self._owner: _ConnectionOwner = _get_owner(_connection)
         # Set to 0 after the first warning, to warn once per connection.
         self._warnsize: int = _warnsize
         # The downloader reads this to know when the connection stops
@@ -93,9 +129,6 @@ class WebSocketResponse(Response):
     async def close(self) -> None:
         """Close the connection."""
         await self._connection.close()
-
-    async def _release(self) -> None:
-        await self.close()
 
     def __aiter__(self) -> AsyncIterator[str | bytes]:
         return self._iter_messages()

@@ -146,6 +146,8 @@ Request objects
 
     .. autoattribute:: Request.attributes
 
+    .. automethod:: __await__
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -838,6 +840,7 @@ Those are:
 * :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
 * :reqmeta:`proxy_headers`
+* :reqmeta:`redirect_http_codes`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_times`
 * :reqmeta:`redirect_ttl`
