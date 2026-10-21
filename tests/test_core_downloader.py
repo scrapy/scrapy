@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from time import monotonic, time
+from time import get_clock_info, monotonic, time
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
@@ -196,6 +196,12 @@ def _downloader() -> Downloader:
     return Downloader(crawler)
 
 
+# asyncio runs timers that are due within one tick of the monotonic clock, so a
+# delay can end up to one tick early, which is 15.6 ms on Windows before Python
+# 3.13.
+_DELAY_TOLERANCE = get_clock_info("monotonic").resolution
+
+
 @coroutine_test
 async def test_delay_meta() -> None:
     delay = 0.2
@@ -212,12 +218,12 @@ async def test_delay_meta() -> None:
         held_for_the_new_delay = monotonic() - start - delayed - held_again
     finally:
         downloader.close()
-    assert delayed >= delay
+    assert delayed >= delay - _DELAY_TOLERANCE
     assert "delay" not in request.meta
     # Downloading the same request again does not hold it again, but setting the
     # key again does.
     assert held_again < delay
-    assert held_for_the_new_delay >= delay
+    assert held_for_the_new_delay >= delay - _DELAY_TOLERANCE
     assert request.meta["delayed"] == [delay, delay]
 
 
@@ -234,7 +240,7 @@ async def test_delay_meta_stale_deadline() -> None:
         elapsed = monotonic() - start
     finally:
         downloader.close()
-    assert delay <= elapsed < 2 * delay
+    assert delay - _DELAY_TOLERANCE <= elapsed < 2 * delay
 
 
 class DelaySpider(MockServerSpider):
