@@ -52,7 +52,9 @@ from tests.spiders import (
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
+    CrawlSpiderWithAsyncErrback,
     CrawlSpiderWithAsyncGeneratorCallback,
+    CrawlSpiderWithAsyncGeneratorErrback,
     CrawlSpiderWithCallbackException,
     CrawlSpiderWithErrback,
     CrawlSpiderWithoutErrback,
@@ -69,6 +71,7 @@ from tests.spiders import (
     StartGoodAndBadOutput,
     StartItemSpider,
 )
+from tests.utils.crawl import crawl_items
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -590,6 +593,17 @@ class TestCrawlSpider:
         assert "[errback] status 404" in caplog.text
         assert "[errback] status 500" in caplog.text
         assert "[errback] status 501" in caplog.text
+
+    @pytest.mark.parametrize(
+        "spider_cls",
+        [CrawlSpiderWithAsyncErrback, CrawlSpiderWithAsyncGeneratorErrback],
+    )
+    @coroutine_test
+    async def test_crawlspider_with_async_errback(
+        self, spider_cls: type[CrawlSpiderWithErrback], mockserver: MockServer
+    ) -> None:
+        items, _ = await crawl_items(spider_cls, mockserver)
+        assert sorted(item["status"] for item in items) == [404, 500, 501]
 
     @coroutine_test
     async def test_crawlspider_without_errback(

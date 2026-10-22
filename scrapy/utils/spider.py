@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import inspect
 import logging
+from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any, TypeVar, cast, overload
 
 from scrapy.spiders import Spider
-from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.asyncgen import collect_asyncgen
+from scrapy.utils.defer import _is_awaitable, deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 
 if TYPE_CHECKING:
@@ -45,6 +47,17 @@ def iterate_spider_output(
     if inspect.iscoroutine(result):
         return d.addCallback(iterate_spider_output)
     return arg_to_iter(d)
+
+
+async def _await_spider_output(result: Any) -> Any:
+    """Return *result*, the output of a spider callback, awaiting it first if
+    it is awaitable, or collecting it into a list if it is an asynchronous
+    iterator."""
+    if isinstance(result, AsyncIterator):
+        return await collect_asyncgen(result)
+    if _is_awaitable(result):
+        return await result
+    return result
 
 
 def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
