@@ -7,6 +7,7 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
+from inspect import iscoroutine
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -397,6 +398,8 @@ class Scraper:
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
+        if iscoroutine(output):
+            output = await output
         output = await ensure_awaitable(iterate_spider_output(output))
         if isinstance(output, AsyncIterator):
             return _aset_parent_id(output, parent_id)

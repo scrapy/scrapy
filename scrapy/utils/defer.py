@@ -721,3 +721,22 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
         return o
 
     return coro()
+
+
+async def _maybe_coroutine(
+    f: Callable[_P, Any], *args: _P.args, **kw: _P.kwargs
+) -> Any:
+    """Call *f* and return its result, awaiting it first if it is awaitable.
+
+    Raise :exc:`TypeError` if *f* returns a
+    :class:`~twisted.internet.defer.Deferred`.
+    """
+    result = f(*args, **kw)
+    if isinstance(result, Deferred):
+        raise TypeError(
+            f"{global_object_name(f)} returned a Deferred, which is not supported."
+            f" Please refactor this function to return a coroutine."
+        )
+    if _is_awaitable(result):
+        return await result
+    return result
