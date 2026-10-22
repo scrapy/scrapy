@@ -28,6 +28,7 @@ from scrapy.utils.log import (
     install_scrapy_root_handler,
     logformatter_adapter,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import LogSpider
 
@@ -140,6 +141,40 @@ class TestLogCounterHandler:
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")
         assert crawler.stats.get_value("log_count/DEBUG") is None
+
+    @pytest.mark.parametrize("context", ["spider", "crawler", "both"])
+    def test_crawler_isolation(
+        self, crawler: Crawler, logger: logging.Logger, context: str
+    ) -> None:
+        other_crawler = get_crawler()
+        handler = build_from_crawler(
+            LogCounterHandler, other_crawler, other_crawler, level=logging.WARNING
+        )
+        spider = LogSpider.from_crawler(crawler)
+        other_spider = LogSpider.from_crawler(other_crawler)
+        extra = {"spider": spider, "crawler": crawler}
+        other_extra = {"spider": other_spider, "crawler": other_crawler}
+        if context != "both":
+            extra = {context: extra[context]}
+            other_extra = {context: other_extra[context]}
+        logger.addHandler(handler)
+        try:
+            logger.error("first crawler error", extra=extra)
+            assert crawler.stats.get_value("log_count/ERROR") == 1
+            assert other_crawler.stats.get_value("log_count/ERROR") is None
+
+            logger.error("second crawler error", extra=other_extra)
+            assert crawler.stats.get_value("log_count/ERROR") == 1
+            assert other_crawler.stats.get_value("log_count/ERROR") == 1
+        finally:
+            logger.removeHandler(handler)
+
+    @pytest.mark.parametrize("spider", [None, "-"])
+    def test_unscoped_record(
+        self, crawler: Crawler, logger: logging.Logger, spider: str | None
+    ) -> None:
+        logger.error("test log msg", extra={"spider": spider})
+        assert crawler.stats.get_value("log_count/ERROR") == 1
 
 
 class TestStreamLogger:
