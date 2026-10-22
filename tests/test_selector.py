@@ -124,6 +124,17 @@ class TestSelector:
         response = HtmlResponse("https://example.com", body=body, headers=headers)
         assert response.css("p::text").get() == "£€"
 
+    @pytest.mark.parametrize(
+        "body",
+        [
+            b"<meta charset=euc-jp><p>\xa1\xc1 \xad\xa1</p>",
+            b"<p>\xa1\xc1 \xad\xa1" + "日本語です。".encode("euc_jp") * 50 + b"</p>",
+        ],
+    )
+    def test_browser_decoding(self, body: bytes) -> None:
+        response = HtmlResponse("https://example.com", body=body)
+        assert response.css("p::text").get("").startswith("～ ①")
+
     def test_weakref_slots(self) -> None:
         """Check that classes are using slots and are weak-referenceable"""
         x = Selector(text="")

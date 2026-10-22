@@ -1467,8 +1467,7 @@ TextResponse objects
 
        Response body, as a string.
 
-       The same as ``response.body.decode(response.encoding)``, but the
-       result is cached after the first call, so you can access
+       The result is cached after the first call, so you can access
        ``response.text`` multiple times without extra overhead.
 
        .. note::

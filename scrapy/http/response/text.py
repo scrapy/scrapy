@@ -16,6 +16,7 @@ from urllib.parse import urljoin
 import parsel
 from w3lib.encoding import (
     html_body_declared_encoding,
+    html_encoding,
     html_to_unicode,
     http_content_type_encoding,
     read_bom,
@@ -110,11 +111,8 @@ class TextResponse(Response):
     @property
     def text(self) -> str:
         """Body as unicode"""
-        # access self.encoding before _cached_ubody to make sure
-        # _body_inferred_encoding is called
-        benc = self.encoding
         if self._cached_ubody is None:
-            charset = f"charset={benc}"
+            charset = f"charset={self.encoding}"
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
@@ -129,11 +127,9 @@ class TextResponse(Response):
         return http_content_type_encoding(content_type.decode("latin-1"))
 
     def _body_inferred_encoding(self) -> str:
-        content_type = self.headers.get(b"Content-Type") or b""
         if self._cached_benc is None:
-            benc, ubody = html_to_unicode(content_type.decode("latin-1"), self.body)
-            self._cached_benc = benc
-            self._cached_ubody = ubody
+            content_type = self.headers.get(b"Content-Type") or b""
+            self._cached_benc = html_encoding(content_type.decode("latin-1"), self.body)
         return self._cached_benc
 
     @memoizemethod_noargs

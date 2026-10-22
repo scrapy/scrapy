@@ -29,7 +29,7 @@ _JAPANESE = "この本は在庫があります。"
 _FRENCH = "Ce livre à prix réduit est déjà épuisé. "
 
 
-@pytest.mark.parametrize(
+_UNDECLARED = pytest.mark.parametrize(
     ("body", "encoding"),
     [
         pytest.param(_body(_JAPANESE, "utf-8"), "utf-8", id="utf-8"),
@@ -37,6 +37,9 @@ _FRENCH = "Ce livre à prix réduit est déjà épuisé. "
         pytest.param(_body(_FRENCH, "cp1252"), "cp1252", id="windows-1252"),
     ],
 )
+
+
+@_UNDECLARED
 def test_undeclared_encoding(
     benchmark: BenchmarkFixture, body: bytes, encoding: str
 ) -> None:
@@ -45,6 +48,19 @@ def test_undeclared_encoding(
     def run() -> None:
         response = TextResponse("https://example.com", body=body)
         assert response.text
+        assert response.encoding == encoding
+
+    benchmark(run)
+
+
+@_UNDECLARED
+def test_undeclared_encoding_only(
+    benchmark: BenchmarkFixture, body: bytes, encoding: str
+) -> None:
+    """Getting the encoding of a page that declares none, without its text."""
+
+    def run() -> None:
+        response = TextResponse("https://example.com", body=body)
         assert response.encoding == encoding
 
     benchmark(run)
