@@ -111,6 +111,7 @@ pattern = "^(?P<version>.+)$"
 [tool.mypy]
 strict = true
 untyped_calls_exclude = [
+    "keyring",
     "twisted",
 ]
 
@@ -300,6 +301,7 @@ markers = [
     "requires_aioboto3: marks tests that need aiobotocore and aioboto3",
     "requires_psutil: marks tests that need psutil",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
+    "requires_keyring: marks tests that need keyring",
     "requires_internet: marks tests that need real Internet access",
     "walltime: marks benchmarks that need CodSpeed's walltime mode to be meaningful",
 ]
