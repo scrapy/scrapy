@@ -66,7 +66,7 @@ class Sitemap:
                     continue
 
                 if tag_name == "link":
-                    if href := el.get("href"):
+                    if el.get("rel") == "alternate" and (href := el.get("href")):
                         alternate.append(href)
                 else:
                     d[tag_name] = el.text.strip() if el.text else ""
