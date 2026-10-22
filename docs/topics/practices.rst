@@ -56,6 +56,14 @@ Here's an example showing how to run a single spider with it.
     process.crawl(MySpider)
     process.start()  # the script will block here until the crawling is finished
 
+Exceptions that interrupt a crawl, such as one raised by the ``__init__``
+method of your spider or by the ``from_crawler`` method of one of its
+components, are logged as critical errors by these classes, which also set
+:attr:`~scrapy.crawler.AsyncCrawlerProcess.bootstrap_failed` to ``True``. You
+can check that attribute once
+:meth:`~scrapy.crawler.AsyncCrawlerProcess.start` returns, for example to
+choose the exit code of your script.
+
 You can define :ref:`settings <topics-settings>` within the dictionary passed
 to :class:`~scrapy.crawler.AsyncCrawlerProcess`. Make sure to check the
 :class:`~scrapy.crawler.AsyncCrawlerProcess`
