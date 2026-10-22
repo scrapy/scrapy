@@ -13,7 +13,12 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.web.client import Agent
 
-from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner, CrawlerRunnerBase
+from scrapy.crawler import (
+    _CHANGING_DEFAULTS,
+    AsyncCrawlerRunner,
+    CrawlerRunner,
+    CrawlerRunnerBase,
+)
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
@@ -67,8 +72,6 @@ def get_crawler(
     will be used to populate the crawler settings with a project level
     priority.
     """
-    # When needed, useful settings can be added here, e.g. ones that prevent
-    # deprecation warnings.
     settings: dict[str, Any] = {
         "FEED_MODE": "overwrite",
         "REMOTE_CONTROL_ENABLED": False,
@@ -76,6 +79,9 @@ def get_crawler(
         **get_reactor_settings(),
         **(settings_dict or {}),
     }
+    if prevent_warnings:
+        for name, (current_default, _) in _CHANGING_DEFAULTS.items():
+            settings.setdefault(name, current_default)
     runner: CrawlerRunnerBase
     if is_reactor_installed():
         runner = CrawlerRunner(settings)

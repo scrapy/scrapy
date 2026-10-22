@@ -1,6 +1,7 @@
 import scrapy
 from scrapy.crawler import AsyncCrawlerProcess
 from scrapy.utils.reactorless import is_reactorless
+from tests.utils import CURRENT_DEFAULTS
 
 
 class NoRequestsSpider(scrapy.Spider):
@@ -13,7 +14,11 @@ class NoRequestsSpider(scrapy.Spider):
 
 
 process = AsyncCrawlerProcess(
-    settings={"TWISTED_REACTOR_ENABLED": False, "MEMUSAGE_ENABLED": False}
+    settings={
+        "TWISTED_REACTOR_ENABLED": False,
+        "MEMUSAGE_ENABLED": False,
+        **CURRENT_DEFAULTS,
+    }
 )
 
 process.crawl(NoRequestsSpider)
