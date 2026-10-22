@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
 
 import parsel
-from charset_normalizer import from_bytes
 from w3lib.encoding import (
     html_body_declared_encoding,
     html_to_unicode,
@@ -42,8 +41,6 @@ _NONE = object()
 
 
 class TextResponse(Response):
-    _DEFAULT_ENCODING = "ascii"
-
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
     __slots__ = (
         "_cached_benc",
@@ -134,25 +131,10 @@ class TextResponse(Response):
     def _body_inferred_encoding(self) -> str:
         content_type = self.headers.get(b"Content-Type") or b""
         if self._cached_benc is None:
-            benc, ubody = html_to_unicode(
-                content_type.decode("latin-1"),
-                self.body,
-                auto_detect_fun=self._auto_detect_fun,
-                default_encoding=self._DEFAULT_ENCODING,
-            )
+            benc, ubody = html_to_unicode(content_type.decode("latin-1"), self.body)
             self._cached_benc = benc
             self._cached_ubody = ubody
         return self._cached_benc
-
-    def _auto_detect_fun(self, text: bytes) -> str | None:
-        for enc in (self._DEFAULT_ENCODING, "utf-8"):
-            try:
-                text.decode(enc)
-            except UnicodeError:
-                continue
-            return resolve_encoding(enc)
-        match = from_bytes(text).best()
-        return resolve_encoding(match.encoding) if match else None
 
     @memoizemethod_noargs
     def _body_declared_encoding(self) -> str | None:

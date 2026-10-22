@@ -39,14 +39,14 @@ class TestTextResponse(TestResponseBase):
 
         assert isinstance(r2, self.response_class)
         assert r2.url == "http://www.example.com/other"
-        self._assert_response_encoding(r2, "cp852")
+        assert r2.encoding == "cp852"
         assert r3.url == "http://www.example.com/other"
         assert r3._declared_encoding() == "latin1"
 
     def test_unicode_url(self):
         # instantiate with unicode url without encoding (should set default encoding)
         resp = self.response_class("http://www.example.com/")
-        self._assert_response_encoding(resp, self.response_class._DEFAULT_ENCODING)
+        self._assert_response_encoding(resp, "utf-8")
 
         # make sure urls are converted to str
         resp = self.response_class(url="http://www.example.com/", encoding="utf-8")
@@ -167,8 +167,8 @@ class TestTextResponse(TestResponseBase):
         self._assert_response_values(r1, "utf-8", "\xa3")
         self._assert_response_values(r2, "utf-8", "\xa3")
         self._assert_response_values(r3, "iso-8859-1", "\xa3")
-        self._assert_response_values(r6, "gb18030", "\u2015")
-        self._assert_response_values(r7, "gb18030", "\u2015")
+        self._assert_response_values(r6, "gbk", "\u2015")
+        self._assert_response_values(r7, "gbk", "\u2015")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         with pytest.raises(TypeError):
@@ -188,7 +188,7 @@ class TestTextResponse(TestResponseBase):
         body = "ICD10 国際疾病分類第10版2013年版 病名マスター".encode("shift-jis")
         r = self.response_class("http://www.example.com", body=body)
         assert r._declared_encoding() is None
-        assert r.encoding in {"shift_jis", "cp932"}
+        assert r.encoding == "cp932"
         assert r.text == body.decode(r.encoding)
 
     def test_utf16(self):
@@ -199,7 +199,8 @@ class TestTextResponse(TestResponseBase):
             body=body,
             encoding="utf-16",
         )
-        self._assert_response_values(r, "utf-16", body)
+        assert r.encoding == "utf-16"
+        assert r.text == "hi"
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(
@@ -596,7 +597,7 @@ class TestXmlResponse(TestTextResponse):
     def test_xml_encoding(self):
         body = b"<xml></xml>"
         r1 = self.response_class("http://www.example.com", body=body)
-        self._assert_response_values(r1, self.response_class._DEFAULT_ENCODING, body)
+        self._assert_response_values(r1, "utf-8", body)
 
         body = b"""<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
         r2 = self.response_class("http://www.example.com", body=body)
