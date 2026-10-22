@@ -96,7 +96,12 @@ class TestBaseMediaPipeline:
     def test_modify_media_request(self):
         request = Request("http://url")
         self.pipe._modify_media_request(request)
-        assert request.meta == {"handle_httpstatus_all": True}
+        assert request.meta == {"dont_redirect": True}
+
+    def test_modify_media_request_keeps_meta(self):
+        request = Request("http://url", meta={"dont_redirect": False})
+        self.pipe._modify_media_request(request)
+        assert request.meta == {"dont_redirect": False}
 
     def test_default_item_completed(self, caplog: pytest.LogCaptureFixture) -> None:
         item = {"name": "name"}
@@ -440,48 +445,23 @@ class TestAsyncMediaDownloaded(TestMediaPipeline):
 
 
 class TestMediaPipelineAllowRedirectSettings:
-    def _assert_redirect_statuses_not_handled(
-        self, pipeline_class: type[MediaPipeline], settings: dict[str, Any]
-    ) -> None:
-        pipe = pipeline_class(crawler=get_crawler(None, settings))
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            {"MEDIA_ALLOW_REDIRECTS": True},
+            {"USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS": True},
+        ],
+    )
+    def test_allow_redirects(self, settings: dict[str, Any]) -> None:
+        pipe = UserDefinedPipeline(crawler=get_crawler(None, settings))
         request = Request("http://url")
         pipe._modify_media_request(request)
+        assert request.meta == {}
 
-        assert "handle_httpstatus_list" in request.meta
-        for status, check in [
-            (200, True),
-            # 201 is not in REDIRECT_HTTP_CODES by default
-            (201, True),
-            # These are the status codes we want
-            # the downloader to handle itself
-            (301, False),
-            (302, False),
-            (303, False),
-            (307, False),
-            (308, False),
-            # we still want to get 4xx and 5xx
-            (400, True),
-            (404, True),
-            (500, True),
-        ]:
-            if check:
-                assert status in request.meta["handle_httpstatus_list"]
-            else:
-                assert status not in request.meta["handle_httpstatus_list"]
-
-    def test_subclass_standard_setting(self):
-        self._assert_redirect_statuses_not_handled(
-            UserDefinedPipeline, {"MEDIA_ALLOW_REDIRECTS": True}
-        )
-
-    def test_subclass_specific_setting(self):
-        self._assert_redirect_statuses_not_handled(
-            UserDefinedPipeline, {"USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS": True}
-        )
-
-    def test_custom_redirect_http_codes(self):
-        """Statuses added to REDIRECT_HTTP_CODES are also left to
-        RedirectMiddleware."""
+    def test_deprecated_attribute_get(self):
+        pipe = UserDefinedPipeline(crawler=get_crawler())
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_list"):
+            assert pipe.handle_httpstatus_list is None
         crawler = get_crawler(
             None,
             {
@@ -489,12 +469,24 @@ class TestMediaPipelineAllowRedirectSettings:
                 "REDIRECT_HTTP_CODES": [201, 301, 302, 303, 307, 308],
             },
         )
-        request = Request("http://url")
-        UserDefinedPipeline(crawler=crawler)._modify_media_request(request)
+        pipe = UserDefinedPipeline(crawler=crawler)
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_list"):
+            codes = pipe.handle_httpstatus_list
+        assert codes is not None
+        assert 404 in codes
+        assert 201 not in codes
+        assert 302 not in codes
 
-        assert 201 not in request.meta["handle_httpstatus_list"]
-        assert 302 not in request.meta["handle_httpstatus_list"]
-        assert 200 in request.meta["handle_httpstatus_list"]
+    @pytest.mark.parametrize(("value", "expected"), [(None, True), ([404], [404])])
+    def test_deprecated_attribute_set(self, value: Any, expected: Any) -> None:
+        pipe = UserDefinedPipeline(crawler=get_crawler())
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_list"):
+            pipe.handle_httpstatus_list = value
+        with pytest.warns(ScrapyDeprecationWarning, match="handle_httpstatus_list"):
+            assert pipe.handle_httpstatus_list == value
+        request = Request("http://url")
+        pipe._modify_media_request(request)
+        assert request.meta == {"handle_http_codes": expected}
 
 
 class TestBuildFromCrawler:

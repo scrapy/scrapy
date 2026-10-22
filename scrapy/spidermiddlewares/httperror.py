@@ -7,13 +7,16 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any, Self
 
-from scrapy.exceptions import IgnoreRequest
+from scrapy import signals
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.utils._httpstatus import StatusHandling, normalize
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Container, Iterable
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -26,7 +29,8 @@ logger = logging.getLogger(__name__)
 
 class HttpError(IgnoreRequest):
     """Raised by :class:`HttpErrorMiddleware` for a response whose status code
-    is not successful and that the spider does not handle itself.
+    is not successful and that the spider does not handle itself. See
+    :setting:`HANDLE_HTTP_CODES`.
     """
 
     def __init__(self, response: Response, *args: object, **kwargs: object):
@@ -35,20 +39,60 @@ class HttpError(IgnoreRequest):
         super().__init__(*args, **kwargs)
 
 
+def _warn_deprecated_attribute(name: str) -> None:
+    warnings.warn(
+        f"HttpErrorMiddleware.{name} is deprecated, use the HANDLE_HTTP_CODES "
+        f"setting instead.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=3,
+    )
+
+
 class HttpErrorMiddleware:
+    """Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
+    have to deal with them, which (most of the time) imposes an overhead,
+    consumes more resources, and makes the spider logic more complex."""
+
     crawler: Crawler
 
     def __init__(self, settings: BaseSettings):
-        self.handle_httpstatus_all: bool = settings.getbool("HTTPERROR_ALLOW_ALL")
-        self.handle_httpstatus_list: list[int] = settings.getlist(
-            "HTTPERROR_ALLOWED_CODES"
-        )
+        self._status_handling = StatusHandling(settings, legacy_settings=True)
+
+    @property
+    def handle_httpstatus_all(self) -> bool:
+        _warn_deprecated_attribute("handle_httpstatus_all")
+        return self._status_handling._settings_value is True
+
+    @handle_httpstatus_all.setter
+    def handle_httpstatus_all(self, value: bool) -> None:
+        _warn_deprecated_attribute("handle_httpstatus_all")
+        if value:
+            self._status_handling._settings_value = True
+        elif self._status_handling._settings_value is True:
+            self._status_handling._settings_value = False
+
+    @property
+    def handle_httpstatus_list(self) -> Container[int]:
+        _warn_deprecated_attribute("handle_httpstatus_list")
+        value = self._status_handling._settings_value
+        return [] if isinstance(value, bool) else value
+
+    @handle_httpstatus_list.setter
+    def handle_httpstatus_list(self, value: Container[int]) -> None:
+        _warn_deprecated_attribute("handle_httpstatus_list")
+        # As before, handle_httpstatus_all takes precedence.
+        if self._status_handling._settings_value is not True:
+            self._status_handling._settings_value = normalize(value)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         o = cls(crawler.settings)
         o.crawler = crawler
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
+
+    def spider_opened(self, spider: Spider) -> None:
+        self._status_handling.spider_opened(spider)
 
     @_warn_spider_arg
     def process_spider_input(
@@ -56,20 +100,7 @@ class HttpErrorMiddleware:
     ) -> None:
         if 200 <= response.status < 300:  # common case
             return
-        meta = response.meta
-        if meta.get("handle_httpstatus_all", False):
-            return
-        if "handle_httpstatus_list" in meta:
-            allowed_statuses = meta["handle_httpstatus_list"]
-        elif self.handle_httpstatus_all:
-            return
-        else:
-            allowed_statuses = getattr(
-                self.crawler.spider,
-                "handle_httpstatus_list",
-                self.handle_httpstatus_list,
-            )
-        if response.status in allowed_statuses:
+        if self._status_handling.handles(response.status, response.meta):
             return
         raise HttpError(response, "Ignoring non-200 response")
 
