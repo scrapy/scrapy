@@ -257,6 +257,8 @@ Sitemap: /sitemap-relative-url.xml
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
         <url>
             <loc>http://www.example.com/english/</loc>
+            <xhtml:link rel="canonical"
+                href="http://www.example.com/canonical/"/>
             <xhtml:link rel="alternate" hreflang="de"
                 href="http://www.example.com/deutsch/"/>
             <xhtml:link rel="alternate" hreflang="de-ch"
