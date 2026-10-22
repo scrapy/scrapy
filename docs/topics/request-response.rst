@@ -814,7 +814,6 @@ Those are:
 * :reqmeta:`delayed`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`
-* :reqmeta:`dont_merge_cookies`
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
@@ -848,6 +847,7 @@ Those are:
 * :reqmeta:`referrer_policy`
 * :reqmeta:`retry_times`
 * :reqmeta:`rule`
+* :reqmeta:`session`
 * :reqmeta:`skip_dupefilter_once`
 * :reqmeta:`verbatim_url`
 
