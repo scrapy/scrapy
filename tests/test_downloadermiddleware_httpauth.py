@@ -214,6 +214,15 @@ def _build_mw(settings: dict[str, Any], spider: Spider) -> HttpAuthMiddleware:
             b"a",
         ),
         ({"headers": {"Authorization": "a"}, "meta": {"http_user": "mu"}}, b"a"),
+        # WebSocket requests are handled like HTTP requests.
+        (
+            {
+                "url": "ws://example.com",
+                "spider_attributes": {"http_user": "su", "http_auth_domain": None},
+            },
+            b"Basic c3U6",
+        ),
+        ({"url": "wss://example.com", "meta": {"http_user": "mu"}}, b"Basic bXU6"),
         # If a non-HTTP request is received, nothing is done.
         (
             {
@@ -269,6 +278,8 @@ def test_main(config: dict[str, Any], expected: bytes | type[Exception] | None) 
         ({"http_user": "a"}, "http://example.com:443/a", "http://example.com:443"),
         ({"http_user": "a"}, "https://example.com:1234/a", "https://example.com:1234"),
         ({"http_user": "a"}, "http://example.com:1234/a", "http://example.com:1234"),
+        ({"http_user": "a"}, "ws://example.com:80/a", "ws://example.com"),
+        ({"http_user": "a"}, "wss://example.com:443/a", "wss://example.com"),
         # No origin is tracked when the allowed domain is explicit.
         (
             {"http_user": "a", "http_auth_domain": "example.com"},

@@ -83,6 +83,7 @@ twisted-http2 = ["Twisted[http2]>=23.8.0"]
 uvloop = [
     "uvloop>=0.17.0; platform_system != 'Windows'",
 ]
+websockets = ["websockets>=15.0"]
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
