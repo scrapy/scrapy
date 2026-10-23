@@ -18,6 +18,7 @@ dependencies = [
     "cssselect>=1.2.0",
     "defusedxml>=0.7.1",
     "formerly>=0.1.0",
+    "frostwork>=0.1.7",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.5",
     "lxml>=4.9.4",

@@ -38,7 +38,7 @@ class TestSelector:
 
     def test_root_base_url(self) -> None:
         body = b'<html><form action="/path"><input name="a" /></form></html>'
-        url = "http://example.com"
+        url = "http://example.com/"
         response = TextResponse(url=url, body=body, encoding="utf-8")
         sel = Selector(response)
         assert url == sel.root.base

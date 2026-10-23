@@ -9,7 +9,6 @@ from w3lib.encoding import resolve_encoding
 from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
 from scrapy.utils._deps_compat import PARSEL_BODY_ENCODING_FIXED
 from scrapy.utils.python import to_bytes
-from scrapy.utils.response import get_base_url
 from scrapy.utils.trackref import object_ref
 
 __all__ = ["Selector", "SelectorList"]
@@ -120,7 +119,7 @@ class Selector(_ParselSelector, object_ref):
                     text = response.text
             else:
                 text = response.text
-            kwargs.setdefault("base_url", get_base_url(response))
+            kwargs.setdefault("base_url", response.base_url)
 
         self._response: TextResponse | weakref.ref[TextResponse] | None = response
 

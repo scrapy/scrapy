@@ -1539,6 +1539,10 @@ TextResponse objects
         A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
 
+    .. autoattribute:: TextResponse.base_url
+
+    .. autoattribute:: TextResponse.meta_refresh
+
     .. autoattribute:: TextResponse.attributes
 
     :class:`TextResponse` objects support the following methods in addition to
@@ -1580,10 +1584,8 @@ TextResponse objects
 
     .. method:: TextResponse.urljoin(url)
 
-        Constructs an absolute url by combining the Response's base url with
-        a possible relative url. The base url shall be extracted from the
-        ``<base>`` tag, or just :attr:`Response.url` if there is no such
-        tag.
+        Constructs an absolute url by combining :attr:`base_url` with a
+        possible relative url.
 
 .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
 .. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding

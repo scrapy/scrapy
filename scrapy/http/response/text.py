@@ -10,9 +10,11 @@ from __future__ import annotations
 import json
 import weakref
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, cast
+from enum import Enum, auto
+from typing import TYPE_CHECKING, Any, Literal, cast
 from urllib.parse import urljoin
 
+import frostwork
 import parsel
 from w3lib.encoding import (
     html_body_declared_encoding,
@@ -26,7 +28,6 @@ from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
-from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -38,17 +39,23 @@ if TYPE_CHECKING:
     from scrapy.selector import Selector, SelectorList
 
 
-_NONE = object()
+class _Unset(Enum):
+    UNSET = auto()
+
+
+_UNSET = _Unset.UNSET
 
 
 class TextResponse(Response):
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
     __slots__ = (
+        "_base_url",
         "_cached_benc",
         "_cached_decoded_json",
         "_cached_selector",
         "_cached_ubody",
         "_encoding",
+        "_meta_refresh",
     )
 
     def __init__(self, *args: Any, **kwargs: Any):
@@ -56,7 +63,11 @@ class TextResponse(Response):
         self._cached_benc: str | None = None
         self._cached_ubody: str | None = None
         self._cached_selector: Selector | None = None
-        self._cached_decoded_json: object = _NONE
+        self._cached_decoded_json: object = _UNSET
+        self._base_url: str | None = None
+        self._meta_refresh: frostwork.MetaRefresh | Literal[_Unset.UNSET] | None = (
+            _UNSET
+        )
         super().__init__(*args, **kwargs)
 
     def _set_body(self, body: str | bytes | None) -> None:
@@ -101,7 +112,7 @@ class TextResponse(Response):
 
         The result is cached after the first call.
         """
-        if self._cached_decoded_json is _NONE:
+        if self._cached_decoded_json is _UNSET:
             try:
                 self._cached_decoded_json = json.loads(self.body)
             except UnicodeDecodeError:
@@ -119,7 +130,59 @@ class TextResponse(Response):
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
-        return urljoin(get_base_url(self), url)
+        return urljoin(self.base_url, url)
+
+    @property
+    def base_url(self) -> str:
+        """Absolute URL that relative URLs of the response are relative to.
+
+        .. versionadded:: VERSION
+
+        It is the ``href`` of the first ``<base>`` element that has one,
+        resolved against :attr:`~Response.url`, or :attr:`~Response.url`
+        itself, serialized like a web browser does, e.g. with ``/`` as empty
+        path. Setting it overrides the value read from the body.
+        """
+        if self._base_url is None:
+            self._navigate()
+        assert self._base_url is not None
+        return self._base_url
+
+    @base_url.setter
+    def base_url(self, value: str) -> None:
+        self._base_url = value
+
+    @property
+    def meta_refresh(self) -> frostwork.MetaRefresh | None:
+        """Named tuple ``(delay, url)`` of the meta refresh that a web browser
+        with JavaScript enabled would follow, with *url* absolute, or
+        ``None``.
+
+        .. versionadded:: VERSION
+
+        Setting it overrides the value read from the body.
+        """
+        if self._meta_refresh is _UNSET:
+            self._navigate()
+        assert self._meta_refresh is not _UNSET
+        return self._meta_refresh
+
+    @meta_refresh.setter
+    def meta_refresh(self, value: tuple[float, str] | None) -> None:
+        self._meta_refresh = None if value is None else frostwork.MetaRefresh(*value)
+
+    def _navigate(self) -> None:
+        navigation = frostwork.navigation(
+            self.body,
+            self.url,
+            self.encoding,
+            base_url=self._base_url is None,
+            meta_refresh=self._meta_refresh is _UNSET,
+        )
+        if self._base_url is None:
+            self._base_url = navigation.base_url
+        if self._meta_refresh is _UNSET:
+            self._meta_refresh = navigation.meta_refresh
 
     @memoizemethod_noargs
     def _headers_encoding(self) -> str | None:
