@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import logging
 import pickle
+import re
 from datetime import UTC
 from email.utils import parsedate_to_datetime
 from importlib import import_module
@@ -423,22 +424,35 @@ class FilesystemCacheStorage:
             return cast("dict[str, Any]", pickle.load(f))  # noqa: S301
 
 
+# A Cache-Control directive is anything up to the next comma that is not
+# inside a quoted-string; a quoted-string may itself contain commas and
+# backslash-escaped characters (:rfc:`9110#section-5.6.4`). The closing quote
+# is optional so that an unterminated quote extends to the end of the header.
+_CACHE_CONTROL_DIRECTIVE_RE = re.compile(rb'(?:[^,"]|"(?:\\.|[^"\\])*"?)+')
+_QUOTED_PAIR_RE = re.compile(rb"\\(.)")
+
+
 def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:
     """Parse Cache-Control header
 
-    https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
+    https://www.rfc-editor.org/rfc/rfc9111#section-5.2
 
     >>> parse_cachecontrol(b'public, max-age=3600') == {b'public': None,
     ...                                                 b'max-age': b'3600'}
     True
     >>> parse_cachecontrol(b'') == {}
     True
+    >>> parse_cachecontrol(b'private="Set-Cookie, Cookie", max-age=60') == {
+    ...     b'private': b'Set-Cookie, Cookie', b'max-age': b'60'}
+    True
 
     """
     directives = {}
-    for directive in header.split(b","):
+    for directive in _CACHE_CONTROL_DIRECTIVE_RE.findall(header):
         key, sep, val = directive.strip().partition(b"=")
         if key:
+            if sep and len(val) > 1 and val[:1] == b'"' and val[-1:] == b'"':
+                val = _QUOTED_PAIR_RE.sub(rb"\1", val[1:-1])
             directives[key.lower()] = val if sep else None
     return directives
 

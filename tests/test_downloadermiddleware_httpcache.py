@@ -20,7 +20,11 @@ from scrapy import signals
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
-from scrapy.extensions.httpcache import DummyPolicy, rfc1123_to_epoch
+from scrapy.extensions.httpcache import (
+    DummyPolicy,
+    parse_cachecontrol,
+    rfc1123_to_epoch,
+)
 from scrapy.http import BodyFileResponse, HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncio import sleep
@@ -33,6 +37,26 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
     from scrapy.crawler import Crawler
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        (b"", {}),
+        (b"public, max-age=3600", {b"public": None, b"max-age": b"3600"}),
+        (b"Max-Age=60,no-cache", {b"max-age": b"60", b"no-cache": None}),
+        # RFC 9111 section 5.2: a directive value may be a quoted-string, and
+        # recipients must accept it
+        (b'max-age="60"', {b"max-age": b"60"}),
+        (
+            b'private="Set-Cookie, Cookie", max-age=60',
+            {b"private": b"Set-Cookie, Cookie", b"max-age": b"60"},
+        ),
+        (b'no-cache="a\\"b"', {b"no-cache": b'a"b'}),
+    ],
+)
+def test_parse_cachecontrol(header: bytes, expected: dict[bytes, bytes | None]):
+    assert parse_cachecontrol(header) == expected
 
 
 class CustomResponse(Response):
@@ -572,6 +596,8 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
         sampledata = [
             (200, {"Date": self.yesterday, "Expires": self.tomorrow}),
             (200, {"Date": self.yesterday, "Cache-Control": "max-age=86405"}),
+            # RFC 9111 section 5.2: the max-age value may be quoted
+            (200, {"Date": self.yesterday, "Cache-Control": 'max-age="86405"'}),
             (200, {"Age": "299", "Cache-Control": "max-age=300"}),
             # Obey max-age if present over any others
             (
