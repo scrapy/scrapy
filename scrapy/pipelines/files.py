@@ -30,7 +30,7 @@ from typing import (
     TypedDict,
     cast,
 )
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -499,15 +499,12 @@ class FTPFilesStore:
         if not uri.startswith("ftp://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 'ftp'")
         u = urlparse(uri)
-        assert u.port
-        assert u.hostname
-        self.port: int = u.port
+        if not u.hostname:
+            raise ValueError(f"FTP URI is missing a hostname: {uri}")
+        self.port: int = int(u.port or 21)
         self.host: str = u.hostname
-        self.port = int(u.port or 21)
-        assert self.FTP_USERNAME
-        assert self.FTP_PASSWORD
-        self.username: str = u.username or self.FTP_USERNAME
-        self.password: str = u.password or self.FTP_PASSWORD
+        self.username: str = unquote(u.username) if u.username else self.FTP_USERNAME
+        self.password: str = unquote(u.password) if u.password else self.FTP_PASSWORD
         self.basedir: str = u.path.rstrip("/")
 
     def persist_file(
