@@ -65,10 +65,10 @@ async def _await_spider_output(result: Any) -> Any:
     """Return *result*, the output of a spider callback, awaiting it first if
     it is awaitable, or collecting it into a list if it is an asynchronous
     iterator."""
+    if _is_awaitable(result):
+        result = await result
     if isinstance(result, AsyncIterator):
         return await collect_asyncgen(result)
-    if _is_awaitable(result):
-        return await result
     return result
 
 

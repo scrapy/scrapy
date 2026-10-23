@@ -40,6 +40,12 @@ async def parse_id_async_generator(
     yield {"id": selector.xpath("id/text()").get()}
 
 
+async def _parse_id_coroutine_returning_async_generator(
+    self: Spider, response: Response, selector: Selector
+) -> AsyncIterator[dict[str, str | None]]:
+    return parse_id_async_generator(self, response, selector)
+
+
 async def parse_row_coroutine(
     self: Spider, response: Response, row: dict[str, str]
 ) -> dict[str, str]:
@@ -50,6 +56,12 @@ async def parse_row_async_generator(
     self: Spider, response: Response, row: dict[str, str]
 ) -> AsyncIterator[dict[str, str]]:
     yield row
+
+
+async def _parse_row_coroutine_returning_async_generator(
+    self: Spider, response: Response, row: dict[str, str]
+) -> AsyncIterator[dict[str, str]]:
+    return parse_row_async_generator(self, response, row)
 
 
 class TestSpider(TestSpiderBase):
@@ -137,7 +149,12 @@ class TestXMLFeedSpider(TestSpiderBase):
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
     @pytest.mark.parametrize(
-        "parse_node", [parse_id_coroutine, parse_id_async_generator]
+        "parse_node",
+        [
+            parse_id_coroutine,
+            parse_id_async_generator,
+            _parse_id_coroutine_returning_async_generator,
+        ],
     )
     @coroutine_test
     async def test_async_parse_node(
@@ -246,7 +263,12 @@ class TestCSVFeedSpider(TestSpiderBase):
         assert len(items) == 4
 
     @pytest.mark.parametrize(
-        "parse_row", [parse_row_coroutine, parse_row_async_generator]
+        "parse_row",
+        [
+            parse_row_coroutine,
+            parse_row_async_generator,
+            _parse_row_coroutine_returning_async_generator,
+        ],
     )
     @coroutine_test
     async def test_async_parse_row(

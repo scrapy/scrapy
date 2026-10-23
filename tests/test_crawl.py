@@ -580,6 +580,26 @@ class TestCrawlSpider:
         assert "[parse_async_gen] status 202 (foo: bar)" in caplog.text
 
     @coroutine_test
+    async def test_crawlspider_with_coroutine_returning_async_generator(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        class _Spider(CrawlSpiderWithAsyncGeneratorCallback):
+            # Returning the generator from a coroutine changes the callback type.
+            # pylint: disable-next=useless-parent-delegation
+            async def parse_async_gen(  # type: ignore[override]
+                self, response: Response, foo: str | None = None
+            ) -> AsyncIterator[Any]:
+                return super().parse_async_gen(response, foo)
+
+        crawler = get_crawler(_Spider)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        assert "[parse_async_gen] status 200 (foo: None)" in caplog.text
+        assert "[parse_async_gen] status 201 (foo: None)" in caplog.text
+        assert "[parse_async_gen] status 202 (foo: bar)" in caplog.text
+
+    @coroutine_test
     async def test_crawlspider_with_errback(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
@@ -603,6 +623,21 @@ class TestCrawlSpider:
         self, spider_cls: type[CrawlSpiderWithErrback], mockserver: MockServer
     ) -> None:
         items, _ = await crawl_items(spider_cls, mockserver)
+        assert sorted(item["status"] for item in items) == [404, 500, 501]
+
+    @coroutine_test
+    async def test_crawlspider_with_coroutine_errback_returning_async_generator(
+        self, mockserver: MockServer
+    ) -> None:
+        class _Spider(CrawlSpiderWithAsyncGeneratorErrback):
+            # Returning the generator from a coroutine changes the callback type.
+            # pylint: disable-next=useless-parent-delegation
+            async def errback(  # type: ignore[override]
+                self, failure: Failure
+            ) -> AsyncIterator[dict[str, int]]:
+                return super().errback(failure)
+
+        items, _ = await crawl_items(_Spider, mockserver)
         assert sorted(item["status"] for item in items) == [404, 500, 501]
 
     @coroutine_test
