@@ -129,6 +129,6 @@ class OffsiteMiddleware:
         for domain in allowed_domains:
             if domain is None:
                 continue
-            domains.append(re.escape(domain))
+            domains.append(re.escape(domain.lower()))
         regex = rf"^(.*\.)?({'|'.join(domains)})$"
         return re.compile(regex)
