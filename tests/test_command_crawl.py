@@ -199,6 +199,10 @@ class MySpider(scrapy.Spider):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             not in log
         )
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
+        )
         assert "Spider closed (finished)" in log
 
     def test_no_reactor(self, proj_path: Path) -> None:
