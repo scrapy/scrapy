@@ -133,6 +133,27 @@ class TestCrawler:
             crawler._apply_settings()
         assert crawler.settings.getint(setting) == 3
 
+    @pytest.mark.only_not_asyncio
+    def test_non_asyncio_reactor_deprecated(self) -> None:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Using a Twisted reactor other than "
+            "twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated",
+        ):
+            get_crawler()
+
+    @pytest.mark.only_asyncio
+    @pytest.mark.requires_reactor
+    def test_twisted_reactor_none_deprecated(self) -> None:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Setting TWISTED_REACTOR to None is deprecated",
+        ) as record:
+            get_crawler(settings_dict={"TWISTED_REACTOR": None})
+        assert not any(
+            "Using a Twisted reactor other than" in str(w.message) for w in record
+        )
+
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"
