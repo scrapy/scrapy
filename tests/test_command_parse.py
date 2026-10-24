@@ -601,7 +601,9 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         content = '[\n{},\n{"foo": "bar"}\n]'
         assert file_path.read_text(encoding="utf-8") == content
 
-    @pytest.mark.parametrize("args", [(), ("not-a-url",), ("a:b", "c:d")])
+    @pytest.mark.parametrize(
+        "args", [(), ("not-a-url",), ("a:b",), ("http://[invalid",), ("a:b", "c:d")]
+    )
     def test_bad_arguments(self, args: tuple[str, ...], proj_path: Path) -> None:
         returncode, out, _ = proc("parse", *args, cwd=proj_path)
         assert returncode == 2

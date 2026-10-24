@@ -4,8 +4,6 @@ import sys
 from argparse import Namespace  # noqa: TC003
 from typing import TYPE_CHECKING, Any
 
-from w3lib.url import is_url
-
 from scrapy.commands import ScrapyCommand, _add_curl_option, _request_from_curl
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
@@ -83,14 +81,17 @@ class Command(ScrapyCommand):
                 dont_filter=True,
             )
         else:
-            if len(args) != 1 or not is_url(args[0]):
+            if len(args) != 1:
                 raise UsageError
-            request = Request(
-                args[0],
-                callback=self._print_response,
-                cb_kwargs={"opts": opts},
-                dont_filter=True,
-            )
+            try:
+                request = Request(
+                    args[0],
+                    callback=self._print_response,
+                    cb_kwargs={"opts": opts},
+                    dont_filter=True,
+                )
+            except ValueError:
+                raise UsageError from None
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx
         if not opts.no_redirect:

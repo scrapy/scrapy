@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, overload
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
-from w3lib.url import is_url
 
 from scrapy.commands import BaseRunSpiderCommand, _add_curl_option, _request_from_curl
 from scrapy.exceptions import UsageError
@@ -413,9 +412,12 @@ class Command(BaseRunSpiderCommand):
                 raise UsageError("--curl cannot be combined with a URL argument")
             request = _request_from_curl(opts.curl)
         else:
-            if not len(args) == 1 or not is_url(args[0]):
+            if len(args) != 1:
                 raise UsageError
-            request = Request(args[0])
+            try:
+                request = Request(args[0])
+            except ValueError:
+                raise UsageError from None
         url = request.url
 
         # prepare spidercls

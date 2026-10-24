@@ -16,6 +16,7 @@ from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
+from tests.mockserver.ftp import MockFTPServer
 from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import (
     call,
@@ -256,6 +257,58 @@ class MySpider(scrapy.Spider):
         returncode, out, err = proc("runspider", str(path), "--pdb", input="")
         assert returncode == 0, err
         assert "(Pdb)" not in out
+
+
+@pytest.mark.parametrize("command", ["fetch", "parse"])
+class TestDownloadSchemeCommands(TestProjectBase):
+    @pytest.fixture(autouse=True)
+    def create_files(self, proj_path: Path) -> None:
+        (proj_path / self.project_name / "spiders" / "download_scheme.py").write_text(
+            """
+from scrapy import Spider
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.http import TextResponse
+
+
+class CustomDownloadHandler(BaseDownloadHandler):
+    async def download_request(self, request):
+        return TextResponse(request.url, body=b"downloaded content", encoding="utf-8")
+
+
+class DownloadSchemeSpider(Spider):
+    name = "download_scheme"
+    custom_settings = {"DOWNLOAD_HANDLERS": {"custom": CustomDownloadHandler}}
+
+    def parse(self, response):
+        yield {"body": response.text}
+""",
+            encoding="utf-8",
+        )
+
+    @pytest.mark.parametrize(
+        "url", ["data:text/plain,downloaded%20content", "custom://example.com/"]
+    )
+    def test_download_scheme(self, command: str, url: str, proj_path: Path) -> None:
+        code, out, err = proc(
+            command, "--spider", "download_scheme", url, cwd=proj_path
+        )
+        assert code == 0, err
+        assert "downloaded content" in out
+
+    def test_ftp(self, command: str, proj_path: Path) -> None:
+        with MockFTPServer() as server:
+            (server.path / "content.txt").write_text(
+                "downloaded content", encoding="utf-8"
+            )
+            code, out, err = proc(
+                command,
+                "--spider",
+                "download_scheme",
+                server.url("content.txt"),
+                cwd=proj_path,
+            )
+        assert code == 0, err
+        assert "downloaded content" in out
 
 
 class TestCommandCrawlerProcess(TestProjectBase):

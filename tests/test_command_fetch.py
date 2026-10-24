@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 
 
 class TestFetchCommand:
-    @pytest.mark.parametrize("args", [(), ("not-a-url",), ("a:b", "c:d")])
+    @pytest.mark.parametrize(
+        "args", [(), ("not-a-url",), ("a:b",), ("http://[invalid",), ("a:b", "c:d")]
+    )
     def test_bad_arguments(self, args: tuple[str, ...]) -> None:
         returncode, out, _ = proc("fetch", *args)
         assert returncode == 2
