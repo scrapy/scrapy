@@ -33,6 +33,7 @@ from scrapy.utils.log import (
     log_scrapy_info,
 )
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
     _is_asyncio_reactor_installed,
@@ -181,7 +182,7 @@ class Crawler:
             _configure_logger_levels(self.settings)
             install_scrapy_root_handler(self.settings)
 
-    def _apply_settings(self) -> None:
+    def _apply_settings(self) -> None:  # noqa: PLR0912
         if self.settings.frozen:
             return
 
@@ -215,7 +216,7 @@ class Crawler:
                     install_reactor(reactor_class, event_loop, _warn=False)
                 else:
                     # Install the default one.
-                    from twisted.internet import reactor  # noqa: F401
+                    from twisted.internet import reactor
             elif not is_reactor_installed():
                 # We need a reactor to be already installed.
                 raise RuntimeError(
@@ -229,6 +230,26 @@ class Crawler:
 
             if self._init_reactor or reactor_class:
                 log_reactor_info()
+
+            if not _is_asyncio_reactor_installed():
+                from twisted.internet import reactor
+
+                warnings.warn(
+                    f"Using a Twisted reactor other than {_asyncio_reactor_path}"
+                    f" is deprecated (the installed reactor is {global_object_name(type(reactor))})."
+                    " Remove any custom TWISTED_REACTOR setting and make sure that"
+                    " a different reactor is not installed by code outside Scrapy.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+            elif reactor_class is None:
+                # TWISTED_REACTOR=None, asyncio reactor pre-installed
+                # TODO tests
+                warnings.warn(
+                    "Setting TWISTED_REACTOR to None is deprecated.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
         else:
             # We expect a reactor to not be installed.
             if is_reactor_installed():
