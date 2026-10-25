@@ -124,21 +124,17 @@ In the future we plan to add support for the ``async def`` syntax to these APIs
 or replace them with other APIs where changing the existing ones isn't
 possible.
 
-These APIs have a coroutine-based implementation and a Deferred-based one:
+These APIs have a coroutine-based implementation and a Deferred-based one, to
+make it easier to write Deferred-based code; the Deferred-based ones will be
+deprecated in a future Scrapy version:
 
--   :class:`scrapy.crawler.Crawler`:
-
-    - :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
-      :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based): the former
-      may be inconvenient to use in Deferred-based code so both are available,
-      this may change in a future Scrapy version.
+-   :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
+    :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based)
 
 -   :class:`scrapy.crawler.AsyncCrawlerRunner` and its subclass
     :class:`scrapy.crawler.AsyncCrawlerProcess` (coroutine-based) and
     :class:`scrapy.crawler.CrawlerRunner` and its subclass
-    :class:`scrapy.crawler.CrawlerProcess` (Deferred-based): the former
-    doesn't support non-default reactors and so the latter should be used
-    with those.
+    :class:`scrapy.crawler.CrawlerProcess` (Deferred-based)
 
 The following user-supplied methods can return
 :class:`~twisted.internet.defer.Deferred` objects (the methods that can also
@@ -237,12 +233,8 @@ means you can use many useful Python libraries that provide such code:
                     additional_data = await additional_response.text()
             # ... use response and additional_data to yield items and requests
 
-.. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
-    :mod:`asyncio` loop, and to use them you need to :doc:`enable asyncio
-    support in Scrapy<asyncio>`.
-
-.. note:: If you want to ``await`` on Deferreds while using the asyncio reactor,
-          you need to :ref:`wrap them<asyncio-await-dfd>`.
+.. note:: If you want to ``await`` on Deferreds, you need to :ref:`wrap them
+    <asyncio-await-dfd>`.
 
 Sometimes you need to call code that is not async-friendly at all, such as a
 third-party client library with no asynchronous support. Calling such code
@@ -279,8 +271,6 @@ Common use cases for asynchronous code include:
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler).
-
-.. _aio-libs: https://github.com/aio-libs
 
 
 .. _inline-requests:
