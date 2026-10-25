@@ -208,8 +208,10 @@ means you can use many useful Python libraries that provide such code:
     class MySpiderDeferred(Spider):
         # ...
         async def parse(self, response):
-            additional_response = await treq.get("https://additional.url")
-            additional_data = await treq.content(additional_response)
+            additional_response = await deferred_to_future(
+                treq.get("https://additional.url")
+            )
+            additional_data = await deferred_to_future(treq.content(additional_response))
             # ... use response and additional_data to yield items and requests
 
 
@@ -249,7 +251,7 @@ it in a separate thread and returns an awaitable with the result:
 
     class MySpider(Spider):
         async def parse(self, response):
-            result = await blocking_call(response.url)
+            result = await deferred_to_future(blocking_call(response.url))
             # ... use result to yield items and requests
 
 .. autofunction:: scrapy.utils.decorators.inthread
