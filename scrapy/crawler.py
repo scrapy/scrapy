@@ -242,10 +242,10 @@ class Crawler:
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
-            elif reactor_class is None:
-                # TWISTED_REACTOR=None, asyncio reactor pre-installed
+            elif not reactor_class:
+                # TWISTED_REACTOR = None or "" (for "-s TWISTED_REACTOR="), asyncio reactor pre-installed
                 warnings.warn(
-                    "Setting TWISTED_REACTOR to None is deprecated.",
+                    'Setting TWISTED_REACTOR to None or "" is deprecated.',
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )

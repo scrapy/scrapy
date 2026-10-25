@@ -142,14 +142,15 @@ class TestCrawler:
         ):
             get_crawler()
 
+    @pytest.mark.parametrize("setting", [None, ""])
     @pytest.mark.only_asyncio
     @pytest.mark.requires_reactor
-    def test_twisted_reactor_none_deprecated(self) -> None:
+    def test_twisted_reactor_empty_deprecated(self, setting: str | None) -> None:
         with pytest.warns(
             ScrapyDeprecationWarning,
-            match="Setting TWISTED_REACTOR to None is deprecated",
+            match='Setting TWISTED_REACTOR to None or "" is deprecated',
         ) as record:
-            get_crawler(settings_dict={"TWISTED_REACTOR": None})
+            get_crawler(settings_dict={"TWISTED_REACTOR": setting})
         assert not any(
             "Using a Twisted reactor other than" in str(w.message) for w in record
         )
