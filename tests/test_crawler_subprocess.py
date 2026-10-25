@@ -369,6 +369,7 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
             in log
         )
+        assert "install_reactor() is deprecated" not in log
 
     @pytest.mark.skipif(
         platform.system() == "Windows", reason="PollReactor is not supported on Windows"
@@ -649,6 +650,16 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             not in log
         )
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
+        )
+
+    def test_install_reactor_select(self) -> None:
+        log = self.run_script("install_reactor_select.py")
+        assert "Spider closed (finished)" in log
+        assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
+        assert "Passing a non-asyncio reactor to install_reactor() is deprecated" in log
         assert (
             "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
             in log

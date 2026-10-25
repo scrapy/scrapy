@@ -145,7 +145,6 @@ def install_reactor(
             asyncioreactor.install(eventloop=event_loop)
     else:
         if _warn:
-            # TODO test coverage
             warnings.warn(
                 "Passing a non-asyncio reactor to install_reactor() is deprecated.",
                 ScrapyDeprecationWarning,
