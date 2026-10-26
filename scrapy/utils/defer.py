@@ -390,12 +390,12 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
 def _parallel_async(
     async_iterable: AsyncIterator[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
+    callable_: Callable[Concatenate[_T, _P], Deferred[Any] | None],
     *args: _P.args,
     **named: _P.kwargs,
 ) -> Deferred[None]:
     """Like ``parallel`` but for async iterators"""
-    work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
+    work = _AsyncCooperatorAdapter(async_iterable, callable_, *args, **named)
     tasks = _ParallelTasks(work, count)
     work.on_value = tasks.start
     tasks.start()
