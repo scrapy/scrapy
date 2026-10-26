@@ -74,6 +74,22 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: VERSION
 
+-   The ``media_to_download()`` method of subclasses of
+    :class:`scrapy.pipelines.media.MediaPipeline`.
+
+    .. versionadded:: 2.14
+
+-   The ``media_downloaded()`` method of subclasses of
+    :class:`scrapy.pipelines.media.MediaPipeline` and the ``file_downloaded()``
+    method of subclasses of :class:`scrapy.pipelines.files.FilesPipeline`.
+
+    .. versionadded:: 2.15
+
+-   The ``persist_file()`` method of :ref:`custom media storages
+    <media-pipeline-custom-storage>`.
+
+    .. versionadded:: 2.15
+
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
 
@@ -129,20 +145,12 @@ return coroutines are listed in :ref:`coroutine-support`):
 
     - ``close()``
 
--   Custom feed storages (see :setting:`FEED_STORAGES`):
-
-    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
-
 -   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
-
-    - ``media_to_download()``
 
     - ``item_completed()``
 
 -   Custom storages used by subclasses of
     :class:`scrapy.pipelines.files.FilesPipeline`:
-
-    - ``persist_file()``
 
     - ``stat_file()``
 
