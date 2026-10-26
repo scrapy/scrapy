@@ -74,31 +74,39 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: VERSION
 
--   The ``media_to_download()`` method of subclasses of
-    :class:`scrapy.pipelines.media.MediaPipeline`.
+-   The following methods of subclasses of
+    :class:`scrapy.pipelines.media.MediaPipeline`:
+
+    - ``media_to_download()``
+
+    - ``media_downloaded()``
+
+    - ``file_downloaded()``, in subclasses of
+      :class:`scrapy.pipelines.files.FilesPipeline`
+
+    - ``item_completed()``
 
     .. versionadded:: 2.14
-
--   The ``item_completed()`` method of subclasses of
-    :class:`scrapy.pipelines.media.MediaPipeline`.
-
-    .. versionadded:: VERSION
-
--   The ``media_downloaded()`` method of subclasses of
-    :class:`scrapy.pipelines.media.MediaPipeline` and the ``file_downloaded()``
-    method of subclasses of :class:`scrapy.pipelines.files.FilesPipeline`.
+       ``media_to_download()``
 
     .. versionadded:: 2.15
-
--   The ``persist_file()`` method of :ref:`custom media storages
-    <media-pipeline-custom-storage>`.
-
-    .. versionadded:: 2.15
-
--   The ``stat_file()`` method of :ref:`custom media storages
-    <media-pipeline-custom-storage>`.
+       ``media_downloaded()`` and ``file_downloaded()``
 
     .. versionadded:: VERSION
+       ``item_completed()``
+
+-   The following methods of :ref:`custom media storages
+    <media-pipeline-custom-storage>`:
+
+    - ``persist_file()``
+
+    - ``stat_file()``
+
+    .. versionadded:: 2.15
+       ``persist_file()``
+
+    .. versionadded:: VERSION
+       ``stat_file()``
 
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
