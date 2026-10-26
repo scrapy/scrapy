@@ -246,7 +246,8 @@ def is_reactor_installed() -> bool:
 
 
 def _is_asyncio_reactor_installed() -> bool:
-    """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    """Check whether the installed reactor is
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
     """
@@ -261,7 +262,8 @@ def _is_asyncio_reactor_installed() -> bool:
 
 
 def is_asyncio_reactor_installed() -> bool:
-    """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    """Check whether the installed reactor is
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
     """
