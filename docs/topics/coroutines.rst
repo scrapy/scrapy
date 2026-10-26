@@ -199,12 +199,13 @@ becomes:
 .. code-block:: python
 
     from itemadapter import ItemAdapter
+    from scrapy.utils.defer import deferred_to_future
 
 
     class DbPipeline:
         async def process_item(self, item):
             adapter = ItemAdapter(item)
-            adapter["field"] = await db.get_some_data(adapter["id"])
+            adapter["field"] = await deferred_to_future(db.get_some_data(adapter["id"]))
             return item
 
 Coroutines may be used to call asynchronous code. This includes other
@@ -240,27 +241,9 @@ Sometimes you need to call code that is not async-friendly at all, such as a
 third-party client library with no asynchronous support. Calling such code
 directly from a coroutine would block the underlying event loop, preventing
 Scrapy from doing any other work while it runs. To avoid this, you can wrap
-the blocking call with :func:`~scrapy.utils.decorators.inthread`, which runs
-it in a separate thread and returns an awaitable with the result:
-
-.. skip: next
-.. code-block:: python
-
-    from scrapy.utils.decorators import inthread
-
-
-    @inthread
-    def blocking_call(value):
-        # e.g. a call into a library with no async support
-        return some_sync_client.get(value)
-
-
-    class MySpider(Spider):
-        async def parse(self, response):
-            result = await deferred_to_future(blocking_call(response.url))
-            # ... use result to yield items and requests
-
-.. autofunction:: scrapy.utils.decorators.inthread
+the blocking call with :func:`scrapy.utils.asyncio.run_in_thread`, which runs
+it in a separate thread and returns an awaitable with the result (see
+:ref:`optimize-blocking` for an example).
 
 Common use cases for asynchronous code include:
 
