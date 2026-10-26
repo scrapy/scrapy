@@ -417,6 +417,15 @@ class RefererMiddleware(BaseSpiderMiddleware):
                 return cast("type[ReferrerPolicy]", load_object(policy))
             except ValueError:
                 pass
+            except (ImportError, NameError) as e:
+                if not warning_only:
+                    raise
+                warnings.warn(
+                    f"Could not load referrer policy {policy!r}: {e}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                return None
         policy_names = [
             policy_name.strip() for policy_name in policy.lower().split(",")
         ]

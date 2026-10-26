@@ -837,6 +837,27 @@ class TestRequestMetaSettingFallback:
                 True,
                 id="unknown-meta-settings-name",
             ),
+            # same as above but with a typo in an import path
+            pytest.param(
+                {"REFERRER_POLICY": "origin-when-cross-origin"},
+                {},
+                {
+                    "referrer_policy": "scrapy.spidermiddlewares.referer.NoReferrerPolicyy"
+                },
+                OriginWhenCrossOriginPolicy,
+                True,
+                id="unknown-meta-path-name",
+            ),
+            pytest.param(
+                {"REFERRER_POLICY": "origin-when-cross-origin"},
+                {},
+                {
+                    "referrer_policy": "scrapy.spidermiddlewares.referrer.NoReferrerPolicy"
+                },
+                OriginWhenCrossOriginPolicy,
+                True,
+                id="unknown-meta-path-module",
+            ),
             # request meta references a wrong policy but it is set,
             # so the Referrer-Policy header in response is not used,
             # and the settings' policy is applied
@@ -911,6 +932,13 @@ class TestSettingsPolicyByName:
     def test_invalid_name(self):
         settings = Settings({"REFERRER_POLICY": "some-custom-unknown-policy"})
         with pytest.raises(RuntimeError):
+            RefererMiddleware(settings)
+
+    def test_invalid_import_path(self):
+        settings = Settings(
+            {"REFERRER_POLICY": "scrapy.spidermiddlewares.referrer.NoReferrerPolicy"}
+        )
+        with pytest.raises(ImportError):
             RefererMiddleware(settings)
 
     def test_multiple_policy_tokens(self):
