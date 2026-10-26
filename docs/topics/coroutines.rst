@@ -90,6 +90,11 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: 2.15
 
+-   The ``stat_file()`` method of :ref:`custom media storages
+    <media-pipeline-custom-storage>`.
+
+    .. versionadded:: VERSION
+
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
 
@@ -148,11 +153,6 @@ return coroutines are listed in :ref:`coroutine-support`):
 -   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
 
     - ``item_completed()``
-
--   Custom storages used by subclasses of
-    :class:`scrapy.pipelines.files.FilesPipeline`:
-
-    - ``stat_file()``
 
 In most cases, you can use these APIs in code that otherwise uses coroutines by
 wrapping a :class:`~twisted.internet.defer.Deferred` object into a
