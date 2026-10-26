@@ -79,6 +79,11 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: 2.14
 
+-   The ``item_completed()`` method of subclasses of
+    :class:`scrapy.pipelines.media.MediaPipeline`.
+
+    .. versionadded:: VERSION
+
 -   The ``media_downloaded()`` method of subclasses of
     :class:`scrapy.pipelines.media.MediaPipeline` and the ``file_downloaded()``
     method of subclasses of :class:`scrapy.pipelines.files.FilesPipeline`.
@@ -149,10 +154,6 @@ return coroutines are listed in :ref:`coroutine-support`):
     - ``open()``
 
     - ``close()``
-
--   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
-
-    - ``item_completed()``
 
 In most cases, you can use these APIs in code that otherwise uses coroutines by
 wrapping a :class:`~twisted.internet.defer.Deferred` object into a
