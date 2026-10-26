@@ -19,7 +19,7 @@ automat==25.4.16
     # via twisted
 babel==2.18.0
     # via sphinx
-brotli==1.2.0
+brotli==1.2.1
     # via scrapy
 certifi==2026.10.19
     # via requests
