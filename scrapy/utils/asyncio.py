@@ -65,9 +65,9 @@ def is_asyncio_available() -> bool:
     raises a :exc:`RuntimeError` if no reactor is installed.
 
     The case when this function returns ``False`` is deprecated, and in a
-    future Scrapy version this function will be deprecated and always return
-    ``True``. Use it only if you need to support non-asyncio reactors or if
-    you want to provide a better error message on those.
+    future Scrapy version this function will always return ``True``. Use it
+    only if you need to support non-asyncio reactors or if you want to provide
+    a better error message on those.
 
     .. note:: As this function uses :func:`asyncio.get_running_loop()`, it will
         only detect the event loop if called in the same thread and from the
