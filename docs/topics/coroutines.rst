@@ -79,34 +79,31 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - ``media_to_download()``
 
+      .. versionadded:: 2.14
+
     - ``media_downloaded()``
+
+      .. versionadded:: 2.15
 
     - ``file_downloaded()``, in subclasses of
       :class:`scrapy.pipelines.files.FilesPipeline`
 
+      .. versionadded:: 2.15
+
     - ``item_completed()``
 
-    .. versionadded:: 2.14
-       ``media_to_download()``
-
-    .. versionadded:: 2.15
-       ``media_downloaded()`` and ``file_downloaded()``
-
-    .. versionadded:: VERSION
-       ``item_completed()``
+      .. versionadded:: VERSION
 
 -   The following methods of :ref:`custom media storages
     <media-pipeline-custom-storage>`:
 
     - ``persist_file()``
 
+      .. versionadded:: 2.15
+
     - ``stat_file()``
 
-    .. versionadded:: 2.15
-       ``persist_file()``
-
-    .. versionadded:: VERSION
-       ``stat_file()``
+      .. versionadded:: VERSION
 
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
