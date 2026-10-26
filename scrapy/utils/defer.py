@@ -387,7 +387,7 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         return d
 
 
-def parallel_async(
+def _parallel_async(
     async_iterable: AsyncIterator[_T],
     count: int,
     callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
@@ -400,6 +400,21 @@ def parallel_async(
     work.on_value = tasks.start
     tasks.start()
     return tasks.finished
+
+
+def parallel_async(
+    async_iterable: AsyncIterator[_T],
+    count: int,
+    callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
+    *args: _P.args,
+    **named: _P.kwargs,
+) -> Deferred[None]:  # pragma: no cover
+    warnings.warn(
+        "scrapy.utils.defer.parallel_async() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _parallel_async(async_iterable, count, callable, *args, **named)
 
 
 def process_chain(
