@@ -28,12 +28,12 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _aiter_errback,
+    _parallel_async,
     _process_pending_io_before_callback,
     _schedule_coro,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
-    parallel_async,
 )
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
@@ -493,7 +493,7 @@ class Scraper:
             )
             return
         await maybe_deferred_to_future(
-            parallel_async(
+            _parallel_async(
                 it,
                 self.concurrent_items,
                 self._process_spidermw_output,
