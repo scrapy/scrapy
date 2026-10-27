@@ -36,6 +36,7 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
+    _install_reactor,
     _is_asyncio_reactor_installed,
     install_reactor,
     is_reactor_installed,
@@ -213,7 +214,7 @@ class Crawler:
                 # but before something imports twisted.internet.reactor.
                 if reactor_class:
                     # Install a specific reactor.
-                    install_reactor(reactor_class, event_loop, _warn=False)
+                    _install_reactor(reactor_class, event_loop)
                 else:
                     # Install the default one.
                     from twisted.internet import reactor
