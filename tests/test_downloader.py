@@ -727,10 +727,13 @@ class TestRequestBackout:
     async def test_response_max_active_size_scheduled_request_behind_held_back(
         self, monkeypatch
     ):
-        """A scheduled request queued in a slot behind a held-back
-        download_async() request is downloaded first."""
-        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 1.0)
-        events = []
+        """Scheduled requests queued in a slot behind a held-back
+        download_async() request are downloaded first, and the bypass lets it
+        through even if it is due while the slot waits for its download
+        delay.
+        """
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.05)
+        events: list[int | str] = []
 
         class TestSpider(Spider):
             name = "test"
@@ -749,7 +752,8 @@ class TestRequestBackout:
                     download_async(Request(f"data:,{'a' * 2000}"))
                 )
                 held_back_dfd = deferred_from_coro(download_async(Request("data:,a")))
-                yield Request("data:,b", callback=self.parse_b)
+                for n in range(4):
+                    yield Request(f"data:,{n}", callback=self.parse_b)
                 kept = await maybe_deferred_to_future(kept_dfd)
                 await maybe_deferred_to_future(held_back_dfd)
                 events.append("a")
@@ -757,13 +761,13 @@ class TestRequestBackout:
                 yield {}
 
             def parse_b(self, response):
-                events.append("b")
+                events.append(int(response.text))
 
         crawler = get_crawler(TestSpider)
         await maybe_deferred_to_future(crawler.crawl())
 
         assert crawler.stats
-        assert events == ["b", "a"]
+        assert events == [3, "a", 2, 1, 0]
         assert crawler.stats.get_value("response_max_active_size/bypass_count") == 1
 
     @pytest.mark.parametrize(

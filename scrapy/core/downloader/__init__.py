@@ -213,8 +213,9 @@ _STAMPED_SLOT_META_KEY = "_download_slot_stamp"
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
-    # Seconds that requests held back by _size_blocks_transfer() wait for a
-    # release before one of them is let through.
+    # Seconds that requests held back by RESPONSE_MAX_ACTIVE_SIZE in
+    # _next_transfer_index() wait for a release before one of them is let
+    # through.
     _SIZE_BYPASS_DELAY: float = 5.0
 
     def __init__(self, crawler: Crawler):
@@ -247,7 +248,7 @@ class Downloader:
         # (None, None) if not backing out.
         self._last_backout: tuple[str | None, float | None] = (None, None)
         self._max_active_size_warned = False
-        # Whether _size_blocks_transfer() has held back a request that nothing
+        # Whether _next_transfer_index() has held back a request that nothing
         # has resumed yet.
         self._size_blocked = False
         self._unscheduled_transfers = 0
@@ -262,8 +263,8 @@ class Downloader:
             from twisted.internet import reactor
 
             call_from_thread = reactor.callFromThread
-        self.middleware._on_unscheduled_response_release = partial(
-            call_from_thread, self._on_unscheduled_response_release
+        self.middleware._on_unscheduled_response_release = lambda size: (
+            call_from_thread(partial(self._on_unscheduled_response_release, size))
         )
 
     @property
@@ -486,7 +487,7 @@ class Downloader:
             # 1. Download the response
             response: Response = await self.handlers.download_request_async(request)
             # Counted before _end_transfer() resumes queued requests, so that
-            # _size_blocks_transfer() accounts for it.
+            # _next_transfer_index() accounts for it.
             self.middleware._count_response_size(response, request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
@@ -507,19 +508,16 @@ class Downloader:
             # middleware itself)
             self._end_transfer(slot, request)
 
-    def _size_blocks_transfer(self, request: Request) -> bool:
-        """Return whether RESPONSE_MAX_ACTIVE_SIZE holds back *request*.
+    def _unscheduled_size_exceeded(self) -> bool:
+        """Return whether RESPONSE_MAX_ACTIVE_SIZE holds back requests sent
+        with ExecutionEngine.download_async().
 
-        Requests sent with ExecutionEngine.download_async() skip the engine
-        backout, so they are limited here, against the responses to such
-        requests alone. Responses to scheduled requests are limited by the
-        engine backout.
+        Those requests skip the engine backout, so they are limited here,
+        against the responses to such requests alone. Responses to scheduled
+        requests are limited by the engine backout.
         """
         middleware = self.middleware
-        if (
-            not middleware._max_active_size
-            or request not in middleware._unscheduled_requests
-        ):
+        if not middleware._max_active_size:
             return False
         size = (
             middleware._unscheduled_response_active_size
@@ -529,34 +527,50 @@ class Downloader:
 
     def _next_transfer_index(self, slot: Slot) -> int | None:
         """Return the index of the first request in the queue of *slot* that
-        _size_blocks_transfer() does not hold back, or None if there is none.
+        RESPONSE_MAX_ACTIVE_SIZE does not hold back, or None if there is
+        none.
         """
-        for index, (request, _) in enumerate(slot.queue):
-            if not self._size_blocks_transfer(request):
-                return index
+        if not self._unscheduled_size_exceeded():
+            return 0
+        unscheduled = self.middleware._unscheduled_requests
+        first = slot.queue[0][0]
+        if first in unscheduled:
             if self._size_bypass_due:
-                self._bypass_size_limit(request)
-                return index
+                self._bypass_size_limit(first)
+                return 0
             self._size_blocked = True
             self._schedule_size_bypass()
-        return None
+        return next(
+            (
+                index
+                for index, (request, _) in enumerate(slot.queue)
+                if request not in unscheduled
+            ),
+            None,
+        )
 
     def _resume_size_blocked(self) -> None:
         if not self._size_blocked:
             return
+        # Scheduled requests queued behind held-back ones do not need this:
+        # they are only waiting for their slot.
+        if self._unscheduled_size_exceeded() and not self._size_bypass_due:
+            self._schedule_size_bypass()
+            return
         self._size_blocked = False
-        # A slot held back by _size_blocks_transfer() may have no transfer of
-        # its own to resume it.
+        # A slot with held-back requests may have no transfer of its own to
+        # resume it.
         for slot in list(self.slots.values()):
             if slot.queue:
                 self._process_queue(slot)
 
-    def _on_unscheduled_response_release(self) -> None:
+    def _on_unscheduled_response_release(self, size: int) -> None:
+        self.middleware._unscheduled_response_active_size -= size
         self._cancel_size_bypass()
         self._resume_size_blocked()
 
     def _schedule_size_bypass(self) -> None:
-        """Let a request held back by _size_blocks_transfer() through after
+        """Let a request held back by _next_transfer_index() through after
         _SIZE_BYPASS_DELAY seconds without a release, unless a transfer that
         it may be waiting for is in progress.
 
@@ -570,15 +584,17 @@ class Downloader:
         )
 
     def _cancel_size_bypass(self) -> None:
+        self._size_bypass_due = False
         if self._size_bypass_call is not None:
             self._size_bypass_call.cancel()
             self._size_bypass_call = None
 
     def _size_bypass_timeout(self) -> None:
         self._size_bypass_call = None
+        # Stays due until a held-back request uses it, which a slot waiting
+        # for its download delay or for a free transfer slot does later.
         self._size_bypass_due = True
         self._resume_size_blocked()
-        self._size_bypass_due = False
 
     def _bypass_size_limit(self, request: Request) -> None:
         self._size_bypass_due = False
@@ -609,10 +625,9 @@ class Downloader:
         unscheduled = request in self.middleware._unscheduled_requests
         if unscheduled:
             self._unscheduled_transfers -= 1
-        if unscheduled and self._size_blocked:
+        self._process_queue(slot)
+        if unscheduled:
             self._resume_size_blocked()
-        else:
-            self._process_queue(slot)
         self.signals.send_catch_log(
             signal=signals.request_left_downloader,
             request=request,
