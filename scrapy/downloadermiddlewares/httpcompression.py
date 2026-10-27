@@ -148,8 +148,9 @@ class HttpCompressionMiddleware:
                 # responsetypes guessing is reliable
                 kwargs["encoding"] = None
             response = response.replace(cls=respcls, **kwargs)
-            if not content_encoding:
-                del response.headers["Content-Encoding"]
+            response.headers.pop(b"Content-Length",None)
+            #if not content_encoding:
+               #del response.headers["Content-Encoding"]
         return response
 
     async def _handle_encoding(
