@@ -259,17 +259,6 @@ class Downloader:
         self._size_bypass_call: CallLaterResult | None = None
         self._size_bypass_due = False
         self._size_bypass_warned = False
-        # Response finalizers can run in any thread.
-        call_from_thread: Callable[[Callable[[], None]], object]
-        if is_asyncio_available():
-            call_from_thread = _get_running_or_installed_loop().call_soon_threadsafe
-        else:
-            from twisted.internet import reactor
-
-            call_from_thread = reactor.callFromThread
-        self.middleware._on_unscheduled_response_release = lambda size: (
-            call_from_thread(partial(self._on_unscheduled_response_release, size))
-        )
 
     @property
     def randomize_delay(self) -> bool:
@@ -286,6 +275,23 @@ class Downloader:
     def fetch(
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
+        # Set on the first download, once there is an event loop or reactor
+        # for response finalizers, which can run in any thread, to call back
+        # into. close() unsets it.
+        if (
+            self._accepting_requests
+            and self.middleware._on_unscheduled_response_release is None
+        ):
+            call_from_thread: Callable[[Callable[[], None]], object]
+            if is_asyncio_available():
+                call_from_thread = _get_running_or_installed_loop().call_soon_threadsafe
+            else:
+                from twisted.internet import reactor
+
+                call_from_thread = reactor.callFromThread
+            self.middleware._on_unscheduled_response_release = lambda size: (
+                call_from_thread(partial(self._on_unscheduled_response_release, size))
+            )
         self.active.add(request)
         self.middleware._count_rough_size(request)
         try:
