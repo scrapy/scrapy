@@ -664,7 +664,8 @@ class TestRequestBackout:
     @coroutine_test
     async def test_response_max_active_size_media_downloads(self, shared_slot):
         """Responses of media pipeline requests waiting for a slow upload hold
-        back the next media downloads."""
+        back the next media downloads.
+        """
         max_active_size = 3000
         uploads = 0
         peak_uploads = 0
@@ -703,7 +704,8 @@ class TestRequestBackout:
     @coroutine_test
     async def test_response_max_active_size_scheduled_response_with_files(self):
         """A scheduled response above the limit does not hold back the media
-        downloads that it waits for."""
+        downloads that it waits for.
+        """
 
         class TestSpider(_MediaSpider):
             start_urls = [f"data:,{'a' * 2000}"]
@@ -732,14 +734,14 @@ class TestRequestBackout:
         through even if it is due while the slot waits for its download
         delay.
         """
-        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.05)
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
         events: list[int | str] = []
 
         class TestSpider(Spider):
             name = "test"
             start_urls = ["data:,"]
             custom_settings = {
-                "DOWNLOAD_DELAY": 0.1,
+                "DOWNLOAD_DELAY": 0.2,
                 "DOWNLOAD_DELAY_JITTER": 0,
                 "RESPONSE_MAX_ACTIVE_SIZE": 1000,
                 "RESPONSE_ROUGH_SIZE": 1,
@@ -779,7 +781,8 @@ class TestRequestBackout:
         self, monkeypatch, kept_count, kept_size, examples, more
     ):
         """Code that keeps a response to a download_async() request above the
-        limit while it awaits another one slows down instead of stalling."""
+        limit while it awaits another one slows down instead of stalling.
+        """
         monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
 
         class TestSpider(Spider):

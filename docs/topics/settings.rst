@@ -2096,8 +2096,9 @@ memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
 currently being downloaded. While that total is above this value, Scrapy stops
 taking requests from the scheduler. While the part of it that comes from
 requests sent with :meth:`~scrapy.core.engine.ExecutionEngine.download_async`,
-such as those of :ref:`media pipelines <topics-media-pipeline>`, is above this
-value, new requests of that kind wait before being downloaded.
+which include :ref:`awaited requests <inline-requests>` and those of
+:ref:`media pipelines <topics-media-pipeline>`, is above this value, new
+requests of that kind wait before being downloaded.
 
 Requests already being downloaded when the limit is reached still finish: up to
 :setting:`CONCURRENT_REQUESTS` from the scheduler, and up to this value divided
