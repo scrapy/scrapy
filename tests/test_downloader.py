@@ -818,7 +818,7 @@ class TestRequestBackout:
         assert len(messages) == 1
         assert "<GET data:,0>" in messages[0]
         assert messages[0].count("<200 data:,") == examples
-        assert f">{more}. If your code" in messages[0]
+        assert f">{more}, have used" in messages[0]
 
 
 class _NoStatStore:

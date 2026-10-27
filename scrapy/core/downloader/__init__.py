@@ -88,6 +88,9 @@ class Slot:
     transferring: set[Request] = field(default_factory=set, init=False, repr=False)
     lastseen: float = field(default=0, init=False, repr=False)
     latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
+    # Number of requests in queue not sent with
+    # ExecutionEngine.download_async().
+    _scheduled_queued: int = field(default=0, init=False, repr=False)
 
     # Hand-written to accept the deprecated randomize_delay parameter, which
     # means it also has to initialize the fields above.
@@ -119,6 +122,7 @@ class Slot:
         self.transferring = set()
         self.lastseen = 0
         self.latercall = None
+        self._scheduled_queued = 0
 
     @property
     def randomize_delay(self) -> bool:
@@ -413,6 +417,8 @@ class Downloader:
         )
         d: Deferred[Response] = Deferred()
         slot.queue.append((request, d))
+        if request not in self.middleware._unscheduled_requests:
+            slot._scheduled_queued += 1
         self._process_queue(slot)
         try:
             return await maybe_deferred_to_future(d)  # fired in _wait_for_download()
@@ -447,6 +453,8 @@ class Downloader:
             if request in self.middleware._unscheduled_requests:
                 self._unscheduled_transfers += 1
                 self._cancel_size_bypass()
+            else:
+                slot._scheduled_queued -= 1
             download_dfd = deferred_from_coro(
                 self._wait_for_download(slot, request, queue_dfd)
             )
@@ -540,6 +548,8 @@ class Downloader:
                 return 0
             self._size_blocked = True
             self._schedule_size_bypass()
+        if not slot._scheduled_queued:
+            return None
         return next(
             (
                 index
@@ -608,11 +618,11 @@ class Downloader:
         if len(held) > 3:
             examples += f" (+{len(held) - 3} more)"
         logger.info(
-            f"Letting {request} through RESPONSE_MAX_ACTIVE_SIZE: for "
-            f"{self._SIZE_BYPASS_DELAY:g} seconds, responses to requests sent "
-            f"with download_async() have used "
-            f"{self.middleware._unscheduled_response_active_size} B with none "
-            f"of those requests being downloaded, e.g. {examples}. If your code "
+            f"Letting {request} through RESPONSE_MAX_ACTIVE_SIZE: responses "
+            f"to requests sent with download_async(), e.g. {examples}, have "
+            f"used {self.middleware._unscheduled_response_active_size} B for "
+            f"{self._SIZE_BYPASS_DELAY:g} seconds with none of those requests "
+            f"being downloaded. If your code "
             f"keeps such a response while it awaits another download_async() "
             f"call, release it first. See "
             f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
