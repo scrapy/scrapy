@@ -702,8 +702,8 @@ class ExecutionEngine:
         assert self._slot is not None  # typing
         assert self.spider is not None
 
-        if unscheduled:
-            self.downloader.middleware._unscheduled_requests.add(request)
+        if unscheduled and hasattr(self.downloader, "_add_unscheduled_request"):
+            self.downloader._add_unscheduled_request(request)
 
         # Lets Request.__await__() find this crawler while the downloader
         # middlewares run.

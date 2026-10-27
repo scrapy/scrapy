@@ -522,6 +522,9 @@ class Downloader:
             # middleware itself)
             self._end_transfer(slot, request)
 
+    def _add_unscheduled_request(self, request: Request) -> None:
+        self.middleware._unscheduled_requests.add(request)
+
     def _unscheduled_size_exceeded(self) -> bool:
         """Return whether RESPONSE_MAX_ACTIVE_SIZE holds back requests sent
         with ExecutionEngine.download_async().
