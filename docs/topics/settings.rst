@@ -2090,14 +2090,30 @@ Default: ``5_000_000``
 
 Soft limit (in bytes) on the total size of responses being kept in memory.
 
-This counts both the size of response bodies that have passed through
-:ref:`downloader middlewares <topics-downloader-middleware>` and remain in
-memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
-currently being downloaded.
+It counts the size of response bodies that have passed through :ref:`downloader
+middlewares <topics-downloader-middleware>` and remain in memory, and the
+:setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests currently being
+downloaded. While that total is above this value, Scrapy stops taking requests
+from the scheduler. While the part of it that comes from requests sent with
+:meth:`~scrapy.core.engine.ExecutionEngine.download_async`, such as those of
+:ref:`media pipelines <topics-media-pipeline>`, is above this value, new
+requests of that kind wait before being downloaded.
 
-While the total is above this value, Scrapy pauses sending new requests to the
-downloader. A higher value improves crawl speed at the cost of memory usage.
-``0`` disables the limit.
+Requests already being downloaded when the limit is reached still finish: up to
+:setting:`CONCURRENT_REQUESTS` from the scheduler, and up to this value divided
+by :setting:`RESPONSE_ROUGH_SIZE` sent with ``download_async()``. So, in
+practice, responses can take up to about twice this value, plus the size of the
+responses to those requests.
+
+If requests sent with ``download_async()`` have been waiting for 5 seconds with
+none of them being downloaded and no response to them released, e.g. because
+your code keeps one such response while it awaits another, Scrapy lets one of
+them through. Each time that happens, memory use can grow by one more response,
+and the :stat:`downloader/response_max_active_size_bypass_count` stat
+increases.
+
+A higher value improves crawl speed at the cost of memory usage. ``0`` disables
+the limit.
 
 Scrapy logs an info-level message the first time the limit is reached. To see
 how long request processing was paused because of it over a whole crawl, check

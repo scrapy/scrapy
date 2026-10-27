@@ -33,6 +33,9 @@ class Command(ScrapyCommand):
         "LOGSTATS_INTERVAL": 0,
         "TELNETCONSOLE_ENABLED": False,
         "REMOTE_CONTROL_ENABLED": False,
+        # The shell keeps the previous response while fetch() downloads the
+        # next one.
+        "RESPONSE_MAX_ACTIVE_SIZE": 0,
     }
 
     def syntax(self) -> str:

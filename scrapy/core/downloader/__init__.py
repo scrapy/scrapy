@@ -210,6 +210,9 @@ _STAMPED_SLOT_META_KEY = "_download_slot_stamp"
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
+    # Seconds that requests held back by _size_blocks_transfer() wait for a
+    # release before one of them is let through.
+    _SIZE_BYPASS_DELAY: float = 5.0
 
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
@@ -241,6 +244,16 @@ class Downloader:
         # (None, None) if not backing out.
         self._last_backout: tuple[str | None, float | None] = (None, None)
         self._max_active_size_warned = False
+        # Whether _size_blocks_transfer() has held back a request that nothing
+        # has resumed yet.
+        self._size_blocked = False
+        self._unscheduled_transfers = 0
+        self._size_bypass_call: CallLaterResult | None = None
+        self._size_bypass_due = False
+        self._size_bypass_warned = False
+        self.middleware._on_unscheduled_response_release = (
+            self._on_unscheduled_response_release
+        )
 
     @property
     def randomize_delay(self) -> bool:
@@ -410,11 +423,21 @@ class Downloader:
 
         # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
+            request, queue_dfd = slot.queue[0]
+            if self._size_blocks_transfer(request):
+                if not self._size_bypass_due:
+                    self._size_blocked = True
+                    self._schedule_size_bypass()
+                    break
+                self._bypass_size_limit(request)
             slot.lastseen = now
-            request, queue_dfd = slot.queue.popleft()
+            slot.queue.popleft()
             # Do this immediately so that following free_transfer_slots() calls
             # account for this request.
             slot.transferring.add(request)
+            if request in self.middleware._unscheduled_requests:
+                self._unscheduled_transfers += 1
+                self._cancel_size_bypass()
             download_dfd = deferred_from_coro(
                 self._wait_for_download(slot, request, queue_dfd)
             )
@@ -454,6 +477,9 @@ class Downloader:
         try:
             # 1. Download the response
             response: Response = await self.handlers.download_request_async(request)
+            # Counted before _end_transfer() resumes queued requests, so that
+            # _size_blocks_transfer() accounts for it.
+            self.middleware._count_response_size(response, request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
             self.signals.send_catch_log(
@@ -473,9 +499,100 @@ class Downloader:
             # middleware itself)
             self._end_transfer(slot, request)
 
+    def _size_blocks_transfer(self, request: Request) -> bool:
+        """Return whether RESPONSE_MAX_ACTIVE_SIZE holds back *request*.
+
+        Requests sent with ExecutionEngine.download_async() skip the engine
+        backout, so they are limited here, against the responses to such
+        requests alone. Responses to scheduled requests are limited by the
+        engine backout.
+        """
+        middleware = self.middleware
+        if (
+            not middleware._max_active_size
+            or request not in middleware._unscheduled_requests
+        ):
+            return False
+        size = (
+            middleware._unscheduled_response_active_size
+            + self._unscheduled_transfers * middleware._response_rough_size
+        )
+        return size >= middleware._max_active_size
+
+    def _resume_size_blocked(self) -> None:
+        if not self._size_blocked:
+            return
+        self._size_blocked = False
+        # A slot held back by _size_blocks_transfer() may have no transfer of
+        # its own to resume it.
+        for slot in list(self.slots.values()):
+            if slot.queue:
+                self._process_queue(slot)
+
+    def _on_unscheduled_response_release(self) -> None:
+        self._cancel_size_bypass()
+        if self._size_blocked:
+            # This runs wherever the response happens to be released, possibly
+            # in the middle of _process_queue().
+            call_later(0, self._resume_size_blocked)
+
+    def _schedule_size_bypass(self) -> None:
+        """Let a request held back by _size_blocks_transfer() through after
+        _SIZE_BYPASS_DELAY seconds without a release, unless a transfer that
+        it may be waiting for is in progress.
+
+        This keeps code that holds a response to a download_async() request
+        while it awaits another one from stalling the crawl.
+        """
+        if self._size_bypass_call is not None or self._unscheduled_transfers:
+            return
+        self._size_bypass_call = call_later(
+            self._SIZE_BYPASS_DELAY, self._size_bypass_timeout
+        )
+
+    def _cancel_size_bypass(self) -> None:
+        if self._size_bypass_call is not None:
+            self._size_bypass_call.cancel()
+            self._size_bypass_call = None
+
+    def _size_bypass_timeout(self) -> None:
+        self._size_bypass_call = None
+        self._size_bypass_due = True
+        self._resume_size_blocked()
+        self._size_bypass_due = False
+
+    def _bypass_size_limit(self, request: Request) -> None:
+        self._size_bypass_due = False
+        assert self._stats is not None
+        self._stats.inc_value("downloader/response_max_active_size_bypass_count")
+        if self._size_bypass_warned:
+            return
+        self._size_bypass_warned = True
+        held = [str(response) for response in self.middleware._unscheduled_responses]
+        examples = ", ".join(held[:3])
+        if len(held) > 3:
+            examples += f" (+{len(held) - 3} more)"
+        logger.info(
+            f"Letting {request} through RESPONSE_MAX_ACTIVE_SIZE: for "
+            f"{self._SIZE_BYPASS_DELAY:g} seconds, responses to requests sent "
+            f"with download_async() have used "
+            f"{self.middleware._unscheduled_response_active_size} B with none "
+            f"of those requests being downloaded, e.g. {examples}. If your code "
+            f"keeps such a response while it awaits another download_async() "
+            f"call, release it first. See "
+            f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+            f"and the downloader/response_max_active_size_bypass_count stat. "
+            f"This message is only logged once."
+        )
+
     def _end_transfer(self, slot: Slot, request: Request) -> None:
         slot.transferring.remove(request)
-        self._process_queue(slot)
+        if request in self.middleware._unscheduled_requests:
+            self._unscheduled_transfers -= 1
+        if self._size_blocked:
+            self._resume_size_blocked()
+        else:
+            self._process_queue(slot)
         self.signals.send_catch_log(
             signal=signals.request_left_downloader,
             request=request,
@@ -538,6 +655,8 @@ class Downloader:
         self._stop_slot_gc()
         for slot in self.slots.values():
             slot.close()
+        self._cancel_size_bypass()
+        self.middleware._on_unscheduled_response_release = None
         self._record_backout(None)
 
     async def _close_async(self) -> None:

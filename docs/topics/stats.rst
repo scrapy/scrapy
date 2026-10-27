@@ -229,6 +229,14 @@ one per actual value of the placeholder.
 
     Set by :class:`~scrapy.downloadermiddlewares.stats.DownloaderStats`.
 
+.. stat:: downloader/response_max_active_size_bypass_count
+
+``downloader/response_max_active_size_bypass_count``
+    Number of requests sent with
+    :meth:`~scrapy.core.engine.ExecutionEngine.download_async` that were
+    downloaded despite :setting:`RESPONSE_MAX_ACTIVE_SIZE`, to keep the crawl
+    from stalling.
+
 .. stat:: downloader/response_status_count/{status_code}
 
 ``downloader/response_status_count/{status_code}``

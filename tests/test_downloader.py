@@ -8,9 +8,12 @@ import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider
+from scrapy.core.downloader import Downloader
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response
+from scrapy.http.request import NO_CALLBACK
+from scrapy.pipelines.files import FilesPipeline
 from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
@@ -656,3 +659,164 @@ class TestRequestBackout:
             "request_backout_seconds/total": gt(0),
         }
         assert _backout_stats(crawler) == expected_stats
+
+    @pytest.mark.parametrize("shared_slot", [True, False])
+    @coroutine_test
+    async def test_response_max_active_size_media_downloads(self, shared_slot):
+        """Responses of media pipeline requests waiting for a slow upload hold
+        back the next media downloads."""
+        max_active_size = 3000
+        uploads = 0
+        peak_uploads = 0
+
+        class SlowStore(_NoStatStore):
+            async def persist_file(self, path, buf, info, meta=None, headers=None):
+                nonlocal uploads, peak_uploads
+                uploads += 1
+                peak_uploads = max(peak_uploads, uploads)
+                await sleep(0.05)
+                uploads -= 1
+
+        class TestSpider(_MediaSpider):
+            file_count = 20
+            file_size = 1000
+            custom_settings = {
+                "FILES_STORE": "test://",
+                "ITEM_PIPELINES": {
+                    _SharedSlotFilesPipeline
+                    if shared_slot
+                    else _SlotPerFileFilesPipeline: 1
+                },
+                "MEDIA_STORAGES": {"test": SlowStore},
+                "RESPONSE_MAX_ACTIVE_SIZE": max_active_size,
+                "RESPONSE_ROUGH_SIZE": file_size,
+            }
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("file_count") == 20
+        assert peak_uploads == max_active_size // TestSpider.file_size
+        assert (
+            crawler.stats.get_value("downloader/response_max_active_size_bypass_count")
+            is None
+        )
+
+    @coroutine_test
+    async def test_response_max_active_size_scheduled_response_with_files(self):
+        """A scheduled response above the limit does not hold back the media
+        downloads that it waits for."""
+
+        class TestSpider(_MediaSpider):
+            start_urls = [f"data:,{'a' * 2000}"]
+            custom_settings = {
+                "FILES_STORE": "test://",
+                "ITEM_PIPELINES": {_SharedSlotFilesPipeline: 1},
+                "MEDIA_STORAGES": {"test": _NoStatStore},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1000,
+            }
+            file_count = 3
+            file_size = 10
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("file_count") == 3
+        assert (
+            crawler.stats.get_value("downloader/response_max_active_size_bypass_count")
+            is None
+        )
+
+    @pytest.mark.parametrize(
+        ("kept_count", "kept_size", "examples", "more"),
+        [(1, 2000, 1, ""), (4, 300, 3, " (+1 more)")],
+    )
+    @coroutine_test
+    async def test_response_max_active_size_bypass(
+        self, monkeypatch, kept_count, kept_size, examples, more
+    ):
+        """Code that keeps a response to a download_async() request above the
+        limit while it awaits another one slows down instead of stalling."""
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 1000,
+            }
+
+            async def parse(self, response):
+                assert self.crawler.engine
+                kept = [
+                    await self.crawler.engine.download_async(
+                        Request(f"data:,{n:0{kept_size}}")
+                    )
+                    for n in range(kept_count)
+                ]
+                for n in range(2):
+                    await self.crawler.engine.download_async(Request(f"data:,{n}"))
+                assert kept
+                yield {}
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 1
+        assert (
+            crawler.stats.get_value("downloader/response_max_active_size_bypass_count")
+            == 2
+        )
+        messages = [
+            record.getMessage()
+            for record in self.caplog.records
+            if record.getMessage().startswith("Letting")
+        ]
+        assert len(messages) == 1
+        assert "<GET data:,0>" in messages[0]
+        assert messages[0].count("<200 data:,") == examples
+        assert f">{more}. If your code" in messages[0]
+
+
+class _NoStatStore:
+    checksum_algorithm = "md5"
+
+    def __init__(self, uri: str):
+        pass
+
+    def stat_file(self, path, info):
+        return {}
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        pass
+
+
+class _SharedSlotFilesPipeline(FilesPipeline):
+    pass
+
+
+class _SlotPerFileFilesPipeline(FilesPipeline):
+    def get_media_requests(self, item, info):
+        return [
+            Request(url, meta={"download_slot": url}, callback=NO_CALLBACK)
+            for url in item["file_urls"]
+        ]
+
+
+class _MediaSpider(Spider):
+    name = "test"
+    start_urls = ["data:,"]
+    file_count: int
+    file_size: int
+
+    def parse(self, response):
+        yield {
+            "file_urls": [
+                f"data:,{n:0{self.file_size}}" for n in range(self.file_count)
+            ]
+        }

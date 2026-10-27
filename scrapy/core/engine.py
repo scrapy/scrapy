@@ -687,7 +687,7 @@ class ExecutionEngine:
             self._slot.add_request(request)
             try:
                 response_or_request = await maybe_deferred_to_future(
-                    self._download(request)
+                    self._download(request, unscheduled=True)
                 )
             finally:
                 self._slot.remove_request(request)
@@ -697,10 +697,13 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def _download(
-        self, request: Request
+        self, request: Request, *, unscheduled: bool = False
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
         assert self.spider is not None
+
+        if unscheduled:
+            self.downloader.middleware._unscheduled_requests.add(request)
 
         # Lets Request.__await__() find this crawler while the downloader
         # middlewares run.
