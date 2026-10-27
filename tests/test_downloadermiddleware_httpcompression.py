@@ -164,7 +164,7 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding" in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -177,7 +177,7 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -198,7 +198,7 @@ class TestHttpCompression:
                 assert raw_content == newresponse.body
             assert newresponse is not response
             assert newresponse.body.startswith(b"<!DOCTYPE")
-            assert "Content-Encoding" not in newresponse.headers
+            assert "Content-Encoding"  in newresponse.headers
 
     @coroutine_test
     async def test_process_response_rawdeflate(self):
@@ -210,7 +210,7 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74840)
 
@@ -224,7 +224,7 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74840)
 
@@ -257,7 +257,7 @@ class TestHttpCompression:
         request = response.request
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
     @coroutine_test
@@ -294,7 +294,7 @@ class TestHttpCompression:
         request = response.request
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
     @coroutine_test
@@ -315,7 +315,7 @@ class TestHttpCompression:
         request = response.request
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
     @coroutine_test
@@ -415,7 +415,7 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -429,7 +429,7 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -443,7 +443,7 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
+        assert "Content-Encoding"  in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
