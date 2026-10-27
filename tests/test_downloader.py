@@ -15,7 +15,7 @@ from scrapy.http import HtmlResponse, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FilesPipeline
 from scrapy.utils.asyncio import call_later, sleep
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -698,10 +698,7 @@ class TestRequestBackout:
         assert crawler.stats
         assert crawler.stats.get_value("file_count") == 20
         assert peak_uploads == max_active_size // TestSpider.file_size
-        assert (
-            crawler.stats.get_value("downloader/response_max_active_size_bypass_count")
-            is None
-        )
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") is None
 
     @coroutine_test
     async def test_response_max_active_size_scheduled_response_with_files(self):
@@ -724,10 +721,50 @@ class TestRequestBackout:
 
         assert crawler.stats
         assert crawler.stats.get_value("file_count") == 3
-        assert (
-            crawler.stats.get_value("downloader/response_max_active_size_bypass_count")
-            is None
-        )
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") is None
+
+    @coroutine_test
+    async def test_response_max_active_size_scheduled_request_behind_held_back(
+        self, monkeypatch
+    ):
+        """A scheduled request queued in a slot behind a held-back
+        download_async() request is downloaded first."""
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 1.0)
+        events = []
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "DOWNLOAD_DELAY": 0.1,
+                "DOWNLOAD_DELAY_JITTER": 0,
+                "RESPONSE_MAX_ACTIVE_SIZE": 1000,
+                "RESPONSE_ROUGH_SIZE": 1,
+            }
+
+            async def parse(self, response):
+                assert self.crawler.engine
+                download_async = self.crawler.engine.download_async
+                kept_dfd = deferred_from_coro(
+                    download_async(Request(f"data:,{'a' * 2000}"))
+                )
+                held_back_dfd = deferred_from_coro(download_async(Request("data:,a")))
+                yield Request("data:,b", callback=self.parse_b)
+                kept = await maybe_deferred_to_future(kept_dfd)
+                await maybe_deferred_to_future(held_back_dfd)
+                events.append("a")
+                assert kept
+                yield {}
+
+            def parse_b(self, response):
+                events.append("b")
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert events == ["b", "a"]
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") == 1
 
     @pytest.mark.parametrize(
         ("kept_count", "kept_size", "examples", "more"),
@@ -768,10 +805,7 @@ class TestRequestBackout:
 
         assert crawler.stats
         assert crawler.stats.get_value("item_scraped_count") == 1
-        assert (
-            crawler.stats.get_value("downloader/response_max_active_size_bypass_count")
-            == 2
-        )
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") == 2
         messages = [
             record.getMessage()
             for record in self.caplog.records

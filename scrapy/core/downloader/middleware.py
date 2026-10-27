@@ -93,7 +93,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstrac
         self._unscheduled_requests: WeakSet[Request] = WeakSet()
         self._unscheduled_responses: WeakSet[Response] = WeakSet()
         self._unscheduled_response_active_size = 0
-        self._on_unscheduled_response_release: Callable[[], None] | None = None
+        self._on_unscheduled_response_release: Callable[[], object] | None = None
         self._response_exceptions = settings.getbool(
             "DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS"
         )

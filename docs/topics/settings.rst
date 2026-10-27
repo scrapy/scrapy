@@ -2090,14 +2090,14 @@ Default: ``5_000_000``
 
 Soft limit (in bytes) on the total size of responses being kept in memory.
 
-It counts the size of response bodies that have passed through :ref:`downloader
-middlewares <topics-downloader-middleware>` and remain in memory, and the
-:setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests currently being
-downloaded. While that total is above this value, Scrapy stops taking requests
-from the scheduler. While the part of it that comes from requests sent with
-:meth:`~scrapy.core.engine.ExecutionEngine.download_async`, such as those of
-:ref:`media pipelines <topics-media-pipeline>`, is above this value, new
-requests of that kind wait before being downloaded.
+It counts the body size of responses that have been downloaded or returned by
+:ref:`downloader middlewares <topics-downloader-middleware>` and remain in
+memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
+currently being downloaded. While that total is above this value, Scrapy stops
+taking requests from the scheduler. While the part of it that comes from
+requests sent with :meth:`~scrapy.core.engine.ExecutionEngine.download_async`,
+such as those of :ref:`media pipelines <topics-media-pipeline>`, is above this
+value, new requests of that kind wait before being downloaded.
 
 Requests already being downloaded when the limit is reached still finish: up to
 :setting:`CONCURRENT_REQUESTS` from the scheduler, and up to this value divided
@@ -2109,15 +2109,15 @@ If requests sent with ``download_async()`` have been waiting for 5 seconds with
 none of them being downloaded and no response to them released, e.g. because
 your code keeps one such response while it awaits another, Scrapy lets one of
 them through. Each time that happens, memory use can grow by one more response,
-and the :stat:`downloader/response_max_active_size_bypass_count` stat
-increases.
+and the :stat:`response_max_active_size/bypass_count` stat increases.
 
 A higher value improves crawl speed at the cost of memory usage. ``0`` disables
 the limit.
 
 Scrapy logs an info-level message the first time the limit is reached. To see
-how long request processing was paused because of it over a whole crawl, check
-the :stat:`request_backout_seconds/response_max_active_size` stat.
+how long Scrapy stopped taking requests from the scheduler because of it over a
+whole crawl, check the :stat:`request_backout_seconds/response_max_active_size`
+stat.
 
 .. caution::
 
