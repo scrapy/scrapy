@@ -732,7 +732,7 @@ class TestRequestBackout:
         """Scheduled requests queued in a slot behind a held-back
         download_async() request are downloaded first, and the bypass lets it
         through even if it is due while the slot waits for its download
-        delay.
+        delay. Once it is through, scheduled requests are not held back.
         """
         monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
         events: list[int | str] = []
@@ -759,6 +759,8 @@ class TestRequestBackout:
                 kept = await maybe_deferred_to_future(kept_dfd)
                 await maybe_deferred_to_future(held_back_dfd)
                 events.append("a")
+                await sleep(0.5)
+                events.append("b")
                 assert kept
                 yield {}
 
@@ -769,7 +771,8 @@ class TestRequestBackout:
         await maybe_deferred_to_future(crawler.crawl())
 
         assert crawler.stats
-        assert events == [3, "a", 2, 1, 0]
+        assert [event for event in events if event != "b"] == [3, "a", 2, 1, 0]
+        assert events.index(2) < events.index("b")
         assert crawler.stats.get_value("response_max_active_size/bypass_count") == 1
 
     @pytest.mark.parametrize(
