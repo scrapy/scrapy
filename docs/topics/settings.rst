@@ -2088,7 +2088,9 @@ RESPONSE_MAX_ACTIVE_SIZE
 
 Default: ``5_000_000``
 
-Soft limit (in bytes) on the total size of responses being kept in memory.
+Soft limit (in bytes) on the total size of responses being kept in memory. A
+higher value improves crawl speed at the cost of memory usage. ``0`` disables
+the limit.
 
 It counts the body size of responses that have been downloaded or returned by
 :ref:`downloader middlewares <topics-downloader-middleware>` and remain in
@@ -2102,18 +2104,18 @@ requests of that kind wait before being downloaded.
 
 Requests already being downloaded when the limit is reached still finish: up to
 :setting:`CONCURRENT_REQUESTS` from the scheduler, and up to this value divided
-by :setting:`RESPONSE_ROUGH_SIZE` sent with ``download_async()``. So, in
-practice, responses can take up to about twice this value, plus the size of the
-responses to those requests.
+by :setting:`RESPONSE_ROUGH_SIZE` sent with
+:meth:`~scrapy.core.engine.ExecutionEngine.download_async`. So, in practice,
+responses can take up to about twice this value, plus the size of the responses
+to those requests.
 
-If requests sent with ``download_async()`` have been waiting for 5 seconds with
-none of them being downloaded and no response to them released, e.g. because
-your code keeps one such response while it awaits another, Scrapy lets one of
-them through. Each time that happens, memory use can grow by one more response,
-and the :stat:`response_max_active_size/bypass_count` stat increases.
-
-A higher value improves crawl speed at the cost of memory usage. ``0`` disables
-the limit.
+If requests sent with
+:meth:`~scrapy.core.engine.ExecutionEngine.download_async` have been waiting
+for 5 seconds with none of them being downloaded and no response to them
+released, e.g. because your code keeps one such response while it awaits
+another, Scrapy lets one of them through. Each time that happens, memory use
+can grow by one more response, and the
+:stat:`response_max_active_size/bypass_count` stat increases.
 
 Scrapy logs an info-level message the first time the limit is reached. To see
 how long Scrapy stopped taking requests from the scheduler because of it over a
