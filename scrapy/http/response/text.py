@@ -10,13 +10,15 @@ from __future__ import annotations
 import json
 import weakref
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, cast
+from enum import Enum, auto
+from typing import TYPE_CHECKING, Any, Literal, cast
 from urllib.parse import urljoin
 
+import frostwork
 import parsel
-from charset_normalizer import from_bytes
 from w3lib.encoding import (
     html_body_declared_encoding,
+    html_encoding,
     html_to_unicode,
     http_content_type_encoding,
     read_bom,
@@ -26,7 +28,6 @@ from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
-from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -38,19 +39,23 @@ if TYPE_CHECKING:
     from scrapy.selector import Selector, SelectorList
 
 
-_NONE = object()
+class _Unset(Enum):
+    UNSET = auto()
+
+
+_UNSET = _Unset.UNSET
 
 
 class TextResponse(Response):
-    _DEFAULT_ENCODING = "ascii"
-
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
     __slots__ = (
+        "_base_url",
         "_cached_benc",
         "_cached_decoded_json",
         "_cached_selector",
         "_cached_ubody",
         "_encoding",
+        "_meta_refresh",
     )
 
     def __init__(self, *args: Any, **kwargs: Any):
@@ -58,7 +63,11 @@ class TextResponse(Response):
         self._cached_benc: str | None = None
         self._cached_ubody: str | None = None
         self._cached_selector: Selector | None = None
-        self._cached_decoded_json: object = _NONE
+        self._cached_decoded_json: object = _UNSET
+        self._base_url: str | None = None
+        self._meta_refresh: frostwork.MetaRefresh | Literal[_Unset.UNSET] | None = (
+            _UNSET
+        )
         super().__init__(*args, **kwargs)
 
     def _set_body(self, body: str | bytes | None) -> None:
@@ -103,7 +112,7 @@ class TextResponse(Response):
 
         The result is cached after the first call.
         """
-        if self._cached_decoded_json is _NONE:
+        if self._cached_decoded_json is _UNSET:
             try:
                 self._cached_decoded_json = json.loads(self.body)
             except UnicodeDecodeError:
@@ -113,18 +122,67 @@ class TextResponse(Response):
     @property
     def text(self) -> str:
         """Body as unicode"""
-        # access self.encoding before _cached_ubody to make sure
-        # _body_inferred_encoding is called
-        benc = self.encoding
         if self._cached_ubody is None:
-            charset = f"charset={benc}"
+            charset = f"charset={self.encoding}"
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
-        return urljoin(get_base_url(self), url)
+        return urljoin(self.base_url, url)
+
+    @property
+    def base_url(self) -> str:
+        """Absolute URL that relative URLs of the response are relative to.
+
+        .. versionadded:: VERSION
+
+        It is the ``href`` of the first ``<base>`` element that has one,
+        resolved against :attr:`~Response.url`, or :attr:`~Response.url`
+        itself, serialized like a web browser does, e.g. with ``/`` as empty
+        path. Setting it overrides the value read from the body.
+        """
+        if self._base_url is None:
+            self._navigate()
+        assert self._base_url is not None
+        return self._base_url
+
+    @base_url.setter
+    def base_url(self, value: str) -> None:
+        self._base_url = value
+
+    @property
+    def meta_refresh(self) -> frostwork.MetaRefresh | None:
+        """Named tuple ``(delay, url)`` of the meta refresh that a web browser
+        with JavaScript enabled would follow, with *url* absolute, or
+        ``None``.
+
+        .. versionadded:: VERSION
+
+        Setting it overrides the value read from the body.
+        """
+        if self._meta_refresh is _UNSET:
+            self._navigate()
+        assert self._meta_refresh is not _UNSET
+        return self._meta_refresh
+
+    @meta_refresh.setter
+    def meta_refresh(self, value: tuple[float, str] | None) -> None:
+        self._meta_refresh = None if value is None else frostwork.MetaRefresh(*value)
+
+    def _navigate(self) -> None:
+        navigation = frostwork.navigation(
+            self.body,
+            self.url,
+            self.encoding,
+            base_url=self._base_url is None,
+            meta_refresh=self._meta_refresh is _UNSET,
+        )
+        if self._base_url is None:
+            self._base_url = navigation.base_url
+        if self._meta_refresh is _UNSET:
+            self._meta_refresh = navigation.meta_refresh
 
     @memoizemethod_noargs
     def _headers_encoding(self) -> str | None:
@@ -132,27 +190,10 @@ class TextResponse(Response):
         return http_content_type_encoding(content_type.decode("latin-1"))
 
     def _body_inferred_encoding(self) -> str:
-        content_type = self.headers.get(b"Content-Type") or b""
         if self._cached_benc is None:
-            benc, ubody = html_to_unicode(
-                content_type.decode("latin-1"),
-                self.body,
-                auto_detect_fun=self._auto_detect_fun,
-                default_encoding=self._DEFAULT_ENCODING,
-            )
-            self._cached_benc = benc
-            self._cached_ubody = ubody
+            content_type = self.headers.get(b"Content-Type") or b""
+            self._cached_benc = html_encoding(content_type.decode("latin-1"), self.body)
         return self._cached_benc
-
-    def _auto_detect_fun(self, text: bytes) -> str | None:
-        for enc in (self._DEFAULT_ENCODING, "utf-8"):
-            try:
-                text.decode(enc)
-            except UnicodeError:
-                continue
-            return resolve_encoding(enc)
-        match = from_bytes(text).best()
-        return resolve_encoding(match.encoding) if match else None
 
     @memoizemethod_noargs
     def _body_declared_encoding(self) -> str | None:

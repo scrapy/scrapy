@@ -6,6 +6,7 @@ import weakref
 from typing import cast
 from unittest import mock
 
+import frostwork
 import pytest
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
@@ -39,14 +40,14 @@ class TestTextResponse(TestResponseBase):
 
         assert isinstance(r2, self.response_class)
         assert r2.url == "http://www.example.com/other"
-        self._assert_response_encoding(r2, "cp852")
+        assert r2.encoding == "cp852"
         assert r3.url == "http://www.example.com/other"
         assert r3._declared_encoding() == "latin1"
 
     def test_unicode_url(self):
         # instantiate with unicode url without encoding (should set default encoding)
         resp = self.response_class("http://www.example.com/")
-        self._assert_response_encoding(resp, self.response_class._DEFAULT_ENCODING)
+        self._assert_response_encoding(resp, "utf-8")
 
         # make sure urls are converted to str
         resp = self.response_class(url="http://www.example.com/", encoding="utf-8")
@@ -167,8 +168,8 @@ class TestTextResponse(TestResponseBase):
         self._assert_response_values(r1, "utf-8", "\xa3")
         self._assert_response_values(r2, "utf-8", "\xa3")
         self._assert_response_values(r3, "iso-8859-1", "\xa3")
-        self._assert_response_values(r6, "gb18030", "\u2015")
-        self._assert_response_values(r7, "gb18030", "\u2015")
+        self._assert_response_values(r6, "gbk", "\u2015")
+        self._assert_response_values(r7, "gbk", "\u2015")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         with pytest.raises(TypeError):
@@ -188,7 +189,7 @@ class TestTextResponse(TestResponseBase):
         body = "ICD10 国際疾病分類第10版2013年版 病名マスター".encode("shift-jis")
         r = self.response_class("http://www.example.com", body=body)
         assert r._declared_encoding() is None
-        assert r.encoding in {"shift_jis", "cp932"}
+        assert r.encoding == "cp932"
         assert r.text == body.decode(r.encoding)
 
     def test_utf16(self):
@@ -199,7 +200,8 @@ class TestTextResponse(TestResponseBase):
             body=body,
             encoding="utf-16",
         )
-        self._assert_response_values(r, "utf-16", body)
+        assert r.encoding == "utf-16"
+        assert r.text == "hi"
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(
@@ -318,7 +320,6 @@ class TestTextResponse(TestResponseBase):
         )
 
     def test_urljoin_with_base_url(self):
-        """Test urljoin shortcut which also evaluates base-url through get_base_url()."""
         body = b'<html><body><base href="https://example.net"></body></html>'
         joined = self.response_class("http://www.example.com", body=body).urljoin(
             "/test"
@@ -351,6 +352,83 @@ class TestTextResponse(TestResponseBase):
         )
         assert response.urljoin("/test") == "https://example.net/test"
         assert response.follow_redirect().url == "http://www.example.com/test"
+
+    def test_base_url_serialized(self) -> None:
+        response = self.response_class("http://www.EXAMPLE.com", body=b"")
+        assert response.base_url == "http://www.example.com/"
+
+    @pytest.mark.parametrize(
+        ("body", "base_url"),
+        [
+            (b"", "http://www.example.com/a/b"),
+            (b'<base href="c/">', "http://www.example.com/a/c/"),
+            (
+                b'<base target="_blank"><base href="/c"><base href="/d">',
+                "http://www.example.com/c",
+            ),
+        ],
+    )
+    def test_base_url(self, body: bytes, base_url: str) -> None:
+        response = self.response_class("http://www.example.com/a/b", body=body)
+        assert response.base_url == base_url
+
+    @pytest.mark.parametrize(
+        ("body", "meta_refresh"),
+        [
+            (b"", None),
+            (
+                b'<base href="/c/"><meta http-equiv="refresh" content="5;url=d">',
+                (5.0, "http://www.example.com/c/d"),
+            ),
+            (
+                (
+                    b'<meta http-equiv="refresh" content="2;url=/a">'
+                    b'<meta http-equiv="refresh" content="1;url=/b">'
+                    b'<meta http-equiv="refresh" content="1;url=/c">'
+                    b'<meta http-equiv="refresh" content="3;url=/d">'
+                ),
+                (1.0, "http://www.example.com/c"),
+            ),
+            (
+                (
+                    b'<noscript><meta http-equiv="refresh" content="0;url=/a">'
+                    b"</noscript><template>"
+                    b'<meta http-equiv="refresh" content="0;url=/b"></template>'
+                    b'<script>document.write(\'<meta http-equiv="refresh" '
+                    b'content="0;url=/c">\')</script>'
+                ),
+                None,
+            ),
+        ],
+    )
+    def test_meta_refresh(
+        self, body: bytes, meta_refresh: tuple[float, str] | None
+    ) -> None:
+        response = self.response_class("http://www.example.com", body=body)
+        assert response.meta_refresh == meta_refresh
+
+    def test_navigation_once(self) -> None:
+        body = b'<base href="/a/"><meta http-equiv="refresh" content="0;url=b">'
+        response = self.response_class("http://www.example.com", body=body)
+        with mock.patch("frostwork.navigation", wraps=frostwork.navigation) as nav:
+            assert response.base_url == "http://www.example.com/a/"
+            assert response.meta_refresh == (0.0, "http://www.example.com/a/b")
+        nav.assert_called_once()
+
+    def test_navigation_set(self) -> None:
+        body = b'<base href="/a/"><meta http-equiv="refresh" content="0;url=b">'
+        response = self.response_class("http://www.example.com", body=body)
+        response.base_url = "http://example.net/"
+        assert response.meta_refresh == (0.0, "http://www.example.com/a/b")
+        assert response.base_url == "http://example.net/"
+        response.meta_refresh = None
+        assert response.meta_refresh is None
+
+        response = self.response_class("http://www.example.com", body=body)
+        response.meta_refresh = (1.0, "http://example.net/")
+        assert response.base_url == "http://www.example.com/a/"
+        assert response.meta_refresh == (1.0, "http://example.net/")
+        assert isinstance(response.meta_refresh, frostwork.MetaRefresh)
 
     def test_follow_selector(self):
         resp = self._links_response()
@@ -596,7 +674,7 @@ class TestXmlResponse(TestTextResponse):
     def test_xml_encoding(self):
         body = b"<xml></xml>"
         r1 = self.response_class("http://www.example.com", body=body)
-        self._assert_response_values(r1, self.response_class._DEFAULT_ENCODING, body)
+        self._assert_response_values(r1, "utf-8", body)
 
         body = b"""<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
         r2 = self.response_class("http://www.example.com", body=body)

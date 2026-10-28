@@ -9,14 +9,15 @@ import mimetypes
 import os
 import re
 import tempfile
+import warnings
 import webbrowser
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from weakref import WeakKeyDictionary
 
+import frostwork
 from twisted.web import http
-from w3lib import html
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.headers import Headers
 from scrapy.http.response.body_file import BodyFileResponse
 from scrapy.utils.misc import load_object
@@ -33,35 +34,50 @@ def _body_size(response: Response) -> int:
     return len(response.body)
 
 
-_baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
-
-
 def get_base_url(response: TextResponse) -> str:
-    """Return the base url of the given response, joined with the response url"""
-    if response not in _baseurl_cache:
-        text = response.text[0:4096]
-        _baseurl_cache[response] = html.get_base_url(
-            text, response.url, response.encoding
-        )
-    return _baseurl_cache[response]
+    warnings.warn(
+        "scrapy.utils.response.get_base_url() is deprecated, use "
+        "TextResponse.base_url instead.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return response.base_url
 
 
-_metaref_cache: WeakKeyDictionary[Response, tuple[None, None] | tuple[float, str]] = (
-    WeakKeyDictionary()
-)
+_IGNORABLE_TAGS = {"script", "noscript", "template"}
+
+
+def _get_meta_refresh(
+    response: TextResponse, *, scripting: bool
+) -> frostwork.MetaRefresh | None:
+    if scripting:
+        return response.meta_refresh
+    return frostwork.navigation(
+        response.body,
+        response.url,
+        response.encoding,
+        base_url=False,
+        scripting=False,
+    ).meta_refresh
 
 
 def get_meta_refresh(
     response: TextResponse,
     ignore_tags: Iterable[str] = ("script", "noscript"),
 ) -> tuple[None, None] | tuple[float, str]:
-    """Parse the http-equiv refresh parameter from the given response"""
-    if response not in _metaref_cache:
-        text = response.text[0:4096]
-        _metaref_cache[response] = html.get_meta_refresh(
-            text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
+    warnings.warn(
+        "scrapy.utils.response.get_meta_refresh() is deprecated, use "
+        "TextResponse.meta_refresh instead.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    ignore_tags = set(ignore_tags)
+    if not ignore_tags <= _IGNORABLE_TAGS:
+        raise ValueError(
+            f"Unsupported ignore_tags: {sorted(ignore_tags - _IGNORABLE_TAGS)}"
         )
-    return _metaref_cache[response]
+    meta_refresh = _get_meta_refresh(response, scripting="noscript" in ignore_tags)
+    return meta_refresh or (None, None)
 
 
 def response_from_dict(d: dict[str, Any]) -> Response:
@@ -134,7 +150,7 @@ def open_in_browser(
         # any base tag of the response, and matches it when there is one.
         doctype = _DOCTYPE_RE.match(body)
         index = doctype.end() if doctype else 0
-        base_tag = f'<base href="{get_base_url(response)}">'.encode()
+        base_tag = f'<base href="{response.base_url}">'.encode()
         body = body[:index] + base_tag + body[index:]
         ext = ".html"
     elif isinstance(response, TextResponse):
