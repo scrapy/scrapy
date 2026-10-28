@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import warnings
 from http.cookies import SimpleCookie
-from shlex import split
+from shlex import quote, split
 from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
@@ -94,6 +94,94 @@ def _parse_headers_and_cookies(
     return headers, cookies
 
 
+_ANSI_C_SIMPLE_ESCAPES = {
+    "a": "\a",
+    "b": "\b",
+    "e": "\x1b",
+    "E": "\x1b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+    "\\": "\\",
+    "'": "'",
+    '"': '"',
+    "?": "?",
+}
+_ANSI_C_HEX_ESCAPES = {"x": 2, "u": 4, "U": 8}
+_HEX_DIGITS = "0123456789abcdefABCDEF"
+_OCT_DIGITS = "01234567"
+
+
+def _find_ansi_c_quote_end(curl_command: str, start: int) -> int | None:
+    """Return the index of the quote that closes a ``$'...'`` string."""
+    i = start
+    while i < len(curl_command):
+        if curl_command[i] == "\\":
+            i += 2
+        elif curl_command[i] == "'":
+            return i
+        else:
+            i += 1
+    return None
+
+
+def _decode_ansi_c_escape(value: str, escape: str, i: int) -> tuple[bytes, int]:
+    """Decode the escape ``<backslash><escape>`` whose arguments start at ``value[i]``.
+
+    Return the decoded bytes and the index right after the escape.
+    """
+    if escape in _ANSI_C_SIMPLE_ESCAPES:
+        return _ANSI_C_SIMPLE_ESCAPES[escape].encode(), i
+    if escape in _OCT_DIGITS:
+        digits = escape
+        while len(digits) < 3 and i < len(value) and value[i] in _OCT_DIGITS:
+            digits += value[i]
+            i += 1
+        return bytes([int(digits, 8) & 0xFF]), i
+    if escape in _ANSI_C_HEX_ESCAPES:
+        digits = ""
+        while (
+            len(digits) < _ANSI_C_HEX_ESCAPES[escape]
+            and i < len(value)
+            and value[i] in _HEX_DIGITS
+        ):
+            digits += value[i]
+            i += 1
+        if digits and escape == "x":
+            return bytes([int(digits, 16)]), i
+        if digits:
+            return chr(int(digits, 16)).encode(errors="surrogatepass"), i
+    elif escape == "c" and i < len(value):
+        return bytes([ord(value[i]) & 0x1F]), i + 1
+    # Unknown escapes are kept as is.
+    return f"\\{escape}".encode(), i
+
+
+def _decode_ansi_c_string(value: str) -> str:
+    """Decode the backslash escapes of a Bash ``$'...'`` string.
+
+    See https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
+    """
+    # \\xHH and \\nnn produce raw bytes, like in Bash, so build bytes and
+    # decode them at the end.
+    result = bytearray()
+    i = 0
+    while i < len(value):
+        char = value[i]
+        if char != "\\" or i + 1 == len(value):
+            result += char.encode()
+            i += 1
+            continue
+        decoded, i = _decode_ansi_c_escape(value, value[i + 1], i + 2)
+        result += decoded
+    try:
+        return result.decode()
+    except UnicodeDecodeError:
+        return result.decode("latin-1")
+
+
 def _normalize_curl_command(curl_command: str) -> str:
     """Normalize Bash ANSI-C quote prefixes for shlex."""
     result: list[str] = []
@@ -124,9 +212,15 @@ def _normalize_curl_command(curl_command: str) -> str:
             and not in_single_quote
             and not in_double_quote
         ):
-            result.append("'")
-            in_single_quote = True
-            i += 1
+            end = _find_ansi_c_quote_end(curl_command, i + 2)
+            if end is None:
+                # Unterminated: leave it for shlex to report.
+                result.append("'")
+                in_single_quote = True
+                i += 1
+            else:
+                result.append(quote(_decode_ansi_c_string(curl_command[i + 2 : end])))
+                i = end
         else:
             result.append(char)
 

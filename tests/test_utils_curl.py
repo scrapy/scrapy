@@ -296,6 +296,42 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_raw_with_string_prefix_escapes(self):
+        # Escapes inside $'...' are decoded the way Bash does it.
+        curl_command = (
+            r"curl 'https://www.example.org/' --data-raw $'line1\nline2\t\\end'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "line1\nline2\t\\end",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_raw_with_string_prefix_escaped_quote(self):
+        # Chrome escapes an apostrophe as \' inside $'...'.
+        curl_command = (
+            r"""curl 'https://www.example.org/' --data-raw $'{"name":"O\'Brien"}'"""
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": '{"name":"O\'Brien"}',
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_raw_with_string_prefix_numeric_escapes(self):
+        curl_command = (
+            r"curl 'https://www.example.org/' --data-raw "
+            r"$'\x41\101\u00e9\xc3\xa9\cA\q'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "AA\u00e9\u00e9\x01\\q",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_explicit_get_with_data(self):
         curl_command = "curl httpbin.org/anything -X GET --data asdf"
         expected_result = {
