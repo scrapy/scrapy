@@ -239,6 +239,60 @@ The ``settings`` object can be used like a :class:`dict` (e.g.
 which may be passed from the command line as strings, it is recommended to use
 one of the methods provided by the :class:`~scrapy.settings.Settings` API.
 
+.. _secret-settings:
+
+Secret settings
+===============
+
+Settings that hold credentials, such as :setting:`AWS_SECRET_ACCESS_KEY`, can
+reference a secret stored elsewhere instead:
+
+.. code-block:: python
+
+    AWS_ACCESS_KEY_ID = {"env": "AWS_ACCESS_KEY_ID"}
+    AWS_SECRET_ACCESS_KEY = {"keyring": "aws"}
+    FTP_PASSWORD = {
+        "keyring": {
+            "username": "ftp",
+            "service": "myproject",
+            "backend": "keyring.backends.SecretService.Keyring",
+        }
+    }
+
+``{"env": "VAR"}`` reads the ``VAR`` environment variable.
+
+``{"keyring": …}`` reads from a keyring_ (21.7.0 or later) entry, given either
+its username or an object with its ``username``, ``service`` (default:
+``"scrapy"``) and the import path of the keyring ``backend`` to use instead of
+the default one.
+
+.. _keyring: https://pypi.org/project/keyring/
+
+A missing environment variable or keyring entry raises :exc:`KeyError`.
+
+From the command line, write references as JSON:
+
+.. code-block:: shell
+
+    scrapy crawl myspider -s 'AWS_ACCESS_KEY_ID={"env": "AWS_ACCESS_KEY_ID"}'
+
+To set a secret that is itself a JSON object with an ``env``, ``keyring`` or
+``raw`` key, wrap it in a ``raw`` key: ``'{"raw": {"env": "production", …}}'``.
+
+To load environment variables from a :file:`.env` file, run Scrapy through
+`dotenv run`_ or through a secrets manager command like 1Password’s `op run`_,
+which also resolves secret references in the file:
+
+.. code-block:: shell
+
+    dotenv run -- scrapy crawl myspider
+    op run --env-file=.env -- scrapy crawl myspider
+
+.. _dotenv run: https://pypi.org/project/python-dotenv/
+.. _op run: https://developer.1password.com/docs/cli/reference/commands/run/
+
+Components read secret settings with
+:meth:`~scrapy.settings.BaseSettings.getsecret`.
 
 .. _component-priority-dictionaries:
 
@@ -492,6 +546,8 @@ Default: ``None``
 The AWS access key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+This is a :ref:`secret setting <secret-settings>`.
+
 .. setting:: AWS_ENDPOINT_URL
 
 AWS_ENDPOINT_URL
@@ -540,6 +596,8 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+This is a :ref:`secret setting <secret-settings>`.
+
 .. setting:: AWS_SESSION_TOKEN
 
 AWS_SESSION_TOKEN
@@ -550,6 +608,8 @@ Default: ``None``
 The AWS security token used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
 `temporary security credentials`_.
+
+This is a :ref:`secret setting <secret-settings>`.
 
 .. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
@@ -1628,6 +1688,8 @@ Default: ``"guest"``
 
 The password to use for FTP connections when there is no ``"ftp_password"``
 in ``Request`` meta.
+
+This is a :ref:`secret setting <secret-settings>`.
 
 It can be overriden in a request in any of the following ways:
 
