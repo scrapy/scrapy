@@ -175,6 +175,11 @@ def curl_to_request_kwargs(
 
     headers, cookies = _parse_headers_and_cookies(parsed_args)
 
+    if parsed_args.data and not any(
+        name.lower() == "content-type" for name, _ in headers
+    ):
+        # curl sends form data with this Content-Type unless one is given.
+        headers.append(("Content-Type", "application/x-www-form-urlencoded"))
     if headers:
         result["headers"] = headers
     if cookies:

@@ -242,6 +242,7 @@ class TestCurlToRequestKwargs:
                 "2xnamez32x201740686%20ascending&queryFunctions=%5B%5D&ranking"
                 "Functions=%5B%5D"
             ),
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -251,6 +252,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": '{"$filters":"Filter!"}',
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -260,6 +262,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "$top=10&$skip=5",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -271,6 +274,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "a=1&b=2&c=3",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -282,6 +286,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "a=1&b=2&c=3",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -293,6 +298,45 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "a=1&b=2",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize("data_option", ["-d", "--data", "--data-raw"])
+    def test_post_data_default_content_type(self, data_option):
+        curl_command = f"curl 'https://www.example.org/' {data_option} 'a=1&b=2'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize("header_name", ["Content-Type", "content-type"])
+    def test_post_data_explicit_content_type_wins(self, header_name):
+        curl_command = (
+            "curl 'https://www.example.org/' -d 'a=1&b=2'"
+            f" -H '{header_name}: text/plain'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2",
+            "headers": [(header_name, "text/plain")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_default_content_type_after_other_headers(self):
+        curl_command = "curl 'https://www.example.org/' -H 'Accept: */*' -d 'a=1&b=2'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2",
+            "headers": [
+                ("Accept", "*/*"),
+                ("Content-Type", "application/x-www-form-urlencoded"),
+            ],
         }
         self._test_command(curl_command, expected_result)
 
@@ -302,6 +346,7 @@ class TestCurlToRequestKwargs:
             "method": "GET",
             "url": "http://httpbin.org/anything",
             "body": "asdf",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
