@@ -359,6 +359,62 @@ Disallow: /some/randome/page.html
         assert robotsreq.meta["download_handler"] == "named"
         assert robotsreq.meta["is_robotstxt_request"] is True
 
+    @coroutine_test
+    async def test_robotstxt_scheme_isolation(self) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+
+        http_robots = b"User-Agent: *\nDisallow: /http-blocked\n"
+        https_robots = b"User-Agent: *\nDisallow: /https-blocked\n"
+
+        async def return_response(request: Request) -> Response:
+            if request.url == "http://site.local/robots.txt":
+                body = http_robots
+            elif request.url == "https://site.local/robots.txt":
+                body = https_robots
+            else:
+                body = b"User-Agent: *\nDisallow:\n"
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.callback, TextResponse(request.url, body=body))
+            return await maybe_deferred_to_future(deferred)
+
+        self.crawler.engine.download_async.side_effect = return_response
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+
+        # HTTP checks: /http-blocked is disallowed, /https-blocked is allowed
+        await self.assertNotIgnored(
+            Request("http://site.local/https-blocked"), middleware
+        )
+        await self.assertIgnored(Request("http://site.local/http-blocked"), middleware)
+
+        # HTTPS checks for the same netloc must maintain an independent parser
+        await self.assertNotIgnored(
+            Request("https://site.local/http-blocked"), middleware
+        )
+        await self.assertIgnored(
+            Request("https://site.local/https-blocked"), middleware
+        )
+
+        requested_urls = [
+            call[0][0].url for call in self.crawler.engine.download_async.call_args_list
+        ]
+        assert "http://site.local/robots.txt" in requested_urls
+        assert "https://site.local/robots.txt" in requested_urls
+
+    def test_robotstxt_parser_key_and_is_robotstxt(self) -> None:
+        http_req = Request("http://example.com/start")
+        https_req = Request("https://example.com/start")
+        assert RobotsTxtMiddleware._parser_key(http_req) == "http://example.com"
+        assert RobotsTxtMiddleware._parser_key(https_req) == "https://example.com"
+        assert RobotsTxtMiddleware._is_robotstxt_request(
+            Request("http://example.com/robots.txt")
+        )
+        assert RobotsTxtMiddleware._is_robotstxt_request(
+            Request("https://example.com/robots.txt")
+        )
+        assert not RobotsTxtMiddleware._is_robotstxt_request(
+            Request("http://example.com/other")
+        )
+
     async def assertNotIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
