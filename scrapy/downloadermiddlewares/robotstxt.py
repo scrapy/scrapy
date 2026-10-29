@@ -111,12 +111,13 @@ class RobotsTxtMiddleware:
             return
         if request.url.startswith("data:") or request.url.startswith("file:"):
             return
-        netloc = urlparse_cached(request).netloc
-        if netloc not in self._parsers and self._is_robotstxt_request(request):
+        url = urlparse_cached(request)
+        origin = f"{url.scheme}://{url.netloc}"
+        if origin not in self._parsers and self._is_robotstxt_request(request):
             # Let this request download normally and use its own response as
-            # this host's robots.txt, instead of triggering a second,
+            # this origin's robots.txt, instead of triggering a second,
             # separate download of the same URL.
-            self._parsers[netloc] = Deferred()
+            self._parsers[origin] = Deferred()
             self._stats.inc_value("robotstxt/request_count")
             return
         rp = await self.robot_parser(request)
@@ -126,28 +127,30 @@ class RobotsTxtMiddleware:
     async def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Response:
-        netloc = urlparse_cached(request).netloc
-        parser = self._parsers.get(netloc)
+        url = urlparse_cached(request)
+        origin = f"{url.scheme}://{url.netloc}"
+        parser = self._parsers.get(origin)
         if (
             isinstance(parser, Deferred)
             and not parser.called
             and self._is_robotstxt_request(request)
         ):
-            await self._parse_robots(response, netloc, request)
+            await self._parse_robots(response, origin, request)
         return response
 
     @_warn_spider_arg
     async def process_exception(
         self, request: Request, exception: Exception, spider: Spider | None = None
     ) -> None:
-        netloc = urlparse_cached(request).netloc
-        parser = self._parsers.get(netloc)
+        url = urlparse_cached(request)
+        origin = f"{url.scheme}://{url.netloc}"
+        parser = self._parsers.get(origin)
         if (
             isinstance(parser, Deferred)
             and not parser.called
             and self._is_robotstxt_request(request)
         ):
-            self._robots_error(exception, netloc, request)
+            self._robots_error(exception, origin, request)
 
     @staticmethod
     def _is_robotstxt_request(request: Request) -> bool:
@@ -179,11 +182,11 @@ class RobotsTxtMiddleware:
 
     async def robot_parser(self, request: Request) -> RobotParser | None:
         url = urlparse_cached(request)
-        netloc = url.netloc
+        origin = f"{url.scheme}://{url.netloc}"
 
-        if netloc not in self._parsers:
-            self._parsers[netloc] = Deferred()
-            robotsurl = f"{url.scheme}://{url.netloc}/robots.txt"
+        if origin not in self._parsers:
+            self._parsers[origin] = Deferred()
+            robotsurl = f"{origin}/robots.txt"
             meta: dict[str, Any] = {
                 "dont_obey_robotstxt": True,
                 "is_robotstxt_request": True,
@@ -198,12 +201,12 @@ class RobotsTxtMiddleware:
             )
             try:
                 resp = await self.crawler.engine.download_async(robotsreq)
-                await self._parse_robots(resp, netloc, request)
+                await self._parse_robots(resp, origin, request)
             except Exception as e:
-                self._robots_error(e, netloc, request)
+                self._robots_error(e, origin, request)
             self._stats.inc_value("robotstxt/request_count")
 
-        parser = self._parsers[netloc]
+        parser = self._parsers[origin]
         if isinstance(parser, Deferred):
             # Every caller needs to get its own Deferred, so that awaiting or
             # cancelling one doesn't affect others.
@@ -218,7 +221,7 @@ class RobotsTxtMiddleware:
         return parser
 
     async def _parse_robots(
-        self, response: Response, netloc: str, request: Request
+        self, response: Response, origin: str, request: Request
     ) -> None:
         self._stats.inc_value("robotstxt/response_count")
         self._stats.inc_value(f"robotstxt/response_status_count/{response.status}")
@@ -229,12 +232,12 @@ class RobotsTxtMiddleware:
             request=request,
             response=response,
         )
-        rp_dfd = self._parsers[netloc]
+        rp_dfd = self._parsers[origin]
         assert isinstance(rp_dfd, Deferred)
-        self._parsers[netloc] = rp
+        self._parsers[origin] = rp
         rp_dfd.callback(rp)
 
-    def _robots_error(self, exc: Exception, netloc: str, request: Request) -> None:
+    def _robots_error(self, exc: Exception, origin: str, request: Request) -> None:
         if not isinstance(exc, IgnoreRequest):
             logger.error(
                 f"Error downloading {request}",
@@ -243,7 +246,7 @@ class RobotsTxtMiddleware:
             )
             key = f"robotstxt/exception_count/{type(exc)}"
             self._stats.inc_value(key)
-        rp_dfd = self._parsers[netloc]
+        rp_dfd = self._parsers[origin]
         assert isinstance(rp_dfd, Deferred)
-        self._parsers[netloc] = None
+        self._parsers[origin] = None
         rp_dfd.callback(None)

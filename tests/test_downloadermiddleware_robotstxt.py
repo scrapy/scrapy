@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import socket
+import ssl
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -22,7 +27,7 @@ from tests.utils.decorators import coroutine_test
 from tests.utils.robotstxt import rerp_available
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Generator, Iterable
 
     from tests.mockserver.http import MockServer
 
@@ -392,6 +397,91 @@ class _FollowSpider(Spider):
 
     def parse(self, response: Response) -> Iterable[Request]:
         yield response.follow("/deny/a")
+
+
+class _FollowOriginSpider(Spider):
+    name = "test"
+    target_url: str
+
+    def parse(self, response: Response) -> Iterable[Request]:
+        yield Request(self.target_url, callback=self._parse_blocked)
+
+    def _parse_blocked(self, _response: Response) -> None:
+        pass
+
+
+@pytest.fixture(name="robots_origin_server")
+def _robots_origin_server(
+    blocked_scheme: str,
+) -> Generator[tuple[str, list[str]]]:
+    seen: list[str] = []
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    keys = Path(__file__).parent / "keys"
+    context.load_cert_chain(keys / "localhost.crt", keys / "localhost.key")
+
+    class _Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            scheme = "https" if isinstance(self.connection, ssl.SSLSocket) else "http"
+            seen.append(f"{scheme}:{self.path}")
+            body = b""
+            if self.path == "/robots.txt":
+                body = b"User-agent: *\n"
+                if scheme == blocked_scheme:
+                    body += b"Disallow: /blocked\n"
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, fmt: str, *args: Any) -> None:
+            pass
+
+    class _Server(ThreadingHTTPServer):
+        def get_request(self) -> tuple[socket.socket, tuple[str, int]]:
+            conn, addr = super().get_request()
+            if conn.recv(1, socket.MSG_PEEK) == b"\x16":
+                conn = context.wrap_socket(conn, server_side=True)
+            return conn, addr
+
+    with _Server(("127.0.0.1", 0), _Handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"127.0.0.1:{server.server_port}", seen
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+@pytest.mark.parametrize("blocked_scheme", ["http", "https"])
+@pytest.mark.parametrize("start_path", ["/start", "/robots.txt"])
+@coroutine_test
+async def test_robotstxt_separate_origins(
+    robots_origin_server: tuple[str, list[str]],
+    blocked_scheme: str,
+    start_path: str,
+) -> None:
+    authority, seen = robots_origin_server
+    target_url = f"{blocked_scheme}://{authority}/blocked"
+    settings = {"ROBOTSTXT_OBEY": True, "HTTPPROXY_ENABLED": False}
+    control = get_crawler(_IgnoreSpider, settings_dict=settings)
+    await control.crawl_async(start_urls=[target_url])
+    assert seen == [f"{blocked_scheme}:/robots.txt"]
+    seen.clear()
+
+    allowed_scheme = "http" if blocked_scheme == "https" else "https"
+    crawler = get_crawler(_FollowOriginSpider, settings_dict=settings)
+    await crawler.crawl_async(
+        start_urls=[f"{allowed_scheme}://{authority}{start_path}"],
+        target_url=target_url,
+    )
+    expected = [f"{allowed_scheme}:/robots.txt"]
+    if start_path != "/robots.txt":
+        expected.append(f"{allowed_scheme}:{start_path}")
+    expected.append(f"{blocked_scheme}:/robots.txt")
+    assert seen == expected
+    assert crawler.stats.get_value("robotstxt/forbidden") == 1
+    assert crawler.stats.get_value("robotstxt/request_count") == 2
 
 
 class TestRobotsTxtDeniedCloseReason:
