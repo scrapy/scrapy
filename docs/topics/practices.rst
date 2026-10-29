@@ -71,14 +71,9 @@ Iterating its return value asynchronously yields items as they are scraped:
    :members:
 
 To run several spiders in the same process, or to control the event loop
-yourself, use :class:`scrapy.crawler.AsyncCrawlerProcess` or
-:class:`scrapy.crawler.CrawlerProcess`. These classes will start a Twisted
-reactor for you, configuring the logging and setting shutdown handlers. These
-classes are the ones used by all Scrapy commands. They have similar
-functionality, differing in their asynchronous API style:
-:class:`~scrapy.crawler.AsyncCrawlerProcess` returns coroutines from its
-asynchronous methods while :class:`~scrapy.crawler.CrawlerProcess` returns
-:class:`~twisted.internet.defer.Deferred` objects.
+yourself, use :class:`scrapy.crawler.AsyncCrawlerProcess`. This class will
+start a Twisted reactor for you, configuring the logging and setting shutdown
+handlers. This class is the one used by all Scrapy commands that run a crawl.
 
 Here's an example showing how to run a single spider with it.
 
@@ -131,33 +126,26 @@ project as example.
     process.start()  # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
-process: :class:`scrapy.crawler.AsyncCrawlerRunner` or
-:class:`scrapy.crawler.CrawlerRunner`. These classes are thin wrappers
-that encapsulate some simple helpers to run multiple crawlers, but they won't
-start or interfere with existing reactors in any way. Just like
-:class:`scrapy.crawler.AsyncCrawlerProcess` and
-:class:`scrapy.crawler.CrawlerProcess` they differ in their asynchronous API
-style.
+process: :class:`scrapy.crawler.AsyncCrawlerRunner`. This class is a thin
+wrapper that encapsulates some simple helpers to run multiple crawlers, but it
+won't start or interfere with existing reactors in any way.
 
-When using these classes the reactor should be explicitly run after scheduling
+When using this class the reactor should be explicitly run after scheduling
 your spiders. It's recommended that you use
-:class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerRunner` instead of
-:class:`~scrapy.crawler.AsyncCrawlerProcess` or
-:class:`~scrapy.crawler.CrawlerProcess` if your application is already using
-Twisted and you want to run Scrapy in the same reactor.
+:class:`~scrapy.crawler.AsyncCrawlerRunner` instead of
+:class:`~scrapy.crawler.AsyncCrawlerProcess` if your application is already
+using Twisted and you want to run Scrapy in the same reactor.
 
 If you want to stop the reactor or run any other code right after the spider
 finishes you can do that after the task returned from
 :meth:`AsyncCrawlerRunner.crawl() <scrapy.crawler.AsyncCrawlerRunner.crawl>`
-completes (or the Deferred returned from :meth:`CrawlerRunner.crawl()
-<scrapy.crawler.CrawlerRunner.crawl>` fires). In the simplest case you can also
-use :func:`twisted.internet.task.react` to start and stop the reactor, though
-it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess` or
-:class:`~scrapy.crawler.CrawlerProcess` instead.
+completes. In the simplest case you can also use
+:func:`twisted.internet.task.react` to start and stop the reactor, though
+it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess`
+instead.
 
-Exceptions that interrupt a crawl reach the code that awaits that task or that
-adds callbacks to that Deferred, which is where you should handle them.
+Exceptions that interrupt a crawl reach the code that awaits that task, which
+is where you should handle them.
 
 Here's an example of using :class:`~scrapy.crawler.AsyncCrawlerRunner` together
 with simple reactor management code:
@@ -186,41 +174,10 @@ with simple reactor management code:
     install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
-Same example but using :class:`~scrapy.crawler.CrawlerRunner` and a
-different reactor (:class:`~scrapy.crawler.AsyncCrawlerRunner` only works
-with :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`):
-
-.. code-block:: python
-
-    import scrapy
-    from scrapy.crawler import CrawlerRunner
-    from scrapy.utils.log import configure_logging
-    from scrapy.utils.reactor import install_reactor
-    from twisted.internet.task import react
-
-
-    class MySpider(scrapy.Spider):
-        custom_settings = {
-            "TWISTED_REACTOR": "twisted.internet.epollreactor.EPollReactor",
-        }
-        # Your spider definition
-        ...
-
-
-    def crawl(_):
-        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-        runner = CrawlerRunner()
-        d = runner.crawl(MySpider)
-        return d  # this Deferred fires when the spider finishes
-
-
-    install_reactor("twisted.internet.epollreactor.EPollReactor")
-    react(crawl)
-
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
-And here are examples of using these classes with
-:setting:`TWISTED_REACTOR_ENABLED` set to ``False``.
+You can also :ref:`use Scrapy without a reactor <asyncio-without-reactor>`;
+here are examples of doing this from a script.
 
 Simple usage of :class:`~scrapy.crawler.AsyncCrawlerProcess`:
 
@@ -311,9 +268,8 @@ cases, e.g. asynchronous web applications, have additional caveats and
 limitations.
 
 If the application runs its own Twisted reactor, you can use
-:class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerRunner` to run spiders using this reactor, see
-:ref:`run-from-script` for examples.
+:class:`~scrapy.crawler.AsyncCrawlerRunner` to run spiders using this reactor;
+see :ref:`run-from-script` for examples.
 
 If the application doesn't run a Twisted reactor or an asyncio event loop (for
 example, a Django web app deployed with a WSGI server such as uWSGI), you can

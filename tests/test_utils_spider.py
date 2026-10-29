@@ -6,15 +6,18 @@ from typing import TYPE_CHECKING
 import pytest
 
 from scrapy import Spider
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.settings import Settings
 from scrapy.spiderloader import get_spider_loader
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.spider import (
     iter_spider_classes,
     iterate_spider_output,
     spidercls_for_request,
 )
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.spiderloader import SpiderLoaderProtocol
@@ -44,6 +47,19 @@ def test_iterate_spider_output():
     assert list(iterate_spider_output(r)) == [r]
     assert list(iterate_spider_output(o)) == [o]
     assert list(iterate_spider_output([r, i, o])) == [r, i, o]
+
+
+@coroutine_test
+async def test_iterate_spider_output_coroutine() -> None:
+    async def callback() -> dict[str, str]:
+        return {"foo": "bar"}
+
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"Passing a coroutine to iterate_spider_output\(\) is deprecated",
+    ):
+        d = iterate_spider_output(callback())
+    assert await maybe_deferred_to_future(d) == [{"foo": "bar"}]
 
 
 def test_iter_spider_classes():

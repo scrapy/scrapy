@@ -23,7 +23,7 @@ from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils._ossignals import install_shutdown_handlers, signal_names
 from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import _get_running_or_installed_loop, _has_running_loop
-from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro, ensure_awaitable
+from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro
 from scrapy.utils.log import (
     _configure_logger_levels,
     configure_logging,
@@ -168,9 +168,7 @@ class Crawler:
         self._started: bool = False
 
         self.spider: Spider | None = None
-        self._force_stop_callback: (
-            Callable[[], Awaitable[None] | Deferred[None] | None] | None
-        ) = None
+        self._force_stop_callback: Callable[[], None] | None = None
 
         self._engine: ExecutionEngine | None = None
         self._extensions: ExtensionManager | None = None
@@ -180,7 +178,7 @@ class Crawler:
 
     def _set_force_stop_callback(
         self,
-        callback: Callable[[], Awaitable[None] | Deferred[None] | None] | None,
+        callback: Callable[[], None] | None,
     ) -> None:
         self._force_stop_callback = callback
 
@@ -401,7 +399,7 @@ class Crawler:
 
         if mode == "force":
             if self._force_stop_callback is not None:
-                await ensure_awaitable(self._force_stop_callback())
+                self._force_stop_callback()
                 return
             logger.warning(
                 "Force stop requested, but no process-level force stop callback is available. Falling back to fast stop."

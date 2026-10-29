@@ -387,19 +387,34 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         return d
 
 
+def _parallel_async(
+    async_iterable: AsyncIterator[_T],
+    count: int,
+    callable_: Callable[Concatenate[_T, _P], Deferred[Any] | None],
+    *args: _P.args,
+    **named: _P.kwargs,
+) -> Deferred[None]:
+    """Like ``parallel`` but for async iterators"""
+    work = _AsyncCooperatorAdapter(async_iterable, callable_, *args, **named)
+    tasks = _ParallelTasks(work, count)
+    work.on_value = tasks.start
+    tasks.start()
+    return tasks.finished
+
+
 def parallel_async(
     async_iterable: AsyncIterator[_T],
     count: int,
     callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[None]:
-    """Like ``parallel`` but for async iterators"""
-    work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
-    tasks = _ParallelTasks(work, count)
-    work.on_value = tasks.start
-    tasks.start()
-    return tasks.finished
+) -> Deferred[None]:  # pragma: no cover
+    warnings.warn(
+        "scrapy.utils.defer.parallel_async() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _parallel_async(async_iterable, count, callable, *args, **named)
 
 
 def process_chain(
@@ -721,3 +736,22 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
         return o
 
     return coro()
+
+
+async def _maybe_coroutine(
+    f: Callable[_P, Any], *args: _P.args, **kw: _P.kwargs
+) -> Any:
+    """Call *f* and return its result, awaiting it first if it is awaitable.
+
+    Raise :exc:`TypeError` if *f* returns a
+    :class:`~twisted.internet.defer.Deferred`.
+    """
+    result = f(*args, **kw)
+    if isinstance(result, Deferred):
+        raise TypeError(
+            f"{global_object_name(f)} returned a Deferred, which is not supported."
+            f" Please refactor this function to return a coroutine."
+        )
+    if _is_awaitable(result):
+        return await result
+    return result

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, succeed
 from w3lib.url import file_uri_to_path
 
 from scrapy.exporters import JsonLinesItemExporter
@@ -18,6 +19,8 @@ from tests.utils.feedexport import PARSERS, export_by_path, unique_path
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
+
+    import pytest
 
     from scrapy import Spider
     from tests.mockserver.http import MockServer
@@ -103,6 +106,18 @@ class AsyncJsonLinesItemExporter(CallTracker, JsonLinesItemExporter):
     async def finish_exporting(self) -> None:
         async with self.tracked("finish_exporting"):
             super().finish_exporting()
+
+
+class DeferredJsonLinesItemExporter(JsonLinesItemExporter):
+    """Item exporter whose ``export_item()`` method returns a
+    :class:`~twisted.internet.defer.Deferred` object.
+
+    We don't support such exporters.
+    """
+
+    def export_item(self, item: Any) -> Deferred[None]:  # type: ignore[override]
+        super().export_item(item)
+        return succeed(None)
 
 
 class TestAsyncFeedExport:
@@ -209,6 +224,25 @@ class TestAsyncFeedExport:
             "AsyncJsonLinesItemExporter.finish_exporting": 1,
         }
         assert data == b""
+
+    @coroutine_test
+    async def test_exporter_deferred(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        tmp_path: Path,
+    ) -> None:
+        with caplog.at_level(logging.ERROR):
+            await self._export(
+                mockserver,
+                tmp_path,
+                self.items,
+                {"FEED_EXPORTERS": {"jl": DeferredJsonLinesItemExporter}},
+            )
+        assert (
+            "DeferredJsonLinesItemExporter.export_item returned a Deferred,"
+            " which is not supported." in caplog.text
+        )
 
     @coroutine_test
     async def test_calls_are_serialized(

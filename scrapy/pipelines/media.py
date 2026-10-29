@@ -168,7 +168,7 @@ class MediaPipeline(ABC):
                         (deferred_from_coro(coro) for coro in coros), consumeErrors=True
                     ),
                 )
-        return self.item_completed(results, item, info)
+        return await ensure_awaitable(self.item_completed(results, item, info))
 
     async def _process_request(
         self, request: Request, info: SpiderInfo, item: Any
