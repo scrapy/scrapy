@@ -7,3 +7,4 @@ sphinx-reredirects
 sphinx-rtd-theme
 sphinx-rtd-dark-mode
 sphinx-scrapy==0.14.0
+twisted>=26.10.0rc1
