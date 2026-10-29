@@ -20,6 +20,7 @@ from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
     _aiter_errback,
     _Event,
+    _parallel_async,
     _process_pending_io,
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -27,7 +28,6 @@ from scrapy.utils.defer import (
     maybe_deferred_to_future,
     maybeDeferred_coro,
     mustbe_deferred,
-    parallel_async,
 )
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
@@ -267,7 +267,7 @@ class TestParallelAsync:
         max_parallel_count = [0]
         results: list[int] = []
         ait = self.get_async_iterable(length)
-        dl = parallel_async(
+        dl = _parallel_async(
             ait,
             self.CONCURRENT_ITEMS,
             self.callable_wrapped,
@@ -287,7 +287,7 @@ class TestParallelAsync:
         max_parallel_count = [0]
         results: list[int] = []
         ait = self.get_async_iterable_with_delays(length)
-        dl = parallel_async(
+        dl = _parallel_async(
             ait,
             self.CONCURRENT_ITEMS,
             self.callable_wrapped,
@@ -306,7 +306,7 @@ class TestParallelAsync:
         with mock.patch.object(
             Cooperator, "coiterate", autospec=True, side_effect=Cooperator.coiterate
         ) as coiterate:
-            yield parallel_async(self.get_async_iterable(3), 1_000_000, results.append)
+            yield _parallel_async(self.get_async_iterable(3), 1_000_000, results.append)
         assert sorted(results) == [0, 1, 2]
         # One task per item, plus the one that finds no more work.
         assert coiterate.call_count <= 4
@@ -324,7 +324,7 @@ class TestParallelAsync:
             results.append(o)
             return None
 
-        yield parallel_async(self.get_async_iterable(4), count, callable_)
+        yield _parallel_async(self.get_async_iterable(4), count, callable_)
         assert sorted(results) == [0, 2, 3]
         assert "Error processing an item" in caplog.text
         assert "Bad item" in caplog.text
@@ -343,7 +343,7 @@ class TestParallelAsync:
                 yield i
 
         await maybe_deferred_to_future(
-            parallel_async(aiterable(), 1, lambda _: seen.append(var.get()))
+            _parallel_async(aiterable(), 1, lambda _: seen.append(var.get()))
         )
         assert seen == ["hello"] * 6
 

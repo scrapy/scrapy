@@ -74,6 +74,37 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: VERSION
 
+-   The following methods of subclasses of
+    :class:`scrapy.pipelines.media.MediaPipeline`:
+
+    - ``media_to_download()``
+
+      .. versionadded:: 2.14
+
+    - ``media_downloaded()``
+
+      .. versionadded:: 2.15
+
+    - ``file_downloaded()``, in subclasses of
+      :class:`scrapy.pipelines.files.FilesPipeline`
+
+      .. versionadded:: 2.15
+
+    - ``item_completed()``
+
+      .. versionadded:: VERSION
+
+-   The following methods of :ref:`custom media storages
+    <media-pipeline-custom-storage>`:
+
+    - ``persist_file()``
+
+      .. versionadded:: 2.15
+
+    - ``stat_file()``
+
+      .. versionadded:: VERSION
+
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
 
@@ -128,23 +159,6 @@ return coroutines are listed in :ref:`coroutine-support`):
     - ``open()``
 
     - ``close()``
-
--   Custom feed storages (see :setting:`FEED_STORAGES`):
-
-    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
-
--   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
-
-    - ``media_to_download()``
-
-    - ``item_completed()``
-
--   Custom storages used by subclasses of
-    :class:`scrapy.pipelines.files.FilesPipeline`:
-
-    - ``persist_file()``
-
-    - ``stat_file()``
 
 In most cases, you can use these APIs in code that otherwise uses coroutines by
 wrapping a :class:`~twisted.internet.defer.Deferred` object into a
@@ -208,8 +222,10 @@ means you can use many useful Python libraries that provide such code:
     class MySpiderDeferred(Spider):
         # ...
         async def parse(self, response):
-            additional_response = await treq.get("https://additional.url")
-            additional_data = await treq.content(additional_response)
+            additional_response = await deferred_to_future(
+                treq.get("https://additional.url")
+            )
+            additional_data = await deferred_to_future(treq.content(additional_response))
             # ... use response and additional_data to yield items and requests
 
 
@@ -249,7 +265,7 @@ it in a separate thread and returns an awaitable with the result:
 
     class MySpider(Spider):
         async def parse(self, response):
-            result = await blocking_call(response.url)
+            result = await deferred_to_future(blocking_call(response.url))
             # ... use result to yield items and requests
 
 .. autofunction:: scrapy.utils.decorators.inthread
