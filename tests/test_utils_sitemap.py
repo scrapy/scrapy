@@ -236,6 +236,33 @@ Disallow: /forum/active/
         ]
 
 
+@pytest.mark.parametrize("as_bytes", [True, False])
+@pytest.mark.parametrize(
+    ("robots", "expected"),
+    [
+        ("Sitemap: /sitemap.xml # generated sitemap", "/sitemap.xml"),
+        ("Sitemap: /sitemap.xml#comment", "/sitemap.xml"),
+        ("Sitemap: /sitemap.xml\t# comment # another hash", "/sitemap.xml"),
+        ("Sitemap: /sitemap%23part.xml # comment", "/sitemap%23part.xml"),
+        ("Sitemap: /sitemap.xml?q=%23tag # comment", "/sitemap.xml?q=%23tag"),
+    ],
+)
+def test_sitemap_urls_from_robots_comments(
+    *, robots: str, expected: str, as_bytes: bool
+) -> None:
+    if as_bytes:
+        urls = list(sitemap_urls_from_robots(robots.encode(), "https://example.com"))
+    else:
+        with pytest.warns(ScrapyDeprecationWarning):
+            urls = list(sitemap_urls_from_robots(robots, "https://example.com"))
+    assert urls == [f"https://example.com{expected}"]
+
+
+def test_sitemap_urls_from_robots_non_utf8_comment() -> None:
+    robots = b"Sitemap: https://example.com/sitemap.xml # \xff\n"
+    assert list(sitemap_urls_from_robots(robots)) == ["https://example.com/sitemap.xml"]
+
+
 def test_sitemap_blanklines():
     """Assert we can deal with starting blank lines before <xml> tag"""
     s = Sitemap(

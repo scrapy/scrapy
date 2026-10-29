@@ -463,6 +463,18 @@ Sitemap: /sitemap-relative-url.xml
         assert items == [{"url": mockserver.url("/text")}]
 
     @coroutine_test
+    async def test_robots_txt_sitemap_comment(self, mockserver: MockServer):
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            name = "robots_txt_sitemap_comment"
+            sitemap_urls = [mockserver.url("/static/sitemap-comments/robots.txt")]
+
+            def parse(self, response):
+                yield {"url": response.url}
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"url": mockserver.url("/text")}]
+
+    @coroutine_test
     async def test_robots_txt_requested_once(self, mockserver: MockServer):
         """robots.txt should be downloaded only once, even though both
         SitemapSpider and RobotsTxtMiddleware need its content: the spider
