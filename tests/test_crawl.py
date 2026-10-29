@@ -27,7 +27,9 @@ from scrapy.utils.engine import (
 )
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.utils import _free_port
 from tests.spiders import (
+    AsyncAwaitRequestInItemPipelineSpider,
     AsyncDefAsyncioGenComplexSpider,
     AsyncDefAsyncioGenExcSpider,
     AsyncDefAsyncioGenLoopSpider,
@@ -40,16 +42,25 @@ from tests.spiders import (
     AsyncDefDeferredMaybeWrappedSpider,
     AsyncDefDeferredWrappedSpider,
     AsyncDefSpider,
+    AwaitRequestDownloaderMiddleware,
+    AwaitRequestInDownloaderMiddlewareSpider,
+    AwaitRequestInItemPipelineSpider,
+    AwaitRequestInStartSpider,
+    AwaitRequestItemPipeline,
+    AwaitRequestSpider,
     BrokenStartSpider,
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
+    CrawlSpiderWithAsyncErrback,
     CrawlSpiderWithAsyncGeneratorCallback,
+    CrawlSpiderWithAsyncGeneratorErrback,
     CrawlSpiderWithCallbackException,
     CrawlSpiderWithErrback,
     CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
+    CrawlSpiderWithSyncRequestCallback,
     DelaySpider,
     DuplicateStartSpider,
     FollowAllSpider,
@@ -60,6 +71,7 @@ from tests.spiders import (
     StartGoodAndBadOutput,
     StartItemSpider,
 )
+from tests.utils.crawl import crawl_items
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -197,7 +209,7 @@ class TestCrawl:
         crawler = get_crawler(SimpleSpider)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                "http://localhost:65432/status?n=503", mockserver=mockserver
+                f"http://127.0.0.1:{_free_port()}/status?n=503", mockserver=mockserver
             )
         self._assert_retried(caplog.text)
 
@@ -503,14 +515,16 @@ with multiples lines
 class TestCrawlSpider:
     @staticmethod
     async def _run_spider(
-        spider_cls: type[Spider], mockserver: MockServer
+        spider_cls: type[Spider],
+        mockserver: MockServer,
+        settings: dict[str, Any] | None = None,
     ) -> tuple[list[Any], StatsCollector]:
         items = []
 
         def _on_item_scraped(item):
             items.append(item)
 
-        crawler = get_crawler(spider_cls)
+        crawler = get_crawler(spider_cls, settings)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         await crawler.crawl_async(
             mockserver.url("/status?n=200"), mockserver=mockserver
@@ -542,6 +556,18 @@ class TestCrawlSpider:
         assert "[parse_async] status 202 (foo: bar)" in caplog.text
 
     @coroutine_test
+    async def test_crawlspider_with_sync_request_callback(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithSyncRequestCallback)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        assert "[parse_sync] status 200 (foo: None)" in caplog.text
+        assert "[parse_sync] status 201 (foo: None)" in caplog.text
+        assert "[parse_sync] status 202 (foo: bar)" in caplog.text
+
+    @coroutine_test
     async def test_crawlspider_with_async_generator_callback(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
@@ -567,6 +593,17 @@ class TestCrawlSpider:
         assert "[errback] status 404" in caplog.text
         assert "[errback] status 500" in caplog.text
         assert "[errback] status 501" in caplog.text
+
+    @pytest.mark.parametrize(
+        "spider_cls",
+        [CrawlSpiderWithAsyncErrback, CrawlSpiderWithAsyncGeneratorErrback],
+    )
+    @coroutine_test
+    async def test_crawlspider_with_async_errback(
+        self, spider_cls: type[CrawlSpiderWithErrback], mockserver: MockServer
+    ) -> None:
+        items, _ = await crawl_items(spider_cls, mockserver)
+        assert sorted(item["status"] for item in items) == [404, 500, 501]
 
     @coroutine_test
     async def test_crawlspider_without_errback(
@@ -732,6 +769,59 @@ class TestCrawlSpider:
             await self._run_spider(AsyncDefAsyncioReqsReturnSpider, mockserver)
         for req_id in range(3):
             assert f"Got response 200, req_id {req_id}" in caplog.text
+
+    @coroutine_test
+    async def test_await_request(self, mockserver: MockServer) -> None:
+        items, _ = await self._run_spider(AwaitRequestSpider, mockserver)
+        assert items == [{"status": 200}]
+
+    @coroutine_test
+    async def test_await_request_in_start(self, mockserver: MockServer) -> None:
+        items, _ = await self._run_spider(AwaitRequestInStartSpider, mockserver)
+        assert items == [{"status": 200}]
+
+    @coroutine_test
+    async def test_await_request_in_downloader_middleware(
+        self, mockserver: MockServer
+    ) -> None:
+        items, _ = await self._run_spider(
+            AwaitRequestInDownloaderMiddlewareSpider,
+            mockserver,
+            {"DOWNLOADER_MIDDLEWARES": {AwaitRequestDownloaderMiddleware: 1}},
+        )
+        assert items == [{"probed_status": 200}]
+
+    @pytest.mark.parametrize(
+        "spider_cls",
+        [AwaitRequestInItemPipelineSpider, AsyncAwaitRequestInItemPipelineSpider],
+    )
+    @coroutine_test
+    async def test_await_request_in_item_pipeline(
+        self, spider_cls: type[Spider], mockserver: MockServer
+    ) -> None:
+        items, _ = await self._run_spider(
+            spider_cls,
+            mockserver,
+            {"ITEM_PIPELINES": {AwaitRequestItemPipeline: 1}},
+        )
+        assert sorted(item["status"] for item in items) == [200, 201, 202]
+
+    @coroutine_test
+    async def test_await_request_in_signal_handler(
+        self, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(SimpleSpider)
+        results = []
+
+        async def on_spider_opened(spider):
+            response = await Request(mockserver.url("/status?n=200"))
+            results.append(response.status)
+
+        crawler.signals.connect(on_spider_opened, signals.spider_opened)
+        await crawler.crawl_async(
+            mockserver.url("/status?n=200"), mockserver=mockserver
+        )
+        assert results == [200]
 
     @pytest.mark.only_not_asyncio
     @coroutine_test

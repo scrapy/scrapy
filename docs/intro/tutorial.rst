@@ -162,7 +162,8 @@ The polite defaults still apply to every other website.
 How to run our spider
 ---------------------
 
-To put our spider to work, go to the project's top level directory and run::
+To put our spider to work, go to the project's top level directory, the one
+that contains :file:`scrapy.cfg`, and run::
 
    scrapy crawl quotes
 

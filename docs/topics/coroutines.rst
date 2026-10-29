@@ -74,6 +74,42 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: VERSION
 
+-   The following methods of subclasses of
+    :class:`scrapy.pipelines.media.MediaPipeline`:
+
+    - ``media_to_download()``
+
+      .. versionadded:: 2.14
+
+    - ``media_downloaded()``
+
+      .. versionadded:: 2.15
+
+    - ``file_downloaded()``, in subclasses of
+      :class:`scrapy.pipelines.files.FilesPipeline`
+
+      .. versionadded:: 2.15
+
+    - ``item_completed()``
+
+      .. versionadded:: VERSION
+
+-   The following methods of :ref:`custom media storages
+    <media-pipeline-custom-storage>`:
+
+    - ``persist_file()``
+
+      .. versionadded:: 2.15
+
+    - ``stat_file()``
+
+      .. versionadded:: VERSION
+
+Most callables above may also :ref:`await a request <inline-requests>` to send
+it and get its response.
+
+.. versionadded:: VERSION
+
 
 .. _coroutine-deferred-apis:
 
@@ -123,23 +159,6 @@ return coroutines are listed in :ref:`coroutine-support`):
     - ``open()``
 
     - ``close()``
-
--   Custom feed storages (see :setting:`FEED_STORAGES`):
-
-    - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
-
--   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
-
-    - ``media_to_download()``
-
-    - ``item_completed()``
-
--   Custom storages used by subclasses of
-    :class:`scrapy.pipelines.files.FilesPipeline`:
-
-    - ``persist_file()``
-
-    - ``stat_file()``
 
 In most cases, you can use these APIs in code that otherwise uses coroutines by
 wrapping a :class:`~twisted.internet.defer.Deferred` object into a
@@ -203,8 +222,10 @@ means you can use many useful Python libraries that provide such code:
     class MySpiderDeferred(Spider):
         # ...
         async def parse(self, response):
-            additional_response = await treq.get("https://additional.url")
-            additional_data = await treq.content(additional_response)
+            additional_response = await deferred_to_future(
+                treq.get("https://additional.url")
+            )
+            additional_data = await deferred_to_future(treq.content(additional_response))
             # ... use response and additional_data to yield items and requests
 
 
@@ -244,7 +265,7 @@ it in a separate thread and returns an awaitable with the result:
 
     class MySpider(Spider):
         async def parse(self, response):
-            result = await blocking_call(response.url)
+            result = await deferred_to_future(blocking_call(response.url))
             # ... use result to yield items and requests
 
 .. autofunction:: scrapy.utils.decorators.inthread
@@ -252,15 +273,12 @@ it in a separate thread and returns an awaitable with the result:
 Common use cases for asynchronous code include:
 
 * requesting data from websites, databases and other services (in
-  :meth:`~scrapy.Spider.start`, callbacks, pipelines and
-  middlewares);
+  :meth:`~scrapy.Spider.start`, callbacks, pipelines and middlewares;
+  see :ref:`inline-requests` and the :ref:`screenshot pipeline example
+  <ScreenshotPipeline>`);
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
-  :signal:`spider_opened` handler);
-* calling asynchronous Scrapy methods like
-  :meth:`ExecutionEngine.download_async()
-  <scrapy.core.engine.ExecutionEngine.download_async>` (see :ref:`the
-  screenshot pipeline example <ScreenshotPipeline>`).
+  :signal:`spider_opened` handler).
 
 .. _aio-libs: https://github.com/aio-libs
 
@@ -273,6 +291,9 @@ Inline requests
 The spider below shows how to send a request and await its response all from
 within a spider callback:
 
+.. versionadded:: VERSION
+    Awaiting a :class:`~scrapy.Request` object.
+
 .. code-block:: python
 
     from scrapy import Spider, Request
@@ -283,14 +304,27 @@ within a spider callback:
         start_urls = ["https://example.org/product"]
 
         async def parse(self, response, **kwargs):
-            additional_request = Request("https://example.org/price")
-            additional_response = await self.crawler.engine.download_async(
-                additional_request
-            )
+            additional_response = await Request("https://example.org/price")
             yield {
                 "h1": response.css("h1").get(),
                 "price": additional_response.css("#price").get(),
             }
+
+Awaiting a request sends it and returns its response. Only downloader
+middlewares apply.
+
+You may await a request wherever :ref:`coroutine syntax is supported
+<coroutine-support>`, except in :ref:`download handlers
+<topics-download-handlers>` and in code that runs after a closing spider has
+finished its last requests, such as :signal:`spider_closed` handlers.
+
+You may only await a request while its *callback* and *errback* are unset;
+awaiting sets its *callback* to :func:`~scrapy.http.request.NO_CALLBACK`.
+
+For a request that you did not build yourself, and that may already have a
+*callback* or an *errback*, use :meth:`ExecutionEngine.download_async()
+<scrapy.core.engine.ExecutionEngine.download_async>`, which sends the request
+as is.
 
 You can also send multiple requests in parallel:
 
@@ -306,15 +340,10 @@ You can also send multiple requests in parallel:
         start_urls = ["https://example.com/product"]
 
         async def parse(self, response, **kwargs):
-            additional_requests = [
+            responses = await asyncio.gather(
                 Request("https://example.com/price"),
                 Request("https://example.com/color"),
-            ]
-            tasks = []
-            for r in additional_requests:
-                task = self.crawler.engine.download_async(r)
-                tasks.append(task)
-            responses = await asyncio.gather(*tasks)
+            )
             yield {
                 "h1": response.css("h1::text").get(),
                 "price": responses[0].css(".price::text").get(),

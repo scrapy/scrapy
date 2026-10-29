@@ -19,9 +19,9 @@ automat==25.4.16
     # via twisted
 babel==2.18.0
     # via sphinx
-brotli==1.2.0
+brotli==1.2.1
     # via scrapy
-certifi==2026.7.22
+certifi==2026.10.23
     # via requests
 cffi==2.1.1
     # via cryptography
@@ -48,7 +48,7 @@ docutils==0.22.4
     #   sphinx-llm-friendly
     #   sphinx-rtd-theme
     #   sphinx-scrapy
-filelock==4.2.0
+filelock==4.2.4
     # via tldextract
 frozenlist==1.8.0
     # via
@@ -90,7 +90,7 @@ lxml==6.1.3
     #   scrapy
 markupsafe==3.0.4
     # via jinja2
-multidict==7.1.0
+multidict==7.2.1
     # via
     #   aiohttp
     #   yarl
@@ -105,7 +105,7 @@ parsel==1.12.1
     # via
     #   itemloaders
     #   scrapy
-platformdirs==4.13.3
+platformdirs==4.13.5
     # via scrapy
 propcache==0.5.4
     # via
@@ -113,7 +113,7 @@ propcache==0.5.4
     #   yarl
 protego==0.7.0
     # via scrapy
-pycparser==3.11
+pycparser==3.12
     # via cffi
 pydantic==2.14.1
     # via
@@ -147,7 +147,7 @@ service-identity==26.1.0
     # via scrapy
 snowballstemmer==3.1.1
     # via sphinx
-sphinx==9.1.0
+sphinx==9.2.0
     # via
     #   -r requirements.in
     #   sphinx-copybutton
@@ -190,7 +190,7 @@ sphinxcontrib-htmlhelp==2.1.0
     # via sphinx
 sphinxcontrib-jquery==4.1
     # via sphinx-rtd-theme
-sphinxcontrib-jsmath==1.0.1
+sphinxcontrib-jsmath==2.0.0
     # via sphinx
 sphinxcontrib-qthelp==2.0.0
     # via sphinx
@@ -202,8 +202,10 @@ tabulate==0.10.0
     # via sphinx-llm-friendly
 tldextract==5.4.0
     # via scrapy
-twisted==26.4.0
-    # via scrapy
+twisted==26.10.0rc1
+    # via
+    #   -r requirements.in
+    #   scrapy
 typing-extensions==4.16.0
     # via
     #   pydantic

@@ -5,7 +5,8 @@ import random
 import warnings
 from collections import deque
 from dataclasses import dataclass, field
-from time import monotonic
+from logging import getLogger
+from time import monotonic, perf_counter, time
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
@@ -21,6 +22,7 @@ from scrapy.utils.asyncio import (
     CallLaterResult,
     call_later,
     create_looping_call,
+    sleep,
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
@@ -40,6 +42,32 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
+
+logger = getLogger(__name__)
+
+
+# Request.meta key holding the delay of a request and the time before which it
+# must not be sent because of it. The deadline is a wall-clock time, so that it
+# survives a crawl being resumed from a disk queue.
+_DELAY_DEADLINE_META_KEY = "_delay_deadline"
+
+
+def _start_delay_countdown(request: Request) -> None:
+    """Turn the ``delay`` meta key of *request*, if any, into a deadline.
+
+    Requests are stamped as they are scheduled, so that their delay runs while
+    they wait for their turn instead of only once they get it.
+
+    ``delay`` is consumed, so that a copy of the request, such as a retry or a
+    redirect, is not held again, while setting the key again asks for a new
+    delay. What the request has been through is left on ``delayed``.
+    """
+    delay = request.meta.pop("delay", None)
+    if not delay:
+        return
+    delay = float(delay)
+    request.meta[_DELAY_DEADLINE_META_KEY] = (delay, time() + delay)
+    request.meta["delayed"] = [*request.meta.get("delayed", []), delay]
 
 
 @dataclass(slots=True, eq=False)
@@ -208,6 +236,11 @@ class Downloader:
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
+        self._stats = crawler.stats
+        # (reason, start_time): current backout reason and when it began, or
+        # (None, None) if not backing out.
+        self._last_backout: tuple[str | None, float | None] = (None, None)
+        self._max_active_size_warned = False
 
     @property
     def randomize_delay(self) -> bool:
@@ -225,6 +258,7 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
+        self.middleware._count_rough_size(request)
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -234,10 +268,50 @@ class Downloader:
             return result
         finally:
             self.active.remove(request)
+            self.middleware._discount_rough_size(request)
+
+    def _record_backout(self, reason: str | None) -> None:
+        last_reason, last_reason_start_time = self._last_backout
+        if last_reason == reason:
+            return
+        current_time = perf_counter()
+        if last_reason is not None and self._stats is not None:
+            assert last_reason_start_time is not None
+            last_reason_seconds = current_time - last_reason_start_time
+            self._stats.inc_value("request_backout_seconds/total", last_reason_seconds)
+            self._stats.inc_value(
+                f"request_backout_seconds/{last_reason}", last_reason_seconds
+            )
+        self._last_backout = (reason, current_time)
 
     def needs_backout(self) -> bool:
         # A total concurrency of 0 means no limit.
-        return 0 < self.total_concurrency <= len(self.active)
+        if 0 < self.total_concurrency <= len(self.active):
+            self._record_backout("concurrency")
+            return True
+        if self._exceeds_max_active_size():
+            self._record_backout("response_max_active_size")
+            if not self._max_active_size_warned:
+                self._max_active_size_warned = True
+                logger.info(
+                    f"Pausing request processing: the active response size "
+                    f"({self.middleware._total_active_size} B) has reached "
+                    f"RESPONSE_MAX_ACTIVE_SIZE "
+                    f"({self.middleware._max_active_size} B). See "
+                    f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+                    f"and the request_backout_seconds/response_max_active_size "
+                    f"stat. This message is only logged once."
+                )
+            return True
+        self._record_backout(None)
+        return False
+
+    def _exceeds_max_active_size(self) -> bool:
+        max_active_size = self.middleware._max_active_size
+        return (
+            bool(max_active_size)
+            and self.middleware._total_active_size >= max_active_size
+        )
 
     @_warn_spider_arg
     def _get_slot(
@@ -269,8 +343,30 @@ class Downloader:
 
         return key
 
+    async def _delay_request(self, request: Request) -> None:
+        """Hold *request* until the deadline of its ``delay`` meta key.
+
+        The wait happens before the request gets a slot, so it does not take a
+        slot concurrency spot.
+        """
+        # A request that skipped the scheduler, e.g. one from
+        # ExecutionEngine.download_async(), starts its countdown here.
+        _start_delay_countdown(request)
+        countdown = request.meta.pop(_DELAY_DEADLINE_META_KEY, None)
+        if countdown is None:
+            return
+        delay, deadline = countdown
+        # A deadline further away than the delay means the clock moved backwards
+        # since it was set, which takes a crawl resumed from a disk queue, e.g.
+        # on a machine with a lagging clock. Capping keeps the wait to what the
+        # delay asked for.
+        wait = min(deadline - time(), delay)
+        if wait > 0:
+            await sleep(wait)
+
     # passed as download_func into self.middleware.download() in self.fetch()
     async def _enqueue_request(self, request: Request) -> Response:
+        await self._delay_request(request)
         if not self._accepting_requests:
             raise DownloadCancelledError(
                 "The downloader is shutting down and not accepting new requests"
@@ -442,6 +538,12 @@ class Downloader:
         self._stop_slot_gc()
         for slot in self.slots.values():
             slot.close()
+        self._record_backout(None)
+
+    async def _close_async(self) -> None:
+        """Close the downloader and its download handlers."""
+        self.close()
+        await self.handlers._close()
 
     def _slot_gc(self, age: float = 60) -> None:
         mintime = monotonic() - age

@@ -15,6 +15,7 @@ concurrency:
 jobs:
   tests:
     name: tests
+    if: github.event_name != 'schedule' || github.repository == 'scrapy/scrapy'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 import warnings
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Callable
 from typing import TYPE_CHECKING, Any, Self, TypeAlias, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -17,10 +17,9 @@ from scrapy.http import HtmlResponse, Request, Response
 from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
-from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
-from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.spider import _await_spider_output, iterate_spider_output
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -69,6 +68,10 @@ class Rule:
 
     .. versionadded:: VERSION
        The *name* and *from_rules* parameters.
+
+    .. versionchanged:: VERSION
+       *errback* may now be a coroutine function (``async def``) or an
+       asynchronous generator function.
 
     *callback*, *process_links*, *process_request* and *errback* may be
     specified as a string instead of a callable, in which case the spider
@@ -284,7 +287,7 @@ class CrawlSpider(Spider):
             rule.follow,
         )
 
-    def _errback(self, failure: Failure) -> Iterable[Any]:
+    def _errback(self, failure: Failure) -> AsyncIterator[Any]:
         request = cast("FailureWithRequest", failure).request
         rule = self._rules[cast("int", request.meta["rule"])]
         return self._handle_failure(
@@ -300,11 +303,9 @@ class CrawlSpider(Spider):
     ) -> AsyncIterator[Any]:
         try:
             if callback:
-                cb_res = callback(response, **cb_kwargs) or ()
-                if isinstance(cb_res, AsyncIterator):
-                    cb_res = await collect_asyncgen(cb_res)
-                elif isinstance(cb_res, Awaitable):
-                    cb_res = await cb_res
+                cb_res = await _await_spider_output(
+                    callback(response, **cb_kwargs) or ()
+                )
                 cb_res = self.process_results(response, cb_res)
                 for request_or_item in iterate_spider_output(cb_res):
                     yield request_or_item
@@ -329,12 +330,14 @@ class CrawlSpider(Spider):
         )
         return self.parse_with_rules(response, callback, cb_kwargs, follow)
 
-    def _handle_failure(
-        self, failure: Failure, errback: Callable[[Failure], Any] | None
-    ) -> Iterable[Any]:
+    @staticmethod
+    async def _handle_failure(
+        failure: Failure, errback: Callable[[Failure], Any] | None
+    ) -> AsyncIterator[Any]:
         if errback:
-            results = errback(failure) or ()
-            yield from iterate_spider_output(results)
+            results = await _await_spider_output(errback(failure) or ())
+            for request_or_item in iterate_spider_output(results):
+                yield request_or_item
 
     def _compile_rules(self) -> None:
         self._rules = []

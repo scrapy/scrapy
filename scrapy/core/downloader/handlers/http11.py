@@ -15,9 +15,13 @@ from urllib.parse import urldefrag
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.endpoints import HostnameEndpoint, TCP6ClientEndpoint
+from twisted.internet.endpoints import (
+    HostnameEndpoint,
+    TCP6ClientEndpoint,
+    wrapClientTLS,
+)
 from twisted.internet.interfaces import IStreamClientEndpoint
-from twisted.internet.protocol import Factory, Protocol, connectionDone
+from twisted.internet.protocol import ClientFactory, Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web._newclient import (
     HEADER,
@@ -71,9 +75,10 @@ from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
     import os
+    from collections.abc import Callable
 
     from twisted.internet.base import ReactorBase
-    from twisted.internet.interfaces import IAddress, IConsumer
+    from twisted.internet.interfaces import IAddress, IConsumer, IProtocol
     from twisted.web._newclient import Request as TxRequest
 
     from scrapy.crawler import Crawler
@@ -93,6 +98,182 @@ class _ResultT(TypedDict):
     stop_download: NotRequired[StopDownload | None]
 
 
+class _LenientHTTPClientParser(HTTPClientParser):
+    """Response parser that skips bad response header lines, those with no
+    colon in them, instead of failing to parse the whole response.
+
+    Some servers send such lines, and web browsers skip them and keep parsing
+    the header lines that follow. See
+    https://github.com/scrapy/scrapy/issues/210.
+    """
+
+    def lineReceived(self, line: bytes) -> None:
+        # A copy of twisted.web._newclient.HTTPParser.lineReceived() where the
+        # header name and value are only extracted from header lines that have
+        # a colon.
+
+        # Handle the normal CR LF case.
+        line = line.removesuffix(b"\r")
+
+        if self.state == STATUS:
+            self.statusReceived(line)  # type: ignore[no-untyped-call]
+            self.state = HEADER
+            return
+
+        # HEADER is the only other state in which lines are received, as the
+        # parser switches to raw mode for the response body.
+        if not line or line[0] not in b" \t":
+            if self._partialHeader is not None:
+                header = b"".join(self._partialHeader)
+                if b":" in header:
+                    name, value = header.split(b":", 1)
+                    self.headerReceived(name, value.strip())  # type: ignore[no-untyped-call]
+                else:
+                    logger.debug(
+                        f"Skipping the bad response header line {header!r}, as "
+                        f"it has no colon."
+                    )
+            if not line:
+                # Empty line means the header section is over.
+                self.allHeadersReceived()  # type: ignore[no-untyped-call]
+            else:
+                # Line not beginning with LWS is another header.
+                self._partialHeader = [line]
+        else:
+            # A line beginning with LWS is a continuation of a header begun on
+            # a previous line.
+            self._partialHeader.append(line)  # type: ignore[union-attr]
+
+
+class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
+    """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
+
+    def request(self, request: TxRequest) -> Deferred[IResponse]:
+        d: Deferred[IResponse] = super().request(request)
+        # HTTP11ClientProtocol.request() hardcodes the parser class, so the
+        # only way to use a different one is to replace the class of the parser
+        # object that it creates. This is safe because
+        # _LenientHTTPClientParser defines no additional state. The parser is
+        # always there because HTTPConnectionPool only reuses connections whose
+        # protocol is in the QUIESCENT state, for which request() always
+        # creates a parser.
+        assert self._parser is not None
+        self._parser.__class__ = _LenientHTTPClientParser
+
+        # For responses without a body, twisted.web.client.Response never
+        # hands its transport to a protocol, so the certificate and IP
+        # address cannot be read from it later (see
+        # _ResponseReader.connectionMade). self.transport, however, is the
+        # connection's real transport and outlives any single request, so
+        # read the certificate and IP address from it directly and stash
+        # them on the response.
+        assert self.transport is not None
+        transport = self.transport
+
+        def _attach_connection_info(response: IResponse) -> IResponse:
+            with suppress(AttributeError):
+                response._scrapy_certificate = ssl.Certificate(
+                    transport.getPeerCertificate()
+                )
+            with suppress(AttributeError):
+                response._scrapy_ip_address = ipaddress.ip_address(
+                    transport.getPeer().host
+                )
+            return response
+
+        d.addCallback(_attach_connection_info)
+        return d
+
+
+class _TrackedHTTP11ClientProtocol(_LenientHTTP11ClientProtocol):
+    """Connection that tells the pool that opened it when it closes, whether it
+    was cached at the time or in use."""
+
+    _pool: _BoundedHTTPConnectionPool
+    _pool_key: Any
+
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
+        self._pool._forget(self)
+        super().connectionLost(reason)  # type: ignore[no-untyped-call]
+
+
+class _BoundedHTTP11ClientFactory(_HTTP11ClientFactory):
+    noisy = False
+
+    def __init__(
+        self,
+        quiescentCallback: Callable[[HTTP11ClientProtocol], None],
+        metadata: str,
+        pool: _BoundedHTTPConnectionPool,
+        key: Any,
+    ):
+        super().__init__(quiescentCallback, metadata)  # type: ignore[no-untyped-call]
+        self._pool: _BoundedHTTPConnectionPool = pool
+        self._key: Any = key
+
+    def buildProtocol(self, addr: IAddress | None) -> _TrackedHTTP11ClientProtocol:
+        protocol = _TrackedHTTP11ClientProtocol(self._quiescentCallback)  # type: ignore[no-untyped-call]
+        protocol._pool = self._pool
+        protocol._pool_key = self._key
+        self._pool._open.add(protocol)
+        return protocol
+
+
+class _BoundedHTTPConnectionPool(HTTPConnectionPool):
+    """Connection pool that keeps the number of open connections, cached and in
+    use alike, under *limit*, where 0 means no limit.
+
+    Opening a connection once the limit is reached closes the least recently
+    used cached connection to make room for it. When there is no cached
+    connection left to close, the limit is exceeded rather than requests
+    delayed.
+    """
+
+    _factory = _BoundedHTTP11ClientFactory  # type: ignore[assignment]
+
+    def __init__(self, reactor: ReactorBase, limit: int, keepalive_timeout: float):
+        super().__init__(reactor, persistent=bool(keepalive_timeout))  # type: ignore[no-untyped-call]
+        self.cachedConnectionTimeout = keepalive_timeout  # type: ignore[assignment]
+        self._limit: int = limit
+        self._open: set[_TrackedHTTP11ClientProtocol] = set()
+
+    def _newConnection(
+        self, key: Any, endpoint: IStreamClientEndpoint
+    ) -> Deferred[HTTP11ClientProtocol]:
+        while self._limit and len(self._open) >= self._limit and self._evict():
+            pass
+
+        def quiescentCallback(protocol: HTTP11ClientProtocol) -> None:
+            self._putConnection(key, protocol)  # type: ignore[no-untyped-call]
+
+        factory = self._factory(quiescentCallback, repr(endpoint), self, key)
+        return endpoint.connect(factory)  # type: ignore[no-any-return]
+
+    def _forget(self, connection: _TrackedHTTP11ClientProtocol) -> None:
+        self._open.discard(connection)
+
+    def _evict(self) -> bool:
+        """Close the least recently used cached connection, and report whether
+        there was one to close.
+
+        ``_timeouts`` holds cached connections only, and ``getConnection()``
+        drops the ones it hands out, so its insertion order goes from least to
+        most recently used.
+        """
+        connection = next(iter(self._timeouts), None)
+        if connection is None:
+            return False
+        self._timeouts[connection].cancel()
+        # dropped early so that a caller looping on this method sees the room
+        # made by connections that have yet to finish closing
+        self._forget(connection)
+        key = connection._pool_key
+        self._removeConnection(key, connection)  # type: ignore[no-untyped-call]
+        if not self._connections[key]:
+            del self._connections[key]
+        return True
+
+
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
@@ -103,14 +284,10 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool: HTTPConnectionPool = HTTPConnectionPool(
-            reactor, persistent=bool(self._keepalive_timeout)
+        self._pool: _BoundedHTTPConnectionPool = _BoundedHTTPConnectionPool(
+            reactor, self._pool_size_total, self._keepalive_timeout
         )
-        self._pool.cachedConnectionTimeout = self._keepalive_timeout  # type: ignore[assignment]
-        self._pool.maxPersistentPerHost = crawler.settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
-        self._pool._factory = _LenientHTTP11ClientFactory
+        self._pool.maxPersistentPerHost = self._pool_size_per_host
 
         self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
             crawler
@@ -152,7 +329,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     async def close(self) -> None:
         from twisted.internet import reactor
 
-        d: Deferred[None] = self._pool.closeCachedConnections()
+        d: Deferred[None] = self._pool.closeCachedConnections()  # type: ignore[no-untyped-call]
         # closeCachedConnections will hang on network or server issues, so
         # we'll manually timeout the deferred.
         #
@@ -185,14 +362,15 @@ def _is_ipv6_literal(host: str) -> bool:
         return False
 
 
-@implementer(IStreamClientEndpoint)
-class _TunnelingEndpoint:
-    """An endpoint that tunnels through proxies to allow HTTPS downloads. To
-    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
-    The HTTP CONNECT is always sent when using this endpoint, I think this could
-    be improved as the CONNECT will be redundant if the connection associated
-    with this endpoint comes from the pool and a CONNECT has already been issued
-    for it.
+class _TunnelProtocol(Protocol):
+    """Sends an HTTP CONNECT request to a proxy and, once the tunnel is open,
+    hands the connection over to a wrapped protocol.
+
+    It plays the role of Twisted's ``_WrappingProtocol`` but performs a CONNECT
+    handshake before connecting the wrapped protocol. The wrapped protocol is
+    the destination TLS protocol, so its handshake is negotiated inside the
+    tunnel; when the proxy itself is reached over TLS this results in a
+    TLS-in-TLS connection.
     """
 
     _truncatedLength = 1000
@@ -203,37 +381,23 @@ class _TunnelingEndpoint:
 
     def __init__(
         self,
-        reactor: ReactorBase,
+        connectedDeferred: Deferred[IProtocol],
+        wrappedProtocol: IProtocol,
         host: bytes,
         port: int,
-        proxyConf: tuple[str, int, tuple[tuple[str, str], ...]],
-        contextFactory: IPolicyForHTTPS,
-        timeout: float = 30,
-        bindAddress: tuple[str, int] | None = None,
+        proxyHost: str,
+        proxyPort: int,
+        proxyHeaders: tuple[tuple[str, str], ...] = (),
     ):
-        proxyHost, proxyPort, self._proxyHeaders = proxyConf
-        self._proxyHost: str = proxyHost
-        self._proxyPort: int = proxyPort
-        # Reach a proxy given as a name through a HostnameEndpoint, the same
-        # endpoint Twisted's Agent uses: it resolves the name with
-        # reactor.nameResolver and picks the address family from the result, so
-        # proxies that only have AAAA records work, given an IPv6-capable
-        # TWISTED_DNS_RESOLVER. A literal IPv6 address skips name resolution
-        # instead, as the default resolver would fail to resolve it.
-        self._proxyEndpoint: IStreamClientEndpoint = (
-            TCP6ClientEndpoint(reactor, proxyHost, proxyPort, timeout, bindAddress)
-            if _is_ipv6_literal(proxyHost)
-            else HostnameEndpoint(
-                reactor, proxyHost, proxyPort, timeout=timeout, bindAddress=bindAddress
-            )
-        )
-        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred(self._cancelTunnel)
-        self._connectDeferred: Deferred[Protocol] | None = None
-        self._protocol: Protocol | None = None
-        self._tunneledHost: bytes = host
-        self._tunneledPort: int = port
-        self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._connectedDeferred = connectedDeferred
+        self._wrappedProtocol = wrappedProtocol
+        self._host = host
+        self._port = port
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
+        self._proxyHeaders = proxyHeaders
         self._connectBuffer: bytearray = bytearray()
+        self._tunnelReady = False
 
     @staticmethod
     def _format_host(host: bytes) -> bytes:
@@ -244,27 +408,25 @@ class _TunnelingEndpoint:
         # colons.
         return b"[" + host + b"]" if b":" in host else host
 
-    def requestTunnel(self, protocol: Protocol) -> Protocol:
-        """Asks the proxy to open a tunnel."""
-        assert protocol.transport
-        tunnelReq = _tunnel_request_data(
-            self._format_host(self._tunneledHost),
-            self._tunneledPort,
-            self._proxyHeaders,
-        )
-        protocol.transport.write(tunnelReq)
-        self._protocolDataReceived = protocol.dataReceived
-        protocol.dataReceived = self.processProxyResponse  # type: ignore[method-assign]
-        self._protocol = protocol
-        return protocol
+    def logPrefix(self) -> str:
+        return type(self._wrappedProtocol).__name__
 
-    def processProxyResponse(self, data: bytes) -> None:
-        """Processes the response from the proxy. If the tunnel is successfully
-        created, notifies the client that we are ready to send requests. If not
-        raises a TunnelError.
-        """
-        assert self._protocol
-        assert self._protocol.transport
+    def connectionMade(self) -> None:
+        """Asks the proxy to open a tunnel."""
+        assert self.transport
+        self.transport.write(
+            _tunnel_request_data(
+                self._format_host(self._host), self._port, self._proxyHeaders
+            )
+        )
+
+    def dataReceived(self, data: bytes) -> None:
+        if self._tunnelReady:
+            self._wrappedProtocol.dataReceived(data)
+            return
+        if self._connectedDeferred.called:
+            # The tunnel was cancelled while waiting for the CONNECT response.
+            return
         self._connectBuffer += data
         # make sure that enough (all) bytes are consumed
         # and that we've got all HTTP headers (ending with a blank line)
@@ -273,16 +435,17 @@ class _TunnelingEndpoint:
         # see https://github.com/scrapy/scrapy/issues/2491
         if b"\r\n\r\n" not in self._connectBuffer:
             return
-        self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
-        respm = _TunnelingEndpoint._responseMatcher.match(self._connectBuffer)
+        header, _, remaining = bytes(self._connectBuffer).partition(b"\r\n\r\n")
+        respm = self._responseMatcher.match(header)
         if respm and int(respm.group("status")) == 200:
-            # set proper Server Name Indication extension
-            sslOptions = self._contextFactory.creatorForNetloc(
-                self._tunneledHost,  # type: ignore[arg-type]
-                self._tunneledPort,  # type: ignore[call-arg,misc]
-            )
-            self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
-            self._tunnelReadyDeferred.callback(self._protocol)
+            self._tunnelReady = True
+            # Hand the connection over to the wrapped (destination TLS)
+            # protocol, which starts its handshake through the tunnel.
+            assert self.transport is not None
+            self._wrappedProtocol.makeConnection(self.transport)
+            self._connectedDeferred.callback(self._wrappedProtocol)
+            if remaining:
+                self._wrappedProtocol.dataReceived(remaining)
         else:
             extra: Any
             if respm:
@@ -291,41 +454,136 @@ class _TunnelingEndpoint:
                     "reason": respm.group("reason").strip(),
                 }
             else:
-                extra = data[: self._truncatedLength]
-            self._tunnelReadyDeferred.errback(
+                extra = header[: self._truncatedLength]
+            self._connectedDeferred.errback(
                 TunnelError(
                     "Could not open CONNECT tunnel with proxy "
                     f"{self._proxyHost}:{self._proxyPort} [{extra!r}]"
                 )
             )
 
-    def connectFailed(self, reason: Failure) -> None:
-        """Propagates the errback to the appropriate deferred."""
-        self._tunnelReadyDeferred.errback(reason)
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
+        if self._tunnelReady:
+            self._wrappedProtocol.connectionLost(reason)
+        elif not self._connectedDeferred.called:
+            # The connection was lost before the tunnel was established (e.g.
+            # the proxy closed the connection in response to CONNECT).
+            self._connectedDeferred.errback(reason)
 
-    def _cancelTunnel(self, deferred: Deferred[Protocol]) -> None:
-        """Tear down the connection to the proxy when the deferred returned by
-        :meth:`connect` is cancelled, e.g. on a download timeout."""
-        if self._protocol is not None:
-            # The proxy connection is up; drop it, and stop intercepting data
-            # in case the proxy answers the CONNECT after this point.
-            self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
-            assert self._protocol.transport
-            self._protocol.transport.loseConnection()
-        else:
-            # Still connecting to the proxy; stop the connection attempt. This
-            # errbacks _tunnelReadyDeferred through connectFailed().
-            assert self._connectDeferred is not None
-            self._connectDeferred.cancel()
 
-    def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
-        self._protocolFactory = protocolFactory
-        self._connectDeferred = connectDeferred = self._proxyEndpoint.connect(
-            protocolFactory
+class _TunnelFactory(ClientFactory):
+    """Builds :class:`_TunnelProtocol` instances wrapping the protocols built
+    by another factory."""
+
+    def __init__(
+        self,
+        connectedDeferred: Deferred[IProtocol],
+        wrappedFactory: Factory,
+        host: bytes,
+        port: int,
+        proxyHost: str,
+        proxyPort: int,
+        proxyHeaders: tuple[tuple[str, str], ...] = (),
+    ):
+        self._connectedDeferred = connectedDeferred
+        self._wrappedFactory = wrappedFactory
+        self._host = host
+        self._port = port
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
+        self._proxyHeaders = proxyHeaders
+
+    def doStart(self) -> None:
+        self._wrappedFactory.doStart()
+
+    def doStop(self) -> None:
+        self._wrappedFactory.doStop()
+
+    def buildProtocol(self, addr: IAddress) -> _TunnelProtocol:
+        wrappedProtocol = self._wrappedFactory.buildProtocol(addr)
+        # The wrapped factory is always the destination TLS factory built by
+        # wrapClientTLS, whose buildProtocol never returns None.
+        assert wrappedProtocol is not None
+        return _TunnelProtocol(
+            self._connectedDeferred,
+            wrappedProtocol,
+            self._host,
+            self._port,
+            self._proxyHost,
+            self._proxyPort,
+            self._proxyHeaders,
         )
-        connectDeferred.addCallback(self.requestTunnel)
-        connectDeferred.addErrback(self.connectFailed)
-        return self._tunnelReadyDeferred
+
+
+@implementer(IStreamClientEndpoint)
+class _TunnelEndpoint:
+    """A wrapper endpoint that opens an HTTP CONNECT tunnel over the connection
+    established by the wrapped endpoint before delivering it to the protocol
+    factory.
+
+    The wrapped endpoint connects to the proxy (over plain TCP for ``http://``
+    proxies, or over TLS via :func:`~twisted.internet.endpoints.wrapClientTLS`
+    for ``https://`` proxies). Wrapping this endpoint in turn with
+    ``wrapClientTLS`` negotiates the destination TLS session inside the tunnel.
+    """
+
+    def __init__(
+        self,
+        wrappedEndpoint: IStreamClientEndpoint,
+        host: bytes,
+        port: int,
+        proxyHost: str,
+        proxyPort: int,
+        proxyHeaders: tuple[tuple[str, str], ...] = (),
+    ):
+        self._wrappedEndpoint = wrappedEndpoint
+        self._host = host
+        self._port = port
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
+        self._proxyHeaders = proxyHeaders
+
+    def connect(self, protocolFactory: Factory) -> Deferred[IProtocol]:
+        proxyProtocol: IProtocol | None = None
+
+        def proxyConnected(protocol: IProtocol) -> None:
+            nonlocal proxyProtocol
+            proxyProtocol = protocol
+
+        def cancel(_: Deferred[IProtocol]) -> None:
+            # Tear down the connection to the proxy, e.g. on a download timeout.
+            if proxyProtocol is None:
+                # Still connecting to the proxy. This errbacks
+                # connectedDeferred through _connectFailed().
+                proxyDeferred.cancel()
+            else:
+                assert isinstance(proxyProtocol, _TunnelProtocol)
+                assert proxyProtocol.transport
+                proxyProtocol.transport.loseConnection()
+
+        connectedDeferred: Deferred[IProtocol] = Deferred(cancel)
+        tunnelFactory = _TunnelFactory(
+            connectedDeferred,
+            protocolFactory,
+            self._host,
+            self._port,
+            self._proxyHost,
+            self._proxyPort,
+            self._proxyHeaders,
+        )
+        proxyDeferred = self._wrappedEndpoint.connect(tunnelFactory)
+        proxyDeferred.addCallbacks(
+            proxyConnected, self._connectFailed, errbackArgs=(connectedDeferred,)
+        )
+        return connectedDeferred
+
+    @staticmethod
+    def _connectFailed(
+        failure: Failure, connectedDeferred: Deferred[IProtocol]
+    ) -> None:
+        # Reached only when connecting to the proxy fails, i.e. before the
+        # tunnel deferred has been fired.
+        connectedDeferred.errback(failure)
 
 
 def _tunnel_request_data(
@@ -380,37 +638,72 @@ class _BindAddressAgent(Agent):
 
 
 class _TunnelingAgent(_BindAddressAgent):
-    """An agent that uses a ``_TunnelingEndpoint`` to make HTTPS
-    downloads. It may look strange that we have chosen to subclass Agent and not
+    """An agent that tunnels HTTPS downloads through a proxy using HTTP
+    CONNECT. It may look strange that we have chosen to subclass Agent and not
     ProxyAgent but consider that after the tunnel is opened the proxy is
     transparent to the client; thus the agent should behave like there is no
     proxy involved.
+
+    ``proxyConf`` is a ``(host, port, headers, tls)`` tuple, where ``tls``
+    indicates whether the connection to the proxy itself must be made over TLS
+    (an ``https://`` proxy). When it is, the destination TLS session runs inside
+    the proxy TLS session (TLS-in-TLS).
     """
 
     def __init__(
         self,
         *,
         reactor: ReactorBase,
-        proxyConf: tuple[str, int, tuple[tuple[str, str], ...]],
+        proxyConf: tuple[str, int, tuple[tuple[str, str], ...], bool],
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
-        self._proxyConf: tuple[str, int, tuple[tuple[str, str], ...]] = proxyConf
+        self._proxyConf: tuple[str, int, tuple[tuple[str, str], ...], bool] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
-    def _getEndpoint(self, uri: URI) -> _TunnelingEndpoint:
-        return _TunnelingEndpoint(
-            reactor=self._reactor,
-            host=uri.host,
-            port=uri.port,
-            proxyConf=self._proxyConf,
-            contextFactory=self._contextFactory,
-            timeout=self._endpointFactory._connectTimeout,
-            bindAddress=self._endpointFactory._bindAddress,
+    def _getEndpoint(self, uri: URI) -> IStreamClientEndpoint:
+        proxyHost, proxyPort, proxyHeaders, proxyTLS = self._proxyConf
+        timeout = self._endpointFactory._connectTimeout
+        bindAddress = self._endpointFactory._bindAddress
+        # Reach a proxy given as a name through a HostnameEndpoint, the same
+        # endpoint Twisted's Agent uses: it resolves the name with
+        # reactor.nameResolver and picks the address family from the result, so
+        # proxies that only have AAAA records work, given an IPv6-capable
+        # TWISTED_DNS_RESOLVER. A literal IPv6 address skips name resolution
+        # instead, as the default resolver would fail to resolve it.
+        endpoint: IStreamClientEndpoint = (
+            TCP6ClientEndpoint(
+                self._reactor, proxyHost, proxyPort, timeout, bindAddress
+            )
+            if _is_ipv6_literal(proxyHost)
+            else HostnameEndpoint(
+                self._reactor,
+                proxyHost,
+                proxyPort,
+                timeout=timeout,
+                bindAddress=bindAddress,
+            )
         )
+        if proxyTLS:
+            # Set up TLS with the proxy itself, so that the CONNECT request and
+            # the tunneled traffic are sent over it (TLS-in-TLS).
+            proxyCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
+                proxyHost.encode("ascii"),  # type: ignore[arg-type]
+                proxyPort,
+            )
+            endpoint = wrapClientTLS(proxyCreator, endpoint)
+        endpoint = _TunnelEndpoint(
+            endpoint, uri.host, uri.port, proxyHost, proxyPort, proxyHeaders
+        )
+        # Set proper Server Name Indication extension for the destination.
+        destCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
+            uri.host,
+            uri.port,
+        )
+        return wrapClientTLS(destCreator, endpoint)
 
     def _requestWithEndpoint(
         self,
@@ -519,10 +812,6 @@ class _ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
-                if proxy_parsed.scheme == "https":  # pragma: no cover
-                    raise NotImplementedError(
-                        "HTTPS proxies for HTTPS destinations are not supported"
-                    )
                 assert proxy_host is not None
                 proxy_headers = get_proxy_headers(request)
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
@@ -533,7 +822,12 @@ class _ScrapyAgent:
                         ("Proxy-Authorization", proxyAuth.decode()),
                         *proxy_headers,
                     )
-                proxyConf = (proxy_host, proxy_port, proxy_headers)
+                proxyConf = (
+                    proxy_host,
+                    proxy_port,
+                    proxy_headers,
+                    proxy_parsed.scheme == "https",
+                )
                 return _TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
@@ -883,99 +1177,3 @@ class _ResponseReader(Protocol):
         exc = ResponseDataLossError()
         exc.__cause__ = reason.value
         self._finished.errback(exc)
-
-
-class _LenientHTTPClientParser(HTTPClientParser):
-    """Response parser that skips bad response header lines, those with no
-    colon in them, instead of failing to parse the whole response.
-
-    Some servers send such lines, and web browsers skip them and keep parsing
-    the header lines that follow. See
-    https://github.com/scrapy/scrapy/issues/210.
-    """
-
-    def lineReceived(self, line: bytes) -> None:
-        # A copy of twisted.web._newclient.HTTPParser.lineReceived() where the
-        # header name and value are only extracted from header lines that have
-        # a colon.
-
-        # Handle the normal CR LF case.
-        line = line.removesuffix(b"\r")
-
-        if self.state == STATUS:
-            self.statusReceived(line)  # type: ignore[no-untyped-call]
-            self.state = HEADER
-            return
-
-        # HEADER is the only other state in which lines are received, as the
-        # parser switches to raw mode for the response body.
-        if not line or line[0] not in b" \t":
-            if self._partialHeader is not None:
-                header = b"".join(self._partialHeader)
-                if b":" in header:
-                    name, value = header.split(b":", 1)
-                    self.headerReceived(name, value.strip())  # type: ignore[no-untyped-call]
-                else:
-                    logger.debug(
-                        f"Skipping the bad response header line {header!r}, as "
-                        f"it has no colon."
-                    )
-            if not line:
-                # Empty line means the header section is over.
-                self.allHeadersReceived()  # type: ignore[no-untyped-call]
-            else:
-                # Line not beginning with LWS is another header.
-                self._partialHeader = [line]
-        else:
-            # A line beginning with LWS is a continuation of a header begun on
-            # a previous line.
-            self._partialHeader.append(line)  # type: ignore[union-attr]
-
-
-class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
-    """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
-
-    def request(self, request: TxRequest) -> Deferred[IResponse]:
-        d: Deferred[IResponse] = super().request(request)
-        # HTTP11ClientProtocol.request() hardcodes the parser class, so the
-        # only way to use a different one is to replace the class of the parser
-        # object that it creates. This is safe because
-        # _LenientHTTPClientParser defines no additional state. The parser is
-        # always there because HTTPConnectionPool only reuses connections whose
-        # protocol is in the QUIESCENT state, for which request() always
-        # creates a parser.
-        assert self._parser is not None
-        self._parser.__class__ = _LenientHTTPClientParser
-
-        # For responses without a body, twisted.web.client.Response never
-        # hands its transport to a protocol, so the certificate and IP
-        # address cannot be read from it later (see
-        # _ResponseReader.connectionMade). self.transport, however, is the
-        # connection's real transport and outlives any single request, so
-        # read the certificate and IP address from it directly and stash
-        # them on the response.
-        assert self.transport is not None
-        transport = self.transport
-
-        def _attach_connection_info(response: IResponse) -> IResponse:
-            with suppress(AttributeError):
-                response._scrapy_certificate = ssl.Certificate(
-                    transport.getPeerCertificate()
-                )
-            with suppress(AttributeError):
-                response._scrapy_ip_address = ipaddress.ip_address(
-                    transport.getPeer().host
-                )
-            return response
-
-        d.addCallback(_attach_connection_info)
-        return d
-
-
-class _LenientHTTP11ClientFactory(_HTTP11ClientFactory):
-    """Factory that builds :class:`_LenientHTTP11ClientProtocol` protocols."""
-
-    noisy = False
-
-    def buildProtocol(self, addr: IAddress | None) -> HTTP11ClientProtocol:
-        return _LenientHTTP11ClientProtocol(self._quiescentCallback)  # type: ignore[no-untyped-call]

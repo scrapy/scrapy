@@ -33,7 +33,6 @@ from typing import (
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
-from twisted.internet.defer import Deferred, maybeDeferred
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
@@ -54,7 +53,7 @@ from scrapy.utils.boto import (
     is_botocore_available,
 )
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
+from scrapy.utils.defer import _maybeDeferred_coro, deferred_from_coro, ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import load_object
@@ -65,6 +64,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
     from os import PathLike
 
+    from twisted.internet.defer import Deferred
     from twisted.python.failure import Failure
 
     from scrapy import Spider
@@ -691,7 +691,7 @@ class FilesPipeline(MediaPipeline):
         self.store.checksum_algorithm = _checksum_algorithm(
             settings, resolve("FILES_CHECKSUM_ALGORITHM")
         )
-        self.expires: int = settings.getint(resolve("FILES_EXPIRES"), self.EXPIRES)
+        self.expires: float = settings.getfloat(resolve("FILES_EXPIRES"), self.EXPIRES)
         if not hasattr(self, "FILES_URLS_FIELD"):
             self.FILES_URLS_FIELD = self.DEFAULT_FILES_URLS_FIELD
         if not hasattr(self, "FILES_RESULT_FIELD"):
@@ -790,8 +790,9 @@ class FilesPipeline(MediaPipeline):
         self, request: Request, info: MediaPipeline.SpiderInfo, *, item: Any = None
     ) -> Deferred[FileInfo | None] | None:
         path = self.file_path(request, info=info, item=item)
-        # maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
-        dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[call-overload]
+        dfd: Deferred[StatInfo] = _maybeDeferred_coro(
+            self.store.stat_file, False, path, info
+        )
         dfd2: Deferred[FileInfo | None] = dfd.addCallback(
             functools.partial(self._onsuccess, request=request, info=info, path=path)
         )

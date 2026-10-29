@@ -23,14 +23,9 @@ you need to run one of those in your script for it to work (helpers described
 below can do it for you).
 
 The first utility you can use to run your spiders is
-:class:`scrapy.crawler.AsyncCrawlerProcess` or
-:class:`scrapy.crawler.CrawlerProcess`. These classes will start a Twisted
-reactor for you, configuring the logging and setting shutdown handlers. These
-classes are the ones used by all Scrapy commands. They have similar
-functionality, differing in their asynchronous API style:
-:class:`~scrapy.crawler.AsyncCrawlerProcess` returns coroutines from its
-asynchronous methods while :class:`~scrapy.crawler.CrawlerProcess` returns
-:class:`~twisted.internet.defer.Deferred` objects.
+:class:`scrapy.crawler.AsyncCrawlerProcess`. This class will start a Twisted
+reactor for you, configuring the logging and setting shutdown handlers. This
+class is the one used by all Scrapy commands that run a crawl.
 
 Here's an example showing how to run a single spider with it.
 
@@ -83,33 +78,26 @@ project as example.
     process.start()  # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
-process: :class:`scrapy.crawler.AsyncCrawlerRunner` or
-:class:`scrapy.crawler.CrawlerRunner`. These classes are thin wrappers
-that encapsulate some simple helpers to run multiple crawlers, but they won't
-start or interfere with existing reactors in any way. Just like
-:class:`scrapy.crawler.AsyncCrawlerProcess` and
-:class:`scrapy.crawler.CrawlerProcess` they differ in their asynchronous API
-style.
+process: :class:`scrapy.crawler.AsyncCrawlerRunner`. This class is a thin
+wrapper that encapsulates some simple helpers to run multiple crawlers, but it
+won't start or interfere with existing reactors in any way.
 
-When using these classes the reactor should be explicitly run after scheduling
+When using this class the reactor should be explicitly run after scheduling
 your spiders. It's recommended that you use
-:class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerRunner` instead of
-:class:`~scrapy.crawler.AsyncCrawlerProcess` or
-:class:`~scrapy.crawler.CrawlerProcess` if your application is already using
-Twisted and you want to run Scrapy in the same reactor.
+:class:`~scrapy.crawler.AsyncCrawlerRunner` instead of
+:class:`~scrapy.crawler.AsyncCrawlerProcess` if your application is already
+using Twisted and you want to run Scrapy in the same reactor.
 
 If you want to stop the reactor or run any other code right after the spider
 finishes you can do that after the task returned from
 :meth:`AsyncCrawlerRunner.crawl() <scrapy.crawler.AsyncCrawlerRunner.crawl>`
-completes (or the Deferred returned from :meth:`CrawlerRunner.crawl()
-<scrapy.crawler.CrawlerRunner.crawl>` fires). In the simplest case you can also
-use :func:`twisted.internet.task.react` to start and stop the reactor, though
-it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess` or
-:class:`~scrapy.crawler.CrawlerProcess` instead.
+completes. In the simplest case you can also use
+:func:`twisted.internet.task.react` to start and stop the reactor, though
+it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess`
+instead.
 
-Exceptions that interrupt a crawl reach the code that awaits that task or that
-adds callbacks to that Deferred, which is where you should handle them.
+Exceptions that interrupt a crawl reach the code that awaits that task, which
+is where you should handle them.
 
 Here's an example of using :class:`~scrapy.crawler.AsyncCrawlerRunner` together
 with simple reactor management code:
@@ -138,41 +126,10 @@ with simple reactor management code:
     install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
-Same example but using :class:`~scrapy.crawler.CrawlerRunner` and a
-different reactor (:class:`~scrapy.crawler.AsyncCrawlerRunner` only works
-with :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`):
-
-.. code-block:: python
-
-    import scrapy
-    from scrapy.crawler import CrawlerRunner
-    from scrapy.utils.log import configure_logging
-    from scrapy.utils.reactor import install_reactor
-    from twisted.internet.task import react
-
-
-    class MySpider(scrapy.Spider):
-        custom_settings = {
-            "TWISTED_REACTOR": "twisted.internet.epollreactor.EPollReactor",
-        }
-        # Your spider definition
-        ...
-
-
-    def crawl(_):
-        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-        runner = CrawlerRunner()
-        d = runner.crawl(MySpider)
-        return d  # this Deferred fires when the spider finishes
-
-
-    install_reactor("twisted.internet.epollreactor.EPollReactor")
-    react(crawl)
-
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
-And here are examples of using these classes with
-:setting:`TWISTED_REACTOR_ENABLED` set to ``False``.
+You can also :ref:`use Scrapy without a reactor <asyncio-without-reactor>`;
+here are examples of doing this from a script.
 
 Simple usage of :class:`~scrapy.crawler.AsyncCrawlerProcess`:
 
@@ -263,9 +220,8 @@ cases, e.g. asynchronous web applications, have additional caveats and
 limitations.
 
 If the application runs its own Twisted reactor, you can use
-:class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerRunner` to run spiders using this reactor, see
-:ref:`run-from-script` for examples.
+:class:`~scrapy.crawler.AsyncCrawlerRunner` to run spiders using this reactor;
+see :ref:`run-from-script` for examples.
 
 If the application doesn't run a Twisted reactor or an asyncio event loop (for
 example, a Django web app deployed with a WSGI server such as uWSGI), you can
@@ -533,6 +489,31 @@ run:
 
 Because :setting:`SPIDER_MODULES` is a list setting, you can include multiple
 modules by separating them with commas.
+
+.. _crawl-bottlenecks:
+
+Identifying crawl bottlenecks
+=============================
+
+The :stat:`request_backout_seconds/concurrency`,
+:stat:`request_backout_seconds/response_max_active_size` and
+:stat:`request_backout_seconds/total` stats show how long request scheduling
+was paused during a crawl, and why.
+
+For example, after a crawl you might see::
+
+    2025-01-01 00:00:00 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+    {'request_backout_seconds/concurrency': 12.5,
+     'request_backout_seconds/response_max_active_size': 45.2,
+     'request_backout_seconds/total': 57.7,
+     ...}
+
+In this case, the spider spent about 45 seconds paused due to large responses
+in memory. You could:
+
+- Increase :setting:`RESPONSE_MAX_ACTIVE_SIZE` if your machine has enough RAM.
+- Check that your code doesn't hold strong references to
+  :class:`~scrapy.http.Response` objects longer than necessary.
 
 .. _bans:
 

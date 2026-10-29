@@ -193,14 +193,17 @@ jobs:
       run: uvx --with tox-uv tox
 
     - name: Upload coverage report
-      if: ${{ matrix.coverage }}
+      if: ${{ matrix.coverage && !cancelled() }}
       uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+      with:
+        flags: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.env.TOXENV }}
 
     - name: Upload test results
       if: ${{ !cancelled() }}
       uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       with:
         report_type: test_results
+        flags: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.env.TOXENV }}
 
   windows:
     needs: [pre-commit, checks]

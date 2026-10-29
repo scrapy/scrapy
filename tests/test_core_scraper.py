@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 
 from scrapy import Request, Spider
-from scrapy.core.scraper import Scraper
-from scrapy.exceptions import IgnoreRequest
+from scrapy.core import scraper as scraper_module
+from scrapy.core.scraper import Scraper, _Slot
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
@@ -137,3 +138,45 @@ async def test_none_in_callback_output() -> None:
     )
     await crawler.crawl_async()
     assert crawler.stats.get_value("item_scraped_count") == 2
+
+
+@coroutine_test
+async def test_slot_deprecated_attributes() -> None:
+    values: dict[str, Any] = {}
+
+    class SizeSpider(Spider):
+        name = "size"
+
+        async def start(self) -> AsyncIterator[Any]:
+            yield Request("data:,a")
+
+        def parse(self, response: Response) -> None:
+            engine = self.crawler.engine
+            assert engine is not None
+            slot = engine.scraper.slot
+            assert slot is not None
+            values["response_active_size"] = engine.response_active_size
+            for name in ("active_size", "max_active_size"):
+                with pytest.warns(ScrapyDeprecationWarning, match=name):
+                    values[name] = getattr(slot, name)
+            with pytest.warns(ScrapyDeprecationWarning, match="needs_backout"):
+                values["needs_backout"] = slot.needs_backout()
+
+    crawler = get_crawler(SizeSpider, {"RESPONSE_MAX_ACTIVE_SIZE": 1})
+    await crawler.crawl_async()
+    assert values == {
+        "response_active_size": 1,
+        "active_size": 1,
+        "max_active_size": 1,
+        "needs_backout": True,
+    }
+
+
+def test_slot_deprecated() -> None:
+    with pytest.warns(ScrapyDeprecationWarning, match="Slot is deprecated"):
+        assert scraper_module.Slot is _Slot
+
+
+def test_missing_attribute() -> None:
+    with pytest.raises(AttributeError):
+        scraper_module.Foo
