@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 
 
 class TestFetchCommand:
-    @pytest.mark.parametrize("args", [(), ("not-a-url",), ("a:b", "c:d")])
+    @pytest.mark.parametrize(
+        "args", [(), ("not-a-url",), ("custom://example.com",), ("a:b", "c:d")]
+    )
     def test_bad_arguments(self, args: tuple[str, ...]) -> None:
         returncode, out, _ = proc("fetch", *args)
         assert returncode == 2
@@ -23,6 +25,10 @@ class TestFetchCommand:
 
     def test_output(self, mockserver: MockServer) -> None:
         _, out, _ = proc("fetch", mockserver.url("/text"))
+        assert out.strip() == "Works"
+
+    def test_data_url(self) -> None:
+        _, out, _ = proc("fetch", "data:text/plain,Works")
         assert out.strip() == "Works"
 
     def test_redirect_default(self, mockserver: MockServer) -> None:
@@ -70,6 +76,7 @@ class TestFetchCommand:
 class TestFetchCommandWithSpider(TestProjectBase):
     @pytest.fixture(autouse=True)
     def create_files(self, proj_path: Path) -> None:
+        proj_mod_path = proj_path / self.project_name
         (proj_path / self.project_name / "spiders" / "myspider.py").write_text(
             """
 import scrapy
@@ -80,6 +87,25 @@ class MySpider(scrapy.Spider):
 """,
             encoding="utf-8",
         )
+        (proj_mod_path / "downloadhandler.py").write_text(
+            """
+from scrapy.http import Response
+
+
+class CustomDownloadHandler:
+    async def download_request(self, request):
+        return Response(request.url, body=b"Works", request=request)
+""",
+            encoding="utf-8",
+        )
+        self._append_settings(
+            proj_mod_path,
+            f'\nDOWNLOAD_HANDLERS = {{"custom": "{self.project_name}.downloadhandler.CustomDownloadHandler"}}\n',
+        )
+
+    def test_custom_scheme(self, proj_path: Path) -> None:
+        _, out, _ = proc("fetch", "custom://example.com", cwd=proj_path)
+        assert out.strip() == "Works"
 
     def test_spider(self, proj_path: Path, mockserver: MockServer) -> None:
         _, out, err = proc(
