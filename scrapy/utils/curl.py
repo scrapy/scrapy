@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import re
 import warnings
 from http.cookies import SimpleCookie
-from shlex import split
+from shlex import quote, split
 from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
@@ -94,8 +95,49 @@ def _parse_headers_and_cookies(
     return headers, cookies
 
 
+_ANSI_C_QUOTED_RE = re.compile(r"\$'((?:[^'\\]|\\.)*)'", re.DOTALL)
+# https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
+_ANSI_C_ESCAPE_RE = re.compile(
+    rb"\\(?:([abeEfnrtv\\'\"?])|([0-7]{1,3})|x([0-9A-Fa-f]{1,2})"
+    rb"|u([0-9A-Fa-f]{1,4})|U([0-9A-Fa-f]{1,8})|c(\\\\?|.))",
+    re.DOTALL,
+)
+_ANSI_C_SIMPLE_ESCAPES = {
+    b"a": b"\a",
+    b"b": b"\b",
+    b"e": b"\x1b",
+    b"E": b"\x1b",
+    b"f": b"\f",
+    b"n": b"\n",
+    b"r": b"\r",
+    b"t": b"\t",
+    b"v": b"\v",
+}
+
+
+def _decode_ansi_c_escape(match: re.Match[bytes]) -> bytes:
+    simple, octal, hex_, short_unicode, long_unicode, control = match.groups()
+    if simple is not None:
+        return _ANSI_C_SIMPLE_ESCAPES.get(simple, simple)
+    if octal is not None:
+        return bytes([int(octal, 8) & 0xFF])
+    if hex_ is not None:
+        return bytes([int(hex_, 16)])
+    if control is not None:
+        # \c\\ counts as \c followed by a single backslash.
+        return b"\x7f" if control == b"?" else bytes([control[0] & 0x1F])
+    return chr(int(short_unicode or long_unicode, 16)).encode()
+
+
+def _decode_ansi_c_string(value: str) -> str:
+    """Decode *value*, the contents of a Bash ``$'...'`` string."""
+    decoded = _ANSI_C_ESCAPE_RE.sub(_decode_ansi_c_escape, value.encode())
+    # Bash cuts the string at the first NUL byte.
+    return decoded.partition(b"\0")[0].decode()
+
+
 def _normalize_curl_command(curl_command: str) -> str:
-    """Normalize Bash ANSI-C quote prefixes for shlex."""
+    """Replace Bash ANSI-C quoted strings with their value quoted for shlex."""
     result: list[str] = []
     in_single_quote = False
     in_double_quote = False
@@ -119,14 +161,13 @@ def _normalize_curl_command(curl_command: str) -> str:
             result.append(char)
         elif (
             char == "$"
-            and i + 1 < len(curl_command)
-            and curl_command[i + 1] == "'"
             and not in_single_quote
             and not in_double_quote
+            and (match := _ANSI_C_QUOTED_RE.match(curl_command, i))
         ):
-            result.append("'")
-            in_single_quote = True
-            i += 1
+            result.append(quote(_decode_ansi_c_string(match[1])))
+            i = match.end()
+            continue
         else:
             result.append(char)
 
