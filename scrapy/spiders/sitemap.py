@@ -123,19 +123,19 @@ class SitemapSpider(Spider):
                 c = cast("CallbackT", getattr(self, c))  # noqa: PLW2901
             self._cbs.append((regex(r), c))
         self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
-        self._robots_sitemaps: dict[str, list[str]] = {}
-        self._signal_only_netlocs: set[str] = set()
+        self._robots_sitemaps: dict[tuple[str, str], list[str]] = {}
+        self._signal_only_origins: set[tuple[str, str]] = set()
 
     def _robots_parsed(
         self, robotparser: RobotParser, request: Request, response: Response
     ) -> None:
-        netloc = urlparse_cached(request).netloc
+        origin = _origin(request)
         urls = [urljoin(request.url, url) for url in robotparser.sitemaps()]
-        if netloc in self._signal_only_netlocs:
+        if origin in self._signal_only_origins:
             # No request for this host's robots.txt was sent from start(), so
             # _parse_sitemap() will never run for it; schedule its sitemaps
             # directly instead of stashing them for a response that never arrives.
-            self._signal_only_netlocs.discard(netloc)
+            self._signal_only_origins.discard(origin)
             for url in urls:
                 if any(x.search(url) for x in self._follow):
                     self.crawler.engine.crawl(
@@ -148,26 +148,24 @@ class SitemapSpider(Spider):
                         )
                     )
         else:
-            self._robots_sitemaps[netloc] = urls
+            self._robots_sitemaps[origin] = urls
 
     async def start(self) -> AsyncIterator[Any]:
-        sitemap_netlocs = {
-            urlparse_cached(url).netloc
-            for url in self.sitemap_urls
-            if not url.endswith("/robots.txt")
+        sitemap_origins = {
+            _origin(url) for url in self.sitemap_urls if not url.endswith("/robots.txt")
         }
         for url in self.sitemap_urls:
-            netloc = urlparse_cached(url).netloc
+            origin = _origin(url)
             if (
                 self._obey_robotstxt
                 and url.endswith("/robots.txt")
-                and netloc in sitemap_netlocs
+                and origin in sitemap_origins
             ):
                 # RobotsTxtMiddleware will fetch and parse this robots.txt
                 # anyway, to check the other sitemap_urls requests to the same
                 # host, so rely on the robots_parsed signal for it instead of
                 # requesting it a second time here.
-                self._signal_only_netlocs.add(netloc)
+                self._signal_only_origins.add(origin)
                 continue
             yield Request(url, self._parse_sitemap)
 
@@ -267,8 +265,7 @@ class SitemapSpider(Spider):
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
-            netloc = urlparse_cached(response).netloc
-            for url in self._robots_sitemaps.pop(netloc, ()):
+            for url in self._robots_sitemaps.pop(_origin(response), ()):
                 if url not in urls:
                     urls.append(url)
             return (
@@ -390,6 +387,13 @@ class SitemapSpider(Spider):
         if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
             return response.body
         return None
+
+
+def _origin(request_or_url: Request | Response | str) -> tuple[str, str]:
+    # Like RobotsTxtMiddleware, keep robots.txt data of http:// and https://
+    # URLs of the same host apart.
+    parsed = urlparse_cached(request_or_url)
+    return parsed.scheme, parsed.netloc
 
 
 def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
