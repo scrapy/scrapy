@@ -1184,6 +1184,57 @@ class TestCookiesMiddleware:
             cookies3=True,
         )
 
+    @pytest.mark.parametrize(
+        ("scheme", "set_cookie", "accepted"),
+        [
+            ("https", "__Secure-a=b; Secure", True),
+            ("https", "__secure-a=b; Secure", True),
+            ("https", "__Secure-a=b", False),
+            ("http", "__Secure-a=b; Secure", False),
+            ("https", "__Host-a=b; Secure; Path=/", True),
+            ("https", "__host-a=b; Secure; Path=/", True),
+            ("https", "__Host-a=b; Path=/", False),
+            ("http", "__Host-a=b; Secure; Path=/", False),
+            ("https", "__Host-a=b; Secure; Path=/; Domain=a.example", False),
+            ("https", "__Host-a=b; Secure; Path=/sub", False),
+            ("https", "__Hosta=b", True),
+            ("http", "a=b", True),
+        ],
+    )
+    def test_server_set_cookie_name_prefix(
+        self, scheme: str, set_cookie: str, accepted: bool
+    ) -> None:
+        url = f"{scheme}://a.example/"
+        request = Request(url)
+        response = Response(url, headers={"Set-Cookie": set_cookie})
+        assert self.mw.process_response(request, response) is response
+
+        request2 = Request(url)
+        self.mw.process_request(request2)
+        assert (request2.headers.get("Cookie") is not None) == accepted
+
+    @pytest.mark.parametrize(
+        ("scheme", "cookie", "accepted"),
+        [
+            ("https", {"name": "__Secure-a", "value": "b"}, True),
+            ("http", {"name": "__Secure-a", "value": "b"}, False),
+            ("https", {"name": "__Secure-a", "value": "b", "secure": False}, False),
+            ("https", {"name": "__Host-a", "value": "b", "path": "/"}, True),
+            ("https", {"name": "__Host-a", "value": "b"}, False),
+            (
+                "https",
+                {"name": "__Host-a", "value": "b", "path": "/", "domain": "a.example"},
+                False,
+            ),
+        ],
+    )
+    def test_request_cookie_name_prefix(
+        self, scheme: str, cookie: VerboseCookie, accepted: bool
+    ) -> None:
+        request = Request(f"{scheme}://a.example/sub/", cookies=[cookie])
+        self.mw.process_request(request)
+        assert (request.headers.get("Cookie") is not None) == accepted
+
     def test_hostless_url(self):
         request = Request("data:,", cookies={"a": "b"})
         assert self.mw.process_request(request) is None
