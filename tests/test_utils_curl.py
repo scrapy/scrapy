@@ -296,6 +296,59 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    @pytest.mark.parametrize(
+        ("data", "body"),
+        [
+            (r"$'line1\nline2'", "line1\nline2"),
+            (r"""$'{"name":"O\'Brien"}'""", """{"name":"O'Brien"}"""),
+            (r"""$'\a\b\e\E\f\n\r\t\v\\\'\"\?'""", "\a\b\x1b\x1b\f\n\r\t\v\\'\"?"),
+            (r"$'\101\0101\1012'", "A\x081A2"),
+            (r"$'\303\251'", "é"),
+            (r"$'\x41\x4G\x414'", "A\x04GA4"),
+            (r"$'\u00e9\u20AC\u41G'", "é€AG"),
+            (r"$'\U0001F600\U41'", "\U0001f600A"),
+            (
+                r"""$'{"name":"O\'Brien","city":"Z\xfcrich \ud83d\ude00"}'""",
+                '{"name":"O\'Brien","city":"Zürich \U0001f600"}',
+            ),
+            (r"$'caf\xe9'", "café"),
+            (r"$'\303\251\xe9'", "éé"),
+            (r"$'\xff'", "ÿ"),
+            (r"$'\ca\cZ\c[\c?\c\\x'", "\x01\x1a\x1b\x7f\x1cx"),
+            (r"$'\z\q\8'", r"\z\q\8"),
+            (r"$'\x'", r"\x"),
+            (r"$'\u'", r"\u"),
+            (r"$'\c'", r"\c"),
+            (r"x$'a\0b'y", "xay"),
+            (r"$'A\400B'", "A"),
+            ("a$'b c'd", "ab cd"),
+            ("a$''b", "ab"),
+            (r"\$'a\nb'", r"$a\nb"),
+            (r'''"$'a\nb'"''', r"$'a\nb'"),
+        ],
+    )
+    def test_post_data_raw_ansi_c_quoting(self, data, body):
+        curl_command = f"curl 'https://www.example.org/' --data-raw {data}"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": body,
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize(
+        ("data", "match"),
+        [
+            ("$'abc", "No closing quotation"),
+            (r"$'\ud800'", "can't decode"),
+            (r"$'\ude00\ud83d'", "can't decode"),
+            (r"$'\U00110000'", r"chr\(\) arg not in range"),
+        ],
+    )
+    def test_post_data_raw_ansi_c_quoting_error(self, data, match):
+        with pytest.raises(ValueError, match=match):
+            curl_to_request_kwargs(f"curl 'https://www.example.org/' --data-raw {data}")
+
     def test_explicit_get_with_data(self):
         curl_command = "curl httpbin.org/anything -X GET --data asdf"
         expected_result = {
