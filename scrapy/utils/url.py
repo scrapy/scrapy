@@ -190,6 +190,15 @@ def strip_url(
     )
 
 
+def _origin(url: str | Request | Response) -> tuple[str, str]:
+    """Return the scheme and network location of *url*.
+
+    They identify the ``robots.txt`` file that applies to *url* (RFC 9309), so
+    ``http://`` and ``https://`` URLs of the same host do not share one."""
+    parsed_url = urlparse_cached(url)
+    return parsed_url.scheme, parsed_url.netloc
+
+
 def _redirect_url(url: str, location: bytes) -> str:
     """Return the absolute URL that the *location* value of the ``Location``
     header of a response to a request to *url* points to."""

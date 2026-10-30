@@ -721,8 +721,8 @@ one per actual value of the placeholder.
 .. stat:: robotstxt/request_count
 
 ``robotstxt/request_count``
-    Number of ``robots.txt`` files requested, i.e. 1 per network location for
-    which at least 1 request was sent.
+    Number of ``robots.txt`` files requested, i.e. 1 per scheme and network
+    location for which at least 1 request was sent.
 
     Set by
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`.

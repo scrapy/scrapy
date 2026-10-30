@@ -176,6 +176,27 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/sitemap-from-parser.xml",
         ]
 
+    def test_get_sitemap_urls_from_robots_parsed_signal_other_scheme(self):
+        crawler = get_crawler(self.spider_class, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+
+        class FakeRobotParser:
+            def sitemaps(self):
+                return ["/sitemap-http.xml"]
+
+        crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=FakeRobotParser(),
+            request=Request("http://www.example.com/robots.txt"),
+            response=TextResponse("http://www.example.com/robots.txt"),
+        )
+
+        robots = b"Sitemap: https://www.example.com/sitemap-https.xml\n"
+        r = TextResponse(url="https://www.example.com/robots.txt", body=robots)
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "https://www.example.com/sitemap-https.xml",
+        ]
+
     def test_robots_parsed_signal_not_connected_without_robotstxt_obey(self):
         crawler = get_crawler(self.spider_class)
         spider = self.spider_class.from_crawler(crawler, "example.com")
@@ -202,7 +223,7 @@ Sitemap: /sitemap-relative-url.xml
         crawler = get_crawler(_Spider, settings_dict={"ROBOTSTXT_OBEY": True})
         spider = _Spider.from_crawler(crawler, "example.com")
         crawler.engine = mock.MagicMock()
-        spider._signal_only_netlocs.add("www.example.com")
+        spider._signal_only_origins.add(("http", "www.example.com"))
 
         class FakeRobotParser:
             def sitemaps(self):
@@ -224,7 +245,7 @@ Sitemap: /sitemap-relative-url.xml
         assert scheduled.callback == spider._parse_sitemap  # pylint: disable=comparison-with-callable
         url = "http://www.example.com/sitemap.xml"
         assert calls == [(url, {"loc": url}, "robotstxt", robots_response)]
-        assert spider._signal_only_netlocs == set()
+        assert spider._signal_only_origins == set()
         assert spider._robots_sitemaps == {}
 
     def test_sitemap_follow_robots_parsed_signal(self):
@@ -234,7 +255,7 @@ Sitemap: /sitemap-relative-url.xml
         crawler = get_crawler(_FollowSpider, settings_dict={"ROBOTSTXT_OBEY": True})
         spider = _FollowSpider.from_crawler(crawler, "example.com")
         crawler.engine = mock.MagicMock()
-        spider._signal_only_netlocs.add("www.example.com")
+        spider._signal_only_origins.add(("http", "www.example.com"))
 
         class FakeRobotParser:
             def sitemaps(self):
@@ -513,7 +534,27 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/sitemap.xml",
             "http://other.example.com/robots.txt",
         ]
-        assert spider._signal_only_netlocs == {"www.example.com"}
+        assert spider._signal_only_origins == {("http", "www.example.com")}
+
+    @coroutine_test
+    async def test_start_keeps_robots_url_of_other_scheme(self):
+        crawler = get_crawler(self.spider_class, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = self.spider_class.from_crawler(
+            crawler,
+            "example.com",
+            sitemap_urls=[
+                "http://www.example.com/sitemap.xml",
+                "https://www.example.com/robots.txt",
+            ],
+        )
+
+        urls = [request.url async for request in spider.start()]
+
+        assert urls == [
+            "http://www.example.com/sitemap.xml",
+            "https://www.example.com/robots.txt",
+        ]
+        assert spider._signal_only_origins == set()
 
     @coroutine_test
     async def test_robots_txt_requested_once_when_other_sitemap_url_goes_first(
