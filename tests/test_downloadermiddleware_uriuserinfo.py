@@ -14,7 +14,7 @@ def _meta_fields(protocol: str) -> tuple[str, str]:
     return "http_user", "http_pass"
 
 
-@pytest.mark.parametrize("protocol", ["ftp", "http", "https"])
+@pytest.mark.parametrize("protocol", ["ftp", "http", "https", "ws", "wss"])
 @pytest.mark.parametrize(
     ("userinfo", "user", "password"),
     [
@@ -43,7 +43,7 @@ def test_userinfo(
         assert request.meta[password_field] == password
 
 
-@pytest.mark.parametrize("protocol", ["ftp", "http", "https"])
+@pytest.mark.parametrize("protocol", ["ftp", "http", "https", "ws", "wss"])
 def test_no_userinfo(protocol: str) -> None:
     mw = build_from_crawler(UriUserInfoMiddleware, get_crawler())
     request = Request(f"{protocol}://example.com/")
@@ -51,7 +51,7 @@ def test_no_userinfo(protocol: str) -> None:
     assert not request.meta
 
 
-@pytest.mark.parametrize("protocol", ["ftp", "http", "https"])
+@pytest.mark.parametrize("protocol", ["ftp", "http", "https", "ws", "wss"])
 def test_meta_takes_precedence(protocol: str) -> None:
     user_field, password_field = _meta_fields(protocol)
     mw = build_from_crawler(UriUserInfoMiddleware, get_crawler())
