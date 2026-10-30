@@ -307,6 +307,13 @@ class TestCurlToRequestKwargs:
             (r"$'\x41\x4G\x414'", "A\x04GA4"),
             (r"$'\u00e9\u20AC\u41G'", "é€AG"),
             (r"$'\U0001F600\U41'", "\U0001f600A"),
+            (
+                r"""$'{"name":"O\'Brien","city":"Z\xfcrich \ud83d\ude00"}'""",
+                '{"name":"O\'Brien","city":"Zürich \U0001f600"}',
+            ),
+            (r"$'caf\xe9'", "café"),
+            (r"$'\303\251\xe9'", "éé"),
+            (r"$'\xff'", "ÿ"),
             (r"$'\ca\cZ\c[\c?\c\\x'", "\x01\x1a\x1b\x7f\x1cx"),
             (r"$'\z\q\8'", r"\z\q\8"),
             (r"$'\x'", r"\x"),
@@ -333,8 +340,8 @@ class TestCurlToRequestKwargs:
         ("data", "match"),
         [
             ("$'abc", "No closing quotation"),
-            (r"$'\xff'", "can't decode"),
-            (r"$'\ud800'", "can't encode"),
+            (r"$'\ud800'", "can't decode"),
+            (r"$'\ude00\ud83d'", "can't decode"),
             (r"$'\U00110000'", r"chr\(\) arg not in range"),
         ],
     )
