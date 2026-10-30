@@ -19,12 +19,15 @@ from w3lib import html
 
 from scrapy.http.headers import Headers
 from scrapy.http.response.body_file import BodyFileResponse
+from scrapy.utils._deps_compat import W3LIB_HTML_MAX_SCAN
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from scrapy.http import Response, TextResponse
+
+_MAX_SCAN = 16384
 
 
 def _body_size(response: Response) -> int:
@@ -39,10 +42,17 @@ _baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
 def get_base_url(response: TextResponse) -> str:
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
-        text = response.text[0:4096]
-        _baseurl_cache[response] = html.get_base_url(
-            text, response.url, response.encoding
-        )
+        if W3LIB_HTML_MAX_SCAN:
+            _baseurl_cache[response] = html.get_base_url(
+                response.body,
+                response.url,
+                response.encoding,
+                max_scan=_MAX_SCAN,
+            )
+        else:
+            _baseurl_cache[response] = html.get_base_url(
+                response.text[0:4096], response.url, response.encoding
+            )
     return _baseurl_cache[response]
 
 
@@ -57,10 +67,21 @@ def get_meta_refresh(
 ) -> tuple[None, None] | tuple[float, str]:
     """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
-        text = response.text[0:4096]
-        _metaref_cache[response] = html.get_meta_refresh(
-            text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
-        )
+        if W3LIB_HTML_MAX_SCAN:
+            _metaref_cache[response] = html.get_meta_refresh(
+                response.body,
+                get_base_url(response),
+                response.encoding,
+                ignore_tags=ignore_tags,
+                max_scan=_MAX_SCAN,
+            )
+        else:
+            _metaref_cache[response] = html.get_meta_refresh(
+                response.text[0:4096],
+                get_base_url(response),
+                response.encoding,
+                ignore_tags=ignore_tags,
+            )
     return _metaref_cache[response]
 
 
