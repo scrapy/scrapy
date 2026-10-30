@@ -619,8 +619,8 @@ one per actual value of the placeholder.
 .. stat:: request_backout_seconds/response_max_active_size
 
 ``request_backout_seconds/response_max_active_size``
-    Seconds during which sending requests to the downloader was paused because
-    :setting:`RESPONSE_MAX_ACTIVE_SIZE` was reached.
+    Seconds during which sending requests from the scheduler to the downloader
+    was paused because :setting:`RESPONSE_MAX_ACTIVE_SIZE` was reached.
 
 .. stat:: request_backout_seconds/total
 
@@ -643,6 +643,14 @@ one per actual value of the placeholder.
     Maximum depth reached.
 
     Set by :class:`~scrapy.spidermiddlewares.depth.DepthMiddleware`.
+
+.. stat:: response_max_active_size/bypass_count
+
+``response_max_active_size/bypass_count``
+    Number of requests sent with
+    :meth:`~scrapy.core.engine.ExecutionEngine.download_async` that were
+    downloaded despite :setting:`RESPONSE_MAX_ACTIVE_SIZE`, to keep the crawl
+    from stalling.
 
 .. stat:: response_received_count
 
