@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 import socket
 import ssl
 import sys
@@ -16,11 +17,17 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     DownloadFailedError,
     DownloadTimeoutError,
+    ResponseHeadersTooLargeError,
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers
-from scrapy.utils._download_handlers import get_proxy_headers
+from scrapy.utils._download_handlers import (
+    get_headers_maxsize_msg,
+    get_headers_warnsize_msg,
+    get_proxy_headers,
+)
 from scrapy.utils._ssl import _log_sslobj_debug_info, _make_ssl_context
+from scrapy.utils.python import _iter_exc_causes
 
 from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 
@@ -34,6 +41,9 @@ if TYPE_CHECKING:
 
     from scrapy import Request
     from scrapy.crawler import Crawler
+
+
+logger = logging.getLogger(__name__)
 
 
 class _AsyncResolver(aiohttp.AsyncResolver):
@@ -118,11 +128,17 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
             keepalive_timeout=self._keepalive_timeout or None,
             force_close=not self._keepalive_timeout,
         )
+        # aiohttp limits the size of each line of the response head; the size
+        # of the head as a whole is checked in _check_headers_size() once it
+        # has been received.
+        line_maxsize = self._headers_maxsize or sys.maxsize
         self._session: aiohttp.ClientSession = aiohttp.ClientSession(
             connector=connector,
             cookie_jar=aiohttp.DummyCookieJar(),
             auto_decompress=False,
             response_class=_ClientResponse,
+            max_line_size=line_maxsize,
+            max_field_size=line_maxsize,
             skip_auto_headers=(
                 "Accept",
                 "Accept-Encoding",
@@ -162,6 +178,7 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
                 proxy=proxy,
                 proxy_headers=dict(proxy_headers) or None,
             ) as response:
+                self._check_headers_size(response, request)
                 yield cast("_ClientResponse", response)
         except TimeoutError as e:
             raise DownloadTimeoutError(
@@ -176,8 +193,30 @@ class AiohttpDownloadHandler(BaseStreamingDownloadHandler[_ClientResponse]):
             raise CannotResolveHostError(str(e)) from e
         except aiohttp.ClientConnectorError as e:
             raise DownloadConnectionRefusedError(str(e)) from e
+        except aiohttp.ClientResponseError as e:
+            if any(
+                isinstance(cause, aiohttp.http_exceptions.LineTooLong)
+                for cause in _iter_exc_causes(e)
+            ):
+                raise ResponseHeadersTooLargeError(
+                    get_headers_maxsize_msg(None, self._headers_maxsize, request.url)
+                ) from e
+            raise DownloadFailedError(str(e)) from e
         except aiohttp.ClientError as e:
             raise DownloadFailedError(str(e)) from e
+
+    def _check_headers_size(
+        self, response: aiohttp.ClientResponse, request: Request
+    ) -> None:
+        size = sum(len(name) + len(value) + 4 for name, value in response.raw_headers)
+        if self._headers_maxsize and size > self._headers_maxsize:
+            raise ResponseHeadersTooLargeError(
+                get_headers_maxsize_msg(size, self._headers_maxsize, request.url)
+            )
+        if self._headers_warnsize and size > self._headers_warnsize:
+            logger.warning(
+                get_headers_warnsize_msg(size, self._headers_warnsize, request.url)
+            )
 
     @staticmethod
     def _extract_headers(response: _ClientResponse) -> Headers:
