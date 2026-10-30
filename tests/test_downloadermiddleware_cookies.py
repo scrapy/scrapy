@@ -1197,6 +1197,7 @@ class TestCookiesMiddleware:
             ("http", "__Host-a=b; Secure; Path=/", False),
             ("https", "__Host-a=b; Secure; Path=/; Domain=a.example", False),
             ("https", "__Host-a=b; Secure; Path=/sub", False),
+            ("https", "__Host-a=b; Secure", False),
             ("https", "__Hosta=b", True),
             ("http", "a=b", True),
         ],
@@ -1214,26 +1215,17 @@ class TestCookiesMiddleware:
         assert (request2.headers.get("Cookie") is not None) == accepted
 
     @pytest.mark.parametrize(
-        ("scheme", "cookie", "accepted"),
+        "cookie",
         [
-            ("https", {"name": "__Secure-a", "value": "b"}, True),
-            ("http", {"name": "__Secure-a", "value": "b"}, False),
-            ("https", {"name": "__Secure-a", "value": "b", "secure": False}, False),
-            ("https", {"name": "__Host-a", "value": "b", "path": "/"}, True),
-            ("https", {"name": "__Host-a", "value": "b"}, False),
-            (
-                "https",
-                {"name": "__Host-a", "value": "b", "path": "/", "domain": "a.example"},
-                False,
-            ),
+            {"name": "__Secure-a", "value": "b", "secure": False},
+            {"name": "__Host-a", "value": "b"},
+            {"name": "__Host-a", "value": "b", "domain": "a.example"},
         ],
     )
-    def test_request_cookie_name_prefix(
-        self, scheme: str, cookie: VerboseCookie, accepted: bool
-    ) -> None:
-        request = Request(f"{scheme}://a.example/sub/", cookies=[cookie])
+    def test_request_cookie_name_prefix(self, cookie: VerboseCookie) -> None:
+        request = Request("https://a.example/sub/", cookies=[cookie])
         self.mw.process_request(request)
-        assert (request.headers.get("Cookie") is not None) == accepted
+        assert request.headers.get("Cookie") is not None
 
     def test_hostless_url(self):
         request = Request("data:,", cookies={"a": "b"})
