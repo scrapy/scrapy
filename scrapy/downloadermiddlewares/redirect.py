@@ -7,6 +7,7 @@ from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
 from scrapy.spidermiddlewares.referer import RefererMiddleware
+from scrapy.utils._httpstatus import StatusHandling
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import global_object_name
@@ -203,9 +204,19 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
     def __init__(self, settings: BaseSettings):
         super().__init__(settings)
+        self._status_handling = StatusHandling(settings, union_legacy_meta=True)
         self.redirect_http_codes: set[int] = {
             int(x) for x in settings.getlist("REDIRECT_HTTP_CODES")
         }
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        o = super().from_crawler(crawler)
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        return o
+
+    def spider_opened(self, spider: Spider) -> None:
+        self._status_handling.spider_opened(spider)
 
     def _is_redirect(self, request: Request, response: Response) -> bool:
         meta_http_codes = request.meta.get("redirect_http_codes")
@@ -227,12 +238,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
-        if (
-            request.meta.get("dont_redirect", False)
-            or response.status
-            in getattr(self.crawler.spider, "handle_httpstatus_list", ())
-            or response.status in request.meta.get("handle_httpstatus_list", ())
-            or request.meta.get("handle_httpstatus_all", False)
+        if request.meta.get("dont_redirect", False) or self._status_handling.handles(
+            response.status, request.meta
         ):
             return response
 

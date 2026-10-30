@@ -779,9 +779,7 @@ class _RetryThenRedirectSpider(Spider):
             url = self.mockserver.url(
                 "/redirect-to?" + urlencode({"goto": seen, "n": n})
             )
-            yield Request(
-                url, meta={"dont_redirect": True, "handle_httpstatus_list": [302]}
-            )
+            yield Request(url, meta={"dont_redirect": True, "handle_http_codes": [302]})
 
     def parse(self, response: Response) -> Request | None:
         if response.status == 200:
@@ -791,7 +789,7 @@ class _RetryThenRedirectSpider(Spider):
         request = get_retry_request(response.request, spider=self)
         assert request is not None
         del request.meta["dont_redirect"]
-        del request.meta["handle_httpstatus_list"]
+        del request.meta["handle_http_codes"]
         return request
 
 
