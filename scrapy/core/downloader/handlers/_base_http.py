@@ -5,6 +5,8 @@ import sys
 from abc import ABC
 from typing import TYPE_CHECKING
 
+from scrapy.throttler import _default_scope_concurrency
+
 from .base import BaseDownloadHandler
 
 try:
@@ -68,9 +70,7 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         self._fail_on_dataloss_warned: bool = False
         # these are useful for many handlers but used in different ways by them
         self._pool_size_total: int = _get_connection_limit(crawler.settings)
-        self._pool_size_per_host: int = crawler.settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
+        self._pool_size_per_host: int = _default_scope_concurrency(crawler.settings)
         self._keepalive_timeout: float = crawler.settings.getfloat(
             "CONNECTION_KEEPALIVE_TIMEOUT"
         )

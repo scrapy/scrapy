@@ -400,6 +400,30 @@ class TestRequestBackout:
         assert _backout_stats(crawler) == expected_stats
 
     @coroutine_test
+    async def test_throttling(self):
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"] * 3
+            custom_settings = {
+                "CONCURRENT_REQUESTS": 2,
+                "DOWNLOAD_DELAY": 0.01,
+                "DOWNLOAD_DELAY_JITTER": 0,
+            }
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        expected_stats = {
+            "request_backout_seconds/throttling": gt(0),
+            "request_backout_seconds/total": gt(0),
+        }
+        assert _backout_stats(crawler) == expected_stats
+
+    @coroutine_test
     async def test_response_size(self):
 
         class TestSpider(Spider):

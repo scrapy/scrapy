@@ -156,26 +156,23 @@ To stop::
 Change concurrency and delays
 -----------------------------
 
-The downloader checks its concurrency and delay attributes for every request
-it sends, so you can speed a crawl up or slow it down while it runs::
+The downloader and the throttler check their concurrency and delay limits for
+every request they send, so you can speed a crawl up or slow it down while it
+runs::
 
     telnet localhost 6023
-    >>> downloader = engine.downloader
-    >>> downloader.total_concurrency = 32
-    >>> for slot in downloader.slots.values():
-    ...     slot.concurrency = 4
-    ...     slot.delay = 0.5
-    ...
+    >>> engine.downloader.total_concurrency = 32
+    >>> scope = crawler.throttler.get_scope_manager("example.com")
+    >>> scope.set_concurrency(4)
+    >>> scope.set_base_delay(0.5, only_increase=False)
     >>>
 
-``total_concurrency`` is :setting:`CONCURRENT_REQUESTS`, and ``slots`` maps the
-name of every :setting:`download slot <DOWNLOAD_SLOTS>` in use to an object
-whose ``concurrency`` and ``delay`` come from
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (or
-:setting:`CONCURRENT_REQUESTS_PER_IP`) and :setting:`DOWNLOAD_DELAY`. A slot
-created later, e.g. for a domain not visited yet, starts from those settings
-again, and :ref:`AutoThrottle <topics-autothrottle>` recalculates ``delay``
-after every response.
+``total_concurrency`` is :setting:`CONCURRENT_REQUESTS`, and
+:meth:`~scrapy.throttler.ThrottlerProtocol.get_scope_manager` returns the
+run-time state of a :ref:`throttling scope <throttling-scopes>`, whose
+concurrency and delay start from its :ref:`configuration
+<per-domain-throttling>`. A scope used again after being idle for a while
+starts from its configuration again.
 
 .. skip: end
 

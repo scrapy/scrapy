@@ -139,21 +139,21 @@ and defines some attributes and methods:
 Crawling faster for this tutorial
 ---------------------------------
 
-The :file:`tutorial/settings.py` file of your project makes Scrapy crawl
-politely: it sends at most one request at a time to each website
-(:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`), waiting about one second between
-requests (:setting:`DOWNLOAD_DELAY`). That keeps you from overwhelming
-websites, but it also makes crawling slow, and it means the requests above are
-sent one after another rather than in parallel.
+The :file:`tutorial/settings.py` file of your project makes Scrapy
+:ref:`throttle <throttling>` crawls: it sends at most one request at a time to
+each website (:setting:`THROTTLING_SCOPE_CONCURRENCY`), waiting about one
+second between requests (:setting:`DOWNLOAD_DELAY`). That keeps you from
+overwhelming websites, but it also makes crawling slow, and it means the
+requests above are sent one after another rather than in parallel.
 
 ``quotes.toscrape.com`` is a sandbox meant for scraping practice, so we can
 safely crawl it faster. Open :file:`tutorial/settings.py` and add a
-:setting:`DOWNLOAD_SLOTS` entry that raises the concurrency and lowers the
+:setting:`THROTTLING_SCOPES` entry that raises the concurrency and lowers the
 delay for that domain only:
 
 .. code-block:: python
 
-    DOWNLOAD_SLOTS = {
+    THROTTLING_SCOPES = {
         "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
     }
 

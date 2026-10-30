@@ -134,6 +134,7 @@ class TestAddonManager:
         }
         settings_dict = {
             "ADDONS": {get_addon_cls(config): 1},
+            "THROTTLING_SCOPE_CONCURRENCY": 1,
             **get_reactor_settings(),
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -155,6 +156,7 @@ class TestAddonManager:
         settings_dict = {
             "KEY": 20,  # priority=project
             "ADDONS": {get_addon_cls(config): 1},
+            "THROTTLING_SCOPE_CONCURRENCY": 1,
             **get_reactor_settings(),
         }
         settings = Settings(settings_dict)
@@ -230,6 +232,7 @@ class TestAddonManager:
 
         settings = Settings()
         settings.setdict(get_reactor_settings())
+        settings.set("THROTTLING_SCOPE_CONCURRENCY", 1)
         settings.set("KEY", "default", priority="default")
         runner_cls = (
             CrawlerRunner
