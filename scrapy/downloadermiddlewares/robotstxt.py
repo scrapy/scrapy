@@ -19,6 +19,7 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.url import _origin
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -113,7 +114,7 @@ class RobotsTxtMiddleware:
             return
         if request.url.startswith("data:") or request.url.startswith("file:"):
             return
-        origin = self._origin(request)
+        origin = _origin(request)
         if origin not in self._parsers and self._is_robotstxt_request(request):
             # Let this request download normally and use its own response as
             # this host's robots.txt, instead of triggering a second,
@@ -128,7 +129,7 @@ class RobotsTxtMiddleware:
     async def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Response:
-        origin = self._origin(request)
+        origin = _origin(request)
         parser = self._parsers.get(origin)
         if (
             isinstance(parser, Deferred)
@@ -142,7 +143,7 @@ class RobotsTxtMiddleware:
     async def process_exception(
         self, request: Request, exception: Exception, spider: Spider | None = None
     ) -> None:
-        origin = self._origin(request)
+        origin = _origin(request)
         parser = self._parsers.get(origin)
         if (
             isinstance(parser, Deferred)
@@ -150,13 +151,6 @@ class RobotsTxtMiddleware:
             and self._is_robotstxt_request(request)
         ):
             self._robots_error(exception, origin, request)
-
-    @staticmethod
-    def _origin(request: Request) -> tuple[str, str]:
-        # robots.txt rules apply to the scheme and authority they were fetched
-        # from, so http:// and https:// URLs of a host do not share them.
-        url = urlparse_cached(request)
-        return url.scheme, url.netloc
 
     @staticmethod
     def _is_robotstxt_request(request: Request) -> bool:
@@ -188,7 +182,7 @@ class RobotsTxtMiddleware:
 
     async def robot_parser(self, request: Request) -> RobotParser | None:
         url = urlparse_cached(request)
-        origin = self._origin(request)
+        origin = _origin(request)
 
         if origin not in self._parsers:
             self._parsers[origin] = Deferred()

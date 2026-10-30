@@ -20,7 +20,7 @@ from scrapy.utils._compression import (
     gzip_magic_number,
 )
 from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
-from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.url import _origin
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -387,13 +387,6 @@ class SitemapSpider(Spider):
         if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
             return response.body
         return None
-
-
-def _origin(request_or_url: Request | Response | str) -> tuple[str, str]:
-    # Like RobotsTxtMiddleware, keep robots.txt data of http:// and https://
-    # URLs of the same host apart.
-    parsed = urlparse_cached(request_or_url)
-    return parsed.scheme, parsed.netloc
 
 
 def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
