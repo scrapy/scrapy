@@ -74,6 +74,19 @@ Backward-incompatible changes
     effect.
     (:gh:`8181`)
 
+-   New projects created with the :command:`startproject` command define their
+    configuration in a :file:`pyproject.toml` file, instead of the now
+    deprecated :file:`scrapy.cfg` file.
+
+    To deploy such a project you need ``scrapyd`` TODO or higher,
+    ``scrapyd-client`` TODO or higher, or ``shub`` TODO or higher. Earlier
+    versions of those tools only read :file:`scrapy.cfg` files.
+    (:gh:`7030`)
+
+..  TODO: Fill in the ``scrapyd``, ``scrapyd-client`` and ``shub`` versions
+    above. Those releases, with support for the ``[tool.scrapy]`` table of
+    :file:`pyproject.toml`, must happen before this Scrapy release.
+
 -   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now
     enforces :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE`, also
     when using :reqmeta:`ftp_local_filename`, so downloads bigger than 1 GiB
