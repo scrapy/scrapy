@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import warnings
-from io import BytesIO, StringIO
+from io import BytesIO
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import lxml.etree
+from protego import Protego
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.robotstxt import decode_robotstxt
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -102,28 +104,12 @@ def sitemap_urls_from_robots(
     base_url: str | None = None,
 ) -> Iterable[str]:
     if isinstance(robots_text, bytes):
-        for line in BytesIO(robots_text):
-            if line.lstrip()[:8].lower() == b"sitemap:":
-                try:
-                    url = line.partition(b":")[2].partition(b"#")[0].strip().decode()
-                except UnicodeDecodeError:
-                    continue
-                yield urljoin(base_url or "", url)
-
+        robots_text = decode_robotstxt(robots_text)
     else:
         warnings.warn(
             "Passing `str` type as `robots_text` is deprecated, use `bytes`",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        yield from _sitemap_urls_from_robots_str(robots_text, base_url)
-
-
-def _sitemap_urls_from_robots_str(
-    robots_text: str,
-    base_url: str | None = None,
-) -> Iterable[str]:
-    for line in StringIO(robots_text):
-        if line.lstrip()[:8].lower() == "sitemap:":
-            url = line.partition(":")[2].partition("#")[0].strip()
-            yield urljoin(base_url or "", url)
+    for url in Protego.parse(robots_text).sitemaps:
+        yield urljoin(base_url or "", url)

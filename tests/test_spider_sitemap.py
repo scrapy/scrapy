@@ -137,7 +137,7 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/sitemap-relative-url.xml",
         ]
 
-    def test_get_sitemap_urls_from_robotstxt_skips_invalid_utf8_urls(self):
+    def test_get_sitemap_urls_from_robotstxt_invalid_utf8_urls(self):
         robots = (
             b"User-agent: *\n"
             b"Sitemap: http://example.com/\xff.xml\n"
@@ -148,6 +148,7 @@ Sitemap: /sitemap-relative-url.xml
         spider = self.spider_class("example.com")
 
         assert [req.url for req in spider._parse_sitemap(r)] == [
+            "http://example.com/.xml",
             "http://example.com/ok.xml",
         ]
 
