@@ -129,10 +129,6 @@ follow_imports = "skip"
 module = "scrapy.interfaces"
 ignore_errors = true
 
-[[tool.mypy.overrides]]
-module = "twisted.internet.reactor"
-follow_imports = "skip"
-
 # just for twisted.version
 [[tool.mypy.overrides]]
 module = "twisted"

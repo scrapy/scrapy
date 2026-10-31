@@ -26,8 +26,8 @@ from scrapy.utils.httpobj import urlparse_cached
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
     from twisted.internet.defer import Deferred
-    from twisted.web.iweb import IPolicyForHTTPS
 
+    from scrapy.core.downloader.contextfactory import _PolicyForHTTPS
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
     from scrapy.spiders import Spider
@@ -81,7 +81,7 @@ class H2DownloadHandler(BaseHttpDownloadHandler):
 class _ScrapyH2Agent:
     def __init__(
         self,
-        context_factory: IPolicyForHTTPS,
+        context_factory: _PolicyForHTTPS,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
         bind_address: str | tuple[str, int] | None = None,
