@@ -74,7 +74,7 @@ def fingerprint(
     processed_include_headers: tuple[bytes, ...] | None = None
     if include_headers:
         processed_include_headers = tuple(
-            to_bytes(h.lower()) for h in sorted(include_headers)
+            sorted(to_bytes(h.lower()) for h in include_headers)
         )
     verbatim_url = bool(request.meta.get("verbatim_url"))
     effective_keep_fragments = keep_fragments and not verbatim_url

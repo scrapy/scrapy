@@ -216,6 +216,27 @@ class TestFingerprint:
             r3, include_headers=["accept-language", "sessionid"]
         ) == self.function(r3, include_headers=["SESSIONID", "Accept-Language"])
 
+    @pytest.mark.parametrize(
+        "include_headers",
+        [
+            [b"Accept-Language", "SESSIONID"],
+            ["sessionid", b"accept-language"],
+            [b"SESSIONID", b"Accept-Language"],
+            ["SESSIONID", "Accept-Language"],
+            [b"Accept-Language", "accept-language", b"SESSIONID"],
+        ],
+    )
+    def test_header_name_types(self, include_headers: list[bytes | str]) -> None:
+        request = Request(
+            "https://example.com/",
+            headers={"Accept-Language": "en", "SessionID": "session"},
+        )
+        expected = self.function(
+            request.copy(), include_headers=["accept-language", "sessionid"]
+        )
+        assert self.function(request, include_headers=iter(include_headers)) == expected
+        assert expected != self.function(request)
+
     def test_fragment(self):
         r1 = Request("http://www.example.com/test.html")
         r2 = Request("http://www.example.com/test.html#fragment")
