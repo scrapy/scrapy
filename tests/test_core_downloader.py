@@ -337,7 +337,9 @@ class TestContextFactory(TestContextFactoryBase):
     @pytest.fixture
     def factory(self) -> _ScrapyClientContextFactory:
         crawler = get_crawler()
-        return _load_context_factory_from_settings(crawler)
+        factory = _load_context_factory_from_settings(crawler)
+        assert isinstance(factory, _ScrapyClientContextFactory)
+        return factory
 
     @staticmethod
     def _get_dummy_protocol() -> TLSMemoryBIOProtocol:
@@ -435,9 +437,7 @@ class TestContextFactory(TestContextFactoryBase):
         crawler = get_crawler(
             settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": verify_certs}
         )
-        factory: _ScrapyClientContextFactory = _load_context_factory_from_settings(
-            crawler
-        )
+        factory = _load_context_factory_from_settings(crawler)
         creator = factory.creatorForNetloc(b"website.tld", 443)
         conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
         assert conn.get_context()._keylog_callback is not None
@@ -523,6 +523,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def test_setting_default(self, server_url: str) -> None:
         crawler = get_crawler()
         client_context_factory = _load_context_factory_from_settings(crawler)
+        assert isinstance(client_context_factory, _ScrapyClientContextFactory)
         assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
@@ -559,6 +560,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
             match="Setting DOWNLOADER_CLIENT_TLS_METHOD to a non-default value is deprecated",
         ):
             client_context_factory = _load_context_factory_from_settings(crawler)
+        assert isinstance(client_context_factory, _ScrapyClientContextFactory)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
