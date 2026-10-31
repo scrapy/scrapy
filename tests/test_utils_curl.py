@@ -360,6 +360,169 @@ class TestCurlToRequestKwargs:
                 "curl --bar --baz http://www.example.com", ignore_unknown_options=False
             )
 
+    @pytest.mark.parametrize(
+        "curl_command",
+        [
+            "curl --max-time 5 https://example.org/get",
+            "curl https://example.org/get --max-time 5",
+            "curl -o out.txt https://example.org/get",
+            "curl --connect-to example.org:443:127.0.0.1:8443 -k https://example.org/get",
+        ],
+    )
+    def test_unrecognized_option_with_value_keeps_url(self, curl_command):
+        with pytest.warns(UserWarning, match="Unrecognized options:"):
+            assert curl_to_request_kwargs(curl_command) == {
+                "method": "GET",
+                "url": "https://example.org/get",
+            }
+
+    @pytest.mark.parametrize("option", ["-k", "--insecure"])
+    def test_unrecognized_flag_keeps_url(self, option):
+        curl_command = f"curl {option} https://example.org/get"
+        expected_result = {"method": "GET", "url": "https://example.org/get"}
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", category=UserWarning, message="Unrecognized options:"
+            )
+            self._test_command(curl_command, expected_result)
+
+    def test_from_curl_url_not_swallowed_by_option_value(self):
+        request = Request.from_curl(
+            "curl -x http://127.0.0.1:8080 https://example.org/get"
+        )
+        assert request.url == "https://example.org/get"
+        assert request.meta["proxy"] == "http://127.0.0.1:8080"
+
+    def test_user_agent_option(self):
+        curl_command = "curl -A ua/1 https://example.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "headers": [("User-Agent", "ua/1")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_referer_option(self):
+        curl_command = "curl -e https://ref.example/ https://example.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "headers": [("Referer", "https://ref.example/")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_header_option_overrides_user_agent_and_referer(self):
+        # curl lets an explicit -H header win over -A/-e
+        curl_command = (
+            "curl -A ua/1 -e https://ref.example/ https://example.org/get"
+            " -H 'User-Agent: custom' -H 'Referer: https://other.example/'"
+        )
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "headers": [
+                ("User-Agent", "custom"),
+                ("Referer", "https://other.example/"),
+            ],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize(
+        ("proxy", "expected_proxy"),
+        [
+            ("http://127.0.0.1:8080", "http://127.0.0.1:8080"),
+            ("127.0.0.1:8080", "http://127.0.0.1:8080"),
+            ("localhost:8080", "http://localhost:8080"),
+            ("socks5://127.0.0.1:9050", "socks5://127.0.0.1:9050"),
+        ],
+    )
+    def test_proxy_option(self, proxy, expected_proxy):
+        curl_command = f"curl -x {proxy} https://example.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "meta": {"proxy": expected_proxy},
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_option_appends_data_to_url(self):
+        curl_command = "curl -G https://example.org/get -d q=a -d r=b"
+        expected_result = {"method": "GET", "url": "https://example.org/get?q=a&r=b"}
+        self._test_command(curl_command, expected_result)
+
+    def test_get_option_appends_data_to_existing_query(self):
+        curl_command = "curl -G 'https://example.org/get?x=1' -d q=a"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get?x=1&q=a",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_option_keeps_explicit_method(self):
+        curl_command = "curl -G -X PUT https://example.org/get -d q=a"
+        expected_result = {"method": "PUT", "url": "https://example.org/get?q=a"}
+        self._test_command(curl_command, expected_result)
+
+    def test_head_option(self):
+        curl_command = "curl -I https://example.org/"
+        expected_result = {"method": "HEAD", "url": "https://example.org/"}
+        self._test_command(curl_command, expected_result)
+
+    def test_head_option_keeps_explicit_method(self):
+        curl_command = "curl -X POST -I https://example.org/"
+        expected_result = {"method": "POST", "url": "https://example.org/"}
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize("option", ["--data-binary", "--data-ascii"])
+    def test_post_data_binary_ascii(self, option):
+        curl_command = f"curl https://example.org/post {option} 'a=1'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://example.org/post",
+            "body": "a=1",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_json_option(self):
+        curl_command = "curl https://example.org/post --json '{\"a\": 1}'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://example.org/post",
+            "headers": [
+                ("Content-Type", "application/json"),
+                ("Accept", "application/json"),
+            ],
+            "body": '{"a": 1}',
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_json_option_keeps_explicit_content_type(self):
+        curl_command = (
+            "curl https://example.org/post --json '{\"a\": 1}'"
+            " -H 'Content-Type: application/vnd.api+json'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://example.org/post",
+            "headers": [
+                ("Content-Type", "application/vnd.api+json"),
+                ("Accept", "application/json"),
+            ],
+            "body": '{"a": 1}',
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_pseudo_header_is_skipped(self):
+        curl_command = (
+            "curl https://example.org/ -H ':authority: example.org' -H 'X-A: 1'"
+        )
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/",
+            "headers": [("X-A", "1")],
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")
