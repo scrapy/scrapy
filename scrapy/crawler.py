@@ -72,6 +72,14 @@ _REACTOR_SETTINGS = (
     "TWISTED_DNS_RESOLVER",
 )
 
+# Settings whose default value will change, mapped to their current and future
+# default values.
+_CHANGING_DEFAULTS: dict[str, tuple[Any, Any]] = {
+    "CONCURRENT_REQUESTS_PER_DOMAIN": (8, 1),
+    "DOWNLOAD_DELAY": (0, 1),
+    "ROBOTSTXT_OBEY": (False, True),
+}
+
 
 class _LateAttribute(Generic[_T]):
     """Descriptor for a :class:`Crawler` attribute that only gets a value once
@@ -191,6 +199,7 @@ class Crawler:
         self._apply_deprecated_spider_attr(
             "max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
+        self._warn_on_deprecated_default_settings()
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -245,6 +254,19 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _warn_on_deprecated_default_settings(self) -> None:
+        default_priority = SETTINGS_PRIORITIES["default"]
+        for setting_name, (current, future) in _CHANGING_DEFAULTS.items():
+            if self.settings.getpriority(setting_name) == default_priority:
+                warnings.warn(
+                    f"The default value of {setting_name} will change from "
+                    f"{current!r} to {future!r} in a future "
+                    f"Scrapy version. Explicitly set {setting_name} in your "
+                    f"settings to silence this warning.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=3,
+                )
 
     def _apply_deprecated_spider_attr(self, attr: str, setting: str) -> None:
         """Bridge a deprecated spider attribute onto *setting*, warning about
