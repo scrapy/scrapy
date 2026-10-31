@@ -551,8 +551,8 @@ class _CannedConnectProxy(Protocol):
         reactor.callLater(0.1, self.transport.write, response[self.factory.split_at :])
 
 
-class _CannedConnectProxyFactory(Factory[_CannedConnectProxy]):
-    protocol = _CannedConnectProxy
+class _CannedConnectProxyFactory(Factory):
+    protocol = _CannedConnectProxy  # type: ignore[assignment]
 
     def __init__(self, response: bytes | None, split_at: int = 0):
         self.response = response
