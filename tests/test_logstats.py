@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -42,6 +43,10 @@ async def test_stats_calculations(crawler: Crawler, stats: StatsCollector) -> No
 
     assert crawler.spider
     logstats.spider_opened(crawler.spider)
+    assert logstats.pagesprev == 0
+    assert logstats.itemsprev == 0
+
+    logstats.calculate_stats()
     assert logstats.pagesprev == 4802
     assert logstats.itemsprev == 3201
 
@@ -70,6 +75,18 @@ async def test_stats_calculations(crawler: Crawler, stats: StatsCollector) -> No
     logstats.spider_closed(crawler.spider, "test reason")
     assert stats.get_value("responses_per_minute") == 172.9
     assert stats.get_value("items_per_minute") == 116.4
+
+
+@coroutine_test
+async def test_no_log_on_spider_opened(
+    crawler: Crawler, caplog: pytest.LogCaptureFixture
+) -> None:
+    logstats = build_from_crawler(LogStats, crawler)
+    assert crawler.spider
+    with caplog.at_level(logging.INFO, logger="scrapy.extensions.logstats"):
+        logstats.spider_opened(crawler.spider)
+        logstats.spider_closed(crawler.spider, "test reason")
+    assert not caplog.records
 
 
 def test_stats_calculations_no_time(crawler: Crawler, stats: StatsCollector) -> None:
