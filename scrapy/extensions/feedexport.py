@@ -816,14 +816,22 @@ class FeedExporter:
             )
 
     def _on_state_saving(self, state: dict[str, Any]) -> None:
-        """Persist the current batch ID for each feed into spider.state.
+        """Persist the batch ID that the next run must start from for each
+        feed into spider.state.
 
         Called via the spider_state_saving signal before SpiderState writes
         spider.state to disk, so the next run can resume from the right batch.
         """
         feed_batch_ids = state.setdefault("feed_batch_ids", {})
         for slot in self.slots:
-            feed_batch_ids[slot.uri_template] = slot.batch_id
+            batch_id = slot.batch_id
+            # The current batch is stored on close if it has items, or if it is
+            # an empty first batch and empty feeds are stored (see
+            # _close_slot()), so the next run starts with the following batch
+            # instead of writing that one again.
+            if slot.itemcount or (slot.store_empty and batch_id == 1):
+                batch_id += 1
+            feed_batch_ids[slot.uri_template] = batch_id
 
     def _skip(self, slot: FeedSlot) -> None:
         """Report that the target of *slot* already exists, and mark *slot* so

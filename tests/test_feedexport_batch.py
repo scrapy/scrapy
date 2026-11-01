@@ -343,6 +343,38 @@ class TestBatchDeliveries:
             b'{"foo": "bar4"}\n',
         ]
 
+    @pytest.mark.parametrize(
+        ("items", "expected"),
+        [
+            (
+                [{"foo": "bar1"}, {"foo": "bar2"}, {"foo": "bar3"}],
+                [b'{"foo": "bar1"}\n{"foo": "bar2"}\n', b'{"foo": "bar3"}\n'],
+            ),
+            ([], [b""]),
+        ],
+        ids=["partial-batch", "empty-feed"],
+    )
+    @coroutine_test
+    async def test_jobdir_resume_stored_batch(
+        self,
+        mockserver: MockServer,
+        tmp_path: Path,
+        items: list[dict[str, str]],
+        expected: list[bytes],
+    ) -> None:
+        """Resuming a crawl does not overwrite the last batch that the previous
+        run stored."""
+        settings = {
+            "FEEDS": {
+                unique_path(tmp_path) / "%(batch_id)d.jsonl": {"format": "jsonlines"}
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+            "JOBDIR": str(tmp_path / "job"),
+        }
+        await export_batches(mockserver, items, settings)
+        data = await export_batches(mockserver, [{"foo": "bar4"}], settings)
+        assert data["jsonlines"] == [*expected, b'{"foo": "bar4"}\n']
+
     @coroutine_test
     async def test_jobdir_resume_new_feed(
         self, mockserver: MockServer, tmp_path: Path
