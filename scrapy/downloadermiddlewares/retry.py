@@ -104,8 +104,16 @@ def get_retry_request(
             extra={"spider": spider},
         )
         new_request: Request = request.copy()
+        # Both keys describe the download that just finished, so they would be
+        # stale on the new request. retry_times stays on purpose: it is the
+        # retry counter, and resetting it would make the retries endless.
+        new_request.meta.pop("download_latency", None)
+        new_request.meta.pop("cache_timestamp", None)
         new_request.meta["retry_times"] = retry_times
         new_request.meta["skip_dupefilter_once"] = True
+        # Tells MetaCopyDetectionMiddleware that carrying retry_times here is
+        # intended, unlike when a spider copies response.meta wholesale.
+        new_request.meta["_retry_request"] = True
         if priority_adjust is None:
             priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
         new_request.priority = request.priority + priority_adjust

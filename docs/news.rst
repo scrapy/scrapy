@@ -334,6 +334,13 @@ Bug fixes
     when updating an existing one.
     (:gh:`8113`)
 
+-   :func:`~scrapy.downloadermiddlewares.retry.get_retry_request` no longer
+    copies the ``download_latency`` and ``cache_timestamp`` request metadata
+    keys into the new request. It also no longer makes
+    :class:`~scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware`
+    warn about the ``retry_times`` key that it sets on purpose.
+    (:gh:`8447`)
+
 Documentation
 ~~~~~~~~~~~~~
 

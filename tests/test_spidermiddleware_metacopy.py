@@ -125,6 +125,42 @@ def test_skip_keys_setting_partial(
     assert "redirect_times" in caplog.text
 
 
+def test_no_warning_for_retry_request(
+    mw: MetaCopyDetectionMiddleware, caplog: pytest.LogCaptureFixture
+) -> None:
+    req = Request(
+        "https://example.com/1", meta={"retry_times": 1, "_retry_request": True}
+    )
+    with caplog.at_level(WARNING):
+        [processed] = process(mw, [req])
+    assert not caplog.records
+    assert "_retry_request" not in processed.meta
+
+
+def test_retry_flag_does_not_exempt_other_requests(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    crawler = get_crawler(Spider)
+    retry_mw = build_from_crawler(MetaCopyDetectionMiddleware, crawler)
+    other_mw = build_from_crawler(MetaCopyDetectionMiddleware, crawler)
+    retry_req = Request(
+        "https://example.com/0", meta={"retry_times": 1, "_retry_request": True}
+    )
+    caplog.clear()
+    with caplog.at_level(WARNING):
+        process(retry_mw, [retry_req])
+    assert not caplog.records
+    caplog.clear()
+    req = Request(
+        "https://example.com/1",
+        meta={"retry_times": 1, "redirect_times": 2},
+    )
+    with caplog.at_level(WARNING):
+        process(other_mw, [req])
+    assert len(caplog.records) == 1
+    assert "redirect_times" in caplog.text
+
+
 def test_no_warning_for_start_requests(
     mw: MetaCopyDetectionMiddleware, caplog: pytest.LogCaptureFixture
 ) -> None:

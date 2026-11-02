@@ -333,6 +333,19 @@ class TestGetRetryRequest:
             ),
         ) in caplog.record_tuples
 
+    def test_download_meta_is_not_carried_over(self) -> None:
+        request = Request(
+            "https://example.com",
+            meta={"download_latency": 0.5, "cache_timestamp": 1234567890.0},
+        )
+        spider = self.get_spider()
+        new_request = get_retry_request(request, spider=spider)
+        assert "download_latency" not in new_request.meta
+        assert "cache_timestamp" not in new_request.meta
+        assert request.meta["download_latency"] == 0.5
+        assert request.meta["cache_timestamp"] == 1234567890.0
+        assert new_request.meta["_retry_request"] is True
+
     def test_max_retries_reached(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()

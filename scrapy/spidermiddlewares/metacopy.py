@@ -47,6 +47,12 @@ class MetaCopyDetectionMiddleware(BaseSpiderMiddleware):
         if response is None:
             return request
 
+        # Requests from get_retry_request() keep retry_times on purpose, so the
+        # check does not apply to them. The key is removed so that requests
+        # derived from a retry request are checked as usual.
+        if request.meta.pop("_retry_request", False):
+            return request
+
         if not self._warned:
             found = self._keys & request.meta.keys()
             if found:
