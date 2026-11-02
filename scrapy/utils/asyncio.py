@@ -255,8 +255,8 @@ def create_looping_call(
     .. versionadded:: 2.14.0
 
     This creates an instance of
-    :class:`~scrapy.utils.asyncio.AsyncioLoopingCall` or
-    :class:`~twisted.internet.task.LoopingCall`, depending on whether asyncio
+    :class:`scrapy.utils.asyncio.AsyncioLoopingCall` or
+    :class:`twisted.internet.task.LoopingCall`, depending on whether asyncio
     support is available.
 
     Use this function only if you need to support non-asyncio reactors. It will
@@ -341,7 +341,7 @@ async def sleep(seconds: float) -> None:
     .. versionadded:: 2.18.0
 
     This uses either :func:`asyncio.sleep` or
-    :func:`~twisted.internet.task.deferLater`, depending on whether asyncio
+    :func:`twisted.internet.task.deferLater`, depending on whether asyncio
     support is available.
 
     Use this function only if you need to support non-asyncio reactors. It will
