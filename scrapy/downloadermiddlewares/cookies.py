@@ -52,7 +52,12 @@ class CookiesMiddleware:
         return o
 
     def _process_cookies(
-        self, cookies: Iterable[Cookie], *, jar: CookieJar, request: Request
+        self,
+        cookies: Iterable[Cookie],
+        *,
+        jar: CookieJar,
+        request: Request,
+        from_response: bool = True,
     ) -> None:
         for cookie in cookies:
             cookie_domain = cookie.domain
@@ -68,7 +73,10 @@ class CookiesMiddleware:
                     continue
                 cookie.domain = request_domain
 
-            jar.set_cookie_if_ok(cookie, request)
+            if from_response:
+                jar.set_cookie_if_ok(cookie, request)
+            else:
+                jar.set_cookie(cookie)
 
     @_warn_spider_arg
     def process_request(
@@ -80,7 +88,7 @@ class CookiesMiddleware:
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
         cookies = self._get_request_cookies(jar, request)
-        self._process_cookies(cookies, jar=jar, request=request)
+        self._process_cookies(cookies, jar=jar, request=request, from_response=False)
 
         # set Cookie header
         request.headers.pop("Cookie", None)
@@ -94,17 +102,6 @@ class CookiesMiddleware:
     ) -> Request | Response:
         if request.meta.get("dont_merge_cookies", False):
             return response
-
-        for cookie in response.headers.getlist("Set-Cookie"):
-            cookie_domain = cookie.split(b";")[1].split(b"=")[1]
-            cookie_domain = cookie_domain.decode("utf-8")
-            request_domain = urlparse_cached(request).hostname.lower()
-            if cookie_domain == '/':
-                continue
-            if cookie_domain not in request_domain:
-                # set cookie domain to request domain
-                cookie = cookie.replace(cookie_domain.encode(), request_domain.encode())
-                response.headers.setlist("Set-Cookie", [cookie])
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         cookiejarkey = request.meta.get("cookiejar")

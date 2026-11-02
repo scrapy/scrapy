@@ -219,6 +219,11 @@ def _cookie_domain_params() -> Iterable[ParameterSet]:
                     # domain is None for the "none" scenario.
                     cookies = [{"name": "a", "value": "b", "domain": cookie_domain}]  # type: ignore[typeddict-item]
                 stored = _store(domains.domain, cookie_domain)
+                # Explicit cookies may target a different non-public domain.
+                if source == "request" and cookie_domain:
+                    trusted_domain = cookie_domain.removeprefix(".").lower()
+                    if trusted_domain and trusted_domain not in _PUBLIC_SUFFIXES:
+                        stored = trusted_domain, False
                 limitation = _KNOWN_LIMITATIONS.get((domain_set_id, cookie_domain_id))
                 actual = _actual_store(domains, stored, limitation)
                 for target_id, target, transitions in _targets(domains):
@@ -1189,28 +1194,61 @@ class TestCookiesMiddleware:
         assert self.mw.process_request(request) is None
         assert "Cookie" not in request.headers
 
-    def test_off_domain_jar_storage(self):
+    @pytest.mark.parametrize("redirect", [False, True])
+    @pytest.mark.parametrize("cookie_domain", ["b.example", ".b.example"])
+    @pytest.mark.parametrize("cookiejar", [None, "custom"])
+    def test_off_domain_jar_storage(
+        self, redirect: bool, cookie_domain: str, cookiejar: str | None
+    ) -> None:
         request1 = Request(
             "https://a.example",
+            meta={"cookiejar": cookiejar},
             cookies=[
                 {
                     "name": "foo",
                     "value": "bar",
-                    "domain": "b.example",
+                    "domain": cookie_domain,
+                    "path": "/private",
                 },
             ],
         )
-        assert self.mw.process_request(request1, self.spider) is None
-        self.assertNotIn(b"Cookie", request1.headers)
+        assert self.mw.process_request(request1) is None
+        assert "Cookie" not in request1.headers
 
-        request2 = Request("https://b.example/")
-        assert self.mw.process_request(request2, self.spider) is None
-        self.assertEqual(request2.headers.get(b"Cookie"), b"foo=bar")
+        target = "https://b.example/private/page"
+        response = Response(
+            request1.url,
+            status=302,
+            headers={
+                "Location": target,
+                "Set-Cookie": "foo=untrusted; Domain=b.example; Path=/private",
+            },
+        )
+        assert self.mw.process_response(request1, response) is response
+        if redirect:
+            request2 = self.redirect_middleware.process_response(request1, response)
+            assert isinstance(request2, Request)
+        else:
+            request2 = Request(target, meta={"cookiejar": cookiejar})
+        assert self.mw.process_request(request2) is None
+        assert request2.headers.get(b"Cookie") == b"foo=bar"
+
+        other_jar = Request(target, meta={"cookiejar": "other"})
+        self.mw.process_request(other_jar)
+        assert "Cookie" not in other_jar.headers
+        other_path = Request("https://b.example/public", meta={"cookiejar": cookiejar})
+        self.mw.process_request(other_path)
+        assert "Cookie" not in other_path.headers
+        insecure = Request(
+            "http://b.example/private/page", meta={"cookiejar": cookiejar}
+        )
+        self.mw.process_request(insecure)
+        assert "Cookie" not in insecure.headers
 
     def test_process_response_unrelated_domain(self):
         request = Request("http://a.example")
         response = Response("http://a.example")
         response.headers["Set-Cookie"] = "foo=bar; domain=b.example"
-        self.mw.process_response(request, response, spider=None)
+        self.mw.process_response(request, response)
         jar = self.mw.jars[None]
-        self.assertFalse(jar._cookies)
+        assert not list(jar)

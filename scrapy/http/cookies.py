@@ -47,19 +47,13 @@ class _CreationOrderCookieJar(_CookieJar):
         return super()._cookie_attrs(cookies)  # type: ignore[misc,no-any-return]
 
 
-class CustomDefaultCookiePolicy(DefaultCookiePolicy):
-    def set_ok(self, cookie, request):
-        # always set cookies
-        return True
-
-
 class CookieJar:
     def __init__(
         self,
         policy: CookiePolicy | None = None,
         check_expired_frequency: int = 10000,
     ):
-        self.policy: CookiePolicy = policy or CustomDefaultCookiePolicy()
+        self.policy: CookiePolicy = policy or DefaultCookiePolicy()
         self.jar: _CookieJar = _CreationOrderCookieJar(self.policy)
         self.jar._cookies_lock = _DummyLock()  # type: ignore[attr-defined]
         self.check_expired_frequency: int = check_expired_frequency
