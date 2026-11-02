@@ -1470,7 +1470,7 @@ Documentation
 -   Extended documentation for :attr:`.Request.meta`.
     (:gh:`5565`)
 
--   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:gh:`5936`,
+-   Fixed the ``dont_merge_cookies`` documentation. (:gh:`5936`,
     :gh:`6077`)
 
 -   Added a link to Zyte's export guides to the :ref:`feed exports
