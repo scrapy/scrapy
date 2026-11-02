@@ -224,8 +224,9 @@ Move the slow code to a thread so that downloads continue while it runs:
 
 .. code-block:: python
 
+    import asyncio
+
     from scrapy import Spider
-    from scrapy.utils.asyncio import run_in_thread
 
 
     class SlowParseSpider(Spider):
@@ -233,7 +234,7 @@ Move the slow code to a thread so that downloads continue while it runs:
         start_urls = ["https://toscrape.com"]
 
         async def parse(self, response):
-            yield await run_in_thread(self.extract_item, response)
+            yield await asyncio.to_thread(self.extract_item, response)
 
         def extract_item(self, response):
             # CPU-heavy parsing

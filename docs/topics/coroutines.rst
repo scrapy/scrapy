@@ -241,9 +241,9 @@ Sometimes you need to call code that is not async-friendly at all, such as a
 third-party client library with no asynchronous support. Calling such code
 directly from a coroutine would block the underlying event loop, preventing
 Scrapy from doing any other work while it runs. To avoid this, you can wrap
-the blocking call with :func:`scrapy.utils.asyncio.run_in_thread`, which runs
-it in a separate thread and returns an awaitable with the result (see
-:ref:`optimize-blocking` for an example).
+the blocking call with :func:`asyncio.to_thread`, which runs it in a separate
+thread and returns an awaitable with the result (see :ref:`optimize-blocking`
+for an example).
 
 Common use cases for asynchronous code include:
 
