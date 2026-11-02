@@ -99,6 +99,37 @@ Disallow: /some/randome/page.html
         assert calls[0]["response"].url == "http://site.local/robots.txt"
 
     @coroutine_test
+    async def test_robotstxt_scheme_isolation(self):
+        crawler = self.crawler
+        crawler.settings.set("ROBOTSTXT_OBEY", True)
+
+        http_robots = b"User-Agent: *\nDisallow: /admin/\n"
+        https_robots = b"User-Agent: *\nAllow: /admin/\n"
+
+        async def return_response(request: Request) -> Response:
+            if request.url == "http://site.local/robots.txt":
+                body = http_robots
+            elif request.url == "https://site.local/robots.txt":
+                body = https_robots
+            else:
+                body = b""
+            response = TextResponse(request.url, body=body)
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.callback, response)
+            return await maybe_deferred_to_future(deferred)
+
+        crawler.engine.download_async.side_effect = return_response
+        middleware = build_from_crawler(RobotsTxtMiddleware, crawler)
+
+        await self.assertIgnored(Request("http://site.local/admin/"), middleware)
+        await self.assertNotIgnored(Request("https://site.local/admin/"), middleware)
+
+        calls = crawler.engine.download_async.call_args_list
+        urls = [call[0][0].url for call in calls]
+        assert "http://site.local/robots.txt" in urls
+        assert "https://site.local/robots.txt" in urls
+
+    @coroutine_test
     async def test_robotstxt_multiple_reqs(self) -> None:
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
