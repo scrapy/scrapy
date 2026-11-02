@@ -567,6 +567,24 @@ Sitemap: /sitemap-relative-url.xml
             )
         ]
 
+    @pytest.mark.parametrize("body", [" ", "<!-- sitemap temporarily empty -->"])
+    @coroutine_test
+    async def test_sitemap_without_root_is_ignored(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture, body: str
+    ) -> None:
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            def raw_body(self):
+                return body
+
+        items, crawler = await crawl_items(_Spider, mockserver)
+
+        assert items == []
+        assert crawler.stats
+        assert crawler.stats.get_value("spider_exceptions/count", 0) == 0
+        assert any(
+            "Ignoring invalid sitemap:" in record.message for record in caplog.records
+        )
+
     def test_parse_sitemap_not_sitemap(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
     <some attr="string">

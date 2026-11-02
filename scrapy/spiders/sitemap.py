@@ -9,6 +9,8 @@ from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, Literal, Self, cast
 from urllib.parse import urljoin
 
+from lxml.etree import XMLSyntaxError
+
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, XmlResponse
@@ -292,7 +294,15 @@ class SitemapSpider(Spider):
             )
             return ()
 
-        s = Sitemap(body)
+        try:
+            s = Sitemap(body)
+        except (XMLSyntaxError, StopIteration):
+            logger.warning(
+                "Ignoring invalid sitemap: %(response)s",
+                {"response": response},
+                extra={"spider": self},
+            )
+            return ()
 
         if s.type == "sitemapindex":
             index_entries = list(
