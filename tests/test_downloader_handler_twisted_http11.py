@@ -3,10 +3,11 @@ from __future__ import annotations
 import sys
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, cast
+from unittest.mock import Mock
 
 import pytest
 from twisted.internet.address import IPv6Address
-from twisted.internet.defer import CancelledError
+from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import ConnectingCancelledError, ConnectionClosed
 from twisted.internet.interfaces import (
@@ -19,7 +20,10 @@ from twisted.internet.interfaces import (
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet.testing import MemoryReactorClock, StringTransport
 from twisted.python.failure import Failure
+from twisted.web._newclient import Request as TxClientRequest
+from twisted.web._newclient import RequestNotSent
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS
+from twisted.web.http_headers import Headers as TxHeaders
 from zope.interface import implementer
 
 try:
@@ -34,6 +38,7 @@ from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
     TunnelError,
     _ScrapyAgent,
+    _ScrapyHTTP11ClientProtocol,
     _tunnel_request_data,
     _TunnelEndpoint,
     _TunnelingAgent,
@@ -45,6 +50,7 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     DownloadFailedError,
     NotConfigured,
+    ResponseHeadersTooLargeError,
 )
 from scrapy.resolver import HostResolution
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -529,6 +535,110 @@ class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
     @property
     def platform_cert_store_works(self) -> bool:
         return sys.platform != "win32"
+
+
+class TestTunnelingHeadersMaxsize:
+    """Tests for the DOWNLOAD_HEADERS_MAXSIZE limit that ``_TunnelProtocol``
+    applies to the response head of the proxy, which no HTTP client parses for
+    us."""
+
+    @staticmethod
+    def _get_protocol(
+        headers_maxsize: int,
+    ) -> tuple[_TunnelProtocol, StringTransport, list[Failure]]:
+        deferred: Deferred[IProtocol] = Deferred()
+        failures: list[Failure] = []
+        deferred.addErrback(failures.append)
+        protocol = _TunnelProtocol(
+            deferred,
+            Mock(),
+            b"example.com",
+            443,
+            "proxy.example.com",
+            8080,
+            headersMaxsize=headers_maxsize,
+        )
+        transport = StringTransport()
+        protocol.makeConnection(transport)  # type: ignore[no-untyped-call]
+        return protocol, transport, failures
+
+    def test_over_maxsize(self) -> None:
+        protocol, transport, failures = self._get_protocol(1024)
+
+        # A proxy response head that never ends.
+        for _ in range(3):
+            protocol.dataReceived(b"a" * 512)
+
+        assert len(failures) == 1
+        assert failures[0].check(ResponseHeadersTooLargeError)
+        assert "1024" in str(failures[0].value)
+        assert "CONNECT example.com:443" in str(failures[0].value)
+        assert transport.disconnecting
+
+    def test_under_maxsize(self) -> None:
+        protocol, transport, failures = self._get_protocol(1024)
+
+        protocol.dataReceived(b"a" * 512)
+
+        assert not failures
+        assert not transport.disconnecting
+
+    def test_maxsize_disabled(self) -> None:
+        protocol, transport, failures = self._get_protocol(0)
+
+        for _ in range(3):
+            protocol.dataReceived(b"a" * 512)
+
+        assert not failures
+        assert not transport.disconnecting
+
+
+class TestScrapyHTTP11ClientProtocol:
+    """Tests for the response header size limiting that
+    ``_ScrapyHTTP11ClientProtocol`` installs on the response parser that
+    Twisted builds for each request."""
+
+    @staticmethod
+    def _get_protocol() -> _ScrapyHTTP11ClientProtocol:
+        protocol = _ScrapyHTTP11ClientProtocol(lambda _: None, 64 * 1024, 32 * 1024)
+        protocol.makeConnection(StringTransport())  # type: ignore[no-untyped-call]
+        return protocol
+
+    @staticmethod
+    def _get_request() -> TxClientRequest:
+        return TxClientRequest(
+            b"GET", b"/", TxHeaders({b"host": [b"example.com"]}), None
+        )
+
+    def test_parser_is_limited(self) -> None:
+        protocol = self._get_protocol()
+        protocol.request(self._get_request())
+        assert protocol._parser is not None
+        assert protocol._parser.MAX_LENGTH == 64 * 1024
+        # _limit_response_headers() overrides these on the instance.
+        assert "lineReceived" in vars(protocol._parser)
+        assert "lineLengthExceeded" in vars(protocol._parser)
+
+    def test_refused_request_keeps_previous_parser_limits(self) -> None:
+        """A request that Twisted refuses leaves the parser of the previous
+        request untouched, so that its size counter is not reset while its
+        response is still being read."""
+        protocol = self._get_protocol()
+        protocol.request(self._get_request())
+        parser = protocol._parser
+        assert parser is not None
+        line_received = vars(parser)["lineReceived"]
+
+        # A second request over the same connection is refused, as the first one
+        # is still in progress.
+        deferred = protocol.request(self._get_request())
+        failures: list[Failure] = []
+        deferred.addErrback(failures.append)
+
+        assert len(failures) == 1
+        assert failures[0].check(RequestNotSent)
+        assert protocol._parser is parser
+        assert vars(parser)["lineReceived"] is line_received
 
 
 class _CannedConnectProxy(Protocol):

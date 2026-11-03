@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import re
+import sys
 from contextlib import suppress
 from functools import partial
 from io import BytesIO
@@ -51,12 +52,15 @@ from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
     ResponseDataLossError,
+    ResponseHeadersTooLargeError,
     StopDownload,
 )
 from scrapy.http import Headers, Response
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
+    get_headers_maxsize_msg,
+    get_headers_warnsize_msg,
     get_maxsize_msg,
     get_proxy_headers,
     get_warnsize,
@@ -96,6 +100,57 @@ class _ResultT(TypedDict):
     certificate: NotRequired[ssl.Certificate | None]
     ip_address: NotRequired[ipaddress.IPv4Address | ipaddress.IPv6Address | None]
     stop_download: NotRequired[StopDownload | None]
+
+
+def _limit_response_headers(
+    parser: HTTPClientParser, maxsize: int, warnsize: int
+) -> None:
+    """Make *parser* enforce *maxsize* and *warnsize* on the total size of the
+    response head, i.e. the status line plus the header lines plus their line
+    delimiters.
+
+    Twisted limits the length of *individual* lines instead
+    (:attr:`~twisted.protocols.basic.LineReceiver.MAX_LENGTH`, 16 KiB), and
+    silently drops the connection when a line exceeds it, which makes the
+    resulting error impossible to tell apart from an unrelated disconnection.
+    Web browsers instead limit the total size of the response head, which is
+    what this function reproduces. See
+    https://github.com/twisted/twisted/issues/8570.
+
+    Twisted builds its response parser without offering a way to configure it,
+    hence the instance-level overrides below.
+    """
+    url = (parser.request.absoluteURI or parser.request.uri).decode()
+    # Keep the Twisted line length limit, which cannot report a meaningful
+    # error, from ever triggering before our own limit does.
+    parser.MAX_LENGTH = maxsize or sys.maxsize
+    delimiter_size = len(parser.delimiter)
+    line_received = parser.lineReceived
+    size = 0
+    warned = False
+
+    def lineReceived(line: bytes) -> None:
+        nonlocal size, warned
+        size += len(line) + delimiter_size
+        if maxsize and size > maxsize:
+            raise ResponseHeadersTooLargeError(
+                get_headers_maxsize_msg(size, maxsize, url)
+            )
+        if warnsize and size > warnsize and not warned:
+            warned = True
+            logger.warning(get_headers_warnsize_msg(size, warnsize, url))
+        line_received(line)  # type: ignore[no-untyped-call]
+
+    def lineLengthExceeded(line: bytes) -> None:
+        # A single line went over MAX_LENGTH, so lineReceived() never saw it.
+        # line holds the whole unparsed remainder of the buffer, so the
+        # reported size is a lower bound.
+        raise ResponseHeadersTooLargeError(
+            get_headers_maxsize_msg(size + len(line), maxsize, url)
+        )
+
+    parser.lineReceived = lineReceived  # type: ignore[method-assign]
+    parser.lineLengthExceeded = lineLengthExceeded  # type: ignore[method-assign]
 
 
 class _LenientHTTPClientParser(HTTPClientParser):
@@ -145,20 +200,39 @@ class _LenientHTTPClientParser(HTTPClientParser):
             self._partialHeader.append(line)  # type: ignore[union-attr]
 
 
-class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
-    """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
+class _ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
+    """:class:`~twisted.web._newclient.HTTP11ClientProtocol` subclass that
+    parses responses with :class:`_LenientHTTPClientParser` and limits the size
+    of response headers."""
+
+    def __init__(
+        self,
+        quiescentCallback: Callable[[HTTP11ClientProtocol], None],
+        headers_maxsize: int,
+        headers_warnsize: int,
+    ):
+        super().__init__(quiescentCallback)  # type: ignore[no-untyped-call]
+        self._headers_maxsize: int = headers_maxsize
+        self._headers_warnsize: int = headers_warnsize
 
     def request(self, request: TxRequest) -> Deferred[IResponse]:
+        previous_parser = self._parser
         d: Deferred[IResponse] = super().request(request)
-        # HTTP11ClientProtocol.request() hardcodes the parser class, so the
-        # only way to use a different one is to replace the class of the parser
-        # object that it creates. This is safe because
-        # _LenientHTTPClientParser defines no additional state. The parser is
-        # always there because HTTPConnectionPool only reuses connections whose
-        # protocol is in the QUIESCENT state, for which request() always
-        # creates a parser.
-        assert self._parser is not None
-        self._parser.__class__ = _LenientHTTPClientParser
+        # super() builds a new response parser for every request it accepts, so
+        # the size counter resets as intended on pooled connections. It can also
+        # refuse a request, e.g. on a pooled connection that just died, in which
+        # case it leaves the parser of the previous request in place, and
+        # limiting that one again would reset its counter mid-response.
+        parser = self._parser
+        if parser is not None and parser is not previous_parser:
+            # HTTP11ClientProtocol.request() hardcodes the parser class, so the
+            # only way to use a different one is to replace the class of the
+            # parser object that it creates. This is safe because
+            # _LenientHTTPClientParser defines no additional state.
+            parser.__class__ = _LenientHTTPClientParser
+            _limit_response_headers(
+                parser, self._headers_maxsize, self._headers_warnsize
+            )
 
         # For responses without a body, twisted.web.client.Response never
         # hands its transport to a protocol, so the certificate and IP
@@ -185,7 +259,7 @@ class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
         return d
 
 
-class _TrackedHTTP11ClientProtocol(_LenientHTTP11ClientProtocol):
+class _TrackedHTTP11ClientProtocol(_ScrapyHTTP11ClientProtocol):
     """Connection that tells the pool that opened it when it closes, whether it
     was cached at the time or in use."""
 
@@ -212,7 +286,11 @@ class _BoundedHTTP11ClientFactory(_HTTP11ClientFactory):
         self._key: Any = key
 
     def buildProtocol(self, addr: IAddress | None) -> _TrackedHTTP11ClientProtocol:
-        protocol = _TrackedHTTP11ClientProtocol(self._quiescentCallback)  # type: ignore[no-untyped-call]
+        protocol = _TrackedHTTP11ClientProtocol(
+            self._quiescentCallback,
+            self._pool._headers_maxsize,
+            self._pool._headers_warnsize,
+        )
         protocol._pool = self._pool
         protocol._pool_key = self._key
         self._pool._open.add(protocol)
@@ -231,10 +309,19 @@ class _BoundedHTTPConnectionPool(HTTPConnectionPool):
 
     _factory = _BoundedHTTP11ClientFactory  # type: ignore[assignment]
 
-    def __init__(self, reactor: ReactorBase, limit: int, keepalive_timeout: float):
+    def __init__(
+        self,
+        reactor: ReactorBase,
+        limit: int,
+        keepalive_timeout: float,
+        headers_maxsize: int,
+        headers_warnsize: int,
+    ):
         super().__init__(reactor, persistent=bool(keepalive_timeout))  # type: ignore[no-untyped-call]
         self.cachedConnectionTimeout = keepalive_timeout  # type: ignore[assignment]
         self._limit: int = limit
+        self._headers_maxsize: int = headers_maxsize
+        self._headers_warnsize: int = headers_warnsize
         self._open: set[_TrackedHTTP11ClientProtocol] = set()
 
     def _newConnection(
@@ -285,7 +372,11 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         from twisted.internet import reactor
 
         self._pool: _BoundedHTTPConnectionPool = _BoundedHTTPConnectionPool(
-            reactor, self._pool_size_total, self._keepalive_timeout
+            reactor,
+            self._pool_size_total,
+            self._keepalive_timeout,
+            self._headers_maxsize,
+            self._headers_warnsize,
         )
         self._pool.maxPersistentPerHost = self._pool_size_per_host
 
@@ -313,6 +404,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
             warnsize=getattr(
                 self._crawler.spider, "download_warnsize", self._default_warnsize
             ),
+            headers_maxsize=self._headers_maxsize,
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
             tls_verbose_logging=self._tls_verbose_logging,
@@ -388,6 +480,7 @@ class _TunnelProtocol(Protocol):
         proxyHost: str,
         proxyPort: int,
         proxyHeaders: tuple[tuple[str, str], ...] = (),
+        headersMaxsize: int = 0,
     ):
         self._connectedDeferred = connectedDeferred
         self._wrappedProtocol = wrappedProtocol
@@ -396,6 +489,7 @@ class _TunnelProtocol(Protocol):
         self._proxyHost = proxyHost
         self._proxyPort = proxyPort
         self._proxyHeaders = proxyHeaders
+        self._headersMaxsize = headersMaxsize
         self._connectBuffer: bytearray = bytearray()
         self._tunnelReady = False
 
@@ -434,6 +528,20 @@ class _TunnelProtocol(Protocol):
         #
         # see https://github.com/scrapy/scrapy/issues/2491
         if b"\r\n\r\n" not in self._connectBuffer:
+            if self._headersMaxsize and len(self._connectBuffer) > self._headersMaxsize:
+                # A proxy that never ends its response head would otherwise
+                # make _connectBuffer grow without bound.
+                self._connectedDeferred.errback(
+                    ResponseHeadersTooLargeError(
+                        get_headers_maxsize_msg(
+                            len(self._connectBuffer),
+                            self._headersMaxsize,
+                            f"CONNECT {self._format_host(self._host).decode()}:{self._port}",
+                        )
+                    )
+                )
+                assert self.transport is not None
+                self.transport.loseConnection()
             return
         header, _, remaining = bytes(self._connectBuffer).partition(b"\r\n\r\n")
         respm = self._responseMatcher.match(header)
@@ -484,6 +592,7 @@ class _TunnelFactory(ClientFactory):
         proxyHost: str,
         proxyPort: int,
         proxyHeaders: tuple[tuple[str, str], ...] = (),
+        headersMaxsize: int = 0,
     ):
         self._connectedDeferred = connectedDeferred
         self._wrappedFactory = wrappedFactory
@@ -492,6 +601,7 @@ class _TunnelFactory(ClientFactory):
         self._proxyHost = proxyHost
         self._proxyPort = proxyPort
         self._proxyHeaders = proxyHeaders
+        self._headersMaxsize = headersMaxsize
 
     def doStart(self) -> None:
         self._wrappedFactory.doStart()
@@ -512,6 +622,7 @@ class _TunnelFactory(ClientFactory):
             self._proxyHost,
             self._proxyPort,
             self._proxyHeaders,
+            self._headersMaxsize,
         )
 
 
@@ -535,6 +646,7 @@ class _TunnelEndpoint:
         proxyHost: str,
         proxyPort: int,
         proxyHeaders: tuple[tuple[str, str], ...] = (),
+        headersMaxsize: int = 0,
     ):
         self._wrappedEndpoint = wrappedEndpoint
         self._host = host
@@ -542,6 +654,7 @@ class _TunnelEndpoint:
         self._proxyHost = proxyHost
         self._proxyPort = proxyPort
         self._proxyHeaders = proxyHeaders
+        self._headersMaxsize = headersMaxsize
 
     def connect(self, protocolFactory: Factory) -> Deferred[IProtocol]:
         proxyProtocol: IProtocol | None = None
@@ -570,6 +683,7 @@ class _TunnelEndpoint:
             self._proxyHost,
             self._proxyPort,
             self._proxyHeaders,
+            self._headersMaxsize,
         )
         proxyDeferred = self._wrappedEndpoint.connect(tunnelFactory)
         proxyDeferred.addCallbacks(
@@ -659,10 +773,12 @@ class _TunnelingAgent(_BindAddressAgent):
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
+        headersMaxsize: int = 0,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
         self._proxyConf: tuple[str, int, tuple[tuple[str, str], ...], bool] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._headersMaxsize: int = headersMaxsize
 
     def _getEndpoint(self, uri: URI) -> IStreamClientEndpoint:
         proxyHost, proxyPort, proxyHeaders, proxyTLS = self._proxyConf
@@ -696,7 +812,13 @@ class _TunnelingAgent(_BindAddressAgent):
             )
             endpoint = wrapClientTLS(proxyCreator, endpoint)
         endpoint = _TunnelEndpoint(
-            endpoint, uri.host, uri.port, proxyHost, proxyPort, proxyHeaders
+            endpoint,
+            uri.host,
+            uri.port,
+            proxyHost,
+            proxyPort,
+            proxyHeaders,
+            self._headersMaxsize,
         )
         # Set proper Server Name Indication extension for the destination.
         destCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
@@ -783,6 +905,7 @@ class _ScrapyAgent:
         pool: HTTPConnectionPool | None = None,
         maxsize: int = 0,
         warnsize: int = 0,
+        headers_maxsize: int = 0,
         fail_on_dataloss: bool = True,
         crawler: Crawler,
         tls_verbose_logging: bool = False,
@@ -793,6 +916,7 @@ class _ScrapyAgent:
         self._pool: HTTPConnectionPool | None = pool
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
+        self._headers_maxsize: int = headers_maxsize
         self._fail_on_dataloss: bool = fail_on_dataloss
         self._txresponse: TxResponse | None = None
         self._crawler: Crawler = crawler
@@ -835,6 +959,7 @@ class _ScrapyAgent:
                     connectTimeout=timeout,
                     bindAddress=bindaddress,
                     pool=self._pool,
+                    headersMaxsize=self._headers_maxsize,
                 )
             return _ScrapyProxyAgent(
                 reactor=reactor,

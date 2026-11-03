@@ -62,6 +62,11 @@ else:
 
 
 class HttpxDownloadHandlerMixin:
+    # httpx does not expose the response head size limit of its HTTP client, so
+    # DOWNLOAD_HEADERS_MAXSIZE and DOWNLOAD_HEADERS_WARNSIZE do not apply. Over
+    # HTTP/1.1 the limit is httpcore's MAX_INCOMPLETE_EVENT_SIZE (100 KiB),
+    # which h11 only enforces once the head exceeds it and is still incomplete.
+    headers_maxsize: int | None = 100 * 1024
     handler_supports_partial_response_on_timeout = True
 
     @property
@@ -115,6 +120,8 @@ class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
 @pytest.mark.skipif(not HAS_HTTP2, reason="No HTTP/2 support in HttpxDownloadHandler")
 class TestHttp2(TestHttps):
     http2 = True
+    # Over HTTP/2 the limit is instead h2's DEFAULT_MAX_HEADER_LIST_SIZE.
+    headers_maxsize = 64 * 1024
 
     default_handler_settings: ClassVar[dict[str, Any]] = {
         "HTTPX_HTTP2_ENABLED": True,
