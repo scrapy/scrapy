@@ -1389,9 +1389,7 @@ DownloaderStats
 UriUserInfoMiddleware
 ---------------------
 
-.. module:: scrapy.downloadermiddlewares.uriuserinfo
-
-.. autoclass:: UriUserInfoMiddleware
+.. autoclass:: scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware
 
 
 UserAgentMiddleware
