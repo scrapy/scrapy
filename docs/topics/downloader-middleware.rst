@@ -1397,6 +1397,8 @@ UriUserInfoMiddleware
 UserAgentMiddleware
 -------------------
 
+.. currentmodule:: None
+
 .. class:: scrapy.downloadermiddlewares.useragent.UserAgentMiddleware
 
    Middleware that sets the ``User-Agent`` header.
