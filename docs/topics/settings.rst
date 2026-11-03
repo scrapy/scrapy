@@ -638,7 +638,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN
 Default: ``1`` (:ref:`fallback <default-settings>`: ``8``)
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed to any single domain.
+performed to any single domain. Use ``0`` for no limit.
 
 See also: :ref:`topics-autothrottle` and its
 :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` option.

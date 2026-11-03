@@ -110,6 +110,25 @@ async def test_params():
         )
 
 
+@pytest.mark.parametrize(
+    ("concurrency", "transferring", "expected"),
+    [
+        (8, 0, 8),
+        (8, 3, 5),
+        (8, 8, 0),
+        # A concurrency of 0 means no limit, like CONCURRENT_REQUESTS.
+        (0, 0, 1),
+        (0, 5, 6),
+    ],
+)
+def test_free_transfer_slots(concurrency: int, transferring: int, expected: int):
+    slot = Slot(concurrency=concurrency, delay=0, jitter=0)
+    slot.transferring = {
+        Request(f"https://example.com/{i}") for i in range(transferring)
+    }
+    assert slot.free_transfer_slots() == expected
+
+
 @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
 @coroutine_test
 async def test_deprecated_randomize_delay_param(value: bool, expected: float):

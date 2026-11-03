@@ -152,6 +152,9 @@ class Slot:
         self.jitter = 0.5 if value else 0.0
 
     def free_transfer_slots(self) -> int:
+        if not self.concurrency:
+            # A concurrency of 0 means no limit, like CONCURRENT_REQUESTS.
+            return len(self.transferring) + 1
         return self.concurrency - len(self.transferring)
 
     def download_delay(self) -> float:
