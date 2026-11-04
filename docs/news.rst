@@ -38,7 +38,7 @@ Security bug fixes
 
     .. _CVE-2017-14158: https://github.com/advisories/GHSA-h7wm-ph43-c39p
 
-    (:gh:`482`, :gh:`6430`, :gh:`8417`, :gh:`8459`, :gh:`8460`)
+    (:gh:`482`, :gh:`4583`, :gh:`6430`, :gh:`8417`, :gh:`8459`, :gh:`8460`)
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -58,7 +58,8 @@ Modified requirements
 
     - typing-extensions_ >= 4.6.0 (on Python 3.12 and lower)
 
-    (:gh:`7894`, :gh:`8213`, :gh:`8303`, :gh:`8376`, :gh:`8378`, :gh:`8393`)
+    (:gh:`7894`, :gh:`8213`, :gh:`8303`, :gh:`8376`, :gh:`8378`, :gh:`8382`,
+    :gh:`8393`)
 
 -   charset-normalizer_ is no longer a dependency.
     (:gh:`8393`)
@@ -99,15 +100,8 @@ Modified requirements
 
     - ``uvloop``: uvloop_ 0.16.0 → 0.17.0
 
-    (:gh:`7826`,
-    :gh:`7932`,
-    :gh:`8058`,
-    :gh:`8062`,
-    :gh:`8162`,
-    :gh:`8213`,
-    :gh:`8261`,
-    :gh:`8330`,
-    :gh:`8341`)
+    (:gh:`7826`, :gh:`7932`, :gh:`8058`, :gh:`8062`, :gh:`8162`, :gh:`8213`,
+    :gh:`8261`, :gh:`8330`, :gh:`8341`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -170,8 +164,9 @@ Backward-incompatible changes
       :signal:`engine_stopped` signals are not sent.
 
     - :meth:`Crawler.stop_async() <scrapy.crawler.Crawler.stop_async>`, when
-      called while the spider is being opened, now closes the spider as soon
-      as it is open, instead of being ignored.
+      called before the engine is running, e.g. while the spider is being
+      opened, now closes the spider as soon as it is open, instead of being
+      ignored.
 
     - A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the spider
       is opening now closes the spider as soon as it is open, instead of being
@@ -187,7 +182,7 @@ Backward-incompatible changes
 
 -   Setting the :attr:`ExecutionEngine.running
     <scrapy.core.engine.ExecutionEngine.running>` attribute no longer has any
-    effect.
+    effect, and is deprecated.
     (:gh:`8181`)
 
 -   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now
@@ -215,7 +210,9 @@ Backward-incompatible changes
     :stat:`response_max_active_size/bypass_count` stat.
 
     Scrapy itself no longer keeps responses alive in reference cycles after a
-    download error or a failed media pipeline download.
+    request fails, e.g. with an
+    :exc:`~scrapy.spidermiddlewares.httperror.HttpError` that no errback
+    handles, or after a failed media pipeline download.
 
     (:gh:`6430`, :gh:`8417`, :gh:`8459`, :gh:`8460`)
 
@@ -243,11 +240,12 @@ Backward-incompatible changes
     redirects, are no longer exempt from duplicate filtering.
     (:gh:`6895`, :gh:`8224`)
 
--   Redirects and retries of a request are now assigned to the download slot
-    of their own URL domain, instead of keeping the slot of the original
-    request. Redirects and retries of a request whose :reqmeta:`download_slot`
-    request meta key you set keep that slot, so set it to keep redirects and
-    retries in the slot of the original request.
+-   Requests whose meta is copied from a downloaded request, e.g. redirects and
+    retries, are now assigned to the download slot of their own URL domain,
+    instead of keeping the slot of the original request. Requests whose meta is
+    copied from a request whose :reqmeta:`download_slot` request meta key you
+    set keep that slot, so set it to keep redirects and retries in the slot of
+    the original request.
     (:gh:`8337`)
 
 -   :reqmeta:`http_user` and :reqmeta:`http_pass` are now only sent to the
@@ -298,8 +296,9 @@ Backward-incompatible changes
 
 -   The ``process_response()`` method of :class:`HttpCompressionMiddleware
     <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>`
-    is now a coroutine function. Subclasses that override it must define it
-    with ``async def`` and ``await`` the parent implementation.
+    is now a coroutine function. Subclasses that override it and call
+    ``super().process_response()`` must now be ``async def`` and await that
+    call.
     (:gh:`3751`, :gh:`8153`)
 
 -   The ``item_scraped()`` method of
@@ -359,12 +358,16 @@ Backward-incompatible changes
     ``engine.scraper.slot.needs_backout()``.
     (:gh:`6430`)
 
--   The ``METAREFRESH_IGNORE_TAGS`` setting is deprecated, and it and the
-    *ignore_tags* parameter of the deprecated
-    ``scrapy.utils.response.get_meta_refresh()`` function now raise
-    :exc:`ValueError` for tags other than ``script``, ``noscript`` and
-    ``template``. Use the new :setting:`METAREFRESH_SCRIPTING` setting instead.
+-   The deprecated ``METAREFRESH_IGNORE_TAGS`` setting and the *ignore_tags*
+    parameter of the deprecated ``scrapy.utils.response.get_meta_refresh()``
+    function now raise :exc:`ValueError` for tags other than ``script``,
+    ``noscript`` and ``template``.
     (:gh:`8393`)
+
+-   A blank line between :ref:`contract <topics-contracts>` lines in a callback
+    docstring now starts a new batch of contracts, which needs its own ``@url``
+    line.
+    (:gh:`768`, :gh:`8043`)
 
 Deprecations
 ~~~~~~~~~~~~
@@ -577,12 +580,16 @@ Deprecations
     attributes instead.
     (:gh:`8393`)
 
+-   The ``METAREFRESH_IGNORE_TAGS`` setting is deprecated. Use the new
+    :setting:`METAREFRESH_SCRIPTING` setting instead.
+    (:gh:`8393`)
+
 New features
 ~~~~~~~~~~~~
 
 -   :class:`~scrapy.Request` objects can now be awaited, e.g. in a spider
     callback, to send them and get their response. See :ref:`inline-requests`.
-    (:gh:`8207`)
+    (:gh:`1144`, :gh:`8207`)
 
 -   Added a :setting:`DOWNLOAD_HANDLERS_BY_NAME` setting and a
     :reqmeta:`download_handler` request meta key, to :ref:`choose a download
@@ -592,8 +599,9 @@ New features
     when it does not match the URL scheme.
 
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` now
-    sets the new :reqmeta:`is_robotstxt_request` request meta key on the
-    ``robots.txt`` requests that it sends.
+    copies :reqmeta:`download_handler` from the request that triggers a
+    ``robots.txt`` request, and sets the new :reqmeta:`is_robotstxt_request`
+    request meta key on the ``robots.txt`` requests that it sends.
 
     (:gh:`5510`, :gh:`7885`)
 
@@ -634,8 +642,9 @@ New features
     override what the response body says.
     (:gh:`8393`)
 
--   Added a :setting:`METAREFRESH_SCRIPTING` setting, to follow the meta
-    refresh that a web browser with JavaScript disabled would follow.
+-   Added a :setting:`METAREFRESH_SCRIPTING` setting, which you can set to
+    ``False`` to follow the meta refresh that a web browser with JavaScript
+    disabled would follow.
     (:gh:`8393`)
 
 -   Added a :setting:`FEED_MODE` setting and a ``mode`` :ref:`feed option
@@ -657,10 +666,10 @@ New features
 -   Added a :setting:`JOBDIR_SYNC_EVERY` setting to write the
     :file:`active.json` file of the :ref:`job directory <job-dir>` while the
     crawl runs, so that a crawl killed before it can stop cleanly can resume
-    from its latest state. Priority queues that implement the new ``changed``
-    attribute and ``state()`` method of
-    :class:`~scrapy.pqueues.ScrapyPriorityQueue` and
-    :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` support it.
+    from its latest state. Custom :setting:`SCHEDULER_PRIORITY_QUEUE` classes
+    need the new :attr:`~scrapy.pqueues.PriorityQueueProtocol.changed`
+    attribute and :meth:`~scrapy.pqueues.PriorityQueueProtocol.state` method to
+    support it.
 
     :file:`active.json` is also now written atomically, so that it cannot be
     left half-written.
@@ -714,15 +723,11 @@ New features
     check the callback against more than one sample request. Custom contracts
     can set the new ``generates_request`` attribute of
     :class:`~scrapy.contracts.Contract` to ``True`` to behave like ``@url``.
-
-    As a result, a blank line between contract lines now starts a new batch,
-    which needs its own ``@url`` line.
-
     (:gh:`768`, :gh:`8043`)
 
 -   The :ref:`Google Cloud Storage feed storage <topics-feed-storage-gcs>` now
-    supports appending (``overwrite: False``), instead of logging a warning
-    and overwriting the feed.
+    supports the ``"append"`` :ref:`feed mode <feed-mode>`, instead of logging
+    a warning and overwriting the feed.
     (:gh:`7823`, :gh:`8173`)
 
 -   :setting:`FILES_EXPIRES` and :setting:`IMAGES_EXPIRES` now support
@@ -761,22 +766,17 @@ New features
     :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` is ``True``.
     (:gh:`8215`)
 
--   Added an *error* parameter to :exc:`~scrapy.exceptions.CloseSpider` to mark
-    a crawl as failed. Failed crawls set the new :stat:`finish_reason_error`
-    stat to ``True``, get ``error=True`` in their :signal:`spider_closed`
-    signal, and make commands like :command:`crawl` and :command:`runspider`
-    exit with code 1. Crawls closed because :meth:`~scrapy.Spider.start` raised
-    an exception (``start_error``) are now also marked as failed, and so are
+-   Added an *error* parameter to :exc:`~scrapy.exceptions.CloseSpider`, and an
+    *error* keyword-only parameter to
+    :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async`, to mark a
+    crawl as failed. Failed crawls set the new :stat:`finish_reason_error` stat
+    to ``True``, get ``error=True`` in their :signal:`spider_closed` signal,
+    and make commands like :command:`crawl` and :command:`runspider` exit with
+    code 1. Crawls closed because :meth:`~scrapy.Spider.start` raised an
+    exception (``start_error``) are now also marked as failed, and so are
     crawls closed by :setting:`CLOSESPIDER_ERRORCOUNT`.
-    (:gh:`1241`,
-    :gh:`2171`,
-    :gh:`3653`,
-    :gh:`3654`,
-    :gh:`8082`,
-    :gh:`8203`,
-    :gh:`8204`,
-    :gh:`8352`,
-    :gh:`8357`)
+    (:gh:`1241`, :gh:`2171`, :gh:`3653`, :gh:`3654`, :gh:`8082`, :gh:`8203`,
+    :gh:`8204`, :gh:`8352`, :gh:`8357`)
 
 -   Added an :setting:`IMAGES_PRESERVE_FORMAT` setting to :ref:`keep images in
     their original format <preserving-image-format>` instead of converting them
@@ -789,10 +789,10 @@ New features
     number of exported entries per storage class.
     (:gh:`5905`, :gh:`7911`)
 
--   Added an :setting:`UPLOAD_TIMEOUT` setting to limit how long uploads to
+-   Added an :setting:`UPLOAD_TIMEOUT` setting to set how long uploads to
     remote :ref:`feed storages <topics-feed-storage-backends>` and :ref:`media
     pipeline storages <topics-media-pipeline>` (Amazon S3, Google Cloud Storage
-    and FTP) can take.
+    and FTP) wait for a response before giving up.
     (:gh:`5011`, :gh:`8162`)
 
 -   Added a :setting:`MEDIA_CACHE_SIZE` setting to limit how many download
@@ -861,7 +861,7 @@ New features
     used by default when running :ref:`without a Twisted reactor
     <asyncio-without-reactor>`. The new ``socks`` :ref:`extra <extras>`
     enables its support for SOCKS proxies.
-    (:gh:`8213`, :gh:`8341`)
+    (:gh:`7261`, :gh:`8213`, :gh:`8341`)
 
 -   Added :setting:`MEDIA_STORAGES` and :setting:`MEDIA_STORAGES_BASE`
     settings, which map URL schemes to the storage classes of the :ref:`media
@@ -937,10 +937,11 @@ New features
     by request host instead of by spider.
     (:gh:`5166`, :gh:`5175`, :gh:`7964`)
 
--   Added a :setting:`LOG_ROOT_FORMATTER` setting, which sets the formatter
-    of the root log handler, and :class:`~scrapy.LogRootFormatterProtocol`,
-    which those formatters implement. :setting:`LOG_COLOR` also works with
-    custom formatters.
+-   Added a :setting:`LOG_ROOT_FORMATTER` setting, which sets the formatter of
+    the root log handler, :class:`~scrapy.LogRootFormatterProtocol`, which
+    those formatters implement, and :class:`~scrapy.LogRootFormatter`, the
+    default formatter, which you can also use in your own log handlers.
+    :setting:`LOG_COLOR` also works with custom formatters.
     (:gh:`8336`)
 
 -   Added a :setting:`CONNECTION_KEEPALIVE_TIMEOUT` setting, which sets how
@@ -1023,9 +1024,8 @@ New features
     (:gh:`8413`)
 
 -   :meth:`BaseSettings.getlist() <scrapy.settings.BaseSettings.getlist>` now
-    parses a string that is a JSON list, e.g. ``-s 'RETRY_HTTP_CODES=[500,
-    502]'``, so that items that contain commas can be set from the command
-    line.
+    parses a string that is a JSON list, e.g. ``-s 'MY_LIST=["a,b", "c"]'``, so
+    that items that contain commas can be set from the command line.
     (:gh:`8416`)
 
 -   Added a :setting:`RESPONSE_ROUGH_SIZE` setting, the
@@ -1035,7 +1035,7 @@ New features
     :stat:`request_backout_seconds/response_max_active_size` and
     :stat:`request_backout_seconds/total` stats. See
     :ref:`crawl-bottlenecks`.
-    (:gh:`6430`)
+    (:gh:`5302`, :gh:`6206`, :gh:`6430`)
 
 Improvements
 ~~~~~~~~~~~~
@@ -1044,7 +1044,9 @@ Improvements
     way web browsers do: UTF-8 if the body is valid UTF-8, otherwise a guess
     based on the body and on the top-level domain of the response URL, as
     Firefox does. Encoding declarations in ``<meta>`` tags are also found the
-    way web browsers find them.
+    way web browsers find them, and declared encoding names are mapped to
+    encodings the way web browsers map them, e.g. ``gb2312`` to GBK instead of
+    GB18030.
     (:gh:`8393`)
 
 -   The base URL of a response, used by :meth:`TextResponse.urljoin()
@@ -1055,9 +1057,9 @@ Improvements
     follows, are now found the way web browsers find them.
     (:gh:`8393`)
 
--   :class:`~scrapy.Selector` objects created from a response now parse the
-    response body as is when the response encoding is known without decoding
-    the body, instead of decoding it first, which saves time and memory.
+-   With parsel_ 1.12.0+, :class:`~scrapy.Selector` objects created from a
+    UTF-8 response now parse the response body as is, instead of decoding it
+    first, which saves time and memory.
     (:gh:`5906`, :gh:`8195`, :gh:`8222`)
 
 -   Responses are now freed as soon as nothing refers to them, also after
@@ -1092,7 +1094,7 @@ Improvements
     connection, so that those downloads are retried.
     (:gh:`1511`, :gh:`8206`)
 
--   On Python 3.11+, exceptions raised while exporting an item to a :ref:`feed
+-   Exceptions raised while exporting an item to a :ref:`feed
     <topics-feed-exports>` now include the item in a note.
     (:gh:`2775`, :gh:`8191`)
 
@@ -1129,9 +1131,6 @@ Improvements
     replacing it, with a warning, with one built from the request body.
     (:gh:`4919`, :gh:`7944`)
 
--   Other code refactoring and improvements.
-    (:gh:`8243`, :gh:`8262`, :gh:`8263`)
-
 -   :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` now
     supports :setting:`DOWNLOAD_FAIL_ON_DATALOSS` and the
     :reqmeta:`download_fail_on_dataloss` request meta key: responses cut short
@@ -1158,8 +1157,9 @@ Improvements
     is now :ref:`lazy <lazy-download-handlers>`.
     (:gh:`8346`)
 
--   Connecting a signal handler that declares an argument which the signal
-    never sends, e.g. because of a typo, now issues a warning.
+-   Connecting a handler to a built-in signal, where the handler declares an
+    argument which the signal never sends, e.g. because of a typo, now issues a
+    warning.
     (:gh:`8345`)
 
 -   :func:`~scrapy.utils.asyncio.call_later` and the processing of the output
@@ -1182,9 +1182,12 @@ Improvements
     (:gh:`5431`, :gh:`8321`)
 
 -   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` now
-    ignores cookies with a ``__Secure-`` or ``__Host-`` name prefix that do not
-    meet the requirements of that prefix, as web browsers do.
+    ignores received cookies with a ``__Secure-`` or ``__Host-`` name prefix
+    that do not meet the requirements of that prefix, as web browsers do.
     (:gh:`5431`, :gh:`8431`)
+
+-   Other code refactoring and improvements.
+    (:gh:`8243`, :gh:`8262`, :gh:`8263`, :gh:`8415`)
 
 Bug fixes
 ~~~~~~~~~
@@ -1357,8 +1360,9 @@ Bug fixes
     installed with a loop that is not set as the current one.
     (:gh:`7201`, :gh:`8324`, :gh:`8325`)
 
--   Stopping a crawl while an item is going through the :ref:`item pipelines
-    <topics-item-pipeline>` no longer hangs.
+-   Stopping a crawl while an item yielded from :meth:`~scrapy.Spider.start` is
+    going through the :ref:`item pipelines <topics-item-pipeline>` no longer
+    hangs.
     (:gh:`8348`)
 
 -   :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` now
@@ -1367,11 +1371,12 @@ Bug fixes
     requests to the same server try to connect again.
     (:gh:`8332`)
 
--   Fixed ``scrapy.pqueues.ScrapyPriorityQueue``, the default scheduler
-    priority queue, returning no request or a request other than the one
-    that its ``peek()`` method returned, which could happen with requests of
-    the same priority in its start request and regular request queues, or
-    after a request failed to be serialized into a disk queue.
+-   Fixed :class:`~scrapy.pqueues.ScrapyPriorityQueue`, which the default
+    :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` uses for each
+    download slot, returning no request or a request other than the one that
+    its ``peek()`` method returned, which could happen with requests of the
+    same priority in its start request and regular request queues, or after a
+    request failed to be serialized into a disk queue.
     (:gh:`7837`)
 
 -   The :ref:`telnet console <topics-telnetconsole>` now tries the next port
@@ -1390,9 +1395,10 @@ Bug fixes
     with ``rel="alternate"``, instead of any link, e.g. canonical ones.
     (:gh:`8390`)
 
--   Download handlers are now closed also when the engine is closed without
-    having been started, e.g. when opening the spider fails.
-    (:gh:`8377`)
+-   The downloader and its download handlers are now also closed when the
+    engine is closed without having been started, e.g. when opening the spider
+    fails.
+    (:gh:`8167`, :gh:`8377`)
 
 -   The Scrapy :command:`shell` no longer uses ptpython_ on Windows when the
     standard output is not a console, which ptpython_ does not support.
@@ -1428,12 +1434,7 @@ Documentation
     deduplicate repeated query string parameters in :ref:`request fingerprints
     <custom-request-fingerprinter>`, and that retried status codes should also
     be in :setting:`HTTPCACHE_IGNORE_HTTP_CODES`.
-    (:gh:`40`,
-    :gh:`1113`,
-    :gh:`2297`,
-    :gh:`8190`,
-    :gh:`8202`,
-    :gh:`8208`,
+    (:gh:`40`, :gh:`1113`, :gh:`2297`, :gh:`8190`, :gh:`8202`, :gh:`8208`,
     :gh:`8209`)
 
 -   Improved the API reference of :class:`~scrapy.spiders.SitemapSpider`,
@@ -1460,19 +1461,12 @@ Documentation
     <agents>`.
     (:gh:`8253`)
 
-
-   .. _itemloaders: https://github.com/scrapy/itemloaders
-   .. _uvloop: https://github.com/MagicStack/uvloop
-
 -   :class:`~scrapy.spiders.CrawlSpider` and :class:`~scrapy.spiders.Rule` are
     now documented through their docstrings, and the documentation now
     recommends :class:`~scrapy.Spider` over
     :class:`~scrapy.spiders.CrawlSpider` for crawls that do not fit its
     declarative rules.
     (:gh:`7025`, :gh:`8240`)
-
--   Documented :func:`~scrapy.utils.decorators.inthread`.
-    (:gh:`6552`, :gh:`7956`)
 
 -   Documented :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async`.
     (:gh:`6164`)
@@ -1504,12 +1498,7 @@ Documentation
     (:gh:`5259`, :gh:`5272`)
 
 -   Other documentation improvements and fixes.
-    (:gh:`5859`,
-    :gh:`7114`,
-    :gh:`8151`,
-    :gh:`8161`,
-    :gh:`8403`,
-    :gh:`8404`)
+    (:gh:`5859`, :gh:`7114`, :gh:`8151`, :gh:`8161`, :gh:`8403`, :gh:`8404`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -1522,68 +1511,19 @@ Quality assurance
 
 -   Improved the documentation build and the contributor tooling, including
     an ``AGENTS.md`` file for coding agents.
-    (:gh:`8011`,
-    :gh:`8157`,
-    :gh:`8188`,
-    :gh:`8214`,
-    :gh:`8216`,
-    :gh:`8238`,
-    :gh:`8251`,
-    :gh:`8384`,
-    :gh:`8409`,
-    :gh:`8411`)
+    (:gh:`8011`, :gh:`8157`, :gh:`8188`, :gh:`8214`, :gh:`8216`, :gh:`8238`,
+    :gh:`8251`, :gh:`8384`, :gh:`8409`, :gh:`8411`)
 
 -   CI and test improvements and fixes.
-    (:gh:`6141`,
-    :gh:`7949`,
-    :gh:`8127`,
-    :gh:`8154`,
-    :gh:`8155`,
-    :gh:`8156`,
-    :gh:`8194`,
-    :gh:`8212`,
-    :gh:`8219`,
-    :gh:`8223`,
-    :gh:`8228`,
-    :gh:`8231`,
-    :gh:`8232`,
-    :gh:`8233`,
-    :gh:`8235`,
-    :gh:`8236`,
-    :gh:`8258`,
-    :gh:`8273`,
-    :gh:`8274`,
-    :gh:`8275`,
-    :gh:`8276`,
-    :gh:`8277`,
-    :gh:`8278`,
-    :gh:`8279`,
-    :gh:`8280`,
-    :gh:`8281`,
-    :gh:`8286`,
-    :gh:`8300`,
-    :gh:`8301`,
-    :gh:`8311`,
-    :gh:`8314`,
-    :gh:`8317`,
-    :gh:`8320`,
-    :gh:`8351`,
-    :gh:`8359`,
-    :gh:`8360`,
-    :gh:`8361`,
-    :gh:`8364`,
-    :gh:`8365`,
-    :gh:`8372`,
-    :gh:`8374`,
-    :gh:`8375`,
-    :gh:`8381`,
-    :gh:`8387`,
-    :gh:`8388`,
-    :gh:`8389`,
-    :gh:`8406`,
-    :gh:`8412`,
-    :gh:`8423`,
-    :gh:`8444`)
+    (:gh:`6141`, :gh:`7949`, :gh:`8127`, :gh:`8154`, :gh:`8155`, :gh:`8156`,
+    :gh:`8194`, :gh:`8212`, :gh:`8219`, :gh:`8223`, :gh:`8228`, :gh:`8231`,
+    :gh:`8232`, :gh:`8233`, :gh:`8235`, :gh:`8236`, :gh:`8258`, :gh:`8273`,
+    :gh:`8274`, :gh:`8275`, :gh:`8276`, :gh:`8277`, :gh:`8278`, :gh:`8279`,
+    :gh:`8280`, :gh:`8281`, :gh:`8286`, :gh:`8300`, :gh:`8301`, :gh:`8311`,
+    :gh:`8314`, :gh:`8317`, :gh:`8320`, :gh:`8351`, :gh:`8359`, :gh:`8360`,
+    :gh:`8361`, :gh:`8364`, :gh:`8365`, :gh:`8372`, :gh:`8374`, :gh:`8375`,
+    :gh:`8381`, :gh:`8387`, :gh:`8388`, :gh:`8389`, :gh:`8406`, :gh:`8412`,
+    :gh:`8423`, :gh:`8444`)
 
 .. _release-2.19.0:
 
