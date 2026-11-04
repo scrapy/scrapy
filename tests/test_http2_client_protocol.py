@@ -15,7 +15,6 @@ from pytest_twisted import async_yield_fixture
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
-from twisted.internet.task import deferLater
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
 from twisted.web.http import Request as TxRequest
@@ -29,6 +28,7 @@ from scrapy.exceptions import (
 )
 from scrapy.http import JsonRequest, Request, Response
 from scrapy.spiders import Spider
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -780,10 +780,9 @@ class TestHttps2ClientProtocol:
         self, client: H2ClientProtocol
     ) -> None:
         """A connection with no streams is closed when it times out."""
-        from twisted.internet import reactor
-
         client.setTimeout(0.1)  # type: ignore[no-untyped-call]
-        await maybe_deferred_to_future(deferLater(reactor, 0.5))
+        await sleep(0.5)
+        assert client.transport is not None
         assert client.transport.disconnecting
 
     @deferred_f_from_coro_f

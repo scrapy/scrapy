@@ -10,6 +10,7 @@ permissions:
   pull-requests: write
 jobs:
   unattended-pr-guard:
+    if: github.event_name != 'schedule' || github.repository == 'scrapy/scrapy'
     runs-on: ubuntu-latest
     steps:
       - uses: scrapy/unattended-pr-guard@2ea7eff575dd0912d03cf3e3ae7acf65052c6445 # 0.2.0

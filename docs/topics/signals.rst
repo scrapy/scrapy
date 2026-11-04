@@ -69,10 +69,8 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 .. skip: next
 .. code-block:: python
 
-    import json
-
+    import aiohttp
     import scrapy
-    import treq
 
 
     class SignalSpider(scrapy.Spider):
@@ -87,13 +85,8 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
         async def item_scraped(self, item):
             # Send the scraped item to the server
-            response = await treq.post(
-                "http://example.com/post",
-                json.dumps(item).encode("ascii"),
-                headers={b"Content-Type": [b"application/json"]},
-            )
-
-            return response
+            async with aiohttp.ClientSession() as session:
+                await session.post("http://example.com/post", json=item)
 
         def parse(self, response):
             for quote in response.css("div.quote"):

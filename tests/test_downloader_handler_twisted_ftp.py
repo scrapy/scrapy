@@ -63,8 +63,8 @@ class TestFTPBase(ABC):
 
         await port.stopListening()
 
-    @staticmethod
     @pytest.fixture
+    @staticmethod
     def dh() -> Generator[FTPDownloadHandler]:
         crawler = get_crawler()
         dh = build_from_crawler(FTPDownloadHandler, crawler)

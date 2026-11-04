@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pytest
 
 from scrapy import Spider
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.settings import Settings
@@ -19,8 +20,6 @@ from scrapy.utils.spider import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from twisted.internet.defer import Deferred
-
     from scrapy.spiderloader import SpiderLoaderProtocol
 
 
@@ -55,7 +54,11 @@ async def test_iterate_spider_output_coroutine() -> None:
     async def callback() -> dict[str, str]:
         return {"foo": "bar"}
 
-    d = cast("Deferred[list[dict[str, str]]]", iterate_spider_output(callback()))
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"Passing a coroutine to iterate_spider_output\(\) is deprecated",
+    ):
+        d = iterate_spider_output(callback())
     assert await maybe_deferred_to_future(d) == [{"foo": "bar"}]
 
 

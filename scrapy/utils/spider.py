@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import inspect
 import logging
+import warnings
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any, TypeVar, cast, overload
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import _is_awaitable, deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Iterable
-    from types import CoroutineType, ModuleType
+    from collections.abc import AsyncGenerator, Coroutine, Iterable
+    from types import ModuleType
 
     from twisted.internet.defer import Deferred
 
@@ -31,7 +33,9 @@ def iterate_spider_output(result: AsyncGenerator[_T]) -> AsyncGenerator[_T]: ...
 
 
 @overload
-def iterate_spider_output(result: CoroutineType[Any, Any, _T]) -> Deferred[_T]: ...
+def iterate_spider_output(
+    result: Coroutine[Any, Any, Any],
+) -> Deferred[Iterable[Any]]: ...
 
 
 @overload
@@ -40,11 +44,19 @@ def iterate_spider_output(result: _T) -> Iterable[Any]: ...
 
 def iterate_spider_output(
     result: Any,
-) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[_T]:
+) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[Iterable[Any]]:
     if inspect.isasyncgen(result):
         return cast("AsyncGenerator[_T]", result)
     d: Deferred[_T] = deferred_from_coro(result)
     if inspect.iscoroutine(result):
+        warnings.warn(
+            "Passing a coroutine to iterate_spider_output() is deprecated."
+            " For a coroutine it returns a Deferred instead of an iterable, so"
+            " iterating over the result does not work. Await the coroutine and"
+            " pass its result instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return d.addCallback(iterate_spider_output)
     return arg_to_iter(d)
 

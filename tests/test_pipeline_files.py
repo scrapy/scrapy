@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import dataclasses
 import hashlib
@@ -217,6 +218,30 @@ class TestFilesPipeline:
                 "stat_file",
                 return_value={"checksum": "abc", "last_modified": time.time()},
             ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["checksum"] == "abc"
+        assert result["files"][0]["status"] == "uptodate"
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_file_not_expired_async_stat_file(self):
+        """A coroutine stat_file() can await asyncio futures."""
+
+        async def stat_file(path: str, info: Any) -> dict[str, Any]:
+            await asyncio.sleep(0.01)
+            return {"checksum": "abc", "last_modified": time.time()}
+
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(self.pipeline.store, "stat_file", stat_file),
             mock.patch.object(
                 FilesPipeline,
                 "get_media_requests",
