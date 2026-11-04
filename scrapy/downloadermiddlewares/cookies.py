@@ -34,6 +34,19 @@ def _is_public_domain(domain: str) -> bool:
     return not parts.domain
 
 
+def _has_valid_name_prefix(cookie: Cookie, request: Request) -> bool:
+    """Return ``False`` if *cookie* has a ``__Secure-`` or ``__Host-`` name
+    prefix but does not meet the requirements that prefix imposes."""
+    name = cookie.name.lower()
+    if name.startswith(("__secure-", "__host-")) and (
+        not cookie.secure or urlparse_cached(request).scheme != "https"
+    ):
+        return False
+    return not name.startswith("__host-") or (
+        not cookie.domain_specified and cookie.path_specified and cookie.path == "/"
+    )
+
+
 class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
@@ -98,7 +111,11 @@ class CookiesMiddleware:
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
-        cookies = jar.make_cookies(response, request)
+        cookies = [
+            cookie
+            for cookie in jar.make_cookies(response, request)
+            if _has_valid_name_prefix(cookie, request)
+        ]
         self._process_cookies(cookies, jar=jar, request=request)
 
         self._debug_set_cookie(response)

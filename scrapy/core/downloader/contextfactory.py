@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, Protocol, Self, cast
 
 from formerly import deprecated_class
 from OpenSSL import SSL
@@ -33,9 +33,18 @@ from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
+    from twisted.internet.interfaces import IOpenSSLClientConnectionCreator
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+
+
+class _PolicyForHTTPS(Protocol):
+    """:class:`~twisted.web.iweb.IPolicyForHTTPS` for type checkers."""
+
+    def creatorForNetloc(
+        self, hostname: bytes, port: int
+    ) -> IOpenSSLClientConnectionCreator: ...
 
 
 @implementer(IPolicyForHTTPS)
@@ -245,8 +254,10 @@ class _AcceptableProtocolsContextFactory:
     # When we drop DOWNLOADER_CLIENTCONTEXTFACTORY it looks like we can replace
     # all of this with _ScrapyClientContextFactory.acceptableProtocols.
 
-    def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
-        self._wrapped_context_factory: Any = context_factory
+    def __init__(
+        self, context_factory: _PolicyForHTTPS, acceptable_protocols: list[bytes]
+    ):
+        self._wrapped_context_factory: _PolicyForHTTPS = context_factory
         self._acceptable_protocols: list[bytes] = acceptable_protocols
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
@@ -284,7 +295,7 @@ class _ScrapyCertificateOptions(CertificateOptions):
         return ctx
 
 
-def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
+def _load_context_factory_from_settings(crawler: Crawler) -> _PolicyForHTTPS:
     """Create an instance of :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
 
     Also passes values of other relevant settings to the factory class.
@@ -310,14 +321,7 @@ def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
         context_factory_cls = load_object(
             crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
         )
-    return cast(
-        "IPolicyForHTTPS",
-        build_from_crawler(
-            context_factory_cls,
-            crawler,
-            method=tls_method,
-        ),
-    )
+    return build_from_crawler(context_factory_cls, crawler, method=tls_method)
 
 
 def load_context_factory_from_settings(
@@ -328,4 +332,4 @@ def load_context_factory_from_settings(
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    return _load_context_factory_from_settings(crawler)
+    return cast("IPolicyForHTTPS", _load_context_factory_from_settings(crawler))
