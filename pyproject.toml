@@ -129,10 +129,6 @@ follow_imports = "skip"
 module = "scrapy.interfaces"
 ignore_errors = true
 
-[[tool.mypy.overrides]]
-module = "twisted.internet.reactor"
-follow_imports = "skip"
-
 # just for twisted.version
 [[tool.mypy.overrides]]
 module = "twisted"
@@ -288,6 +284,7 @@ addopts = [
     "--reactor=asyncio",
 ]
 xfail_strict = true
+asyncio_default_fixture_loop_scope = "function"
 python_files = ["test_*.py", "test_*/__init__.py"]
 markers = [
     "only_asyncio: marks tests that require the asyncio loop to be used",
@@ -331,6 +328,8 @@ filterwarnings = [
     # by message because some tox envs do not install pytest-cov, and pytest
     # warns when a filter names a module it cannot import.
     "ignore:Coverage disabled via --no-cov switch!",
+    # unrecognized when pytest-asyncio isn't installed
+    "ignore:Unknown config option. asyncio_:pytest.PytestConfigWarning",
 ]
 
 [tool.ruff.lint]

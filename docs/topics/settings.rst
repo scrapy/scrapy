@@ -1629,7 +1629,7 @@ Default: ``"guest"``
 The password to use for FTP connections when there is no ``"ftp_password"``
 in ``Request`` meta.
 
-It can be overriden in a request in any of the following ways:
+It can be overridden in a request in any of the following ways:
 
 -   Specifying ``ftp_password`` in :attr:`Request.meta <scrapy.http.Request.meta>`
 
@@ -1660,7 +1660,7 @@ Default: ``"anonymous"``
 
 The default username to use for FTP connections.
 
-It can be overriden in a request in any of the following ways:
+It can be overridden in a request in any of the following ways:
 
 -   Specifying ``ftp_user`` in :attr:`Request.meta <scrapy.http.Request.meta>`
 
