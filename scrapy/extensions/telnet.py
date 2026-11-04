@@ -23,6 +23,10 @@ from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.trackref import print_live_refs
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from twisted.cred.credentials import UsernamePassword
+    from twisted.internet.defer import Deferred
     from twisted.internet.tcp import Port
 
     from scrapy.crawler import Crawler
@@ -110,7 +114,12 @@ class TelnetConsole(protocol.ServerFactory):
         class Portal:
             """An implementation of IPortal"""
 
-            def login(self_, credentials, mind, *interfaces):  # type: ignore[no-untyped-def]  # pylint: disable=no-self-argument
+            def login(  # pylint: disable=no-self-argument
+                self_,
+                credentials: UsernamePassword,
+                mind: object,
+                *interfaces: object,
+            ) -> Deferred[tuple[object, object, Callable[[], None]]]:
                 if not (
                     credentials.username == self.username.encode()
                     and credentials.checkPassword(self.password.encode())
