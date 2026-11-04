@@ -29,6 +29,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_SCALAR_TYPES: frozenset[type] = frozenset({bool, bytes, float, int, str, type(None)})
+
 __all__ = [
     "BaseItemExporter",
     "CsvItemExporter",
@@ -81,6 +83,8 @@ class BaseItemExporter(ABC):
         return serializer(value)
 
     def _serialize_value(self, value: Any) -> Any:
+        if type(value) in _SCALAR_TYPES:
+            return value
         if is_item(value):
             adapter = ItemAdapter(value)
             field_names = (

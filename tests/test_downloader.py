@@ -6,12 +6,13 @@ from typing import Any
 
 import pytest
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
 from scrapy.core.downloader import Downloader
 from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import Crawler
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FilesPipeline
@@ -82,6 +83,20 @@ def _assert_scraper_slot_deprecation(
 
 def _raise(response: Response) -> None:
     raise ValueError(response.url)
+
+
+def _ignore(failure: Failure) -> None:
+    pass
+
+
+class _RaiseOnSpiderInput:
+    def process_spider_input(self, response: Response) -> None:
+        raise ValueError(response.url)
+
+
+class _IgnoreResponse:
+    def process_response(self, request: Request, response: Response) -> Response:
+        raise IgnoreRequest
 
 
 async def _crawl_without_gc(crawler: Crawler) -> None:
@@ -448,19 +463,45 @@ class TestRequestBackout:
         assert _backout_stats(crawler) == expected_stats
 
     @pytest.mark.parametrize(
-        ("status", "callback"),
+        ("status", "callback", "errback", "settings"),
         [
-            (200, lambda response: response.css("a")),
-            (200, _raise),
-            (404, None),
+            (200, lambda response: response.css("a"), _ignore, {}),
+            (200, _raise, _ignore, {}),
+            (404, None, _ignore, {}),
+            (404, None, None, {}),
+            (404, None, lambda failure: failure, {}),
+            (
+                200,
+                None,
+                None,
+                {"SPIDER_MIDDLEWARES": {_RaiseOnSpiderInput: 0}},
+            ),
+            (
+                200,
+                None,
+                None,
+                {"DOWNLOADER_MIDDLEWARES": {_IgnoreResponse: 1}},
+            ),
         ],
-        ids=["selector", "callback-exception", "errback"],
+        ids=[
+            "selector",
+            "callback-exception",
+            "errback",
+            "no-errback",
+            "errback-failure",
+            "spider-middleware-exception",
+            "downloader-middleware-ignore",
+        ],
     )
     @coroutine_test
-    async def test_response_max_active_size_no_cycles(self, status, callback):
+    async def test_response_max_active_size_no_cycles(
+        self, monkeypatch, status, callback, errback, settings
+    ):
         """Scrapy frees responses through reference counting alone, so a crawl
         does not stall on RESPONSE_MAX_ACTIVE_SIZE without garbage
         collection."""
+        # Keep the bypass, which collects garbage first, from lifting a stall.
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 60)
 
         class ResponseMiddleware:
             def process_request(self, request):
@@ -469,37 +510,61 @@ class TestRequestBackout:
         class TestSpider(Spider):
             name = "test"
             custom_settings = {
-                "DOWNLOADER_MIDDLEWARES": {ResponseMiddleware: 0},
+                **settings,
+                "DOWNLOADER_MIDDLEWARES": {
+                    ResponseMiddleware: 0,
+                    **settings.get("DOWNLOADER_MIDDLEWARES", {}),
+                },
                 "RESPONSE_MAX_ACTIVE_SIZE": 1,
             }
 
             async def start(self):
                 for n in range(3):
                     yield Request(
-                        f"https://example.com/{n}",
-                        callback=callback,
-                        errback=lambda failure: None,
+                        f"https://example.com/{n}", callback=callback, errback=errback
                     )
 
+            def parse(self, response):
+                pass
+
         crawler = get_crawler(TestSpider)
-        # The log capture of pytest keeps the tracebacks of logged errors, and
-        # with them the responses they refer to.
-        logging.disable()
-        gc.disable()
-        try:
-            crawl_deferred = crawler.crawl()
-            # A stall would otherwise hang the test.
-            timeout = call_later(10, crawl_deferred.cancel)
-            try:
-                await maybe_deferred_to_future(crawl_deferred)
-            finally:
-                timeout.cancel()
-        finally:
-            gc.enable()
-            logging.disable(logging.NOTSET)
+        await _crawl_without_gc(crawler)
 
         assert crawler.stats
-        assert crawler.stats.get_value("response_received_count") == 3
+        assert crawler.stats.get_value("downloader/response_count") == 3
+
+    @coroutine_test
+    async def test_response_max_active_size_no_cycles_media(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 60)
+
+        class ResponseMiddleware:
+            def process_request(self, request):
+                status = 404 if request.url.endswith("/file") else 200
+                return Response(request.url, status=status, body=b"a")
+
+        class TestSpider(Spider):
+            name = "test"
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {ResponseMiddleware: 0},
+                "FILES_STORE": str(tmp_path),
+                "ITEM_PIPELINES": {FilesPipeline: 1},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            async def start(self):
+                for n in range(3):
+                    yield Request(f"https://example.com/{n}")
+
+            def parse(self, response):
+                yield {"file_urls": [f"{response.url}/file"]}
+
+        crawler = get_crawler(TestSpider)
+        await _crawl_without_gc(crawler)
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 3
 
     @coroutine_test
     async def test_response_size_process_request(self):
