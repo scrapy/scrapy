@@ -50,6 +50,8 @@ pytestmark = [
 
 
 class H2DownloadHandlerMixin:
+    handler_supports_partial_response_on_timeout = True
+
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         # the import can fail when H2_ENABLED is False
