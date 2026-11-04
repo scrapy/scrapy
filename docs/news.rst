@@ -46,6 +46,11 @@ Modified requirements
 -   Dropped support for Python 3.10.
     (:gh:`8261`)
 
+-   Scrapy no longer officially supports PyPy. It may still work if you
+    manually remove ``PyDispatcher`` and install ``PyPyDispatcher`` but this is
+    not guaranteed.
+    (:gh:`7849`, :gh:`8358`, :gh:`8367`)
+
 -   New dependencies:
 
     - aiodns_ >= 3.3.0
@@ -58,8 +63,7 @@ Modified requirements
 
     - typing-extensions_ >= 4.6.0 (on Python 3.12 and lower)
 
-    (:gh:`7894`, :gh:`8213`, :gh:`8303`, :gh:`8376`, :gh:`8378`, :gh:`8382`,
-    :gh:`8393`)
+    (:gh:`7894`, :gh:`8213`, :gh:`8303`, :gh:`8376`, :gh:`8378`, :gh:`8393`)
 
 -   charset-normalizer_ is no longer a dependency.
     (:gh:`8393`)
@@ -105,11 +109,6 @@ Modified requirements
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--   Scrapy no longer officially supports PyPy. It may still work if you
-    manually remove ``PyDispatcher`` and install ``PyPyDispatcher`` but this is
-    not guaranteed.
-    (:gh:`7849`, :gh:`8358`, :gh:`8367`)
 
 -   Changes to the ``fetch()`` shortcut of the :ref:`Scrapy shell
     <topics-shell>`:
@@ -236,8 +235,9 @@ Backward-incompatible changes
     :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`, now sets the
     new :reqmeta:`skip_dupefilter_once` request meta key on retry requests
     instead of setting their :attr:`~scrapy.Request.dont_filter` attribute to
-    ``True``. As a result, requests derived from a retry request, e.g.
-    redirects, are no longer exempt from duplicate filtering.
+    ``True``. As a result, with schedulers that support that meta key, like
+    the default one, requests derived from a retry request, e.g. redirects,
+    are no longer exempt from duplicate filtering.
     (:gh:`6895`, :gh:`8224`)
 
 -   Requests whose meta is copied from a downloaded request, e.g. redirects and
@@ -275,7 +275,8 @@ Backward-incompatible changes
     "https"]`` to extract only the schemes that it extracted before.
     (:gh:`4979`, :gh:`7994`)
 
--   :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+-   :class:`HttpCompressionMiddleware
+    <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>`
     now raises :exc:`~scrapy.exceptions.DecompressionError` for a response body
     that cannot be decompressed, instead of the exception of the underlying
     decompression library, e.g. :exc:`zlib.error`, :exc:`OSError` or
@@ -361,7 +362,28 @@ Backward-incompatible changes
 -   The deprecated ``METAREFRESH_IGNORE_TAGS`` setting and the *ignore_tags*
     parameter of the deprecated ``scrapy.utils.response.get_meta_refresh()``
     function now raise :exc:`ValueError` for tags other than ``script``,
-    ``noscript`` and ``template``.
+    ``noscript`` and ``template``, and only whether ``noscript`` is listed has
+    any effect.
+    (:gh:`8393`)
+
+-   Scrapy no longer calls the deprecated ``spider_opened()`` and
+    ``spider_closed()`` methods of
+    :class:`~scrapy.extensions.spiderstate.SpiderState`, so overriding them in
+    a subclass has no effect. Handle the :signal:`spider_state_loaded` and
+    :signal:`spider_state_saving` signals instead.
+    (:gh:`5153`, :gh:`7650`, :gh:`7656`)
+
+-   Due to changes in w3lib_ 2.6.0:
+
+    - :ref:`Request fingerprints <request-fingerprints>` might differ for some
+      URLs, so that cached responses of
+      :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` and
+      the seen requests of a :ref:`job directory <job-dir>` from an earlier
+      version might not match the same requests.
+
+    - Responses are no longer decoded as UTF-32, and UTF-16 without a BOM is
+      decoded as little-endian.
+
     (:gh:`8393`)
 
 -   A blank line between :ref:`contract <topics-contracts>` lines in a callback
@@ -497,8 +519,11 @@ Deprecations
 
 -   Custom :ref:`schedulers <topics-scheduler>` that do not set
     :attr:`~scrapy.core.scheduler.BaseScheduler.supports_skip_dupefilter_once`
-    to ``True`` are deprecated. Scrapy turns :reqmeta:`skip_dupefilter_once`
-    into ``dont_filter=True`` for them, with a warning. To update a scheduler,
+    to ``True`` are deprecated, including subclasses of the default scheduler
+    that override its
+    :meth:`~scrapy.core.scheduler.BaseScheduler.enqueue_request` method.
+    Scrapy turns :reqmeta:`skip_dupefilter_once` into ``dont_filter=True`` for
+    them, with a warning. To update a scheduler,
     handle :reqmeta:`skip_dupefilter_once` in its
     :meth:`~scrapy.core.scheduler.BaseScheduler.enqueue_request` method and
     set
@@ -531,6 +556,10 @@ Deprecations
     signals instead.
     (:gh:`5153`, :gh:`7650`, :gh:`7656`)
 
+-   Setting the :attr:`ExecutionEngine.running
+    <scrapy.core.engine.ExecutionEngine.running>` attribute is deprecated.
+    (:gh:`8181`)
+
 -   The *spider* and *to_native_str_type* parameters of
     ``scrapy.robotstxt.decode_robotstxt()`` are deprecated and have no effect.
     (:gh:`8316`)
@@ -542,7 +571,7 @@ Deprecations
     passed to :func:`asyncio.run`.
     (:gh:`7201`, :gh:`7681`, :gh:`8327`)
 
--   ``ImagesPipeline.convert_image()`` has a new ``image_format`` keyword-only
+-   ``ImagesPipeline.convert_image()`` has a new *image_format* keyword-only
     parameter with the original image format. Overriding the method without
     that parameter, and calling it without it, are deprecated.
     (:gh:`8198`, :gh:`8457`)
@@ -606,8 +635,9 @@ New features
     (:gh:`5510`, :gh:`7885`)
 
 -   Added a :reqmeta:`body_file` request meta key, which writes the response
-    body into a file as it is downloaded, so that responses of any size can be
-    downloaded without keeping them in memory. Those requests get a
+    body into a file as it is downloaded, so that large responses can be
+    downloaded without keeping them in memory, with :ref:`download handlers
+    that support it <download-handlers-ref>`. Those requests get a
     :class:`~scrapy.http.BodyFileResponse`.
     (:gh:`3880`, :gh:`4620`, :gh:`5044`, :gh:`7987`)
 
@@ -655,18 +685,23 @@ New features
     declare the modes that they support with the new
     :attr:`~scrapy.extensions.feedexport.FeedStorageProtocol.supported_modes`
     attribute.
+
+    The ``-o`` command-line option also follows :setting:`FEED_MODE`, so in a
+    project with :setting:`FEED_MODE` set to ``"create"``, ``-o`` leaves an
+    existing file untouched. Use ``-O`` to overwrite it.
     (:gh:`5580`, :gh:`7826`)
 
 -   Added :class:`~scrapy.dupefilters.DiskDupeFilter`, a
     :setting:`DUPEFILTER_CLASS` that keeps request fingerprints in an SQLite
     database on disk instead of in memory, to lower memory usage on large
     crawls.
-    (:gh:`5307`, :gh:`7952`, :gh:`8322`)
+    (:gh:`5307`, :gh:`7952`)
 
 -   Added a :setting:`JOBDIR_SYNC_EVERY` setting to write the
-    :file:`active.json` file of the :ref:`job directory <job-dir>` while the
-    crawl runs, so that a crawl killed before it can stop cleanly can resume
-    from its latest state. Custom :setting:`SCHEDULER_PRIORITY_QUEUE` classes
+    :file:`active.json` file of the :ref:`job directory <job-dir>`, and the
+    database of :class:`~scrapy.dupefilters.DiskDupeFilter`, while the crawl
+    runs, so that a crawl killed before it can stop cleanly can resume from
+    its latest state. Custom :setting:`SCHEDULER_PRIORITY_QUEUE` classes
     need the new :attr:`~scrapy.pqueues.PriorityQueueProtocol.changed`
     attribute and :meth:`~scrapy.pqueues.PriorityQueueProtocol.state` method to
     support it.
@@ -674,7 +709,7 @@ New features
     :file:`active.json` is also now written atomically, so that it cannot be
     left half-written.
 
-    (:gh:`7978`, :gh:`8152`)
+    (:gh:`7978`, :gh:`8152`, :gh:`8322`)
 
 -   Added :attr:`Request.id <scrapy.Request.id>`, a unique identifier of each
     request, and :attr:`Request.parent_id <scrapy.Request.parent_id>`, the
@@ -756,8 +791,8 @@ New features
     spider.
     (:gh:`2578`, :gh:`8177`)
 
--   Added
-    :class:`~scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware`,
+-   Added :class:`JsonValidationMiddleware
+    <scrapy.downloadermiddlewares.jsonvalidation.JsonValidationMiddleware>`,
     enabled with the :setting:`JSONVALIDATION_ENABLED` setting, which raises
     :exc:`json.JSONDecodeError` for successful
     :class:`~scrapy.http.JsonResponse` responses with an invalid JSON body.
@@ -766,8 +801,8 @@ New features
     :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` is ``True``.
     (:gh:`8215`)
 
--   Added an *error* parameter to :exc:`~scrapy.exceptions.CloseSpider`, and an
-    *error* keyword-only parameter to
+-   Added an *error* keyword-only parameter to
+    :exc:`~scrapy.exceptions.CloseSpider` and
     :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async`, to mark a
     crawl as failed. Failed crawls set the new :stat:`finish_reason_error` stat
     to ``True``, get ``error=True`` in their :signal:`spider_closed` signal,
@@ -780,7 +815,7 @@ New features
 
 -   Added an :setting:`IMAGES_PRESERVE_FORMAT` setting to :ref:`keep images in
     their original format <preserving-image-format>` instead of converting them
-    to JPEG.
+    to JPEG. Stored images then get no file extension.
     (:gh:`1705`, :gh:`2471`, :gh:`8198`)
 
 -   Added an ``item_processor`` :ref:`feed option <feed-options>` to
@@ -837,9 +872,9 @@ New features
     attribute for schedulers to declare that they support it.
     (:gh:`6895`, :gh:`8224`)
 
--   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now lists
-    the contents of a directory when the URL path ends in ``/``, returning the
-    output of the FTP ``NLST`` command, one name per line.
+-   The FTP download handlers now list the contents of a directory when the
+    URL path is empty or ends in ``/``, returning the output of the FTP
+    ``NLST`` command, one name per line.
     (:gh:`1478`, :gh:`2505`, :gh:`8197`)
 
 -   The :ref:`memory usage extension <topics-extensions-ref-memusage>` now
@@ -870,8 +905,9 @@ New features
     class method to read settings, including settings specific to the files or
     images pipeline, or to a pipeline subclass.
 
-    The built-in storages are now configured per pipeline object, instead of
-    through class attributes shared by every pipeline.
+    Pipelines no longer share the settings of built-in storages, so that e.g.
+    the files and images pipelines of a crawl can use different values for
+    :setting:`FILES_STORE_S3_ACL` and :setting:`IMAGES_STORE_S3_ACL`.
     (:gh:`5991`, :gh:`7925`)
 
 -   Added :setting:`FILES_CHECKSUM_ALGORITHM` and
@@ -960,7 +996,10 @@ New features
     :reqmeta:`download_fail_on_dataloss` request meta key are ``False``,
     hitting the download timeout while receiving the response body now
     returns the part of the response received so far, with the ``dataloss``
-    flag, instead of raising :exc:`~scrapy.exceptions.DownloadTimeoutError`.
+    flag, instead of raising :exc:`~scrapy.exceptions.DownloadTimeoutError`,
+    with all built-in download handlers except
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`.
     (:gh:`3407`, :gh:`3492`, :gh:`8084`)
 
 -   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
@@ -1018,9 +1057,9 @@ New features
 
 -   ``item_completed()`` in subclasses of
     :class:`~scrapy.pipelines.media.MediaPipeline` can now be defined as a
-    coroutine function (``async def``), and so can ``stat_file()`` in
-    :ref:`custom media storages <media-pipeline-custom-storage>`, which can now
-    also await :mod:`asyncio` code.
+    coroutine function (``async def``), and ``stat_file()`` in :ref:`custom
+    media storages <media-pipeline-custom-storage>` can now await
+    :mod:`asyncio` code.
     (:gh:`8413`)
 
 -   :meth:`BaseSettings.getlist() <scrapy.settings.BaseSettings.getlist>` now
@@ -1141,8 +1180,9 @@ Improvements
     :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
     (:gh:`5048`, :gh:`7989`)
 
--   :class:`~scrapy.spiders.SitemapSpider` no longer downloads a
-    :file:`robots.txt` file twice when :setting:`ROBOTSTXT_OBEY` is ``True``:
+-   Spiders that request the :file:`robots.txt` file of a host, like
+    :class:`~scrapy.spiders.SitemapSpider`, no longer download it twice when
+    :setting:`ROBOTSTXT_OBEY` is ``True``:
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` now
     parses the response of a request for the :file:`robots.txt` file of a
     host, if it has not downloaded it yet, instead of downloading it again.
@@ -1198,22 +1238,21 @@ Bug fixes
     (:gh:`3716`, :gh:`7991`)
 
 -   :meth:`Request.from_curl() <scrapy.Request.from_curl>` now handles
-    headers without a value (``-H 'Name;'``) as curl does, turns ``-H
-    'Name:'`` into a header set to ``None``, i.e. not sent, ignores headers
-    that curl would not send, supports ``-u`` with a user name and no
-    password, keeps a leading ``$`` in request data, and raises
-    :exc:`ValueError` for an empty command, instead of failing with unexpected
-    exceptions.
+    headers without a value (``-H 'Name;'``) as curl does, supports ``-u`` with
+    a user name and no password, and raises :exc:`ValueError` for an empty
+    command, instead of failing with unexpected exceptions. It also turns ``-H
+    'Name:'`` into a header set to ``None``, i.e. not sent, instead of a header
+    with an empty value, ignores headers that curl would not send, and keeps a
+    leading ``$`` in request data instead of removing it.
 
-    ``scrapy.utils.request.request_to_curl()`` now includes every value of
-    repeated headers, handles headers set to ``None`` and no longer fails on
-    headers that are not valid UTF-8.
+    :meth:`Request.to_curl() <scrapy.Request.to_curl>` now includes every
+    value of repeated headers, handles headers set to ``None`` and no longer
+    fails on headers that are not valid UTF-8.
 
     (:gh:`8131`, :gh:`8138`, :gh:`8148`, :gh:`8267`, :gh:`8291`, :gh:`8292`)
 
--   ``Headers.to_unicode_dict()`` and ``Headers.to_tuple_list()`` no longer
-    raise :exc:`UnicodeDecodeError`; bytes that cannot be decoded are replaced
-    with U+FFFD.
+-   ``Headers.to_tuple_list()`` no longer raises :exc:`UnicodeDecodeError`;
+    bytes that cannot be decoded are replaced with U+FFFD.
     (:gh:`2592`, :gh:`2637`, :gh:`8192`)
 
 -   :func:`copy.copy` on an :class:`~scrapy.Item` now returns a shallow copy,
@@ -1260,7 +1299,8 @@ Bug fixes
 -   Lines of a callback docstring that start with ``@`` but do not name a
     registered :ref:`contract <topics-contracts>`, e.g. a decorator in a code
     example, are now ignored, instead of raising :exc:`KeyError` or making the
-    :command:`check` command treat the callback as having contracts.
+    :command:`check` command treat the callback as having contracts. As a
+    result, a misspelled contract name is also ignored.
     (:gh:`8226`)
 
 -   The :command:`bench` command now listens on a random free port, instead of
@@ -1284,8 +1324,9 @@ Bug fixes
       no longer fails on non-ASCII request headers.
 
     - :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
-      no longer fails on response headers that are not valid UTF-8, and logs
-      a warning when replacing invalid UTF-8 in request headers with U+FFFD.
+      no longer fails on request or response headers that are not valid
+      UTF-8. Invalid UTF-8 in request headers is sent as U+FFFD, with a
+      warning.
 
     - :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` no
       longer fails, or hangs, on request or response headers that are not
@@ -1329,14 +1370,13 @@ Bug fixes
     (:gh:`3666`, :gh:`8237`)
 
 -   When resuming a crawl from a :ref:`job directory <job-dir>`, feeds whose
-    URI uses ``%(batch_id)d`` now continue from the last batch ID of the
-    previous run, instead of starting from 1 again and overwriting the
-    existing files.
+    URI uses ``%(batch_id)d`` now continue the batch numbering of the previous
+    run, instead of starting from 1 again and overwriting the existing files.
     (:gh:`5153`, :gh:`7650`, :gh:`7656`)
 
 -   :ref:`Item exporters <topics-exporters>` now serialize nested items, and
     lists of them, using the serializers declared in their own fields.
-    (:gh:`3888`, :gh:`3890`, :gh:`8057`, :gh:`8461`)
+    (:gh:`3888`, :gh:`3890`, :gh:`8057`)
 
 -   Fixed :class:`~scrapy.utils.asyncio.AsyncioLoopingCall` sometimes calling
     its function twice in a row when the event loop woke it up slightly early,
@@ -1395,9 +1435,9 @@ Bug fixes
     with ``rel="alternate"``, instead of any link, e.g. canonical ones.
     (:gh:`8390`)
 
--   The downloader and its download handlers are now also closed when the
-    engine is closed without having been started, e.g. when opening the spider
-    fails.
+-   Download handlers are now closed when the engine is closed without having
+    been started, e.g. when opening the spider fails, and the downloader is now
+    closed when the engine is stopped without a spider.
     (:gh:`8167`, :gh:`8377`)
 
 -   The Scrapy :command:`shell` no longer uses ptpython_ on Windows when the
@@ -1498,7 +1538,8 @@ Documentation
     (:gh:`5259`, :gh:`5272`)
 
 -   Other documentation improvements and fixes.
-    (:gh:`5859`, :gh:`7114`, :gh:`8151`, :gh:`8161`, :gh:`8403`, :gh:`8404`)
+    (:gh:`5859`, :gh:`7114`, :gh:`8151`, :gh:`8161`, :gh:`8403`, :gh:`8404`,
+    :gh:`8436`, :gh:`8453`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~

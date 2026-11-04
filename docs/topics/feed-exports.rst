@@ -447,8 +447,8 @@ the feed that declares them. Items are exported as returned, so the
 :signal:`item_scraped` signal, :ref:`item pipelines <topics-item-pipeline>` and
 the ``item_scraped_count`` stat still see the item as scraped; use item
 processors for output formatting, and item pipelines for anything that should
-apply to the item itself. The number of exported entries per feed is reported
-as the ``feedexport/item_count/<storage class>`` stat.
+apply to the item itself. The number of exported entries is reported per
+storage class, as the ``feedexport/item_count/<storage class>`` stat.
 
 
 .. _post-processing:
