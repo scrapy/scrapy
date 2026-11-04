@@ -16,6 +16,7 @@ from tests.benchmarks import NullDownloadHandler, crawl
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+    from pathlib import Path
 
     from pytest_codspeed import BenchmarkFixture  # type: ignore[import-not-found]
 
@@ -343,6 +344,24 @@ def test_overhead_items(
     benchmark(
         lambda: _crawl_tree(settings, domains=1, pages=ITEM_REQUESTS, items=items)
     )
+
+
+def test_overhead_feed(benchmark: BenchmarkFixture, tmp_path: Path) -> None:
+    """Overhead of exporting the items of a crawl to a feed.
+
+    It runs the crawl of the "many" scenario of ``test_overhead_items`` with a
+    JSON Lines feed added, so that the difference between both is the cost of
+    the feed export.
+    """
+    path = tmp_path / "items.jsonl"
+    # Every round writes the same file.
+    settings = {"FEEDS": {path: {"format": "jsonlines", "mode": "overwrite"}}}
+
+    def run() -> None:
+        _crawl_tree(settings, domains=1, pages=ITEM_REQUESTS, items=ITEMS_PER_RESPONSE)
+        assert path.read_bytes().count(b"\n") == ITEM_REQUESTS * ITEMS_PER_RESPONSE
+
+    benchmark(run)
 
 
 def test_overhead_item_concurrency(benchmark: BenchmarkFixture) -> None:
