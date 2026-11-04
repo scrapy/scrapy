@@ -358,8 +358,9 @@ class Downloader:
     def _size_stall_ended(self) -> bool:
         """Return whether to let a scheduled request through
         RESPONSE_MAX_ACTIVE_SIZE because it has held scheduled requests back
-        for _SIZE_BYPASS_DELAY seconds with no download in progress and no
-        response released, or because garbage collection lifted it.
+        for _SIZE_BYPASS_DELAY seconds with no download or scraping in
+        progress and no response released, or because garbage collection
+        lifted it.
 
         This keeps responses that something keeps alive, e.g. in a reference
         cycle, from stalling the crawl.
@@ -371,7 +372,17 @@ class Downloader:
         scheduled = bool(
             engine and engine._slot and engine._slot.scheduler.has_pending_requests()
         )
-        if self.active or not scheduled or start_time is None or current_size < size:
+        # A response that is still being scraped is not garbage yet.
+        scraping = bool(
+            engine and engine.scraper.slot and not engine.scraper.slot.is_idle()
+        )
+        if (
+            self.active
+            or scraping
+            or not scheduled
+            or start_time is None
+            or current_size < size
+        ):
             self._size_stall = (current_time, current_size)
             return False
         if current_time - start_time < self._SIZE_BYPASS_DELAY:

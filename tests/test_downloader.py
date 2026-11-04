@@ -8,8 +8,9 @@ import pytest
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
-from scrapy import Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.core.downloader import Downloader
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
@@ -820,22 +821,48 @@ class TestRequestBackout:
         """
         monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
         events: list[int | str] = []
+        scheduled_reached: Deferred[None] = Deferred()
+
+        class Handler(DataURIDownloadHandler):
+            async def download_request(self, request: Request) -> Response:
+                # Keeps the slot busy until the scheduled requests are queued
+                # behind the held-back one.
+                if request.meta.get("wait_for_scheduled"):
+                    await maybe_deferred_to_future(scheduled_reached)
+                return await super().download_request(request)
 
         class TestSpider(Spider):
             name = "test"
             start_urls = ["data:,"]
             custom_settings = {
+                "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
                 "DOWNLOAD_DELAY": 0.2,
                 "DOWNLOAD_DELAY_JITTER": 0,
+                "DOWNLOAD_HANDLERS": {"data": Handler},
                 "RESPONSE_MAX_ACTIVE_SIZE": 1000,
                 "RESPONSE_ROUGH_SIZE": 1,
             }
+            scheduled_count = 0
+
+            def request_reached_downloader(self, request: Request) -> None:
+                if request.url[-1].isdigit():
+                    self.scheduled_count += 1
+                    if self.scheduled_count == 4:
+                        scheduled_reached.callback(None)
 
             async def parse(self, response):
                 assert self.crawler.engine
+                self.crawler.signals.connect(
+                    self.request_reached_downloader,
+                    signals.request_reached_downloader,
+                )
                 download_async = self.crawler.engine.download_async
                 kept_dfd = deferred_from_coro(
-                    download_async(Request(f"data:,{'a' * 2000}"))
+                    download_async(
+                        Request(
+                            f"data:,{'a' * 2000}", meta={"wait_for_scheduled": True}
+                        )
+                    )
                 )
                 held_back_dfd = deferred_from_coro(download_async(Request("data:,a")))
                 for n in range(4):
