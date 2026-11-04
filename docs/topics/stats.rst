@@ -647,10 +647,8 @@ one per actual value of the placeholder.
 .. stat:: response_max_active_size/bypass_count
 
 ``response_max_active_size/bypass_count``
-    Number of requests sent with
-    :meth:`~scrapy.core.engine.ExecutionEngine.download_async` that were
-    downloaded despite :setting:`RESPONSE_MAX_ACTIVE_SIZE`, to keep the crawl
-    from stalling.
+    Number of requests that were downloaded despite
+    :setting:`RESPONSE_MAX_ACTIVE_SIZE`, to keep the crawl from stalling.
 
 .. stat:: response_received_count
 

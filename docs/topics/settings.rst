@@ -2109,13 +2109,12 @@ by :setting:`RESPONSE_ROUGH_SIZE` sent with
 responses can take up to about twice this value, plus the size of the responses
 to those requests.
 
-If requests sent with
-:meth:`~scrapy.core.engine.ExecutionEngine.download_async` have been waiting
-for 5 seconds with none of them being downloaded and no response to them
-released, e.g. because your code keeps one such response while it awaits
-another, Scrapy lets one of them through. Each time that happens, memory use
-can grow by one more response, and the
-:stat:`response_max_active_size/bypass_count` stat increases.
+If requests have been waiting for 5 seconds with none being downloaded and no
+response released, e.g. because your code keeps responses, Scrapy runs Python's
+garbage collector, and if that releases no response, lets one request through.
+Each time that happens, memory use can grow by one more response, and the
+:stat:`response_max_active_size/bypass_count` stat increases. Scrapy logs a
+warning the first time it does.
 
 Scrapy logs an info-level message the first time the limit is reached. To see
 how long Scrapy stopped taking requests from the scheduler because of it over a
@@ -2127,9 +2126,9 @@ stat.
     Responses that your code keeps a strong reference to, e.g. in the
     :attr:`.Request.meta` of a scheduled request or in a component attribute,
     count toward this limit until that reference is gone, so accumulating them
-    can pause a crawl indefinitely. So do responses in a reference cycle,
-    until Python's garbage collector frees them. To find out whether your
-    crawl keeps responses alive, see :ref:`topics-leaks`.
+    slows down a crawl. So do responses in a reference cycle, until Python's
+    garbage collector frees them. To find out whether your crawl keeps
+    responses alive, see :ref:`topics-leaks`.
 
 .. setting:: RESPONSE_ROUGH_SIZE
 

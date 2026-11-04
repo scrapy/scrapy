@@ -9,6 +9,7 @@ from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider
 from scrapy.core.downloader import Downloader
+from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response
@@ -81,6 +82,24 @@ def _assert_scraper_slot_deprecation(
 
 def _raise(response: Response) -> None:
     raise ValueError(response.url)
+
+
+async def _crawl_without_gc(crawler: Crawler) -> None:
+    # The log capture of pytest keeps the tracebacks of logged errors, and with
+    # them the responses they refer to.
+    logging.disable()
+    gc.disable()
+    try:
+        crawl_deferred = crawler.crawl()
+        # A stall would otherwise hang the test.
+        timeout = call_later(10, crawl_deferred.cancel)
+        try:
+            await maybe_deferred_to_future(crawl_deferred)
+        finally:
+            timeout.cancel()
+    finally:
+        gc.enable()
+        logging.disable(logging.NOTSET)
 
 
 class gt:
@@ -825,6 +844,88 @@ class TestRequestBackout:
         assert "<GET data:,0>" in messages[0]
         assert messages[0].count("<200 data:,") == examples
         assert f">{more}, have used" in messages[0]
+
+    @coroutine_test
+    async def test_response_max_active_size_scheduled_bypass(self, monkeypatch):
+        """Code that keeps responses to scheduled requests above the limit
+        slows down instead of stalling.
+        """
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
+        monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.01)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = [f"data:,{n}" for n in range(3)]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+            kept: list[Response] = []
+
+            def parse(self, response):
+                self.kept.append(response)
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            crawl_deferred = crawler.crawl()
+            # A stall would otherwise hang the test.
+            timeout = call_later(10, crawl_deferred.cancel)
+            try:
+                await maybe_deferred_to_future(crawl_deferred)
+            finally:
+                timeout.cancel()
+
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 3
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") == 2
+        records = [
+            record
+            for record in self.caplog.records
+            if record.getMessage().startswith("Letting")
+        ]
+        assert len(records) == 1
+        assert records[0].levelno == logging.WARNING
+        assert "<200 data:," in records[0].getMessage()
+
+    @pytest.mark.parametrize("awaited", [False, True])
+    @coroutine_test
+    async def test_response_max_active_size_collects_cycles(self, monkeypatch, awaited):
+        """Responses in a reference cycle stop counting toward the limit once
+        it holds back requests, even with automatic garbage collection
+        disabled.
+        """
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
+        monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.01)
+
+        def keep_in_cycle(response: Response) -> None:
+            cycle: list[Any] = [response]
+            cycle.append(cycle)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"] if awaited else [f"data:,{n}" for n in range(3)]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            async def parse(self, response):
+                if not awaited:
+                    keep_in_cycle(response)
+                    yield {}
+                    return
+                assert self.crawler.engine
+                for n in range(3):
+                    keep_in_cycle(
+                        await self.crawler.engine.download_async(Request(f"data:,{n}"))
+                    )
+                    yield {}
+
+        crawler = get_crawler(TestSpider)
+        await _crawl_without_gc(crawler)
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 3
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") is None
 
 
 class _NoStatStore:

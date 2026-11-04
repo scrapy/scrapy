@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 import random
 import warnings
 from collections import deque
@@ -37,7 +38,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable, Generator, Iterable
 
     from twisted.internet.task import LoopingCall
 
@@ -71,6 +72,14 @@ def _start_delay_countdown(request: Request) -> None:
     delay = float(delay)
     request.meta[_DELAY_DEADLINE_META_KEY] = (delay, time() + delay)
     request.meta["delayed"] = [*request.meta.get("delayed", []), delay]
+
+
+def _examples(responses: Iterable[Response]) -> str:
+    held = [str(response) for response in responses]
+    examples = ", ".join(held[:3])
+    if len(held) > 3:
+        examples += f" (+{len(held) - 3} more)"
+    return examples
 
 
 @dataclass(slots=True, eq=False)
@@ -217,9 +226,8 @@ _STAMPED_SLOT_META_KEY = "_download_slot_stamp"
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
-    # Seconds that requests held back by RESPONSE_MAX_ACTIVE_SIZE in
-    # _next_transfer_index() wait for a release before one of them is let
-    # through.
+    # Seconds that requests held back by RESPONSE_MAX_ACTIVE_SIZE wait for a
+    # release before one of them is let through.
     _SIZE_BYPASS_DELAY: float = 5.0
 
     def __init__(self, crawler: Crawler):
@@ -259,6 +267,11 @@ class Downloader:
         self._size_bypass_call: CallLaterResult | None = None
         self._size_bypass_due = False
         self._size_bypass_warned = False
+        # (start_time, total_size): since when RESPONSE_MAX_ACTIVE_SIZE has held
+        # back scheduled requests with no download in progress, and the total
+        # active size then, or (None, 0) if it is not holding them back.
+        self._size_stall: tuple[float | None, int] = (None, 0)
+        self._size_stall_warned = False
 
     @property
     def randomize_delay(self) -> bool:
@@ -324,7 +337,7 @@ class Downloader:
         if 0 < self.total_concurrency <= len(self.active):
             self._record_backout("concurrency")
             return True
-        if self._exceeds_max_active_size():
+        if self._exceeds_max_active_size() and not self._size_stall_ended():
             self._record_backout("response_max_active_size")
             if not self._max_active_size_warned:
                 self._max_active_size_warned = True
@@ -338,8 +351,56 @@ class Downloader:
                     f"stat. This message is only logged once."
                 )
             return True
+        self._size_stall = (None, 0)
         self._record_backout(None)
         return False
+
+    def _size_stall_ended(self) -> bool:
+        """Return whether to let a scheduled request through
+        RESPONSE_MAX_ACTIVE_SIZE because it has held scheduled requests back
+        for _SIZE_BYPASS_DELAY seconds with no download in progress and no
+        response released, or because garbage collection lifted it.
+
+        This keeps responses that something keeps alive, e.g. in a reference
+        cycle, from stalling the crawl.
+        """
+        start_time, size = self._size_stall
+        current_time = monotonic()
+        current_size = self.middleware._total_active_size
+        if self.active or start_time is None or current_size < size:
+            self._size_stall = (current_time, current_size)
+            return False
+        if current_time - start_time < self._SIZE_BYPASS_DELAY:
+            return False
+        self._size_stall = (None, 0)
+        if self._collect_responses():
+            return not self._exceeds_max_active_size()
+        assert self._stats is not None
+        self._stats.inc_value("response_max_active_size/bypass_count")
+        if not self._size_stall_warned:
+            self._size_stall_warned = True
+            logger.warning(
+                f"Letting a request through RESPONSE_MAX_ACTIVE_SIZE: "
+                f"responses, e.g. "
+                f"{_examples(self.middleware._tracked_responses)}, have used "
+                f"{current_size} B for at least {self._SIZE_BYPASS_DELAY:g} "
+                f"seconds with no request being downloaded, and garbage "
+                f"collection did not release them. If your code keeps "
+                f"responses, e.g. in the meta or cb_kwargs of scheduled "
+                f"requests, release them. See "
+                f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+                f"and the response_max_active_size/bypass_count stat. "
+                f"This message is only logged once."
+            )
+        return True
+
+    def _collect_responses(self) -> bool:
+        """Run the garbage collector and return whether it released any
+        response counted toward RESPONSE_MAX_ACTIVE_SIZE.
+        """
+        size = self.middleware._response_active_size
+        gc.collect()
+        return self.middleware._response_active_size < size
 
     def _exceeds_max_active_size(self) -> bool:
         max_active_size = self.middleware._max_active_size
@@ -610,6 +671,11 @@ class Downloader:
 
     def _size_bypass_timeout(self) -> None:
         self._size_bypass_call = None
+        if self._collect_responses():
+            # Give the release a chance to resume held-back requests before
+            # letting one through.
+            self._schedule_size_bypass()
+            return
         # Stays due until a held-back request uses it, which a slot waiting
         # for its download delay or for a free transfer slot does later.
         self._size_bypass_due = True
@@ -622,17 +688,14 @@ class Downloader:
         if self._size_bypass_warned:
             return
         self._size_bypass_warned = True
-        held = [str(response) for response in self.middleware._unscheduled_responses]
-        examples = ", ".join(held[:3])
-        if len(held) > 3:
-            examples += f" (+{len(held) - 3} more)"
-        logger.info(
+        logger.warning(
             f"Letting {request} through RESPONSE_MAX_ACTIVE_SIZE: responses "
             f"to awaited requests or requests sent with download_async(), "
-            f"e.g. {examples}, have used "
-            f"{self.middleware._unscheduled_response_active_size} B for at "
-            f"least {self._SIZE_BYPASS_DELAY:g} seconds with none of those "
-            f"requests being downloaded. If your code keeps such a response "
+            f"e.g. {_examples(self.middleware._unscheduled_responses)}, have "
+            f"used {self.middleware._unscheduled_response_active_size} B for "
+            f"at least {self._SIZE_BYPASS_DELAY:g} seconds with none of those "
+            f"requests being downloaded, and garbage collection did not "
+            f"release them. If your code keeps such a response "
             f"while it awaits another such request, release it first. See "
             f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
             f"and the response_max_active_size/bypass_count stat. "
