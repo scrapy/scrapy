@@ -1587,6 +1587,9 @@ TextResponse objects
         Constructs an absolute url by combining :attr:`base_url` with a
         possible relative url.
 
+.. autoclass:: MetaRefresh
+    :members:
+
 .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
 .. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 

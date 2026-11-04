@@ -11,7 +11,7 @@ import json
 import weakref
 from contextlib import suppress
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 from urllib.parse import urljoin
 
 import frostwork
@@ -46,6 +46,20 @@ class _Unset(Enum):
 _UNSET = _Unset.UNSET
 
 
+class MetaRefresh(NamedTuple):
+    """Meta refresh of a :class:`TextResponse`, as
+    :attr:`TextResponse.meta_refresh` reports it.
+
+    .. versionadded:: VERSION
+    """
+
+    delay: float
+    """Seconds to wait before the refresh."""
+
+    url: str
+    """Absolute URL to load."""
+
+
 class TextResponse(Response):
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
     __slots__ = (
@@ -65,9 +79,7 @@ class TextResponse(Response):
         self._cached_selector: Selector | None = None
         self._cached_decoded_json: object = _UNSET
         self._base_url: str | None = None
-        self._meta_refresh: frostwork.MetaRefresh | Literal[_Unset.UNSET] | None = (
-            _UNSET
-        )
+        self._meta_refresh: MetaRefresh | Literal[_Unset.UNSET] | None = _UNSET
         super().__init__(*args, **kwargs)
 
     def _set_body(self, body: str | bytes | None) -> None:
@@ -153,10 +165,9 @@ class TextResponse(Response):
         self._base_url = value
 
     @property
-    def meta_refresh(self) -> frostwork.MetaRefresh | None:
-        """Named tuple ``(delay, url)`` of the meta refresh that a web browser
-        with JavaScript enabled would follow, with *url* absolute, or
-        ``None``.
+    def meta_refresh(self) -> MetaRefresh | None:
+        """:class:`MetaRefresh` that a web browser with JavaScript enabled
+        would follow, or ``None``.
 
         .. versionadded:: VERSION
 
@@ -169,7 +180,7 @@ class TextResponse(Response):
 
     @meta_refresh.setter
     def meta_refresh(self, value: tuple[float, str] | None) -> None:
-        self._meta_refresh = None if value is None else frostwork.MetaRefresh(*value)
+        self._meta_refresh = None if value is None else MetaRefresh(*value)
 
     def _navigate(self) -> None:
         navigation = frostwork.navigation(
@@ -182,7 +193,7 @@ class TextResponse(Response):
         if self._base_url is None:
             self._base_url = navigation.base_url
         if self._meta_refresh is _UNSET:
-            self._meta_refresh = navigation.meta_refresh
+            self.meta_refresh = navigation.meta_refresh
 
     @memoizemethod_noargs
     def _headers_encoding(self) -> str | None:
@@ -192,7 +203,9 @@ class TextResponse(Response):
     def _body_inferred_encoding(self) -> str:
         if self._cached_benc is None:
             content_type = self.headers.get(b"Content-Type") or b""
-            self._cached_benc = html_encoding(content_type.decode("latin-1"), self.body)
+            self._cached_benc = html_encoding(
+                content_type.decode("latin-1"), self.body, url=self.url
+            )
         return self._cached_benc
 
     @memoizemethod_noargs

@@ -49,7 +49,7 @@ _IGNORABLE_TAGS = {"script", "noscript", "template"}
 
 def _get_meta_refresh(
     response: TextResponse, *, scripting: bool
-) -> frostwork.MetaRefresh | None:
+) -> tuple[float, str] | None:
     if scripting:
         return response.meta_refresh
     return frostwork.navigation(

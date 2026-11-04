@@ -9,7 +9,7 @@ from unittest import mock
 import frostwork
 import pytest
 
-from scrapy.http import HtmlResponse, TextResponse, XmlResponse
+from scrapy.http import HtmlResponse, MetaRefresh, TextResponse, XmlResponse
 from scrapy.selector import Selector
 from tests.utils.bases.http_response import TestResponseBase
 
@@ -185,11 +185,17 @@ class TestTextResponse(TestResponseBase):
         assert r._declared_encoding() is None
         self._assert_response_values(r, "utf-8", "\xa3")
 
-    def test_body_inferred_encoding_of_undeclared_legacy_page(self):
+    @pytest.mark.parametrize(
+        ("url", "encoding"),
+        [("http://www.example.com", "cp932"), ("http://www.example.cn", "gbk")],
+    )
+    def test_body_inferred_encoding_of_undeclared_legacy_page(
+        self, url: str, encoding: str
+    ) -> None:
         body = "ICD10 国際疾病分類第10版2013年版 病名マスター".encode("shift-jis")
-        r = self.response_class("http://www.example.com", body=body)
+        r = self.response_class(url, body=body)
         assert r._declared_encoding() is None
-        assert r.encoding == "cp932"
+        assert r.encoding == encoding
         assert r.text == body.decode(r.encoding)
 
     def test_utf16(self):
@@ -413,6 +419,7 @@ class TestTextResponse(TestResponseBase):
         with mock.patch("frostwork.navigation", wraps=frostwork.navigation) as nav:
             assert response.base_url == "http://www.example.com/a/"
             assert response.meta_refresh == (0.0, "http://www.example.com/a/b")
+            assert isinstance(response.meta_refresh, MetaRefresh)
         nav.assert_called_once()
 
     def test_navigation_set(self) -> None:
@@ -428,7 +435,7 @@ class TestTextResponse(TestResponseBase):
         response.meta_refresh = (1.0, "http://example.net/")
         assert response.base_url == "http://www.example.com/a/"
         assert response.meta_refresh == (1.0, "http://example.net/")
-        assert isinstance(response.meta_refresh, frostwork.MetaRefresh)
+        assert isinstance(response.meta_refresh, MetaRefresh)
 
     def test_follow_selector(self):
         resp = self._links_response()
