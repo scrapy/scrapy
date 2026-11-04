@@ -271,6 +271,33 @@ Disallow: /some/randome/page.html
         assert "Robotstxt address not found" in caplog.text
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
 
+    @pytest.mark.parametrize(
+        "follow_up_url",
+        ["http://site.local/robots.txt", "https://site.local/robots.txt"],
+    )
+    @pytest.mark.parametrize("fails", [False, True])
+    @coroutine_test
+    async def test_robotstxt_request_retried_or_redirected(
+        self, follow_up_url: str, fails: bool
+    ) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        request = Request("http://site.local/robots.txt")
+        await middleware.process_request(request)
+        follow_up = request.replace(url=follow_up_url)
+        await self.assertNotIgnored(follow_up, middleware)
+        blocked = Request("http://site.local/blocked")
+        if fails:
+            err = CannotResolveHostError("Robotstxt address not found")
+            await middleware.process_exception(follow_up, err)
+            await self.assertNotIgnored(blocked, middleware)
+        else:
+            body = b"User-agent: *\nDisallow: /blocked\n"
+            response = TextResponse(follow_up_url, body=body)
+            await middleware.process_response(follow_up, response)
+            await self.assertIgnored(blocked, middleware)
+        assert not self.crawler.engine.download_async.called
+
     @coroutine_test
     async def test_robotstxt_process_exception_ignores_unrelated_request(
         self,

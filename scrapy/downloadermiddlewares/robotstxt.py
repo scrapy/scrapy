@@ -73,6 +73,8 @@ class RobotsTxtMiddleware:
         self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
         self.crawler: Crawler = crawler
         self._stats: StatsCollector = crawler.stats
+        # Keyed by scheme and network location, which identify the robots.txt
+        # file that applies to a URL (RFC 9309).
         self._parsers: dict[
             tuple[str, str], RobotParser | Deferred[RobotParser | None] | None
         ] = {}
@@ -114,12 +116,18 @@ class RobotsTxtMiddleware:
             return
         if request.url.startswith("data:") or request.url.startswith("file:"):
             return
+        if "_robotstxt_origin" in request.meta:
+            # A redirect or retry of a robots.txt request let through below.
+            return
         origin = _origin(request)
         if origin not in self._parsers and self._is_robotstxt_request(request):
             # Let this request download normally and use its own response as
             # this host's robots.txt, instead of triggering a second,
-            # separate download of the same URL.
+            # separate download of the same URL. The meta key survives
+            # redirects and retries, whose final response or exception is the
+            # one this middleware gets.
             self._parsers[origin] = Deferred()
+            request.meta["_robotstxt_origin"] = origin
             self._stats.inc_value("robotstxt/request_count")
             return
         rp = await self.robot_parser(request)
@@ -129,13 +137,8 @@ class RobotsTxtMiddleware:
     async def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Response:
-        origin = _origin(request)
-        parser = self._parsers.get(origin)
-        if (
-            isinstance(parser, Deferred)
-            and not parser.called
-            and self._is_robotstxt_request(request)
-        ):
+        origin = request.meta.get("_robotstxt_origin")
+        if origin is not None and isinstance(self._parsers.get(origin), Deferred):
             await self._parse_robots(response, origin, request)
         return response
 
@@ -143,21 +146,12 @@ class RobotsTxtMiddleware:
     async def process_exception(
         self, request: Request, exception: Exception, spider: Spider | None = None
     ) -> None:
-        origin = _origin(request)
-        parser = self._parsers.get(origin)
-        if (
-            isinstance(parser, Deferred)
-            and not parser.called
-            and self._is_robotstxt_request(request)
-        ):
+        origin = request.meta.get("_robotstxt_origin")
+        if origin is not None and isinstance(self._parsers.get(origin), Deferred):
             self._robots_error(exception, origin, request)
 
     @staticmethod
     def _is_robotstxt_request(request: Request) -> bool:
-        # robot_parser() handles its own internal robots.txt request directly,
-        # without going through process_response()/process_exception().
-        if request.meta.get("dont_obey_robotstxt"):
-            return False
         url = urlparse_cached(request)
         return request.url == f"{url.scheme}://{url.netloc}/robots.txt"
 
