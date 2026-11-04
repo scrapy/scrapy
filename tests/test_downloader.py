@@ -820,8 +820,9 @@ class TestRequestBackout:
         delay. Once it is through, scheduled requests are not held back.
         """
         monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
-        events: list[int | str] = []
+        downloads: list[int | str] = []
         scheduled_reached: Deferred[None] = Deferred()
+        scheduled_downloaded: Deferred[None] = Deferred()
 
         class Handler(DataURIDownloadHandler):
             async def download_request(self, request: Request) -> Response:
@@ -850,11 +851,22 @@ class TestRequestBackout:
                     if self.scheduled_count == 4:
                         scheduled_reached.callback(None)
 
+            def response_downloaded(self, response: Response) -> None:
+                if response.url == "data:,a":
+                    downloads.append("a")
+                elif response.url[-1].isdigit():
+                    downloads.append(int(response.text))
+                    if len(downloads) == 5:
+                        scheduled_downloaded.callback(None)
+
             async def parse(self, response):
                 assert self.crawler.engine
                 self.crawler.signals.connect(
                     self.request_reached_downloader,
                     signals.request_reached_downloader,
+                )
+                self.crawler.signals.connect(
+                    self.response_downloaded, signals.response_downloaded
                 )
                 download_async = self.crawler.engine.download_async
                 kept_dfd = deferred_from_coro(
@@ -869,21 +881,25 @@ class TestRequestBackout:
                     yield Request(f"data:,{n}", callback=self.parse_b)
                 kept = await maybe_deferred_to_future(kept_dfd)
                 await maybe_deferred_to_future(held_back_dfd)
-                events.append("a")
-                await sleep(0.5)
-                events.append("b")
+                await maybe_deferred_to_future(scheduled_downloaded)
                 assert kept
                 yield {}
 
             def parse_b(self, response):
-                events.append(int(response.text))
+                pass
 
         crawler = get_crawler(TestSpider)
-        await maybe_deferred_to_future(crawler.crawl())
+        crawl_deferred = crawler.crawl()
+        # Scheduled requests held back after the bypass would otherwise hang
+        # the test.
+        timeout = call_later(10, crawl_deferred.cancel)
+        try:
+            await maybe_deferred_to_future(crawl_deferred)
+        finally:
+            timeout.cancel()
 
         assert crawler.stats
-        assert [event for event in events if event != "b"] == [3, "a", 2, 1, 0]
-        assert events.index(2) < events.index("b")
+        assert downloads == [3, "a", 2, 1, 0]
         assert crawler.stats.get_value("response_max_active_size/bypass_count") == 1
 
     @pytest.mark.parametrize(
