@@ -367,7 +367,11 @@ class Downloader:
         start_time, size = self._size_stall
         current_time = monotonic()
         current_size = self.middleware._total_active_size
-        if self.active or start_time is None or current_size < size:
+        engine = self.crawler.engine
+        scheduled = bool(
+            engine and engine._slot and engine._slot.scheduler.has_pending_requests()
+        )
+        if self.active or not scheduled or start_time is None or current_size < size:
             self._size_stall = (current_time, current_size)
             return False
         if current_time - start_time < self._SIZE_BYPASS_DELAY:
