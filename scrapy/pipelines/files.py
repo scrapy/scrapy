@@ -12,6 +12,7 @@ import functools
 import hashlib
 import logging
 import mimetypes
+import shutil
 import time
 import warnings
 from collections import defaultdict
@@ -137,7 +138,9 @@ class FSFilesStore:
     ) -> None:
         absolute_path = self._get_filesystem_path(path)
         self._mkdir(absolute_path.parent, info)
-        absolute_path.write_bytes(buf.getvalue())
+        buf.seek(0)
+        with absolute_path.open("wb") as f:
+            shutil.copyfileobj(buf, f)
 
     def stat_file(
         self, path: str | PathLike[str], info: MediaPipeline.SpiderInfo
@@ -457,10 +460,11 @@ class GCSFilesStore:
         blob.metadata = {k: str(v) for k, v in meta.items()} if meta else {}
         timeout = self.UPLOAD_TIMEOUT
         kwargs = {} if timeout is None else {"timeout": timeout}
+        buf.seek(0)
         return deferred_from_coro(
             run_in_thread(
-                blob.upload_from_string,
-                data=buf.getvalue(),
+                blob.upload_from_file,
+                buf,
                 content_type=self._get_content_type(headers),
                 predefined_acl=self.POLICY,
                 **kwargs,
