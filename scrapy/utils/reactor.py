@@ -278,10 +278,10 @@ def is_asyncio_reactor_installed() -> bool:
     warnings.warn(
         "is_asyncio_reactor_installed() is deprecated."
         " If you need to check for asyncio support, use is_asyncio_available()."
-        " If you need to check whether a reactor is installed or not,"
-        " use is_reactor_installed() or is_reactorless()."
-        " If you need to check that specifically the asyncio reactor (or the non-asyncio one)"
-        " is installed, use is_reactor_installed() and is_asyncio_available().",
+        " If you need to check whether a reactor is installed,"
+        " use is_reactor_installed()."
+        " See https://docs.scrapy.org/en/latest/topics/asyncio.html#asyncio-old-versions"
+        " about supporting older Scrapy versions.",
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
