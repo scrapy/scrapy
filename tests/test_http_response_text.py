@@ -9,6 +9,7 @@ from unittest import mock
 import frostwork
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, MetaRefresh, TextResponse, XmlResponse
 from scrapy.selector import Selector
 from tests.utils.bases.http_response import TestResponseBase
@@ -33,14 +34,14 @@ class TestTextResponse(TestResponseBase):
     def test_replace(self) -> None:
         super().test_replace()
         r1 = self.response_class(
-            "http://www.example.com", body="hello", encoding="cp852"
+            "http://www.example.com", body="hello", encoding="cp866"
         )
         r2 = r1.replace(url="http://www.example.com/other")
         r3 = r1.replace(url="http://www.example.com/other", encoding="latin1")
 
         assert isinstance(r2, self.response_class)
         assert r2.url == "http://www.example.com/other"
-        assert r2.encoding == "cp852"
+        assert r2.encoding == "cp866"
         assert r3.url == "http://www.example.com/other"
         assert r3._declared_encoding() == "latin1"
 
@@ -208,6 +209,34 @@ class TestTextResponse(TestResponseBase):
         )
         assert r.encoding == "utf-16"
         assert r.text == "hi"
+
+    @pytest.mark.parametrize(
+        ("encoding", "body", "text"),
+        [
+            ("cp437", "<p>é", "<p>é"),
+            ("hz", b"~{Dc:C~}", "你好"),
+            ("foo", b"\xc2\xa3", "£"),
+            ("cp437", codecs.BOM_UTF8 + b"\xc2\xa3", "£"),
+        ],
+    )
+    def test_non_browser_encoding(
+        self, encoding: str, body: str | bytes, text: str
+    ) -> None:
+        with pytest.warns(ScrapyDeprecationWarning, match=repr(encoding)):
+            r = self.response_class(
+                "http://www.example.com", body=body, encoding=encoding
+            )
+        assert r.encoding == encoding
+        assert r.text == text
+
+    def test_replace_replacement_encoding(self) -> None:
+        r = self.response_class(
+            "http://www.example.com",
+            headers={"Content-Type": ["text/html; charset=hz"]},
+            body=b"~{Dc:C~}",
+        )
+        assert r.encoding == "replacement"
+        assert r.replace(url="http://www.example.com/other").text == "�"
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(

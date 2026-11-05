@@ -1454,10 +1454,12 @@ TextResponse objects
     is the same as for the :class:`Response` class and is not documented here.
 
     :param encoding: is a string which contains the encoding to use for this
-       response. If you create a :class:`TextResponse` object with a string as
-       body, it will be converted to bytes encoded using this encoding. If
-       *encoding* is ``None`` (default), the encoding will be looked up in the
-       response headers and body instead.
+       response, as a label of the `Encoding Standard`_, which web browsers
+       implement, or as the name of the Python codec of one of its encodings,
+       e.g. ``cp932`` for Shift_JIS. If you create a :class:`TextResponse`
+       object with a string as body, it will be converted to bytes encoded
+       using this encoding. If *encoding* is ``None`` (default), the encoding
+       will be looked up in the response headers and body instead.
     :type encoding: str
 
     :class:`TextResponse` objects support the following attributes in addition
@@ -1591,6 +1593,7 @@ TextResponse objects
     :members:
 
 .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+.. _Encoding Standard: https://encoding.spec.whatwg.org/
 .. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 

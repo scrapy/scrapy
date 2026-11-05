@@ -8,6 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import json
+import warnings
 import weakref
 from contextlib import suppress
 from enum import Enum, auto
@@ -26,6 +27,7 @@ from w3lib.encoding import (
 )
 from w3lib.html import strip_html5_whitespace
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
 
@@ -60,6 +62,15 @@ class MetaRefresh(NamedTuple):
     """Absolute URL to load."""
 
 
+def _is_browser_encoding(encoding: str) -> bool:
+    resolved = resolve_encoding(encoding)
+    # "replacement" is what response.encoding reports for labels that browsers
+    # decode as a single U+FFFD, e.g. a Content-Type charset of hz.
+    return resolved is not None and (
+        resolved != "replacement" or encoding == "replacement"
+    )
+
+
 class TextResponse(Response):
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
     __slots__ = (
@@ -74,6 +85,16 @@ class TextResponse(Response):
 
     def __init__(self, *args: Any, **kwargs: Any):
         self._encoding: str | None = kwargs.pop("encoding", None)
+        if self._encoding is not None and not _is_browser_encoding(self._encoding):
+            warnings.warn(
+                f"Passing encoding={self._encoding!r} to {type(self).__name__} "
+                f"is deprecated, because web browsers do not support that "
+                f"encoding, and it will raise ValueError in a future version "
+                f"of Scrapy. To decode the response body with it, use "
+                f"response.body.decode({self._encoding!r}) instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self._cached_benc: str | None = None
         self._cached_ubody: str | None = None
         self._cached_selector: Selector | None = None
@@ -135,8 +156,16 @@ class TextResponse(Response):
     def text(self) -> str:
         """Body as unicode"""
         if self._cached_ubody is None:
-            charset = f"charset={self.encoding}"
-            self._cached_ubody = html_to_unicode(charset, self.body)[1]
+            if (
+                self._encoding is not None
+                and not _is_browser_encoding(self._encoding)
+                and not self._bom_encoding()
+            ):
+                with suppress(LookupError):
+                    self._cached_ubody = self.body.decode(self._encoding, "replace")
+            if self._cached_ubody is None:
+                charset = f"charset={self.encoding}"
+                self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
     def urljoin(self, url: str) -> str:
