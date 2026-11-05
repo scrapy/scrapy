@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 _DEFAULT_PORTS = {
     "http": 80,
     "https": 443,
+    "ws": 80,
+    "wss": 443,
 }
 
 

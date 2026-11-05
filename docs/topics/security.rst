@@ -168,9 +168,9 @@ Unencrypted protocols
 =====================
 
 By default Scrapy enables download handlers for unencrypted protocols, namely
-``http://`` and ``ftp://`` (see :setting:`DOWNLOAD_HANDLERS_BASE`). Data sent
-and received over these protocols, including any credentials, travels in plain
-text and can be read or modified by anyone on the network path.
+``http://``, ``ftp://`` and ``ws://`` (see :setting:`DOWNLOAD_HANDLERS_BASE`).
+Data sent and received over these protocols, including any credentials, travels
+in plain text and can be read or modified by anyone on the network path.
 
 If you only crawl over encrypted protocols, you can disable the unencrypted
 ones so that no request can accidentally be sent unencrypted:
@@ -180,6 +180,7 @@ ones so that no request can accidentally be sent unencrypted:
     DOWNLOAD_HANDLERS = {
         "http": None,
         "ftp": None,
+        "ws": None,
     }
 
 * **Pro:** a misconfigured or maliciously-redirected request cannot leak data

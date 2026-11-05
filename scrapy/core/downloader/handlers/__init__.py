@@ -233,6 +233,9 @@ class DownloadHandlers:
         try:
             response = await self._download(handler_id, handler, request)
             if not isinstance(response, BodyFileResponse):
+                # Keeps the traceback from holding the response, so that its
+                # connection, if any, is closed.
+                del response
                 raise NotSupported(
                     f"{global_object_name(type(handler))} does not support the "
                     f"body_file request meta key."

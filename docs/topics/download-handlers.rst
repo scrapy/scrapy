@@ -581,3 +581,38 @@ This handler supports ``s3://bucket/path`` S3 URIs.
 It's implemented using the botocore_ library.
 
 .. _botocore: https://github.com/boto/botocore
+
+.. _websocket-handler:
+
+WebSocketDownloadHandler
+------------------------
+
+.. versionadded:: VERSION
+
+.. note:: Requires the :ref:`websockets <extras>` extra.
+
+.. autoclass:: scrapy.core.downloader.handlers.websocket.WebSocketDownloadHandler
+
+| Supported schemes: ``ws``, ``wss``.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``ws://host/path`` and ``wss://host/path`` URLs, and
+returns a :class:`~scrapy.http.WebSocketResponse`. See :ref:`websockets`.
+
+It's implemented using the websockets_ library.
+
+.. _websockets: https://websockets.readthedocs.io/
+
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+=========================== =========================================
+HTTP proxies                Yes
+SOCKS proxies               Yes, with the :ref:`socks <extras>` extra
+``response.certificate``    DER bytes
+Per-request ``bindaddress`` Yes
+:reqmeta:`body_file`        Not applicable
+TLS implementation          Standard library ``ssl``
+=========================== =========================================

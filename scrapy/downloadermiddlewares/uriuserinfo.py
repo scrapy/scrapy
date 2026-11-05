@@ -19,8 +19,8 @@ class UriUserInfoMiddleware:
 
     -   :reqmeta:`ftp_user` and :reqmeta:`ftp_password` for FTP requests
 
-    -   :reqmeta:`http_user` and :reqmeta:`http_pass` for HTTP and HTTPS
-        requests
+    -   :reqmeta:`http_user` and :reqmeta:`http_pass` for HTTP, HTTPS and
+        WebSocket requests
 
     .. _URI userinfo: https://tools.ietf.org/html/rfc2396.html#section-3.2.2
     """
@@ -30,7 +30,7 @@ class UriUserInfoMiddleware:
         if parsed_url.username is None and parsed_url.password is None:
             return None
 
-        if parsed_url.scheme.startswith("http"):
+        if parsed_url.scheme.startswith(("http", "ws")):
             username_field, password_field = "http_user", "http_pass"
         elif parsed_url.scheme.startswith("ftp"):
             username_field, password_field = "ftp_user", "ftp_password"

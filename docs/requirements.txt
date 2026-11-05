@@ -178,7 +178,7 @@ sphinx-rtd-theme==3.1.0
     # via
     #   -r requirements.in
     #   sphinx-rtd-dark-mode
-sphinx-scrapy==0.13.0
+sphinx-scrapy==0.14.0
     # via -r requirements.in
 sphinx-sitemap==2.9.0
     # via sphinx-scrapy
