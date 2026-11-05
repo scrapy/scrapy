@@ -201,6 +201,12 @@ def pytest_configure(config):
     if config.getoption("--reactor") == "none":
         install_reactor_import_hook()
 
+    if config.getoption("--reactor") == "default":
+        config.addinivalue_line(
+            "filterwarnings",
+            "ignore:Using a Twisted reactor other than:scrapy.exceptions.ScrapyDeprecationWarning",
+        )
+
 
 # Test modules made up mostly of tests that spawn a subprocess per test (see
 # tests/utils/cmdline.py). Collected in file order, they form one contiguous

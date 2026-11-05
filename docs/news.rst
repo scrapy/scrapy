@@ -6,6 +6,22 @@ Release notes
 Scrapy VERSION (unreleased)
 ---------------------------
 
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Scrapy now limits by default the memory that responses can take, fixing
+    `CVE-2017-14158`_.
+
+    In previous Scrapy versions, that memory had no limit. For example, when
+    :ref:`media pipelines <topics-media-pipeline>` downloaded files faster than
+    they could store them, e.g. to Amazon S3, the downloaded files piled up in
+    memory, so a crawled website could make Scrapy run out of memory.
+
+    To change or disable the limit, use the new
+    :setting:`RESPONSE_MAX_ACTIVE_SIZE` setting.
+
+    .. _CVE-2017-14158: https://github.com/advisories/GHSA-h7wm-ph43-c39p
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2355,9 +2371,9 @@ Modified requirements
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   If you set the :setting:`TWISTED_REACTOR` setting to a :ref:`non-asyncio
-    value <disable-asyncio>` at the :ref:`spider level <spider-settings>`, you
-    may now need to set the :setting:`FORCE_CRAWLER_PROCESS` setting to
+-   If you set the ``TWISTED_REACTOR`` setting to a non-asyncio
+    value at the :ref:`spider level <spider-settings>`, you
+    may now need to set the ``FORCE_CRAWLER_PROCESS`` setting to
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
     (:gh:`6845`)

@@ -78,13 +78,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
 
     def __init__(self, crawler: Crawler):
         if self.requires_asyncio and not is_asyncio_available():  # pragma: no cover
-            raise NotConfigured(
-                f"{type(self).__name__} requires the asyncio support. Make"
-                f" sure that you have either enabled the asyncio Twisted"
-                f" reactor in the TWISTED_REACTOR setting or disabled the"
-                f" TWISTED_REACTOR_ENABLED setting. See the asyncio documentation"
-                f" of Scrapy for more information."
-            )
+            raise NotConfigured(f"{type(self).__name__} requires the asyncio support.")
         self._check_deps_installed()
         super().__init__(crawler)
         if self.experimental:

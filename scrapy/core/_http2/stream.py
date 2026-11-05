@@ -184,6 +184,12 @@ class Stream:
             self.close(StreamCloseReason.CANCELLED)
 
     @property
+    def _cancel_keeps_body(self) -> bool:
+        """Whether cancelling the stream, e.g. on download timeout, returns
+        the response received so far as a partial response."""
+        return not self._fail_on_dataloss and self._response["status"] is not None
+
+    @property
     def _log_warnsize(self) -> bool:
         """Checks if we have received data which exceeds the download warnsize
         and whether we have not already logged about it.
@@ -400,9 +406,11 @@ class Stream:
     def reset_stream(self, reason: StreamCloseReason = StreamCloseReason.RESET) -> None:
         """Close this stream by sending a RST_FRAME to the remote peer"""
         # The data received so far is the body of the response built for a
-        # stopped download, otherwise the buffer is cleared early to avoid
-        # keeping data in memory for a long time
-        if reason is not StreamCloseReason.STOP_DOWNLOAD:
+        # stopped download or a partial response, otherwise the buffer is
+        # cleared early to avoid keeping data in memory for a long time
+        if reason is not StreamCloseReason.STOP_DOWNLOAD and not (
+            reason is StreamCloseReason.CANCELLED and self._cancel_keeps_body
+        ):
             self._response["body"].truncate(0)
 
         self.metadata["stream_closed_local"] = True
@@ -457,6 +465,9 @@ class Stream:
 
         elif reason in {StreamCloseReason.ENDED, StreamCloseReason.STOP_DOWNLOAD}:
             self._fire_response_deferred()
+
+        elif reason is StreamCloseReason.CANCELLED and self._cancel_keeps_body:
+            self._fire_response_deferred(flags=["dataloss"])
 
         # Stream was abruptly ended here
         elif reason is StreamCloseReason.CANCELLED:
