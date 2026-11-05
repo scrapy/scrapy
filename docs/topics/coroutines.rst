@@ -63,7 +63,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - :meth:`~scrapy.exporters.BaseItemExporter.finish_exporting`
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
 -   Methods of :ref:`custom feed storages <topics-feed-storage-custom>` (see
     :setting:`FEED_STORAGES`):
@@ -72,7 +72,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
 -   The following methods of subclasses of
     :class:`scrapy.pipelines.media.MediaPipeline`:
@@ -92,7 +92,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - ``item_completed()``
 
-      .. versionadded:: VERSION
+      .. versionadded:: 2.20.0
 
 -   The following methods of :ref:`custom media storages
     <media-pipeline-custom-storage>`:
@@ -103,12 +103,12 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - ``stat_file()``
 
-      .. versionadded:: VERSION
+      .. versionadded:: 2.20.0
 
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 
 .. _coroutine-deferred-apis:
@@ -291,7 +291,7 @@ Inline requests
 The spider below shows how to send a request and await its response all from
 within a spider callback:
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
     Awaiting a :class:`~scrapy.Request` object.
 
 .. code-block:: python

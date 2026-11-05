@@ -48,7 +48,7 @@ Request objects
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the request headers.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Header names keep the case you write them in, instead of being
             converted to ``Title-Case``.
 
@@ -900,7 +900,7 @@ the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 body_file
 ---------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Path of a file where the response body is written as it is downloaded, or
 ``True`` to write it to a new temporary file, so that responses of any size can
@@ -933,7 +933,7 @@ ones <download-handlers-ref>`, make the request fail with
 delay
 -----
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Number of seconds to hold a request before sending it:
 
@@ -955,7 +955,7 @@ key again asks for a new delay. See also :reqmeta:`delayed`.
 delayed
 -------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Delays, in seconds, that a request has been held for because of
 :reqmeta:`delay`. Read-only.
@@ -971,7 +971,7 @@ Delays, in seconds, that a request has been held for because of
 download_handler
 ----------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 ID of the :ref:`download handler <topics-download-handlers>` to use for this
 request, either a name from :setting:`DOWNLOAD_HANDLERS_BY_NAME` or a URL
@@ -1060,7 +1060,7 @@ Overrides :setting:`HTTPAUTH_USER` for this request.
 is_robotstxt_request
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 ``True`` on the ``robots.txt`` requests that
 :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` sends, so
@@ -1081,7 +1081,7 @@ The meta key is used set retry times per request. When set, the
 proxy_headers
 -------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Headers for the proxy set in the :reqmeta:`proxy` metadata key, as a mapping,
 e.g. ``{"X-Proxy-Country": "us"}``.
@@ -1116,7 +1116,7 @@ the proxy to consume them instead of passing them on to the target server.
 skip_dupefilter_once
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Set this key to ``True`` to skip :setting:`duplicate filtering
 <DUPEFILTER_CLASS>` for this request. The :ref:`scheduler <topics-scheduler>`

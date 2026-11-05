@@ -85,7 +85,7 @@ Get all stats:
 Stats collectors that subclass :class:`StatsCollector`, like the built-in ones,
 are also :class:`mutable mappings <collections.abc.MutableMapping>` of stats:
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. code-block:: python
 
@@ -342,7 +342,7 @@ one per actual value of the placeholder.
     :ref:`commands <topics-commands>` such as :command:`crawl` use it to
     decide their process exit code.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     Set by :class:`~scrapy.extensions.corestats.CoreStats`.
 
@@ -454,7 +454,7 @@ one per actual value of the placeholder.
     Number of requests that waited for a concurrent request for the same
     resource to finish downloading.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     Set by :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`.
 

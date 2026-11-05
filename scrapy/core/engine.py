@@ -84,7 +84,7 @@ def _supports_skip_dupefilter_once(scheduler: BaseScheduler) -> bool:
 class EngineState(Enum):
     """The lifecycle state of :class:`ExecutionEngine`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     The engine goes through these states in order, possibly skipping some.
     """
@@ -274,7 +274,7 @@ class ExecutionEngine:
     def state(self) -> EngineState:
         """The current lifecycle state of the engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
         """
         return self._state
 
@@ -282,7 +282,7 @@ class ExecutionEngine:
     def response_active_size(self) -> int:
         """Size, in bytes, that counts toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
         """
         return self.downloader.middleware._total_active_size
 
@@ -290,7 +290,7 @@ class ExecutionEngine:
     def running(self) -> bool:
         """Whether the engine is in the :attr:`EngineState.RUNNING` state.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Became a read-only property.
         """
         return self._state is EngineState.RUNNING
@@ -331,7 +331,7 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             In earlier versions, if the spider was not open, it sent the
             :signal:`engine_started` signal instead of raising
             :exc:`RuntimeError`.
@@ -385,7 +385,7 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             This is now a shortcut for :meth:`close_spider_async`, see its docs
             for the behavior in different engine states, including when it
             completes.
@@ -752,7 +752,7 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             In earlier versions, a :exc:`~scrapy.exceptions.CloseSpider`
             exception raised while the spider was opening was re-raised.
 
@@ -935,7 +935,7 @@ class ExecutionEngine:
         ``mode="fast"`` was passed, it will also drop the requests left in the
         downloader.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Previously, calling it while the spider was closing waited for the
             in-flight requests to finish, and calling it after the spider had
             been closed raised :exc:`RuntimeError`.

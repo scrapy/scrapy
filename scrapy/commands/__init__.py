@@ -166,7 +166,7 @@ class ScrapyCommand(ABC):
         being typed, where *args* are the positional arguments typed before
         it.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         See :ref:`completion`.
         """
@@ -177,7 +177,7 @@ class ScrapyCommand(ABC):
         being typed, identified by *dest*, i.e. the name under which its value
         is available in the ``opts`` parameter of ``run()``.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         See :ref:`completion`.
         """

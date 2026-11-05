@@ -220,7 +220,7 @@ class LxmlLinkExtractor:
         :data:`scrapy.linkextractors.SUPPORTED_SCHEMES`. Use ``()`` to extract
         links regardless of their scheme.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
     :type schemes: str or list
 
     :param restrict_xpaths: an XPath (or list of XPaths) that defines regions

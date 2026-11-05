@@ -12,7 +12,7 @@ class BodyFileResponse(Response):
     """A :class:`~scrapy.http.Response` whose body was written to a file, as
     requested with the :reqmeta:`body_file` request meta key.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     Reading :attr:`~scrapy.http.Response.body` raises :exc:`AttributeError`.
     """

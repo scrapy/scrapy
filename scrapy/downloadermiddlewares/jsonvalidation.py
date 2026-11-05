@@ -15,7 +15,7 @@ class JsonValidationMiddleware:
     """Raise :exc:`json.JSONDecodeError` for a successful
     :class:`~scrapy.http.JsonResponse` whose body is not valid JSON.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     .. setting:: JSONVALIDATION_ENABLED
 

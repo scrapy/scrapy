@@ -264,7 +264,7 @@ A key that cannot be resolved into a component, such as the import path of a
 component that no longer exists, raises an exception, even if its priority is
 :data:`None`.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    Unresolvable keys used to be silently ignored in some cases.
 
 .. warning:: Component priority dictionaries are regular :class:`dict` objects.
@@ -339,7 +339,7 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
    :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
    instead of being read from the project settings and ignored in
@@ -593,7 +593,7 @@ CONCURRENT_CONNECTIONS_PER_HANDLER
 
 Default: ``None``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 The maximum number of connections that a single :ref:`download handler
 <topics-download-handlers>` may keep open, whether they are being used for a
@@ -670,7 +670,7 @@ It is possible to change this setting per domain by using
 CONNECTION_KEEPALIVE_TIMEOUT
 ----------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``240.0``
 
@@ -1014,7 +1014,7 @@ should never modify this setting in your project, modify
 DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
 -----------------------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``False``
 
@@ -1211,7 +1211,7 @@ handler (without replacement), place this in your ``settings.py``:
 DOWNLOAD_HANDLERS_BY_NAME
 -------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``{}``
 
@@ -1253,7 +1253,7 @@ Redirects and retries are assigned to a slot based on their own URL domain,
 unless the slot of their original request was set through the ``download_slot``
 key, in which case they keep that slot.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    In earlier versions, redirects and retries always kept the slot of their
    original request, even when they pointed to a different domain.
 
@@ -1765,7 +1765,7 @@ A string indicating the directory for storing the state of a crawl when
 JOBDIR_SYNC_EVERY
 -----------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``0``
 
@@ -1890,7 +1890,7 @@ LOG_LEVELS
 
 Default: ``{}``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Minimum level to log for specific loggers.
 
@@ -2084,7 +2084,7 @@ Adjust redirect request priority relative to original request:
 RESPONSE_MAX_ACTIVE_SIZE
 ------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``5_000_000``
 
@@ -2117,7 +2117,7 @@ the :stat:`request_backout_seconds/response_max_active_size` stat.
 RESPONSE_ROUGH_SIZE
 -------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``None``
 
@@ -2437,7 +2437,7 @@ For more info see: :ref:`topics-stats`.
 STICKY_META_KEYS
 ----------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``[]`` (empty list)
 
@@ -2684,7 +2684,7 @@ For additional information, see :doc:`core/howto/choosing-reactor`.
 UPLOAD_TIMEOUT
 --------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``None``
 

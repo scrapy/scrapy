@@ -182,7 +182,7 @@ class DiskDupeFilter(RFPDupeFilter):
     in memory, trading some speed for a much lower memory usage on crawls that
     send a large number of requests.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     Job directory contents
     ======================
