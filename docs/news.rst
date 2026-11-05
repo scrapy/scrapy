@@ -46,7 +46,7 @@ Modified requirements
 -   Dropped support for Python 3.10.
     (:gh:`8261`)
 
--   Scrapy no longer officially supports PyPy.
+-   Dropped support for PyPy.
     (:gh:`7849`, :gh:`8358`, :gh:`8367`, :gh:`8393`)
 
 -   New dependencies:
@@ -480,13 +480,13 @@ Backward-incompatible changes
     <scrapy.http.TextResponse.urljoin>`, :ref:`selectors <topics-selectors>`
     and :ref:`link extractors <topics-link-extractors>`, and the meta refresh
     that :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
-    follows, are now found the way web browsers find them. In particular, they
-    are now found anywhere in the response body, instead of only in its first
-    4096 characters, the meta refresh with the shortest delay, and the last one
-    among those with that delay, now wins over the first one, meta refreshes
-    within ``<script>`` or ``<template>`` elements, or to the response URL
-    itself, ignoring its fragment, are no longer followed, and the base URL is
-    normalized like request URLs.
+    follows, are now found closer to the way web browsers find them. In
+    particular, they are now found anywhere in the response body, instead of
+    only in its first 4096 characters, the meta refresh with the shortest
+    delay, and the last one among those with that delay, now wins over the
+    first one, meta refreshes within ``<script>`` or ``<template>`` elements,
+    or to the response URL itself, ignoring its fragment, are no longer
+    followed, and the base URL is normalized like request URLs.
     (:gh:`8393`)
 
 -   The ``response`` attribute of :class:`~scrapy.Selector` objects is now
@@ -594,14 +594,19 @@ Deprecations
     :meth:`~scrapy.spiders.XMLFeedSpider.parse_node` instead.
     (:gh:`8147`)
 
--   The default value of the new
-    :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting, ``False``, is
-    deprecated. When a ``process_response()`` method of a downloader middleware
-    raises an exception that would reach the ``process_exception()`` method of
-    a non-Scrapy downloader middleware if the setting were ``True``, a warning
-    is now issued. Check that those methods handle such exceptions as intended,
-    and set the setting to ``True``. New projects generated with
-    :command:`startproject` set it to ``True``.
+-   Exceptions that the ``process_response()`` method of a downloader
+    middleware raises can now reach the ``process_exception()`` methods of the
+    downloader middlewares that have not processed the response yet, so that
+    :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` can retry
+    them. Because existing ``process_exception()`` methods may not expect those
+    exceptions, e.g. the :exc:`~scrapy.exceptions.IgnoreRequest` raised to drop
+    a response, this only happens when the new
+    :setting:`DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS` setting is ``True``.
+    Its default value, ``False``, is deprecated, and a warning is issued when
+    an exception would reach the ``process_exception()`` method of a
+    non-Scrapy downloader middleware if the setting were ``True``. Check that
+    those methods handle such exceptions as intended, and set the setting to
+    ``True``. New projects generated with :command:`startproject` already do.
     (:gh:`7790`, :gh:`8177`)
 
 -   ``scrapy.utils.deprecate.create_deprecated_class()`` is deprecated, use
@@ -657,9 +662,9 @@ Deprecations
     to ``True``.
     (:gh:`6895`, :gh:`8224`)
 
--   The ``overwrite`` feed option is deprecated. Use the new ``mode`` feed
-    option instead: ``"overwrite"`` instead of ``True``, ``"append"`` instead
-    of ``False``. The ``overwrite`` attribute of
+-   The ``overwrite`` feed option is deprecated. Use the new ``mode``
+    :ref:`feed option <feed-mode>` instead: ``"overwrite"`` instead of
+    ``True``, ``"append"`` instead of ``False``. The ``overwrite`` attribute of
     :class:`~scrapy.extensions.feedexport.FTPFeedStorage` is deprecated as
     well.
 
