@@ -962,7 +962,11 @@ class FeedExporter:
         )
 
     async def item_scraped(self, item: Any, spider: Spider) -> None:
-        await maybe_deferred_to_future(self._export_lock.acquire())
+        if not self._export_lock.locked:
+            # Acquiring a free lock fires the returned Deferred right away
+            self._export_lock.acquire()
+        else:
+            await maybe_deferred_to_future(self._export_lock.acquire())
         try:
             await self._export_item(item, spider)
         finally:

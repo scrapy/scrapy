@@ -8,6 +8,7 @@ import warnings
 from collections import deque
 from collections.abc import AsyncIterator
 from inspect import iscoroutine
+from traceback import clear_frames
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -335,6 +336,11 @@ class Scraper:
                     self._handle_spider_error(spider_exc, request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
+            finally:
+                # Twisted keeps failures in frames of their own traceback, a
+                # reference cycle that would keep alive any response that those
+                # frames refer to.
+                clear_frames(result.tb)
 
     async def _wait_for_processing(
         self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]
@@ -383,12 +389,24 @@ class Scraper:
         else:  # result is a Failure
             cast("FailureWithRequest", result).request = request
             parent_id = request.id
-            if not request.errback:
-                result.raiseException()
-            warn_on_generator_with_return_value(self.crawler.spider, request.errback)
-            output = request.errback(result)
+            if request.errback:
+                warn_on_generator_with_return_value(
+                    self.crawler.spider, request.errback
+                )
+                output = request.errback(result)
+            else:
+                output = result
             if isinstance(output, Failure):
-                output.raiseException()
+                assert output.value is not None
+                exception = output.value.with_traceback(output.tb)
+                # The traceback of the exception includes this frame, so these
+                # local variables would keep them in a reference cycle, and
+                # with them the response.
+                del result, output
+                try:
+                    raise exception
+                finally:
+                    del exception
             # else the errback returned actual output (like a callback),
             # which needs to be passed to iterate_spider_output()
             if isinstance(output, Deferred):
