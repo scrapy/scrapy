@@ -47,8 +47,8 @@ Modified requirements
     (:gh:`8261`)
 
 -   Scrapy no longer officially supports PyPy. It may still work if you
-    manually remove ``PyDispatcher`` and install ``PyPyDispatcher`` but this is
-    not guaranteed.
+    manually remove ``PyDispatcher`` and install ``PyPyDispatcher``, but this
+    is not guaranteed.
     (:gh:`7849`, :gh:`8358`, :gh:`8367`)
 
 -   New dependencies:
@@ -102,10 +102,12 @@ Modified requirements
     - ``s3``: boto3_ 1.20.0 → 1.35.2, and aioboto3_ >= 9.0.0 is now
       included.
 
+    - ``twisted-http2``: Twisted_ 21.7.0 → 23.10.0
+
     - ``uvloop``: uvloop_ 0.16.0 → 0.17.0
 
-    (:gh:`7826`, :gh:`7932`, :gh:`8058`, :gh:`8062`, :gh:`8162`, :gh:`8213`,
-    :gh:`8261`, :gh:`8330`, :gh:`8341`)
+    (:gh:`6430`, :gh:`7826`, :gh:`7932`, :gh:`8058`, :gh:`8062`, :gh:`8162`,
+    :gh:`8213`, :gh:`8261`, :gh:`8330`, :gh:`8341`, :gh:`8460`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,12 +128,10 @@ Backward-incompatible changes
     - The engine is no longer started, so the :signal:`engine_started` and
       :signal:`engine_stopped` signals are not sent, and components that start
       on them, such as the :class:`~scrapy.extensions.memusage.MemoryUsage`
-      extension, do not run in the shell.
+      extension and the :ref:`telnet console <topics-telnetconsole>`, do not
+      run in the shell.
 
-    - The telnet console is disabled by default in the shell, i.e.
-      :setting:`TELNETCONSOLE_ENABLED` defaults to ``False`` there.
-
-    (:gh:`8176`, :gh:`8179`)
+    (:gh:`8174`, :gh:`8176`, :gh:`8179`)
 
 -   Changes to the behavior of :class:`~scrapy.core.engine.ExecutionEngine`
     methods that change its state:
@@ -181,7 +181,8 @@ Backward-incompatible changes
 
 -   Setting the :attr:`ExecutionEngine.running
     <scrapy.core.engine.ExecutionEngine.running>` attribute no longer has any
-    effect, and is deprecated.
+    effect, and is deprecated. Its value is now ``False`` while the spider is
+    closing.
     (:gh:`8181`)
 
 -   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now
@@ -191,7 +192,6 @@ Backward-incompatible changes
     that fits them, with :setting:`DOWNLOAD_MAXSIZE` or with the
     :reqmeta:`download_maxsize` request meta key for specific requests. You can
     also set the limit to ``0`` to lift it altogether.
-
     (:gh:`8213`)
 
 -   Responses that your code keeps in memory, e.g. in the
@@ -339,7 +339,7 @@ Backward-incompatible changes
     sitemap URLs declared in :file:`robots.txt` files. If you set it, make sure
     it matches the URLs of the sitemaps declared in the :file:`robots.txt`
     files that you want to follow.
-    (:gh:`8175`)
+    (:gh:`1182`, :gh:`8175`)
 
 -   The ``process_request()`` method of
     :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` is now
@@ -373,7 +373,7 @@ Backward-incompatible changes
     :signal:`spider_state_saving` signals instead.
     (:gh:`5153`, :gh:`7650`, :gh:`7656`)
 
--   Due to changes in w3lib_ 2.6.0:
+-   Due to the new minimum version of w3lib_, 2.6.0:
 
     - :ref:`Request fingerprints <request-fingerprints>` might differ for some
       URLs, so that cached responses of
@@ -386,9 +386,30 @@ Backward-incompatible changes
 
     (:gh:`8393`)
 
+-   :attr:`TextResponse.encoding <scrapy.http.TextResponse.encoding>` now
+    reports the encoding names that web browsers use, e.g. ``gbk`` instead of
+    ``gb18030``, and ``utf-8`` instead of ``ascii`` when the response declares
+    no encoding and has an empty body. For encoding labels that web browsers
+    decode as a single U+FFFD character, like ``hz``, it reports
+    ``replacement``, which is not a Python codec, so use
+    :attr:`TextResponse.text <scrapy.http.TextResponse.text>` instead of
+    ``response.body.decode(response.encoding)``.
+    (:gh:`8393`)
+
+-   A negative value of :setting:`FILES_EXPIRES` or :setting:`IMAGES_EXPIRES`
+    now disables expiration, so that files are never downloaded again once
+    fetched. Previously, it made files be downloaded again every time; set
+    the setting to ``0`` for that.
+    (:gh:`8046`)
+
+-   Crawls closed because :meth:`~scrapy.Spider.start` raised an exception, or
+    by :setting:`CLOSESPIDER_ERRORCOUNT`, now make commands like
+    :command:`crawl` and :command:`runspider` exit with code 1.
+    (:gh:`8082`, :gh:`8203`)
+
 -   A blank line between :ref:`contract <topics-contracts>` lines in a callback
     docstring now starts a new batch of contracts, which needs its own ``@url``
-    line.
+    line; otherwise, the contracts of that batch do not run.
     (:gh:`768`, :gh:`8043`)
 
 Deprecations
@@ -602,6 +623,12 @@ Deprecations
 
     (:gh:`8111`, :gh:`8454`)
 
+-   Passing an encoding that web browsers do not support, e.g. ``cp437``, to
+    the *encoding* parameter of :class:`~scrapy.http.TextResponse` is
+    deprecated. To decode a response body with such an encoding, use
+    ``response.body.decode(encoding)``.
+    (:gh:`8393`)
+
 -   ``scrapy.utils.response.get_base_url()`` and
     ``scrapy.utils.response.get_meta_refresh()`` are deprecated. Use the new
     :attr:`TextResponse.base_url <scrapy.http.TextResponse.base_url>` and
@@ -681,8 +708,8 @@ New features
     <feed-options>`, which set what happens when the target of a feed already
     exists: ``"append"`` to it, ``"overwrite"`` it, or ``"create"``, which
     leaves it untouched, logs an error and increases the
-    ``feedexport/conflicts/<storage class name>`` stat. Custom feed storages
-    declare the modes that they support with the new
+    ``feedexport/conflicts/<storage class>`` stat. Custom feed storages declare
+    the modes that they support with the new
     :attr:`~scrapy.extensions.feedexport.FeedStorageProtocol.supported_modes`
     attribute.
 
@@ -701,10 +728,11 @@ New features
     :file:`active.json` file of the :ref:`job directory <job-dir>`, and the
     database of :class:`~scrapy.dupefilters.DiskDupeFilter`, while the crawl
     runs, so that a crawl killed before it can stop cleanly can resume from
-    its latest state. Custom :setting:`SCHEDULER_PRIORITY_QUEUE` classes
-    need the new :attr:`~scrapy.pqueues.PriorityQueueProtocol.changed`
-    attribute and :meth:`~scrapy.pqueues.PriorityQueueProtocol.state` method to
-    support it.
+    its latest state, provided that :setting:`SCHEDULER_DISK_QUEUE` and
+    :setting:`SCHEDULER_START_DISK_QUEUE` use SQLite-based queues. Custom
+    :setting:`SCHEDULER_PRIORITY_QUEUE` classes need the new
+    :attr:`~scrapy.pqueues.PriorityQueueProtocol.changed` attribute and
+    :meth:`~scrapy.pqueues.PriorityQueueProtocol.state` method to support it.
 
     :file:`active.json` is also now written atomically, so that it cannot be
     left half-written.
@@ -920,7 +948,7 @@ New features
     <scrapy.spiders.SitemapSpider.sitemap_request>`, which you can override to
     customize the requests that :class:`~scrapy.spiders.SitemapSpider` builds
     from sitemap entries, e.g. to pass sitemap data to callbacks.
-    (:gh:`1182`, :gh:`2565`, :gh:`3543`, :gh:`8175`)
+    (:gh:`2565`, :gh:`3543`, :gh:`8175`)
 
 -   Added a :meth:`~scrapy.robotstxt.RobotParser.sitemaps` method to
     :class:`~scrapy.robotstxt.RobotParser`, implemented by the
@@ -974,9 +1002,10 @@ New features
     (:gh:`5166`, :gh:`5175`, :gh:`7964`)
 
 -   Added a :setting:`LOG_ROOT_FORMATTER` setting, which sets the formatter of
-    the root log handler, :class:`~scrapy.LogRootFormatterProtocol`, which
-    those formatters implement, and :class:`~scrapy.LogRootFormatter`, the
-    default formatter, which you can also use in your own log handlers.
+    the root log handler. Such formatters implement the new
+    :class:`~scrapy.LogRootFormatterProtocol`, and the new
+    :class:`~scrapy.LogRootFormatter` is the default one, which you can also
+    use in your own log handlers.
     :setting:`LOG_COLOR` also works with custom formatters.
     (:gh:`8336`)
 
@@ -993,13 +1022,13 @@ New features
     (:gh:`8331`)
 
 -   When :setting:`DOWNLOAD_FAIL_ON_DATALOSS` or the
-    :reqmeta:`download_fail_on_dataloss` request meta key are ``False``,
+    :reqmeta:`download_fail_on_dataloss` request meta key is ``False``,
     hitting the download timeout while receiving the response body now
     returns the part of the response received so far, with the ``dataloss``
     flag, instead of raising :exc:`~scrapy.exceptions.DownloadTimeoutError`,
     with all built-in download handlers except
     :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`.
-    (:gh:`3407`, :gh:`3492`, :gh:`8084`)
+    (:gh:`3407`, :gh:`3492`, :gh:`8084`, :gh:`8464`)
 
 -   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
     now supports proxies with an IPv6 address, proxies whose host name only
@@ -1012,8 +1041,7 @@ New features
     :ref:`S3 feed storage <topics-feed-storage-s3>` uploads files with it,
     instead of running ``boto3`` in a thread. Similarly, the :ref:`S3 storage
     of media pipelines <media-pipelines-s3>` uses ``aiobotocore`` instead of
-    ``botocore`` when installed. The ``s3`` :ref:`extra <extras>` now also
-    installs ``aioboto3``.
+    ``botocore`` when installed.
     (:gh:`3845`, :gh:`8330`, :gh:`8339`)
 
 -   Added a :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER` setting, which limits
@@ -1226,10 +1254,16 @@ Improvements
     (:gh:`5431`, :gh:`8431`)
 
 -   Other code refactoring and improvements.
-    (:gh:`8243`, :gh:`8262`, :gh:`8263`, :gh:`8415`)
+    (:gh:`8168`, :gh:`8243`, :gh:`8262`, :gh:`8263`, :gh:`8295`, :gh:`8313`,
+    :gh:`8315`, :gh:`8323`, :gh:`8335`, :gh:`8353`, :gh:`8355`, :gh:`8382`,
+    :gh:`8385`, :gh:`8391`, :gh:`8415`)
 
 Bug fixes
 ~~~~~~~~~
+
+-   The :command:`runspider` command now runs the given file even if its name
+    matches that of an already imported module, e.g. :file:`json.py`.
+    (:gh:`8036`, :gh:`8463`)
 
 -   The :command:`check` command now reports errors that prevent a spider
     from crawling, e.g. errors raised while creating the spider, instead of
@@ -1250,14 +1284,15 @@ Bug fixes
 
     (:gh:`8131`, :gh:`8138`, :gh:`8148`, :gh:`8267`, :gh:`8291`, :gh:`8292`)
 
--   ``Headers.to_tuple_list()`` no longer raises :exc:`UnicodeDecodeError`;
-    bytes that cannot be decoded are replaced with U+FFFD.
+-   ``Headers.to_unicode_dict()`` and ``Headers.to_tuple_list()`` no longer
+    raise :exc:`UnicodeDecodeError`; bytes that cannot be decoded are replaced
+    with U+FFFD.
     (:gh:`2592`, :gh:`2637`, :gh:`8192`)
 
 -   :func:`copy.copy` on an :class:`~scrapy.Item` now returns a shallow copy,
     like :meth:`Item.copy() <scrapy.Item.copy>`. It used to return an item
-    that shared its field values with the original, so that changes to one
-    affected the other.
+    that shared its fields with the original, so that setting or deleting a
+    field on one also did it on the other.
     (:gh:`8172`)
 
 -   Calling ``exit()`` in the :ref:`telnet console <topics-telnetconsole>` now
@@ -1524,8 +1559,9 @@ Documentation
 
 -   Documented :exc:`~scrapy.spidermiddlewares.httperror.HttpError`, the
     IPv6 support of the built-in :ref:`download handlers
-    <topics-download-handlers>`, and where exceptions that interrupt a crawl
-    started from a :ref:`script <run-from-script>` reach your code.
+    <topics-download-handlers>`, the ``bootstrap_failed`` attribute of crawler
+    processes, and where exceptions that interrupt a crawl started from a
+    :ref:`script <run-from-script>` reach your code.
     (:gh:`8338`, :gh:`8340`, :gh:`8344`)
 
 -   Added a :ref:`page about getting help <getting-help>`.
@@ -1537,8 +1573,8 @@ Documentation
     (:gh:`5259`, :gh:`5272`)
 
 -   Other documentation improvements and fixes.
-    (:gh:`5859`, :gh:`7114`, :gh:`8151`, :gh:`8161`, :gh:`8403`, :gh:`8404`,
-    :gh:`8436`, :gh:`8453`)
+    (:gh:`5859`, :gh:`7114`, :gh:`7956`, :gh:`8151`, :gh:`8161`, :gh:`8403`,
+    :gh:`8404`, :gh:`8436`, :gh:`8453`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
