@@ -129,7 +129,7 @@ def install_reactor(
 ) -> None:
     """Install the asyncio Twisted reactor.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
         *reactor_path* is now optional and accepts ``None``.
 
     *reactor_path* can be ``None`` or

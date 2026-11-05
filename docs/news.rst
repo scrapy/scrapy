@@ -512,12 +512,10 @@ Deprecations
 -   ``scrapy.utils.reactor.is_asyncio_reactor_installed()`` is deprecated. To
     check for asyncio support, use
     :func:`~scrapy.utils.asyncio.is_asyncio_available`. To check whether a
-    reactor is installed, use ``scrapy.utils.reactor.is_reactor_installed()``
-    or :func:`~scrapy.utils.reactorless.is_reactorless`; combine
-    ``is_reactor_installed()`` with
-    :func:`~scrapy.utils.asyncio.is_asyncio_available` to check for the
-    asyncio reactor specifically.
-    (:gh:`8128`)
+    reactor is installed, use ``scrapy.utils.reactor.is_reactor_installed()``.
+    See :ref:`asyncio-old-versions` for code that must also support older
+    Scrapy versions.
+    (:gh:`8128`, :gh:`8454`)
 
 -   Defining a ``parse_item()`` method in a
     :class:`~scrapy.spiders.XMLFeedSpider` subclass is deprecated. Define
@@ -1589,9 +1587,11 @@ Documentation
     execution engine.
     (:gh:`6164`)
 
--   Documented :func:`~scrapy.utils.decorators.inthread`, to call blocking
-    code from :ref:`coroutines <topics-coroutines>`.
-    (:gh:`7956`)
+-   Documented :ref:`how to write asyncio code that also supports older Scrapy
+    versions <asyncio-old-versions>`, and the documentation now recommends
+    :func:`asyncio.to_thread` to call blocking code from :ref:`coroutines
+    <topics-coroutines>`.
+    (:gh:`7956`, :gh:`8454`)
 
 -   Reviewed the documentation of :class:`~scrapy.Spider`, which now covers
     all its attributes, including :attr:`~scrapy.Spider.state`.
