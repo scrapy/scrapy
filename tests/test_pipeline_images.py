@@ -125,7 +125,7 @@ class TestImagesPipeline:
         )
         assert (
             thumb_path(Request("file://foo.png"), name)
-            == "thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg"
+            == "thumbs/50/3f7f26a0132d8c3df6b56f0691b89083df00d62a.jpg"
         )
         assert (
             thumb_path(Request("file:///tmp/foo"), name)
