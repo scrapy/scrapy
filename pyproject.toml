@@ -18,7 +18,7 @@ dependencies = [
     "cssselect>=1.2.0",
     "defusedxml>=0.7.1",
     "formerly>=0.1.0",
-    "frostwork>=0.2.0",
+    "frostwork>=0.2.2",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.5",
     "lxml>=4.9.4",
@@ -30,7 +30,7 @@ dependencies = [
     "queuelib>=1.8.0",
     "service_identity>=24.2.0",
     "tldextract",
-    'typing-extensions>=4.6.0; python_version < "3.13"',
+    'typing-extensions>=4.13.0; python_version < "3.13"',
     "w3lib>=2.6.0",
     "zope.interface>=5.1.0",
 ]
