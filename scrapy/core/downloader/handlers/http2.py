@@ -5,6 +5,8 @@ from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
+from twisted.python.failure import Failure
+
 from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
 from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
@@ -135,6 +137,9 @@ class _ScrapyH2Agent:
     ) -> Response:
         if timeout_cl.active():
             timeout_cl.cancel()
+            return response
+
+        if not isinstance(response, Failure) and "dataloss" in response.flags:
             return response
 
         url = urldefrag(request.url)[0]
