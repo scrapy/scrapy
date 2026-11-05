@@ -2355,9 +2355,9 @@ Modified requirements
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   If you set the :setting:`TWISTED_REACTOR` setting to a :ref:`non-asyncio
-    value <disable-asyncio>` at the :ref:`spider level <spider-settings>`, you
-    may now need to set the :setting:`FORCE_CRAWLER_PROCESS` setting to
+-   If you set the ``TWISTED_REACTOR`` setting to a non-asyncio
+    value at the :ref:`spider level <spider-settings>`, you
+    may now need to set the ``FORCE_CRAWLER_PROCESS`` setting to
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
     (:gh:`6845`)

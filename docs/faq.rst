@@ -388,8 +388,7 @@ How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()
 
 This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
 Twisted reactor was :class:`twisted.internet.selectreactor.SelectReactor` at that time.
-If you have switched to this reactor using the :setting:`TWISTED_REACTOR` setting you can switch
-to a different one in the same way.
+If you are using this reactor explicitly, switch to the default one.
 
 
 .. _faq-stop-response-download:

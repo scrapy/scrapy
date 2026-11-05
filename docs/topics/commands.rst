@@ -791,29 +791,8 @@ spider or a special internal one:
 * :command:`shell`
 * :command:`view`
 
-They use an internal instance of :class:`scrapy.crawler.AsyncCrawlerProcess` or
-:class:`scrapy.crawler.CrawlerProcess` for this. In most cases, this detail
-shouldn't matter to the user running the command, but when the user :ref:`needs
-a non-default Twisted reactor <disable-asyncio>`, it may be important.
-
-Scrapy decides which of these two classes to use based on the value of the
-:setting:`TWISTED_REACTOR` and :setting:`TWISTED_REACTOR_ENABLED` settings.
-With :setting:`TWISTED_REACTOR_ENABLED` set to ``False`` it will use
-:class:`~scrapy.crawler.AsyncCrawlerProcess`. Otherwise, if the
-:setting:`TWISTED_REACTOR` value is the default one
-(``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``),
-:class:`~scrapy.crawler.AsyncCrawlerProcess` will be used, otherwise
-:class:`~scrapy.crawler.CrawlerProcess` will be used. The :ref:`spider settings
-<spider-settings>` are not taken into account when doing this, as they are
-loaded after this decision is made. This may cause an error if the
-project-level setting is set to :ref:`the asyncio reactor <install-asyncio>`
-(:ref:`explicitly <project-settings>` or :ref:`by using the Scrapy default
-<default-settings>`) and :ref:`the setting of the spider being run
-<spider-settings>` is set to :ref:`a different one <disable-asyncio>`, because
-:class:`~scrapy.crawler.AsyncCrawlerProcess` only supports the asyncio reactor.
-In this case, you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
-``True`` (at the project level or via the command line) so that Scrapy uses
-:class:`~scrapy.crawler.CrawlerProcess`, which supports all reactors.
+They use an internal instance of :class:`scrapy.crawler.AsyncCrawlerProcess`
+for this.
 
 .. _custom-commands:
 
@@ -841,9 +820,8 @@ and overriding specific methods. Here's what you need to know:
 * :attr:`~scrapy.commands.ScrapyCommand.requires_project` (bool): If ``True``,
   the command only runs inside a Scrapy project (default: ``False``).
 * :attr:`~scrapy.commands.ScrapyCommand.requires_crawler_process` (bool): If
-  ``True``, a :class:`~scrapy.crawler.AsyncCrawlerProcess` or
-  :class:`~scrapy.crawler.CrawlerProcess` instance will be created by Scrapy
-  when the command runs and made available in the
+  ``True``, a :class:`~scrapy.crawler.AsyncCrawlerProcess` instance will be
+  created by Scrapy when the command runs and made available in the
   :attr:`~scrapy.commands.ScrapyCommand.crawler_process` attribute (default:
   ``True``).
 * :attr:`~scrapy.commands.ScrapyCommand.default_settings` (dict): Settings that

@@ -309,6 +309,10 @@ class MySpider(scrapy.Spider):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             not in log
         )
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
+        )
 
     @pytest.mark.requires_uvloop
     def test_custom_asyncio_loop_enabled_true(self, tmp_path: Path) -> None:
