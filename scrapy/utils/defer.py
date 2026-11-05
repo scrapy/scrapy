@@ -630,10 +630,11 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
     This function requires an installed asyncio reactor or a running asyncio
     event loop, see :ref:`using-asyncio`.
 
-    In this state you cannot await on :class:`~twisted.internet.defer.Deferred`
-    objects from :ref:`Scrapy callables defined as coroutines
-    <coroutine-support>`, you can only await on ``Future`` objects. Wrapping
-    ``Deferred`` objects into ``Future`` objects allows you to wait on them:
+    This function is needed because you cannot await on
+    :class:`~twisted.internet.defer.Deferred` objects from :ref:`Scrapy
+    callables defined as coroutines <coroutine-support>`, you can only await on
+    :class:`~asyncio.Future` objects. Wrapping ``Deferred`` objects into
+    ``Future`` objects allows you to await on them:
 
     .. code-block:: python
 
