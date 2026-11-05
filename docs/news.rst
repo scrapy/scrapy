@@ -34,7 +34,7 @@ Security bug fixes
     including those to :ref:`awaited requests <inline-requests>` and to
     requests sent with :meth:`ExecutionEngine.download_async()
     <scrapy.core.engine.ExecutionEngine.download_async>`. Use it to change or
-    disable the limit.
+    disable the limit. The :command:`shell` disables it.
 
     .. _CVE-2017-14158: https://github.com/advisories/GHSA-h7wm-ph43-c39p
 
@@ -156,7 +156,10 @@ Backward-incompatible changes
       :exc:`RuntimeError` if called before
       :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async` has
       finished, instead of sending the :signal:`engine_started` signal
-      anyway.
+      anyway, and if called after the engine has stopped.
+
+    - The :signal:`engine_stopped` signal is now sent only after all
+      :signal:`engine_started` handlers have finished.
 
     - If the spider is closed before the engine is started, for example by
       calling :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async`
@@ -197,7 +200,8 @@ Backward-incompatible changes
 
 -   The built-in HTTP download handlers now limit their open connections with
     the new :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER` setting, whose
-    default value is derived from the limit of open files of the process.
+    default value is derived from the limit of open files of the process, or
+    is 480 on Windows.
     :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
     :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` had no
     such limit before, and
@@ -205,9 +209,9 @@ Backward-incompatible changes
     and :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
     used :setting:`CONCURRENT_REQUESTS` as their limit. If you set
     :setting:`CONCURRENT_REQUESTS` higher than that default, a warning is
-    logged, and you need to raise the limit of open files of the process (see
-    :ref:`faq-too-many-open-files`) or set
-    :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER`.
+    logged, and you need to set :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER`
+    or, on platforms other than Windows, raise the limit of open files of the
+    process (see :ref:`faq-too-many-open-files`).
     (:gh:`2653`, :gh:`5024`, :gh:`5618`, :gh:`7932`)
 
 -   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` no
@@ -318,9 +322,9 @@ Backward-incompatible changes
 
 -   The ``process_response()`` method of :class:`HttpCompressionMiddleware
     <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>`
-    is now a coroutine function. Subclasses that override it and call
-    ``super().process_response()`` must now be ``async def`` and await that
-    call.
+    is now a coroutine function. Code that calls it must now await it, and
+    subclasses that override it and call ``super().process_response()`` must
+    now be ``async def``.
     (:gh:`3751`, :gh:`8153`)
 
 -   The ``item_scraped()`` method of
@@ -344,7 +348,9 @@ Backward-incompatible changes
     output of :class:`~scrapy.exporters.PickleItemExporter`,
     :class:`~scrapy.exporters.MarshalItemExporter`,
     :class:`~scrapy.exporters.PprintItemExporter` and custom
-    :class:`~scrapy.exporters.BaseItemExporter` subclasses.
+    :class:`~scrapy.exporters.BaseItemExporter` subclasses, and
+    :class:`~scrapy.exporters.CsvItemExporter` now joins list-like values,
+    e.g. sets, the way it joins lists.
     (:gh:`3888`, :gh:`3890`, :gh:`8057`)
 
 -   The output of a request :ref:`errback <errbacks>` that runs because a
@@ -379,15 +385,29 @@ Backward-incompatible changes
 
 -   The ``process_request()`` method of
     :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` is now
-    a coroutine function. Subclasses that override it and call
-    ``super().process_request()`` must now be ``async def`` and await that
-    call.
+    a coroutine function. Code that calls it must now await it, and subclasses
+    that override it and call ``super().process_request()`` must now be
+    ``async def``.
     (:gh:`2744`, :gh:`7915`)
 
 -   ``XMLFeedSpider.parse_nodes()`` and ``CSVFeedSpider.parse_rows()`` are now
     asynchronous generators. Code that calls them must now iterate over their
     output with ``async for``.
     (:gh:`8392`)
+
+-   The settings of the built-in storages of :ref:`media pipelines
+    <topics-media-pipeline>` are no longer set as class attributes of those
+    storages, e.g. ``S3FilesStore.POLICY`` keeps its default value regardless
+    of :setting:`FILES_STORE_S3_ACL`. Read them from the storage object of the
+    pipeline instead, e.g. ``pipeline.store.POLICY``.
+    (:gh:`7925`)
+
+-   ``Scraper.slot`` and the deprecated ``scrapy.core.scraper.Slot`` class
+    now take a :class:`~scrapy.crawler.Crawler` object instead of a maximum
+    active size, their ``finish_response()`` method no longer takes a
+    *result* parameter, their ``MIN_RESPONSE_SIZE`` attribute was removed,
+    and their deprecated ``active_size`` attribute is read-only.
+    (:gh:`6430`)
 
 -   The engine status that the :ref:`telnet console <topics-telnetconsole>`
     reports now includes ``engine.response_active_size`` instead of
@@ -435,7 +455,8 @@ Backward-incompatible changes
     instead of ``utf-16``, and ``utf-8`` instead of ``cp1252`` when the
     response declares no encoding and its body is ASCII-only, e.g. empty. For
     encoding labels that web browsers decode as a single U+FFFD character, like
-    ``hz``, it reports ``replacement``, which Python cannot decode, so use
+    ``hz``, it reports ``replacement``, which raises
+    :exc:`UnicodeDecodeError` when decoding any non-empty body, so use
     :attr:`TextResponse.text <scrapy.http.TextResponse.text>` instead of
     ``response.body.decode(response.encoding)``.
 
@@ -462,9 +483,10 @@ Backward-incompatible changes
     that :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
     follows, are now found the way web browsers find them. In particular, they
     are now found anywhere in the response body, instead of only in its first
-    4096 characters, the meta refresh with the shortest delay now wins over the
-    first one, meta refreshes to the response URL itself are no longer
-    followed, and the base URL is normalized like request URLs.
+    4096 characters, the meta refresh with the shortest delay, and the last one
+    among those with that delay, now wins over the first one, meta refreshes to
+    the response URL itself are no longer followed, and the base URL is
+    normalized like request URLs.
     (:gh:`8393`)
 
 -   The ``response`` attribute of :class:`~scrapy.Selector` objects is now
@@ -491,8 +513,7 @@ Backward-incompatible changes
 
     ``ContractsManager.extract_contracts()`` now returns a list of batches,
     each a list of contracts, and ``ContractsManager.from_method()`` now
-    returns a list of requests, one per batch, instead of a request or
-    ``None``.
+    returns a list of requests instead of a request or ``None``.
 
     (:gh:`768`, :gh:`8043`)
 
@@ -617,6 +638,11 @@ Deprecations
     <scrapy.crawler.Crawler.crawl_async>` completes when that happens.
     (:gh:`6916`, :gh:`8217`)
 
+-   Setting the :attr:`ExecutionEngine.running
+    <scrapy.core.engine.ExecutionEngine.running>` attribute is deprecated, and
+    has no effect.
+    (:gh:`8181`)
+
 -   Custom :ref:`schedulers <topics-scheduler>` that do not set
     :attr:`~scrapy.core.scheduler.BaseScheduler.supports_skip_dupefilter_once`
     to ``True`` are deprecated, including subclasses of the default scheduler
@@ -708,7 +734,8 @@ Deprecations
     ``scrapy.utils.response.get_meta_refresh()`` are deprecated. Use the new
     :attr:`TextResponse.base_url <scrapy.http.TextResponse.base_url>` and
     :attr:`TextResponse.meta_refresh <scrapy.http.TextResponse.meta_refresh>`
-    attributes instead.
+    attributes instead. When there is no meta refresh, the latter is ``None``
+    instead of ``(None, None)``.
     (:gh:`8393`)
 
 -   The ``METAREFRESH_IGNORE_TAGS`` setting is deprecated. Use the new
@@ -1020,9 +1047,7 @@ New features
 
     Pipelines no longer share the settings of built-in storages, so that e.g.
     the files and images pipelines of a crawl can use different values for
-    :setting:`FILES_STORE_S3_ACL` and :setting:`IMAGES_STORE_S3_ACL`. Built-in
-    storages no longer get those settings as class attributes, e.g.
-    ``S3FilesStore.POLICY``.
+    :setting:`FILES_STORE_S3_ACL` and :setting:`IMAGES_STORE_S3_ACL`.
     (:gh:`5991`, :gh:`7925`)
 
 -   Added :setting:`FILES_CHECKSUM_ALGORITHM` and
@@ -1278,7 +1303,8 @@ Improvements
     meta key is ``False``, responses cut short by a lost connection are now
     returned with the ``dataloss`` flag; otherwise, they now fail with
     :exc:`~scrapy.exceptions.ResponseDataLossError` instead of
-    ``ResponseFailed``. HTTP/2 data loss is now also detected by
+    :exc:`~scrapy.exceptions.DownloadFailedError`. HTTP/2 data loss is now also
+    detected by
     :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
     (:gh:`5048`, :gh:`7989`)
 
@@ -1384,8 +1410,9 @@ Bug fixes
     field on one also did it on the other.
     (:gh:`8172`)
 
--   Calling ``exit()`` in the :ref:`telnet console <topics-telnetconsole>` now
-    closes the connection, instead of logging an unhandled error.
+-   Calling ``exit()`` or ``quit()`` in the :ref:`telnet console
+    <topics-telnetconsole>` now closes the connection, instead of logging an
+    unhandled error.
     (:gh:`3853`, :gh:`8065`)
 
 -   An exception raised while building the :setting:`SCHEDULER` is now
@@ -1658,7 +1685,7 @@ Documentation
     :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async` and
     :meth:`~scrapy.core.engine.ExecutionEngine.stop_async` methods of the
     execution engine.
-    (:gh:`6164`)
+    (:gh:`6164`, :gh:`8462`)
 
 -   Documented :ref:`how to write asyncio code that also supports older Scrapy
     versions <asyncio-old-versions>`, and the documentation now recommends
