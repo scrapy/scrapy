@@ -46,10 +46,8 @@ Modified requirements
 -   Dropped support for Python 3.10.
     (:gh:`8261`)
 
--   Scrapy no longer officially supports PyPy. It may still work if you
-    manually remove ``PyDispatcher`` and install ``PyPyDispatcher``, and if
-    ``brotli`` can be installed, but this is not guaranteed.
-    (:gh:`7849`, :gh:`8358`, :gh:`8367`)
+-   Scrapy no longer officially supports PyPy.
+    (:gh:`7849`, :gh:`8358`, :gh:`8367`, :gh:`8393`)
 
 -   New dependencies:
 
@@ -449,15 +447,16 @@ Backward-incompatible changes
 
     (:gh:`8393`)
 
--   :attr:`TextResponse.encoding <scrapy.http.TextResponse.encoding>` now
-    reports the Python codec names of the encodings that web browsers use, e.g.
-    ``gbk`` instead of ``gb18030`` for a ``gb2312`` label, ``utf-16-le``
-    instead of ``utf-16``, and ``utf-8`` instead of ``cp1252`` when the
-    response declares no encoding and its body is ASCII-only, e.g. empty. For
-    encoding labels that web browsers decode as a single U+FFFD character, like
-    ``hz``, it reports ``replacement``, which raises
-    :exc:`UnicodeDecodeError` when decoding any non-empty body, so use
-    :attr:`TextResponse.text <scrapy.http.TextResponse.text>` instead of
+-   For encodings declared in the response, :attr:`TextResponse.encoding
+    <scrapy.http.TextResponse.encoding>` now reports the Python codec names of
+    the encodings that web browsers use, e.g. ``gbk`` instead of ``gb18030``
+    for a ``gb2312`` label, and ``utf-16-le`` instead of ``utf-16``. It also
+    reports ``utf-8`` instead of ``cp1252`` when the response declares no
+    encoding and its body is ASCII-only, e.g. empty. For encoding labels that
+    web browsers decode as a single U+FFFD character, like ``hz``, it reports
+    ``replacement``, which raises :exc:`UnicodeDecodeError` when decoding any
+    non-empty body, so use :attr:`TextResponse.text
+    <scrapy.http.TextResponse.text>` instead of
     ``response.body.decode(response.encoding)``.
 
     :attr:`TextResponse.text <scrapy.http.TextResponse.text>` can also differ:
@@ -467,7 +466,7 @@ Backward-incompatible changes
 
     - Encodings that web browsers ignore, like ``utf-32`` or ``cp437``, are now
       ignored when declared, and the encoding is detected instead. A ``<meta>``
-      tag that declares UTF-16 now means UTF-8.
+      tag or XML declaration that declares UTF-16 now means UTF-8.
 
     - Encoding declarations in ``<meta>`` tags are now found past the first
       4096 bytes of the response body.
@@ -484,8 +483,9 @@ Backward-incompatible changes
     follows, are now found the way web browsers find them. In particular, they
     are now found anywhere in the response body, instead of only in its first
     4096 characters, the meta refresh with the shortest delay, and the last one
-    among those with that delay, now wins over the first one, meta refreshes to
-    the response URL itself are no longer followed, and the base URL is
+    among those with that delay, now wins over the first one, meta refreshes
+    within ``<script>`` or ``<template>`` elements, or to the response URL
+    itself, ignoring its fragment, are no longer followed, and the base URL is
     normalized like request URLs.
     (:gh:`8393`)
 
@@ -799,9 +799,10 @@ New features
 
 -   Added :attr:`TextResponse.base_url <scrapy.http.TextResponse.base_url>` and
     :attr:`TextResponse.meta_refresh <scrapy.http.TextResponse.meta_refresh>`,
-    which return the base URL and the :class:`~scrapy.http.MetaRefresh` of a
-    response that a web browser with JavaScript enabled would follow, and which
-    you can set to override what the response body says. When
+    which return the base URL of a response and the
+    :class:`~scrapy.http.MetaRefresh` that a web browser with JavaScript
+    enabled would follow, and which you can set to override what the response
+    body says. When
     :setting:`METAREFRESH_SCRIPTING` is ``False``,
     :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
     ignores an overridden :attr:`~scrapy.http.TextResponse.meta_refresh`.
@@ -1229,7 +1230,7 @@ Improvements
 -   With parsel_ 1.12.0+, :class:`~scrapy.Selector` objects created from a
     UTF-8 response now parse the response body as is, instead of decoding it
     first, which saves time and memory.
-    (:gh:`5906`, :gh:`8195`, :gh:`8222`)
+    (:gh:`5906`, :gh:`8195`, :gh:`8222`, :gh:`8393`)
 
 -   Responses are now freed as soon as nothing refers to them, also after
     using their selector or after their callback raises an exception, instead
