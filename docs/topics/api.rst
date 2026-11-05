@@ -94,6 +94,8 @@ to how you :ref:`configure the downloader middlewares
 
     .. autoattribute:: engine
 
+    .. autoattribute:: throttler
+
     .. attribute:: spider
 
         Spider currently being crawled. This is an instance of the spider class

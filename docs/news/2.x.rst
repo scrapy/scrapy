@@ -59,7 +59,7 @@ Scrapy 2.13.3 (2025-07-02)
 --------------------------
 
 -   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (from ``8`` to ``1``) in the
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` (from ``8`` to ``1``) in the
     default project template.
     (:gh:`6597`, :gh:`6918`, :gh:`6923`)
 
@@ -1824,9 +1824,9 @@ New features
 ~~~~~~~~~~~~
 
 -   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` and
     ``RANDOMIZE_DOWNLOAD_DELAY`` can now be set on a per-domain basis
-    via the new :setting:`DOWNLOAD_SLOTS` setting. (:gh:`5328`)
+    via the new ``DOWNLOAD_SLOTS`` setting. (:gh:`5328`)
 
 -   Added :meth:`.TextResponse.jmespath`, a shortcut for JMESPath selectors
     available since parsel_ 1.8.1. (:gh:`5894`, :gh:`5915`)

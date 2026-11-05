@@ -19,6 +19,7 @@ from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
     _aiter_errback,
+    _Event,
     _parallel_async,
     _process_pending_io,
     deferred_f_from_coro_f,
@@ -527,6 +528,43 @@ class TestMaybeDeferredToFutureNotAsyncio:
         result = maybe_deferred_to_future(d)
         assert isinstance(result, Deferred)
         assert result is d
+
+
+class TestEvent:
+    def test_fire(self) -> None:
+        event = _Event()
+        waiters = [event.wait(), event.wait()]
+        assert not any(waiter.called for waiter in waiters)
+        event.fire()
+        assert all(waiter.called for waiter in waiters)
+        # Firing again does not call the same waiters a second time (which would
+        # raise): they are dropped as they fire.
+        event.fire()
+
+    def test_fire_limit(self) -> None:
+        event = _Event()
+        waiters = [event.wait(), event.wait(), event.wait()]
+        event.fire(0)
+        assert not any(waiter.called for waiter in waiters)
+        event.fire(2)
+        assert [waiter.called for waiter in waiters] == [True, True, False]
+        event.fire(2)
+        assert all(waiter.called for waiter in waiters)
+
+    def test_fire_skips_already_fired(self) -> None:
+        event = _Event()
+        waiter = event.wait()
+        waiter.callback(None)  # fired out-of-band
+        event.fire()
+        assert waiter.called
+
+    def test_discard(self) -> None:
+        event = _Event()
+        waiter = event.wait()
+        event.discard(waiter)
+        event.discard(waiter)  # idempotent
+        event.fire()
+        assert not waiter.called
 
 
 def test_maybe_deferred_coro_deferred() -> None:

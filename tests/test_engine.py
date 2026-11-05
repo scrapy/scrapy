@@ -324,6 +324,61 @@ async def test_request_scheduled_signal():
     crawler.signals.disconnect(signal_handler, signals.request_scheduled)
 
 
+class TestEngineThrottler:
+    @pytest.fixture
+    def engine(self):
+        crawler = get_crawler(MySpider)
+        engine = ExecutionEngine(crawler)
+        yield engine
+        engine.downloader.close()
+
+    @coroutine_test
+    async def test_acquire_throttler_reruns_the_loop_for_unscheduled(self, engine):
+        engine._slot = Mock()
+        engine.crawler.throttler = Mock()
+        engine.crawler.throttler.acquire = Mock(return_value=None)
+        request = Request("http://a.example")
+
+        await maybe_deferred_to_future(engine._acquire_throttler(request, False))
+        # A request from the scheduler goes on to the downloader, whose own
+        # finally block re-runs the loop once it is done with it.
+        engine._slot.nextcall.schedule.assert_not_called()
+
+        await maybe_deferred_to_future(engine._acquire_throttler(request, True))
+        # An unscheduled request stops claiming the free slots of its scopes
+        # here, which can be what lets a request that shares them through.
+        engine._slot.nextcall.schedule.assert_called_once_with()
+
+    @pytest.mark.parametrize(
+        ("concurrency", "waiting", "active", "expected"),
+        [
+            (2, 1, 0, False),
+            (2, 1, 1, True),
+            (2, 2, 0, True),
+            (0, 2, 0, False),
+        ],
+    )
+    @coroutine_test
+    async def test_needs_backout_counts_throttled_requests(
+        self, concurrency: int, waiting: int, active: int, expected: bool
+    ) -> None:
+        crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": concurrency})
+        crawler.spider = crawler._create_spider()
+        engine = crawler.engine = ExecutionEngine(crawler)
+        await engine.open_spider_async()
+        engine._state = EngineState.RUNNING
+        engine._throttler_waiting = {
+            Request(f"https://example.com/w{i}"): Mock() for i in range(waiting)
+        }
+        engine.downloader.active = {
+            Request(f"https://example.com/a{i}") for i in range(active)
+        }
+        assert engine.needs_backout() is expected
+        engine._throttler_waiting = {}
+        engine.downloader.active = set()
+        await engine.close_spider_async()
+
+
 class ClosingPipeline:
     def open_spider(self):
         raise CloseSpider("pipeline_reason")

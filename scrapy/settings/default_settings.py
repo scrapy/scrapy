@@ -237,6 +237,11 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "THROTTLER",
+    "THROTTLER_DEBUG",
+    "THROTTLING_SCOPES",
+    "THROTTLING_SCOPE_CONCURRENCY",
+    "THROTTLING_SCOPE_LIMIT",
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
@@ -657,6 +662,12 @@ TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
+THROTTLER = "scrapy.throttler.Throttler"
+THROTTLING_SCOPES: dict[str, dict[str, Any]] = {}
+THROTTLING_SCOPE_CONCURRENCY = 1
+THROTTLING_SCOPE_LIMIT = 100000
+THROTTLER_DEBUG = False
+
 TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
@@ -678,7 +689,7 @@ def __getattr__(name: str) -> Any:
         from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
 
         warnings.warn(
-            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.THROTTLING_SCOPE_CONCURRENCY instead.",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )

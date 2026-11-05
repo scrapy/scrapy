@@ -138,7 +138,7 @@ Deprecations
 
 -   The ``RANDOMIZE_DOWNLOAD_DELAY`` setting is deprecated. Use the new
     :setting:`DOWNLOAD_DELAY_JITTER` setting instead. Similarly, the
-    ``randomize_delay`` key of the :setting:`DOWNLOAD_SLOTS` setting is
+    ``randomize_delay`` key of the ``DOWNLOAD_SLOTS`` setting is
     deprecated in favor of a new ``jitter`` key, the ``randomize_delay``
     attribute of :class:`scrapy.core.downloader.Slot` is deprecated in favor of
     its new ``jitter`` attribute, and the ``randomize_delay`` attribute
@@ -186,7 +186,7 @@ New features
     (:gh:`845`, :gh:`7877`)
 
 -   Added a :setting:`DOWNLOAD_DELAY_JITTER` setting, and a ``jitter`` key for
-    :setting:`DOWNLOAD_SLOTS`, which set the magnitude of the random variation
+    ``DOWNLOAD_SLOTS``, which set the magnitude of the random variation
     applied to :setting:`DOWNLOAD_DELAY`. They replace the
     ``RANDOMIZE_DOWNLOAD_DELAY`` setting and the ``randomize_delay`` key, which
     could only toggle a fixed ±50%.
@@ -623,11 +623,11 @@ Deprecations
 ~~~~~~~~~~~~
 
 -   The ``download_delay`` spider attribute is deprecated. Use the
-    :setting:`DOWNLOAD_DELAY` setting, or :setting:`DOWNLOAD_SLOTS` to set a
+    :setting:`DOWNLOAD_DELAY` setting, or ``DOWNLOAD_SLOTS`` to set a
     delay for specific domains, instead.
 
     The ``max_concurrent_requests`` spider attribute, deprecated since Scrapy
-    2.14.0, now sets the :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting,
+    2.14.0, now sets the ``CONCURRENT_REQUESTS_PER_DOMAIN`` setting,
     which is what it always mapped to, and warns accordingly.
 
     Both attributes are ignored, with a different warning, when the
@@ -2612,7 +2612,7 @@ Deprecations
     - ``download_warnsize`` (use :setting:`DOWNLOAD_WARNSIZE`)
 
     - ``max_concurrent_requests`` (use
-      :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`)
+      ``CONCURRENT_REQUESTS_PER_DOMAIN``)
 
     - ``user_agent`` (use :setting:`USER_AGENT`)
 
@@ -2714,7 +2714,7 @@ Deprecations
     (:gh:`7005`, :gh:`7043`)
 
 -   The ``CONCURRENT_REQUESTS_PER_IP`` setting is deprecated, use
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` instead.
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` instead.
     (:gh:`6917`, :gh:`6921`)
 
 -   The ``scrapy.core.downloader.handlers.http`` module is deprecated. You
@@ -2897,7 +2897,7 @@ Bug fixes
     a relative URL.
     (:gh:`7042`, :gh:`7047`)
 
--   Passing ``None`` as a value of the :reqmeta:`download_slot` request meta
+-   Passing ``None`` as a value of the ``download_slot`` request meta
     key is now handled in the same way as not setting this meta key at all.
     (:gh:`7172`)
 

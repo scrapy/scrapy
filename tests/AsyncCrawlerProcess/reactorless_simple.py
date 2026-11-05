@@ -13,7 +13,12 @@ class NoRequestsSpider(scrapy.Spider):
 
 
 process = AsyncCrawlerProcess(
-    settings={"TWISTED_REACTOR_ENABLED": False, "MEMUSAGE_ENABLED": False}
+    settings={
+        "TWISTED_REACTOR_ENABLED": False,
+        "MEMUSAGE_ENABLED": False,
+        # Pinned to silence the CONCURRENT_REQUESTS_PER_DOMAIN transition warning.
+        "THROTTLING_SCOPE_CONCURRENCY": 1,
+    }
 )
 
 process.crawl(NoRequestsSpider)

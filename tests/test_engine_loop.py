@@ -275,7 +275,7 @@ class TestRequestSendOrder:
         priority: int = 0,
     ) -> Request:
         url = mockserver.url(f"/delay?n={response_seconds}&{num}")
-        meta = {"download_slot": str(num % download_slots)}
+        meta = {"throttling_scopes": str(num % download_slots)}
         return Request(url, meta=meta, priority=priority)
 
     def get_num(self, request_or_response: Request | Response) -> int:

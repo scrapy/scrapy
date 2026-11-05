@@ -18,7 +18,12 @@ class NoRequestsSpider(Spider):
 async def main() -> None:
     configure_logging()
     runner = AsyncCrawlerRunner(
-        settings={"TWISTED_REACTOR_ENABLED": False, "MEMUSAGE_ENABLED": False}
+        settings={
+            "TWISTED_REACTOR_ENABLED": False,
+            "MEMUSAGE_ENABLED": False,
+            # Pinned to silence the CONCURRENT_REQUESTS_PER_DOMAIN transition warning.
+            "THROTTLING_SCOPE_CONCURRENCY": 1,
+        }
     )
     await runner.crawl(NoRequestsSpider)
 

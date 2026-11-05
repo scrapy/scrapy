@@ -622,6 +622,13 @@ one per actual value of the placeholder.
     Seconds during which sending requests to the downloader was paused because
     :setting:`RESPONSE_MAX_ACTIVE_SIZE` was reached.
 
+.. stat:: request_backout_seconds/throttling
+
+``request_backout_seconds/throttling``
+    Seconds during which sending requests to the downloader was paused because
+    requests waiting on :ref:`throttling <throttling>` took up the remaining
+    :setting:`CONCURRENT_REQUESTS` slots.
+
 .. stat:: request_backout_seconds/total
 
 ``request_backout_seconds/total``

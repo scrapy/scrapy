@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from twisted.internet import defer
 
-from scrapy import signals
+from scrapy import Request, signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.statscollectors import MemoryStatsCollector
+from scrapy.utils.asyncio import sleep
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -54,7 +56,9 @@ async def test_exception_downloader(
     engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
-    del engine.downloader.slots
+    engine.downloader.close = Mock(  # type: ignore[method-assign]
+        side_effect=Exception("close failed")
+    )
     await engine.close_spider_async()
     assert "Downloader close failure" in caplog.text
 
@@ -164,6 +168,24 @@ async def test_fast_close_stops_downloader_and_records_dropped_requests(
     assert calls == 1
     assert crawler.stats
     assert crawler.stats.get_value("downloader/request_dropped_count") == 3
+
+
+@coroutine_test
+async def test_fast_close_drops_throttled_requests(crawler: Crawler) -> None:
+    engine = ExecutionEngine(crawler)
+    crawler.engine = engine
+    await engine.open_spider_async()
+    engine.crawl(Request("https://example.com", meta={"delay": 60}))
+    started = deferred_from_coro(engine.start_async())
+    await sleep(0.1)
+    assert engine._throttler_waiting
+
+    await engine.stop_async(mode="fast")
+    await maybe_deferred_to_future(started)
+
+    assert not engine._throttler_waiting
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_dropped_count") == 1
 
 
 @coroutine_test

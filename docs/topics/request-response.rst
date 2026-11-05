@@ -805,7 +805,6 @@ are some special keys recognized by Scrapy and its built-in extensions.
 Those are:
 
 * :reqmeta:`allow_offsite`
-* :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
 * :reqmeta:`body_file`
 * :reqmeta:`cache_timestamp`
@@ -818,10 +817,10 @@ Those are:
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
+* :reqmeta:`dont_throttle`
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
-* :reqmeta:`download_slot`
 * :reqmeta:`download_timeout`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`ftp_local_filename`
@@ -849,6 +848,7 @@ Those are:
 * :reqmeta:`retry_times`
 * :reqmeta:`rule`
 * :reqmeta:`skip_dupefilter_once`
+* :reqmeta:`throttling_scopes`
 * :reqmeta:`verbatim_url`
 
 Scrapy components also use meta keys whose name starts with an underscore, such
@@ -943,8 +943,8 @@ Number of seconds to hold a request before sending it:
 
 The delay is a minimum: once it elapses, the request competes with the other
 pending requests as usual, subject to e.g. its
-:attr:`~scrapy.Request.priority`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
-:setting:`DOWNLOAD_DELAY`.
+:attr:`~scrapy.Request.priority` and the :ref:`throttling <throttling>` of its
+scopes.
 
 Scrapy removes this key as soon as the countdown starts, so that a copy of the
 request, e.g. a retry or a redirect, is not held again, and so that setting the

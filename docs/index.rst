@@ -155,6 +155,7 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
+   topics/throttling
    topics/autothrottle
    topics/security
    topics/jobs
@@ -192,6 +193,10 @@ Solving specific problems
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
+
+:doc:`topics/throttling`
+    Control request throttling to avoid overloading websites and comply with
+    rate limits.
 
 :doc:`topics/autothrottle`
     Adjust crawl rate dynamically based on load.

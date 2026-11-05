@@ -89,6 +89,7 @@ class TestSpiderBase(ABC):
         project_settings = {
             "TEST1": "project",
             "TEST3": "project",
+            "THROTTLING_SCOPE_CONCURRENCY": 1,
             **get_reactor_settings(),
         }
 

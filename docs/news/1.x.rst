@@ -682,8 +682,7 @@ The following deprecated APIs have been removed (:gh:`3578`):
 
 *   From :class:`~scrapy.spiders.Spider` (and subclasses):
 
-    *   ``DOWNLOAD_DELAY`` (use :ref:`download_delay
-        <spider-download_delay-attribute>`)
+    *   ``DOWNLOAD_DELAY`` (use ``download_delay``)
 
     *   ``set_crawler`` (use :meth:`~scrapy.spiders.Spider.from_crawler`)
 
