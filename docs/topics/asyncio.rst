@@ -216,9 +216,10 @@ Here are some examples of APIs and patterns that need a replacement:
   :class:`~scrapy.crawler.AsyncCrawlerProcess` or
   :class:`~scrapy.crawler.AsyncCrawlerRunner` respectively instead.
 
-Scrapy provides this replacement for :class:`~twisted.internet.task.LoopingCall`:
+Scrapy provides this replacement for
+:class:`~twisted.internet.task.LoopingCall`:
 
-  .. autoclass:: scrapy.utils.asyncio.AsyncioLoopingCall
+.. autoclass:: scrapy.utils.asyncio.AsyncioLoopingCall
 
 If your code needs to know whether the reactor is available, you can either
 check for the value of the :setting:`TWISTED_REACTOR_ENABLED` setting (you need

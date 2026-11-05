@@ -129,15 +129,15 @@ def install_reactor(
 ) -> None:
     """Install the asyncio Twisted reactor.
 
+    .. versionchanged:: VERSION
+        *reactor_path* is now optional and accepts ``None``.
+
     *reactor_path* can be ``None`` or
-    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``, these values
+    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``; these values
     have the same effect.
 
     *event_loop_path*, if not ``None``, should be the import path of the
     asyncio event loop class to be used.
-
-    .. versionchanged:: VERSION
-        *reactor_path* is now optional and accepts ``None``.
     """
     if reactor_path is None:
         reactor_path = _asyncio_reactor_path

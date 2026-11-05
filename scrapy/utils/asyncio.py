@@ -61,8 +61,8 @@ def is_asyncio_available() -> bool:
     there is no such loop, it returns ``True`` if the Twisted reactor that is
     installed is
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, returns
-    ``False`` if a different reactor is installed (which is deprecated), and
-    raises a :exc:`RuntimeError` if no reactor is installed.
+    ``False`` if a different reactor is installed, and raises a
+    :exc:`RuntimeError` if no reactor is installed.
 
     The case when this function returns ``False`` is deprecated, and in a
     future Scrapy version this function will always return ``True``. Use it

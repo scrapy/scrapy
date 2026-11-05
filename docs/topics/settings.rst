@@ -346,12 +346,12 @@ process <run-multiple-spiders>`.
 
 The :setting:`ASYNCIO_EVENT_LOOP` setting is used upon installing the reactor.
 It can be :ref:`set from a spider <spider-settings>`, but only the value
-from the first spider that runs are used, since that is when the reactor is
+from the first spider that runs is used, since that is when the reactor is
 installed. If a later spider asks for a different event loop, an exception is
 raised. With :class:`~scrapy.crawler.CrawlerRunner` and
 :class:`~scrapy.crawler.AsyncCrawlerRunner` the reactor must be installed
 beforehand, so this setting is only used to check that the installed event loop
-match it.
+matches it.
 
 There is an additional restriction when using
 :class:`~scrapy.crawler.AsyncCrawlerProcess`: when this class is instantiated,

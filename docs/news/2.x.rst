@@ -210,7 +210,8 @@ Backward-incompatible changes
     ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``. This value
     was used in newly generated projects since Scrapy 2.7.0 but now existing
     projects that don't explicitly set this setting will also use the asyncio
-    reactor. You can change this setting in your project to use a different reactor.
+    reactor. You can change this setting in your project to use a different
+    reactor.
     (:gh:`6659`, :gh:`6713`)
 
 -   The iteration of start requests and items no longer stops once there are

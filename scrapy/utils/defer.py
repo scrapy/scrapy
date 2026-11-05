@@ -632,7 +632,7 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
 
     This function is needed because you cannot await on
     :class:`~twisted.internet.defer.Deferred` objects from :ref:`Scrapy
-    callables defined as coroutines <coroutine-support>`, you can only await on
+    callables defined as coroutines <coroutine-support>`; you can only await on
     :class:`~asyncio.Future` objects. Wrapping ``Deferred`` objects into
     ``Future`` objects allows you to await on them:
 
