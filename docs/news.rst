@@ -998,7 +998,6 @@ New features
     returns the part of the response received so far, with the ``dataloss``
     flag, instead of raising :exc:`~scrapy.exceptions.DownloadTimeoutError`,
     with all built-in download handlers except
-    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` and
     :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`.
     (:gh:`3407`, :gh:`3492`, :gh:`8084`)
 
