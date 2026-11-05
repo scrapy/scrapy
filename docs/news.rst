@@ -215,10 +215,10 @@ Backward-incompatible changes
 
     (:gh:`6430`, :gh:`8417`, :gh:`8459`, :gh:`8460`)
 
--   Header names in :class:`~scrapy.http.headers.Headers` objects, i.e. in
-    :attr:`Request.headers <scrapy.Request.headers>` and
-    :attr:`Response.headers <scrapy.http.Response.headers>`, now keep the case
-    they are first set with, instead of being converted to ``Title-Case``.
+-   Header names in ``Headers`` objects, i.e. in :attr:`Request.headers
+    <scrapy.Request.headers>` and :attr:`Response.headers
+    <scrapy.http.Response.headers>`, now keep the case they are first set
+    with, instead of being converted to ``Title-Case``.
     Lookups are still case-insensitive, but code that iterates over header
     names and compares them to ``Title-Case`` strings must be updated.
 
@@ -265,7 +265,7 @@ Backward-incompatible changes
     used to be silently ignored, and a missing module used to raise
     :exc:`ModuleNotFoundError` instead. Fix the import path or remove the
     entry.
-    (:gh:`7820`, :gh:`7967`, :gh:`8159`)
+    (:gh:`7820`, :gh:`8159`)
 
 -   :class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` now also
     extracts links with the ``data`` and ``s3`` schemes by default, since
@@ -303,7 +303,7 @@ Backward-incompatible changes
     (:gh:`3751`, :gh:`8153`)
 
 -   The ``item_scraped()`` method of
-    :class:`~scrapy.extensions.feedexport.FeedExporter`, and the
+    ``scrapy.extensions.feedexport.FeedExporter``, and the
     ``start_exporting()`` and ``finish_exporting()`` methods of
     ``scrapy.extensions.feedexport.FeedSlot``, are now coroutine functions.
     (:gh:`5622`, :gh:`6273`, :gh:`7800`)
@@ -332,8 +332,9 @@ Backward-incompatible changes
     support, which prevents the crawl from starting. In particular, setting
     the ``overwrite`` feed option to ``False`` for an :ref:`S3
     <topics-feed-storage-s3>` feed, which used to log a warning, now raises
-    :exc:`ValueError`.
-    (:gh:`5580`, :gh:`7826`)
+    :exc:`ValueError`. For a :ref:`GCS <topics-feed-storage-gcs>` feed, which
+    used to log a warning and overwrite the file, it now appends to the file.
+    (:gh:`5580`, :gh:`7826`, :gh:`8173`)
 
 -   :attr:`~scrapy.spiders.SitemapSpider.sitemap_follow` now also filters the
     sitemap URLs declared in :file:`robots.txt` files. If you set it, make sure
@@ -388,13 +389,39 @@ Backward-incompatible changes
 
 -   :attr:`TextResponse.encoding <scrapy.http.TextResponse.encoding>` now
     reports the encoding names that web browsers use, e.g. ``gbk`` instead of
-    ``gb18030``, and ``utf-8`` instead of ``ascii`` when the response declares
-    no encoding and has an empty body. For encoding labels that web browsers
-    decode as a single U+FFFD character, like ``hz``, it reports
-    ``replacement``, which is not a Python codec, so use
+    ``gb18030``, and ``utf-8`` instead of ``cp1252`` when the response
+    declares no encoding and its body is ASCII-only, e.g. empty. For encoding
+    labels that web browsers decode as a single U+FFFD character, like ``hz``,
+    it reports ``replacement``, which is not a Python codec, so use
     :attr:`TextResponse.text <scrapy.http.TextResponse.text>` instead of
     ``response.body.decode(response.encoding)``.
+
+    :attr:`TextResponse.text <scrapy.http.TextResponse.text>` can also
+    differ: the detected encoding of responses that declare none and are not
+    valid UTF-8 can change, and response bodies are decoded the way web
+    browsers decode them, which for some encodings, like ``euc-jp``, differs
+    from Python codecs.
+
     (:gh:`8393`)
+
+-   The base URL of a response, used by :meth:`TextResponse.urljoin()
+    <scrapy.http.TextResponse.urljoin>`, :ref:`selectors
+    <topics-selectors>` and :ref:`link extractors <topics-link-extractors>`,
+    and the meta refresh that
+    :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
+    follows, are now found the way web browsers find them. In particular,
+    they are now found anywhere in the response body, instead of only in its
+    first 4096 characters, the meta refresh with the shortest delay now wins
+    over the first one, and meta refreshes to the response URL itself are no
+    longer followed.
+    (:gh:`8393`)
+
+-   The ``response`` attribute of :class:`~scrapy.Selector` objects is now
+    read-only. For the selector of a response, i.e.
+    :attr:`TextResponse.selector <scrapy.http.TextResponse.selector>`, it no
+    longer keeps the response alive, and becomes ``None`` once nothing else
+    refers to the response.
+    (:gh:`8245`)
 
 -   A negative value of :setting:`FILES_EXPIRES` or :setting:`IMAGES_EXPIRES`
     now disables expiration, so that files are never downloaded again once
@@ -410,6 +437,12 @@ Backward-incompatible changes
 -   A blank line between :ref:`contract <topics-contracts>` lines in a callback
     docstring now starts a new batch of contracts, which needs its own ``@url``
     line; otherwise, the contracts of that batch do not run.
+
+    ``ContractsManager.extract_contracts()`` now returns a list of batches,
+    each a list of contracts, and ``ContractsManager.from_method()`` now
+    returns a list of requests, one per batch, instead of a request or
+    ``None``.
+
     (:gh:`768`, :gh:`8043`)
 
 Deprecations
@@ -513,11 +546,9 @@ Deprecations
     instead.
     (:gh:`2186`, :gh:`8189`)
 
--   The following methods of :class:`~scrapy.http.headers.Headers` are
-    deprecated:
+-   The following methods of ``Headers`` are deprecated:
 
-    - ``fromkeys()``: pass ``(key, value)`` pairs to
-      :class:`~scrapy.http.headers.Headers` instead.
+    - ``fromkeys()``: pass ``(key, value)`` pairs to ``Headers`` instead.
 
     - ``has_key()``: use the ``in`` operator instead.
 
@@ -745,7 +776,9 @@ New features
     sets for requests from callbacks and errbacks, from
     :meth:`Response.follow() <scrapy.http.Response.follow>` and from
     :meth:`Request.replace() <scrapy.Request.replace>`, e.g. redirects and
-    retries.
+    retries. Use the new *parent_id* parameter of :class:`~scrapy.Request` to
+    set it on requests that your code builds on behalf of another request,
+    e.g. in a downloader middleware.
     (:gh:`8225`)
 
 -   Added a :command:`genrequest` command, which prints the Python code of a
@@ -1047,8 +1080,9 @@ New features
 -   Added a :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER` setting, which limits
     the number of connections, idle ones included, that each download handler
     keeps open. By default, the limit is derived from the maximum number of
-    open files allowed for the process, to prevent ``Too many open files``
-    errors (see :ref:`faq-too-many-open-files`).
+    open files allowed for the process, or from the :func:`select.select`
+    limit on Windows, to prevent ``Too many open files`` errors (see
+    :ref:`faq-too-many-open-files`).
 
     :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
     and :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
@@ -1082,10 +1116,9 @@ New features
     functions (``async def``) or asynchronous generator functions.
     (:gh:`8392`)
 
--   ``item_completed()`` in subclasses of
-    :class:`~scrapy.pipelines.media.MediaPipeline` can now be defined as a
-    coroutine function (``async def``), and ``stat_file()`` in :ref:`custom
-    media storages <media-pipeline-custom-storage>` can now await
+-   ``item_completed()`` in subclasses of ``MediaPipeline`` can now be defined
+    as a coroutine function (``async def``), and ``stat_file()`` in
+    :ref:`custom media storages <media-pipeline-custom-storage>` can now await
     :mod:`asyncio` code.
     (:gh:`8413`)
 
@@ -1113,14 +1146,6 @@ Improvements
     way web browsers find them, and declared encoding names are mapped to
     encodings the way web browsers map them, e.g. ``gb2312`` to GBK instead of
     GB18030.
-    (:gh:`8393`)
-
--   The base URL of a response, used by :meth:`TextResponse.urljoin()
-    <scrapy.http.TextResponse.urljoin>`, :ref:`selectors
-    <topics-selectors>` and :ref:`link extractors <topics-link-extractors>`,
-    and the meta refresh that
-    :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
-    follows, are now found the way web browsers find them.
     (:gh:`8393`)
 
 -   With parsel_ 1.12.0+, :class:`~scrapy.Selector` objects created from a
@@ -1254,9 +1279,9 @@ Improvements
     (:gh:`5431`, :gh:`8431`)
 
 -   Other code refactoring and improvements.
-    (:gh:`8168`, :gh:`8243`, :gh:`8262`, :gh:`8263`, :gh:`8295`, :gh:`8313`,
-    :gh:`8315`, :gh:`8323`, :gh:`8335`, :gh:`8353`, :gh:`8355`, :gh:`8382`,
-    :gh:`8385`, :gh:`8391`, :gh:`8415`)
+    (:gh:`8243`, :gh:`8262`, :gh:`8263`, :gh:`8295`, :gh:`8313`, :gh:`8315`,
+    :gh:`8323`, :gh:`8335`, :gh:`8353`, :gh:`8355`, :gh:`8385`, :gh:`8391`,
+    :gh:`8415`)
 
 Bug fixes
 ~~~~~~~~~
@@ -1271,12 +1296,13 @@ Bug fixes
     (:gh:`3716`, :gh:`7991`)
 
 -   :meth:`Request.from_curl() <scrapy.Request.from_curl>` now handles
-    headers without a value (``-H 'Name;'``) as curl does, supports ``-u`` with
-    a user name and no password, and raises :exc:`ValueError` for an empty
-    command, instead of failing with unexpected exceptions. It also turns ``-H
-    'Name:'`` into a header set to ``None``, i.e. not sent, instead of a header
-    with an empty value, ignores headers that curl would not send, and keeps a
-    leading ``$`` in request data instead of removing it.
+    headers without a value (``-H 'Name;'``) as curl does, ignores headers
+    that curl would not send, supports ``-u`` with a user name and no
+    password, and raises :exc:`ValueError` for an empty command, instead of
+    failing with unexpected exceptions. It also turns ``-H 'Name:'`` into a
+    header set to ``None``, i.e. not sent, instead of a header with an empty
+    value, supports Bash ``$'…'`` quoting in any argument, e.g. headers, and
+    keeps a leading ``$`` in request data instead of removing it.
 
     :meth:`Request.to_curl() <scrapy.Request.to_curl>` now includes every
     value of repeated headers, handles headers set to ``None`` and no longer
@@ -1368,8 +1394,8 @@ Bug fixes
 
     (:gh:`8265`)
 
--   :meth:`Headers.get() <scrapy.http.headers.Headers.get>` now returns the
-    given default value for a header set to ``None``.
+-   ``Headers.get()`` now returns the given default value for a header set to
+    ``None``.
     (:gh:`8268`)
 
 -   Fixed the ``downloader/request_bytes`` and ``downloader/response_bytes``
@@ -1393,9 +1419,10 @@ Bug fixes
     the ``Location`` header ends with an empty fragment (``#``).
     (:gh:`8100`)
 
--   The default scheduler now pops requests by :attr:`~scrapy.Request.priority`
-    across its memory and disk queues, instead of popping every request from
-    the memory queue before any from the disk queue.
+-   When using a :ref:`job directory <job-dir>`, the default scheduler now pops
+    requests by :attr:`~scrapy.Request.priority` across its memory and disk
+    queues, instead of popping every request from the memory queue before any
+    from the disk queue.
 
     Custom :setting:`SCHEDULER_PRIORITY_QUEUE` classes need to implement the
     new :meth:`~scrapy.pqueues.PriorityQueueProtocol.next_priority` method to
@@ -1464,15 +1491,27 @@ Bug fixes
     downloaded for another request.
     (:gh:`8297`, :gh:`8386`)
 
--   With :attr:`~scrapy.spiders.SitemapSpider.sitemap_alternate_links`
-    enabled, :class:`~scrapy.spiders.SitemapSpider` now only follows links
-    with ``rel="alternate"``, instead of any link, e.g. canonical ones.
+-   :class:`~scrapy.spiders.SitemapSpider` now only treats links with
+    ``rel="alternate"`` as alternate links, instead of any link, e.g.
+    canonical ones, both when
+    :attr:`~scrapy.spiders.SitemapSpider.sitemap_alternate_links` is enabled
+    and in the entries passed to
+    :meth:`~scrapy.spiders.SitemapSpider.sitemap_filter`.
     (:gh:`8390`)
 
 -   Download handlers are now closed when the engine is closed without having
     been started, e.g. when opening the spider fails, and the downloader is now
     closed when the engine is stopped without a spider.
     (:gh:`8167`, :gh:`8377`)
+
+-   The reactorless :command:`shell` now waits for the engine to start before
+    letting you use it.
+    (:gh:`8168`)
+
+-   On Windows,
+    :class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`
+    no longer connects to the wrong port in rare cases.
+    (:gh:`8382`)
 
 -   The Scrapy :command:`shell` no longer uses ptpython_ on Windows when the
     standard output is not a console, which ptpython_ does not support.
@@ -1500,7 +1539,7 @@ Documentation
     (:gh:`4451`, :gh:`8165`)
 
 -   Moved the release notes of Scrapy 2.13 and older into separate pages per
-    release series.
+    major version.
     (:gh:`8150`)
 
 -   Documented :ref:`how to extract clean content and parse values
@@ -1542,8 +1581,17 @@ Documentation
     declarative rules.
     (:gh:`7025`, :gh:`8240`)
 
--   Documented :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async`.
+-   Documented the
+    :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async`,
+    :meth:`~scrapy.core.engine.ExecutionEngine.start_async`,
+    :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async` and
+    :meth:`~scrapy.core.engine.ExecutionEngine.stop_async` methods of the
+    execution engine.
     (:gh:`6164`)
+
+-   Documented :func:`~scrapy.utils.decorators.inthread`, to call blocking
+    code from :ref:`coroutines <topics-coroutines>`.
+    (:gh:`7956`)
 
 -   Reviewed the documentation of :class:`~scrapy.Spider`, which now covers
     all its attributes, including :attr:`~scrapy.Spider.state`.
@@ -1573,14 +1621,14 @@ Documentation
     (:gh:`5259`, :gh:`5272`)
 
 -   Other documentation improvements and fixes.
-    (:gh:`5859`, :gh:`7114`, :gh:`7956`, :gh:`8151`, :gh:`8161`, :gh:`8403`,
+    (:gh:`5859`, :gh:`7114`, :gh:`8151`, :gh:`8161`, :gh:`8314`, :gh:`8403`,
     :gh:`8404`, :gh:`8436`, :gh:`8453`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
 
 -   Improved and fixed type hints.
-    (:gh:`8078`, :gh:`8183`, :gh:`8333`, :gh:`8440`)
+    (:gh:`7811`, :gh:`8078`, :gh:`8183`, :gh:`8311`, :gh:`8333`, :gh:`8440`)
 
 -   Improved CodSpeed benchmarks.
     (:gh:`8227`, :gh:`8234`, :gh:`8456`)

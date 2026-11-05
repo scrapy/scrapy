@@ -2437,6 +2437,8 @@ For more info see: :ref:`topics-stats`.
 STICKY_META_KEYS
 ----------------
 
+.. versionadded:: VERSION
+
 Default: ``[]`` (empty list)
 
 The :attr:`Request.meta <scrapy.http.Request.meta>` keys to copy automatically
