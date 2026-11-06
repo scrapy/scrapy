@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from scrapy import Spider
 from scrapy.extensions.logstats import LogStats
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
 
@@ -42,6 +47,7 @@ async def test_stats_calculations(crawler: Crawler, stats: StatsCollector) -> No
 
     assert crawler.spider
     logstats.spider_opened(crawler.spider)
+    logstats.calculate_stats()
     assert logstats.pagesprev == 4802
     assert logstats.itemsprev == 3201
 
@@ -94,3 +100,24 @@ def test_stats_calculation_no_elapsed_time(
     logstats.spider_closed(crawler.spider, "test reason")
     assert stats.get_value("responses_per_minute") is None
     assert stats.get_value("items_per_minute") is None
+
+
+class _SleepingSpider(Spider):
+    name = "sleeping"
+
+    async def start(self) -> AsyncIterator[Any]:
+        await sleep(0.3)
+        return
+        yield
+
+
+@pytest.mark.parametrize(("interval", "logged"), [(60, False), (0.1, True)])
+@coroutine_test
+async def test_first_line_after_interval(
+    interval: float, logged: bool, caplog: pytest.LogCaptureFixture
+) -> None:
+    crawler = get_crawler(_SleepingSpider, {"LOGSTATS_INTERVAL": interval})
+    with caplog.at_level(logging.INFO):
+        await crawler.crawl_async()
+    lines = [r for r in caplog.records if r.name == "scrapy.extensions.logstats"]
+    assert bool(lines) is logged
