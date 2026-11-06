@@ -116,6 +116,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstrac
         return self._response_active_size + self._rough_active_size
 
     def _count_rough_size(self, request: Request) -> None:
+        if request.meta.get("body_file"):
+            return
         # Counting the same request twice, which concurrent downloads of the
         # same request object would do, would leak its rough size, since only
         # one discount call can find it.

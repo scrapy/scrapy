@@ -52,6 +52,29 @@ logger = getLogger(__name__)
 _DELAY_DEADLINE_META_KEY = "_delay_deadline"
 
 
+def _unscheduled_size_exceeded(self) -> bool:
+    """Return whether RESPONSE_MAX_ACTIVE_SIZE holds back requests sent
+    with ExecutionEngine.download_async().
+
+    Those requests skip the engine backout, so they are limited here,
+    against the responses to such requests alone. Responses to scheduled
+    requests are limited by the engine backout.
+    """
+    middleware = self.middleware
+    if not middleware._max_active_size:
+        return False
+    rough_size = sum(
+        middleware._rough_sizes.get(request, 0)
+        for slot in self.slots.values()
+        for request in slot.transferring
+            if request in middleware._unscheduled_requests
+        )
+    size = (
+            middleware._unscheduled_response_active_size +
+            self._unscheduled_transfers * middleware._response_rough_size + rough_size
+    )
+    return size >= middleware._max_active_size
+
 def _start_delay_countdown(request: Request) -> None:
     """Turn the ``delay`` meta key of *request*, if any, into a deadline.
 
