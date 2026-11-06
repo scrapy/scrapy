@@ -1113,7 +1113,7 @@ restrict automatic redirection to the maximum delay.
 METAREFRESH_SCRIPTING
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. setting:: METAREFRESH_SCRIPTING
 

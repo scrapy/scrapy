@@ -52,7 +52,7 @@ class MetaRefresh(NamedTuple):
     """Meta refresh of a :class:`TextResponse`, as
     :attr:`TextResponse.meta_refresh` reports it.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
     """
 
     delay: float
@@ -177,7 +177,7 @@ class TextResponse(Response):
     def base_url(self) -> str:
         """Absolute URL that relative URLs of the response are relative to.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         It is the ``href`` of the first ``<base>`` element that has one,
         resolved against :attr:`~Response.url`, or :attr:`~Response.url`
@@ -198,7 +198,7 @@ class TextResponse(Response):
         """:class:`MetaRefresh` that a web browser with JavaScript enabled
         would follow, or ``None``.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         Setting it overrides the value read from the body.
         """

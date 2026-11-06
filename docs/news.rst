@@ -773,8 +773,9 @@ New features
     downloaded without keeping them in memory, with :ref:`download handlers
     that support it <download-handlers-ref>`. Set it to a file path, or to
     ``True`` to write into a new temporary file. Those requests get a
-    :class:`~scrapy.http.BodyFileResponse`.
-    (:gh:`3880`, :gh:`4620`, :gh:`5044`, :gh:`7987`)
+    :class:`~scrapy.http.BodyFileResponse`, and neither they nor their
+    responses count toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`.
+    (:gh:`3880`, :gh:`4620`, :gh:`5044`, :gh:`7987`, :gh:`8466`)
 
 -   Sending a shutdown signal, e.g. with Ctrl+C, a second time now triggers a
     fast stop, which drops queued and in-progress downloads instead of waiting
