@@ -2050,12 +2050,14 @@ the limit.
 It counts the body size of responses that have been downloaded or returned by
 :ref:`downloader middlewares <topics-downloader-middleware>` and remain in
 memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
-currently being downloaded. While that total is above this value, Scrapy stops
-taking requests from the scheduler. While the part of it that comes from
-requests sent with :meth:`~scrapy.core.engine.ExecutionEngine.download_async`,
-which include :ref:`awaited requests <inline-requests>` and those of
-:ref:`media pipelines <topics-media-pipeline>`, is above this value, new
-requests of that kind wait before being downloaded.
+currently being downloaded. Requests that use :reqmeta:`body_file` do not
+count, and neither do their responses. While that total is above this value,
+Scrapy stops taking requests from the scheduler. While the part of it that
+comes from requests sent with
+:meth:`~scrapy.core.engine.ExecutionEngine.download_async`, which include
+:ref:`awaited requests <inline-requests>` and those of :ref:`media pipelines
+<topics-media-pipeline>`, is above this value, new requests of that kind wait
+before being downloaded.
 
 Requests already being downloaded when the limit is reached still finish: up to
 :setting:`CONCURRENT_REQUESTS` from the scheduler, and up to this value divided
