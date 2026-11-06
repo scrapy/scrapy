@@ -145,9 +145,9 @@ Modified requirements
 
     - formerly_ >= 0.1.0
 
-    - frostwork_ >= 0.2.0
+    - frostwork_ >= 0.2.2
 
-    - typing-extensions_ >= 4.6.0 (on Python 3.12 and lower)
+    - typing-extensions_ >= 4.13.0 (on Python 3.12 and lower)
 
     (:gh:`7894`, :gh:`8213`, :gh:`8303`, :gh:`8376`, :gh:`8378`, :gh:`8393`)
 
