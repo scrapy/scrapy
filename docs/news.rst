@@ -55,6 +55,23 @@ Security bug fixes
 
     .. _j72p-v7rm-cwm3: https://github.com/scrapy/scrapy/security/advisories/GHSA-j72p-v7rm-cwm3
 
+-   When :reqmeta:`http_auth_domain` is not set, the credentials from
+    :reqmeta:`http_user` and :reqmeta:`http_pass` are now only sent to the
+    origin (scheme, host and port) of the request where they were first used.
+
+    In previous Scrapy versions, they were sent to any URL, so after a
+    cross-origin redirect,
+    :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware` added
+    them again to the ``Authorization`` header that
+    :class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware` had
+    removed, sending them to the redirect target. A website could redirect
+    Scrapy to a host under its control to steal those credentials. See the
+    `466x-p45j-m4fx`_ security advisory for details.
+
+    .. _466x-p45j-m4fx: https://github.com/scrapy/scrapy/security/advisories/GHSA-466x-p45j-m4fx
+
+    (:gh:`8329`)
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 

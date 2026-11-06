@@ -277,13 +277,14 @@ def test_main(config: dict[str, Any], expected: bytes | type[Exception] | None) 
         ),
     ],
 )
+@pytest.mark.parametrize("headers", [{}, {"Authorization": "a"}])
 def test_origin_setdefault(
-    meta: dict[str, Any], url: str, output_value: str | None
+    meta: dict[str, Any], url: str, output_value: str | None, headers: dict[str, str]
 ) -> None:
     """When request.meta is used for authorization, an _auth_origin meta key is
     defined on the request if not defined already."""
     mw = build_from_crawler(HttpAuthMiddleware, get_crawler())
-    request = Request(url, meta=meta)
+    request = Request(url, headers=headers, meta=meta)
     assert mw.process_request(request) is None
     if output_value is None:
         assert "_auth_origin" not in request.meta
