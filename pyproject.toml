@@ -87,6 +87,18 @@ uvloop = [
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
 
+[dependency-groups]
+docs = [
+    "h2",
+    "pydantic",
+    "scrapy-spider-metadata",
+    "sphinx",
+    "sphinx-notfound-page",
+    "sphinx-reredirects",
+    "sphinx-rtd-dark-mode",
+    "sphinx-rtd-theme",
+]
+
 [tool.hatch.build.targets.sdist]
 include = [
   "/docs",

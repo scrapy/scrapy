@@ -1334,7 +1334,7 @@ class TestS3FilesStore:
         bucket = "mybucket"
         key = "export.csv"
         # S3FilesStore needs to be fixed to emit tz-aware datetimes
-        last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
+        last_modified = datetime(2019, 12, 1)
 
         store = S3FilesStore(f"s3://{bucket}/{key}")
         monkeypatch.setattr(store, "_use_async", lambda: False)
