@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import re
 import warnings
 from http.cookies import SimpleCookie
-from shlex import split
+from shlex import quote, split
 from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
@@ -94,8 +95,63 @@ def _parse_headers_and_cookies(
     return headers, cookies
 
 
+_ANSI_C_QUOTED_RE = re.compile(r"\$'((?:[^'\\]|\\.)*)'", re.DOTALL)
+# https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
+_ANSI_C_ESCAPE_RE = re.compile(
+    r"\\(?:([abeEfnrtv\\'\"?])|u([0-9A-Fa-f]{1,4})|U([0-9A-Fa-f]{1,8})|c(\\\\?|.))"
+    # A run of octal and hex escapes, each of them a byte.
+    r"|((?:\\(?:[0-7]{1,3}|x[0-9A-Fa-f]{1,2}))+)",
+    re.DOTALL,
+)
+_ANSI_C_SIMPLE_ESCAPES = {
+    "a": "\a",
+    "b": "\b",
+    "e": "\x1b",
+    "E": "\x1b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+}
+# Maps the surrogates that the surrogateescape error handler uses for
+# undecodable bytes to the Latin-1 characters of those bytes.
+_SURROGATE_ESCAPES_TO_LATIN1 = {0xDC00 + byte: byte for byte in range(0x80, 0x100)}
+
+
+def _decode_ansi_c_escape(match: re.Match[str]) -> str:
+    simple, short_unicode, long_unicode, control, byte_escapes = match.groups()
+    if simple is not None:
+        return _ANSI_C_SIMPLE_ESCAPES.get(simple, simple)
+    if control is not None:
+        # \c\\ counts as \c followed by a single backslash.
+        return "\x7f" if control == "?" else chr(ord(control[0]) & 0x1F)
+    if byte_escapes is not None:
+        data = bytes(
+            int(escape[1:], 16) if escape[0] == "x" else int(escape, 8) & 0xFF
+            for escape in byte_escapes.split("\\")[1:]
+        )
+        # Bash (printf %q) writes non-ASCII characters as their UTF-8 bytes,
+        # while Firefox writes characters below U+0100 as \xHH, so bytes that
+        # are not valid UTF-8 are read as Latin-1.
+        return data.decode("utf-8", "surrogateescape").translate(
+            _SURROGATE_ESCAPES_TO_LATIN1
+        )
+    return chr(int(short_unicode or long_unicode, 16))
+
+
+def _decode_ansi_c_string(value: str) -> str:
+    """Decode *value*, the contents of a Bash ``$'...'`` string."""
+    decoded = _ANSI_C_ESCAPE_RE.sub(_decode_ansi_c_escape, value)
+    # Bash cuts the string at the first NUL byte.
+    decoded = decoded.partition("\0")[0]
+    # Firefox writes characters above U+FFFF as a UTF-16 surrogate pair of
+    # \u escapes; join them, and fail on unpaired surrogates.
+    return decoded.encode("utf-16-le", "surrogatepass").decode("utf-16-le")
+
+
 def _normalize_curl_command(curl_command: str) -> str:
-    """Normalize Bash ANSI-C quote prefixes for shlex."""
+    """Replace Bash ANSI-C quoted strings with their value quoted for shlex."""
     result: list[str] = []
     in_single_quote = False
     in_double_quote = False
@@ -119,14 +175,13 @@ def _normalize_curl_command(curl_command: str) -> str:
             result.append(char)
         elif (
             char == "$"
-            and i + 1 < len(curl_command)
-            and curl_command[i + 1] == "'"
             and not in_single_quote
             and not in_double_quote
+            and (match := _ANSI_C_QUOTED_RE.match(curl_command, i))
         ):
-            result.append("'")
-            in_single_quote = True
-            i += 1
+            result.append(quote(_decode_ansi_c_string(match[1])))
+            i = match.end()
+            continue
         else:
             result.append(char)
 
