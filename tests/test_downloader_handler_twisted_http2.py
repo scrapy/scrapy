@@ -55,9 +55,7 @@ class H2DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         # the import can fail when H2_ENABLED is False
-        from scrapy.core.downloader.handlers.http2 import (  # noqa: PLC0415
-            H2DownloadHandler,
-        )
+        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler  # noqa: PLC0415
 
         return H2DownloadHandler
 
