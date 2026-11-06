@@ -61,9 +61,8 @@ jobs:
         with:
           python-version: "3.14"
       - run: |
-          python -m pip install -r docs/requirements.txt
-          python -m pip install .
-          sphinx-build -b html -q docs docs/_build/html
+          python -m pip install tox
+          tox -e docs
           python extras/github-release-notes.py "$GITHUB_REF_NAME" docs/_build/html/news.md > release-notes.md
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
