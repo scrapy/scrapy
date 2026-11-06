@@ -1454,10 +1454,12 @@ TextResponse objects
     is the same as for the :class:`Response` class and is not documented here.
 
     :param encoding: is a string which contains the encoding to use for this
-       response. If you create a :class:`TextResponse` object with a string as
-       body, it will be converted to bytes encoded using this encoding. If
-       *encoding* is ``None`` (default), the encoding will be looked up in the
-       response headers and body instead.
+       response, as a label of the `Encoding Standard`_, which web browsers
+       implement, or as the name of the Python codec of one of its encodings,
+       e.g. ``cp932`` for Shift_JIS. If you create a :class:`TextResponse`
+       object with a string as body, it will be converted to bytes encoded
+       using this encoding. If *encoding* is ``None`` (default), the encoding
+       will be looked up in the response headers and body instead.
     :type encoding: str
 
     :class:`TextResponse` objects support the following attributes in addition
@@ -1467,8 +1469,7 @@ TextResponse objects
 
        Response body, as a string.
 
-       The same as ``response.body.decode(response.encoding)``, but the
-       result is cached after the first call, so you can access
+       The result is cached after the first call, so you can access
        ``response.text`` multiple times without extra overhead.
 
        .. note::
@@ -1540,6 +1541,10 @@ TextResponse objects
         A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
 
+    .. autoattribute:: TextResponse.base_url
+
+    .. autoattribute:: TextResponse.meta_refresh
+
     .. autoattribute:: TextResponse.attributes
 
     :class:`TextResponse` objects support the following methods in addition to
@@ -1581,12 +1586,14 @@ TextResponse objects
 
     .. method:: TextResponse.urljoin(url)
 
-        Constructs an absolute url by combining the Response's base url with
-        a possible relative url. The base url shall be extracted from the
-        ``<base>`` tag, or just :attr:`Response.url` if there is no such
-        tag.
+        Constructs an absolute url by combining :attr:`base_url` with a
+        possible relative url.
+
+.. autoclass:: MetaRefresh
+    :members:
 
 .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+.. _Encoding Standard: https://encoding.spec.whatwg.org/
 .. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 

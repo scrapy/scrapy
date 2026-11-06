@@ -22,7 +22,6 @@ from scrapy.linkextractors import IGNORED_EXTENSIONS, SUPPORTED_SCHEMES, _matche
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
-from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
@@ -164,7 +163,7 @@ class LxmlParserLinkExtractor:
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response: TextResponse) -> list[Link]:
-        base_url = get_base_url(response)
+        base_url = response.base_url
         return self._extract_links(
             response.selector, response.url, response.encoding, base_url
         )
@@ -438,7 +437,7 @@ class LxmlLinkExtractor:
         Duplicate links are omitted if the ``unique`` attribute is set to ``True``,
         otherwise they are returned.
         """
-        base_url = get_base_url(response)
+        base_url = response.base_url
         if self.restrict_xpaths:
             docs = [
                 subdoc for x in self.restrict_xpaths for subdoc in response.xpath(x)

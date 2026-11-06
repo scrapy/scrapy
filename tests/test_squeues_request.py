@@ -239,7 +239,7 @@ def test_sqlite_queue_survives_unclean_shutdown(
 ) -> None:
     key = str(tmp_path / "queue")
     queue = queue_cls.from_crawler(crawler=crawler, key=key)
-    queue.push(Request("https://toscrape.com"))
+    queue.push(Request("https://toscrape.com/"))
     # No close(), as if the process had been killed. The connection is closed
     # directly instead, since on Windows the file cannot be removed later while
     # it is still open.
@@ -250,7 +250,7 @@ def test_sqlite_queue_survives_unclean_shutdown(
         assert len(queue) == 1
         request = queue.pop()
         assert request is not None
-        assert request.url == "https://toscrape.com"
+        assert request.url == "https://toscrape.com/"
     finally:
         queue.close()
 
