@@ -139,6 +139,20 @@ class MySpider(scrapy.Spider):
         assert ("[scrapy]" in log1) is value
         assert ("[scrapy.core.engine]" in log1) is not value
 
+    def test_runspider_nameless_spider(self, tmp_path: Path) -> None:
+        nameless_spider = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    async def start(self):
+        self.logger.debug("It Works!")
+        return
+        yield
+"""
+        log = self.get_log(tmp_path, nameless_spider)
+        assert "[MySpider] DEBUG: It Works!" in log
+        assert "INFO: Spider closed (finished)" in log
+
     def test_runspider_no_spider_found(self, tmp_path: Path) -> None:
         log = self.get_log(tmp_path, "from scrapy.spiders import Spider\n")
         assert "No spider found in file" in log
