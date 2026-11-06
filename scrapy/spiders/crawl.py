@@ -66,10 +66,10 @@ class Rule:
     responses those links produce, and whether to keep extracting links from
     them.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
        The *name* and *from_rules* parameters.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
        *errback* may now be a coroutine function (``async def``) or an
        asynchronous generator function.
 

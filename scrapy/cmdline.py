@@ -5,13 +5,14 @@ import cProfile
 import inspect
 import os
 import sys
+import warnings
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, ParamSpec
 
 import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.utils.misc import walk_modules_iter
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.reactor import _asyncio_reactor_path
@@ -211,9 +212,15 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
     _run_print_help(parser, cmd.process_options, args, opts)
 
     if cmd.requires_crawler_process:
+        if force_crawler_process := settings.getbool("FORCE_CRAWLER_PROCESS"):
+            warnings.warn(
+                "The FORCE_CRAWLER_PROCESS setting is deprecated.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         if (
             settings["TWISTED_REACTOR"] == _asyncio_reactor_path
-            and not settings.getbool("FORCE_CRAWLER_PROCESS")
+            and not force_crawler_process
         ) or not settings.getbool("TWISTED_REACTOR_ENABLED"):
             cmd.crawler_process = AsyncCrawlerProcess(settings)
         else:

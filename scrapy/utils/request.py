@@ -127,7 +127,7 @@ class RequestFingerprinterProtocol(Protocol):
 class RequestFingerprinter:
     """Default fingerprinter.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
        :reqmeta:`download_handler` is taken into account.
 
     It takes into account a canonical version

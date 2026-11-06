@@ -38,7 +38,7 @@ class TestSelector:
 
     def test_root_base_url(self) -> None:
         body = b'<html><form action="/path"><input name="a" /></form></html>'
-        url = "http://example.com"
+        url = "http://example.com/"
         response = TextResponse(url=url, body=body, encoding="utf-8")
         sel = Selector(response)
         assert url == sel.root.base
@@ -123,6 +123,17 @@ class TestSelector:
     def test_utf16(self, body: bytes, headers: dict[str, str]) -> None:
         response = HtmlResponse("https://example.com", body=body, headers=headers)
         assert response.css("p::text").get() == "£€"
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            b"<meta charset=euc-jp><p>\xa1\xc1 \xad\xa1</p>",
+            b"<p>\xa1\xc1 \xad\xa1" + "日本語です。".encode("euc_jp") * 50 + b"</p>",
+        ],
+    )
+    def test_browser_decoding(self, body: bytes) -> None:
+        response = HtmlResponse("https://example.com", body=body)
+        assert response.css("p::text").get("").startswith("～ ①")
 
     def test_weakref_slots(self) -> None:
         """Check that classes are using slots and are weak-referenceable"""

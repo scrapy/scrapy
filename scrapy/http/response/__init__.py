@@ -311,7 +311,7 @@ class Response(object_ref):
         """Return a :class:`~.Request` instance to follow the ``Location``
         header of this response.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         It accepts the same arguments as :meth:`follow`, except ``url``, which
         comes from the ``Location`` header. Unlike in :meth:`follow`, that URL is

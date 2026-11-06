@@ -298,7 +298,7 @@ Supported :ref:`modes <feed-mode>`: ``"append"``, ``"create"`` and
 Appending turns the feed into a `composite object`_, which has a CRC32C
 checksum but no MD5 hash.
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
    Appending support.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
@@ -357,7 +357,7 @@ URI scheme through the :setting:`FEED_STORAGES` setting.
       Optional set of supported values of the ``mode`` :ref:`feed option
       <feed-options>`, e.g. ``frozenset({"create", "overwrite"})``.
 
-      .. versionadded:: VERSION
+      .. versionadded:: 2.20.0
 
       Setting ``mode`` to an unsupported value raises an exception, which
       prevents the crawl from running. A storage class that does not define
@@ -427,7 +427,7 @@ ItemFilter
 Item processing
 ===============
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 The ``item_processor`` :ref:`feed option <feed-options>` takes a callable, or
 its import path, that receives an accepted item and returns an iterable of the
@@ -447,8 +447,8 @@ the feed that declares them. Items are exported as returned, so the
 :signal:`item_scraped` signal, :ref:`item pipelines <topics-item-pipeline>` and
 the ``item_scraped_count`` stat still see the item as scraped; use item
 processors for output formatting, and item pipelines for anything that should
-apply to the item itself. The number of exported entries per feed is reported
-as the ``feedexport/item_count/<storage class>`` stat.
+apply to the item itself. The number of exported entries is reported per
+storage class, as the ``feedexport/item_count/<storage class>`` stat.
 
 
 .. _post-processing:
@@ -608,7 +608,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``item_processor``: an :ref:`item processor <item-processor>` to reshape
     items before they are exported.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     If undefined, items are exported as scraped.
 
@@ -618,7 +618,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``mode``: falls back to :setting:`FEED_MODE`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
 -   ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`.
 
@@ -675,7 +675,7 @@ to ``.json`` or ``.xml``.
 FEED_MODE
 ---------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``"create"`` (:ref:`fallback <default-settings>`: ``None``)
 

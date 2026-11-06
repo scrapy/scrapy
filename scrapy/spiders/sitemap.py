@@ -237,7 +237,7 @@ class SitemapSpider(Spider):
         """Return the request for the *loc* URL of the sitemap *entry*, to be
         parsed with *callback*.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         Override this method to build those requests differently, e.g. to
         carry sitemap data and request metadata over to *callback*:

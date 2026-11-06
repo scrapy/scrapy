@@ -122,7 +122,7 @@ one or more of these methods:
         This method is an :term:`asynchronous generator` called with the
         results from the spider after the spider has processed the response.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            It is also called with the output of a request :ref:`errback
            <errbacks>`, with *response* set to ``None``, when the errback runs
            because a download failed.
@@ -159,7 +159,7 @@ one or more of these methods:
         <errbacks>` or a :meth:`process_spider_output` method (from a previous
         spider middleware) raises an exception.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            It is also called for exceptions raised while iterating the output
            of an errback that runs because a download failed, with *response*
            set to ``None``.

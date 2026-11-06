@@ -125,7 +125,7 @@ Set some basic configuration:
     class MyAddon:
         def update_settings(self, settings):
             settings.set("DNSCACHE_ENABLED", True, "addon")
-            settings.remove_from_list("METAREFRESH_IGNORE_TAGS", "noscript")
+            settings.remove_from_list("RETRY_HTTP_CODES", 429)
             settings.setdefault_in_component_priority_dict(
                 "ITEM_PIPELINES", MyPipeline, 200
             )

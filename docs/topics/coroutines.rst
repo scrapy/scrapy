@@ -63,7 +63,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - :meth:`~scrapy.exporters.BaseItemExporter.finish_exporting`
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
 -   Methods of :ref:`custom feed storages <topics-feed-storage-custom>` (see
     :setting:`FEED_STORAGES`):
@@ -72,7 +72,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - :meth:`~scrapy.extensions.feedexport.FeedStorageProtocol.store`
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
 -   The following methods of subclasses of
     :class:`scrapy.pipelines.media.MediaPipeline`:
@@ -92,7 +92,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - ``item_completed()``
 
-      .. versionadded:: VERSION
+      .. versionadded:: 2.20.0
 
 -   The following methods of :ref:`custom media storages
     <media-pipeline-custom-storage>`:
@@ -103,12 +103,12 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     - ``stat_file()``
 
-      .. versionadded:: VERSION
+      .. versionadded:: 2.20.0
 
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 
 .. _coroutine-deferred-apis:
@@ -124,21 +124,17 @@ In the future we plan to add support for the ``async def`` syntax to these APIs
 or replace them with other APIs where changing the existing ones isn't
 possible.
 
-These APIs have a coroutine-based implementation and a Deferred-based one:
+These APIs have a coroutine-based implementation and a Deferred-based one, to
+make it easier to write Deferred-based code; the Deferred-based ones will be
+deprecated in a future Scrapy version:
 
--   :class:`scrapy.crawler.Crawler`:
-
-    - :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
-      :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based): the former
-      may be inconvenient to use in Deferred-based code so both are available,
-      this may change in a future Scrapy version.
+-   :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
+    :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based)
 
 -   :class:`scrapy.crawler.AsyncCrawlerRunner` and its subclass
     :class:`scrapy.crawler.AsyncCrawlerProcess` (coroutine-based) and
     :class:`scrapy.crawler.CrawlerRunner` and its subclass
-    :class:`scrapy.crawler.CrawlerProcess` (Deferred-based): the former
-    doesn't support non-default reactors and so the latter should be used
-    with those.
+    :class:`scrapy.crawler.CrawlerProcess` (Deferred-based)
 
 The following user-supplied methods can return
 :class:`~twisted.internet.defer.Deferred` objects (the methods that can also
@@ -203,12 +199,13 @@ becomes:
 .. code-block:: python
 
     from itemadapter import ItemAdapter
+    from scrapy.utils.defer import deferred_to_future
 
 
     class DbPipeline:
         async def process_item(self, item):
             adapter = ItemAdapter(item)
-            adapter["field"] = await db.get_some_data(adapter["id"])
+            adapter["field"] = await deferred_to_future(db.get_some_data(adapter["id"]))
             return item
 
 Coroutines may be used to call asynchronous code. This includes other
@@ -237,38 +234,16 @@ means you can use many useful Python libraries that provide such code:
                     additional_data = await additional_response.text()
             # ... use response and additional_data to yield items and requests
 
-.. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
-    :mod:`asyncio` loop, and to use them you need to :doc:`enable asyncio
-    support in Scrapy<asyncio>`.
-
-.. note:: If you want to ``await`` on Deferreds while using the asyncio reactor,
-          you need to :ref:`wrap them<asyncio-await-dfd>`.
+.. note:: If you want to ``await`` on Deferreds, you need to :ref:`wrap them
+    <asyncio-await-dfd>`.
 
 Sometimes you need to call code that is not async-friendly at all, such as a
 third-party client library with no asynchronous support. Calling such code
 directly from a coroutine would block the underlying event loop, preventing
 Scrapy from doing any other work while it runs. To avoid this, you can wrap
-the blocking call with :func:`~scrapy.utils.decorators.inthread`, which runs
-it in a separate thread and returns an awaitable with the result:
-
-.. skip: next
-.. code-block:: python
-
-    from scrapy.utils.decorators import inthread
-
-
-    @inthread
-    def blocking_call(value):
-        # e.g. a call into a library with no async support
-        return some_sync_client.get(value)
-
-
-    class MySpider(Spider):
-        async def parse(self, response):
-            result = await deferred_to_future(blocking_call(response.url))
-            # ... use result to yield items and requests
-
-.. autofunction:: scrapy.utils.decorators.inthread
+the blocking call with :func:`asyncio.to_thread`, which runs it in a separate
+thread and returns an awaitable with the result (see :ref:`optimize-blocking`
+for an example).
 
 Common use cases for asynchronous code include:
 
@@ -280,8 +255,6 @@ Common use cases for asynchronous code include:
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler).
 
-.. _aio-libs: https://github.com/aio-libs
-
 
 .. _inline-requests:
 
@@ -291,7 +264,7 @@ Inline requests
 The spider below shows how to send a request and await its response all from
 within a spider callback:
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
     Awaiting a :class:`~scrapy.Request` object.
 
 .. code-block:: python

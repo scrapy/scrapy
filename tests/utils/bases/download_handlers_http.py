@@ -1868,7 +1868,6 @@ class TestHttpProxyBase(ABC):
     is_secure = False
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
-    expected_http_proxy_request_body = b"http://example.com"
 
     @property
     @abstractmethod
@@ -1901,7 +1900,7 @@ class TestHttpProxyBase(ABC):
             response = await download_handler.download_request(request)
         assert response.status == 200
         assert response.url == request.url
-        assert response.body == self.expected_http_proxy_request_body
+        assert response.body == b"http://example.com/"
 
     @coroutine_test
     async def test_download_without_proxy(
@@ -1962,7 +1961,7 @@ class TestHttpProxyBase(ABC):
             response = await download_handler.download_request(request)
         assert response.status == 200
         assert response.url == request.url
-        assert response.body == self.expected_http_proxy_request_body
+        assert response.body == b"http://example.com/"
 
 
 PROXY_KINDS = ["http", "https", "socks5"]

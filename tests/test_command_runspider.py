@@ -176,6 +176,71 @@ class MySpider(scrapy.Spider):
         assert p.returncode == 0, p.stderr
         assert "DEBUG: It Works!" in p.stderr
 
+    def test_sibling_import(self, tmp_path: Path) -> None:
+        (tmp_path / "spiders").mkdir()
+        (tmp_path / "spiders" / "helper_mod.py").write_text(
+            "MESSAGE = 'It Works!'\n", encoding="utf-8"
+        )
+        spider_code = """
+import scrapy
+from helper_mod import MESSAGE
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        self.logger.debug(MESSAGE)
+        return
+        yield
+"""
+        log = self.get_log(
+            tmp_path, spider_code, name=f"spiders/{self.spider_filename}"
+        )
+        assert "DEBUG: It Works!" in log
+
+    def test_dataclass(self, tmp_path: Path) -> None:
+        spider_code = """
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import ClassVar
+
+import scrapy
+
+@dataclass
+class Item:
+    kind: ClassVar[str] = "item"
+    message: str = "It Works!"
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        self.logger.debug(Item().message)
+        return
+        yield
+"""
+        log = self.get_log(tmp_path, spider_code)
+        assert "DEBUG: It Works!" in log
+
+    def test_module_name_taken(self, tmp_path: Path) -> None:
+        spider_code = """
+import json
+
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        self.logger.debug(json.loads('"It Works!"'))
+        return
+        yield
+"""
+        (tmp_path / "spiders").mkdir()
+        log = self.get_log(tmp_path, spider_code, name="spiders/json.py")
+        assert "DEBUG: It Works!" in log
+
     def test_start_errors(self, tmp_path: Path) -> None:
         log = self.get_log(tmp_path, self.badspider, name="badspider.py")
         assert "start" in log
@@ -243,6 +308,10 @@ class MySpider(scrapy.Spider):
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             not in log
+        )
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
         )
 
     @pytest.mark.requires_uvloop

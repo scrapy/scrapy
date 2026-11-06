@@ -452,7 +452,7 @@ class Request(object_ref):
     def __await__(self) -> Generator[Any, None, Response]:
         """Send this request and return its response.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         See :ref:`inline-requests`.
         """

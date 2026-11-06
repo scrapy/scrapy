@@ -68,7 +68,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     It is not inherited by subclasses that override :meth:`enqueue_request`,
     which must set it again.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
     """
 
     @classmethod
@@ -108,7 +108,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         Process a request received by the engine.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            Must handle the :reqmeta:`skip_dupefilter_once` meta key.
 
         Return ``True`` if the request is stored correctly, ``False`` otherwise.

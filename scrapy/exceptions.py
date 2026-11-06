@@ -63,10 +63,10 @@ class CloseSpider(Exception):
     .. versionchanged:: 2.18.0
        Added support for raising it while the spider is starting.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
        Added support for raising it from a downloader middleware.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
        The *error* parameter.
 
     *reason* is a string with the reason for closing. *error*, keyword-only,
@@ -148,7 +148,7 @@ class DecompressionError(Exception):
     :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
     when a response body cannot be decompressed.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
     """
 
 
