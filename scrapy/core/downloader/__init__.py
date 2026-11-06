@@ -264,6 +264,7 @@ class Downloader:
         # has resumed yet.
         self._size_blocked = False
         self._unscheduled_transfers = 0
+        self._unscheduled_rough_size = 0
         self._size_bypass_call: CallLaterResult | None = None
         self._size_bypass_due = False
         self._size_bypass_warned = False
@@ -534,6 +535,7 @@ class Downloader:
             slot.transferring.add(request)
             if request in self.middleware._unscheduled_requests:
                 self._unscheduled_transfers += 1
+                self._unscheduled_rough_size += self.middleware._rough_size(request)
                 self._cancel_size_bypass()
             else:
                 slot._scheduled_queued -= 1
@@ -613,8 +615,7 @@ class Downloader:
         if not middleware._max_active_size:
             return False
         size = (
-            middleware._unscheduled_response_active_size
-            + self._unscheduled_transfers * middleware._response_rough_size
+            middleware._unscheduled_response_active_size + self._unscheduled_rough_size
         )
         return size >= middleware._max_active_size
 
@@ -722,6 +723,7 @@ class Downloader:
         unscheduled = request in self.middleware._unscheduled_requests
         if unscheduled:
             self._unscheduled_transfers -= 1
+            self._unscheduled_rough_size -= self.middleware._rough_size(request)
         self._process_queue(slot)
         if unscheduled:
             self._resume_size_blocked()

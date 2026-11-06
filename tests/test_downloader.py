@@ -2,6 +2,7 @@ import asyncio
 import gc
 import logging
 import warnings
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -14,7 +15,7 @@ from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
-from scrapy.http import HtmlResponse, Response
+from scrapy.http import BodyFileResponse, HtmlResponse, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FilesPipeline
 from scrapy.utils.asyncio import call_later, sleep
@@ -98,6 +99,16 @@ class _RaiseOnSpiderInput:
 class _IgnoreResponse:
     def process_response(self, request: Request, response: Response) -> Response:
         raise IgnoreRequest
+
+
+class _BodyFileHandler:
+    lazy = False
+
+    async def download_request(self, request: Request) -> BodyFileResponse:
+        await sleep(0.01)
+        body_file = request.meta["body_file"]
+        Path(body_file).write_bytes(b"a" * 2048)
+        return BodyFileResponse(request.url, body_file=body_file)
 
 
 async def _crawl_without_gc(crawler: Crawler) -> None:
@@ -365,6 +376,88 @@ class TestResponseRoughSize:
             "request_backout_seconds/total": gt(0),
         }
         assert _backout_stats(crawler) == expected_stats
+
+    @coroutine_test
+    async def test_body_file(self, tmp_path):
+        """Requests and responses whose body is written to a file do not count
+        toward the limit."""
+
+        class TestSpider(Spider):
+            name = "test"
+            custom_settings = {
+                "DOWNLOAD_HANDLERS": {"https": _BodyFileHandler},
+                "RESPONSE_MAX_ACTIVE_SIZE": 512,
+                "RESPONSE_ROUGH_SIZE": 1024,
+            }
+
+            async def start(self):
+                for n in range(2):
+                    yield Request(
+                        f"https://example.com/{n}",
+                        meta={"body_file": tmp_path / str(n)},
+                    )
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 2
+        assert _count_backout_logs(self.caplog) == 0
+        assert _backout_stats(crawler) == {}
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_body_file_download_async(self, tmp_path):
+        """download_async() requests whose response body is written to a file
+        are not held back by the limit."""
+        active = 0
+        max_active = 0
+
+        class Handler(_BodyFileHandler):
+            async def download_request(self, request: Request) -> BodyFileResponse:
+                nonlocal active, max_active
+                active += 1
+                max_active = max(max_active, active)
+                try:
+                    return await super().download_request(request)
+                finally:
+                    active -= 1
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "DOWNLOAD_HANDLERS": {"https": Handler},
+                "RESPONSE_MAX_ACTIVE_SIZE": 512,
+                "RESPONSE_ROUGH_SIZE": 1024,
+            }
+
+            async def parse(self, response):
+                assert self.crawler.engine
+                await asyncio.gather(
+                    *(
+                        self.crawler.engine.download_async(
+                            Request(
+                                f"https://example.com/{n}",
+                                meta={"body_file": tmp_path / str(n)},
+                            )
+                        )
+                        for n in range(2)
+                    )
+                )
+                yield {}
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 1
+        assert max_active == 2
 
 
 class TestRequestBackout:
