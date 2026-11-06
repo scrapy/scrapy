@@ -11,7 +11,8 @@ from scrapy import signals
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
-from scrapy.utils.test import get_crawler, get_reactor_settings
+from scrapy.utils.test import get_crawler
+from tests.utils import get_test_settings
 from tests.utils.decorators import inline_callbacks_test
 
 if TYPE_CHECKING:
@@ -89,7 +90,7 @@ class TestSpiderBase(ABC):
         project_settings = {
             "TEST1": "project",
             "TEST3": "project",
-            **get_reactor_settings(),
+            **get_test_settings(),
         }
 
         class TestSpider(self.spider_class):  # type: ignore[name-defined,misc]
