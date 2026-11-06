@@ -108,6 +108,26 @@ Security bug fixes
 
     .. _fwm7-29m4-rrj9: https://github.com/scrapy/scrapy/security/advisories/GHSA-fwm7-29m4-rrj9
 
+-   :class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` and
+    :class:`~scrapy.spiders.SitemapSpider` now only follow ``http://`` and
+    ``https://`` URLs by default, plus URLs that use the scheme of the response
+    they come from.
+
+    In previous Scrapy versions, link extractors also followed ``file://`` and
+    ``ftp://`` URLs, and :class:`~scrapy.spiders.SitemapSpider` followed URLs
+    of any scheme. A crawled website could use that to make Scrapy read local
+    files, send the :setting:`FTP_USER` and :setting:`FTP_PASSWORD` credentials
+    to an FTP server of its choosing, or send requests signed with the
+    :setting:`AWS_ACCESS_KEY_ID` credentials to an S3 bucket of its choosing.
+    See the `q7wc-mr9r-gcjh`_ security advisory for details.
+
+    To follow URLs with other schemes, use the new ``schemes`` parameter of
+    :class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` or the new
+    :attr:`~scrapy.spiders.SitemapSpider.sitemap_schemes` attribute of
+    :class:`~scrapy.spiders.SitemapSpider`.
+
+    .. _q7wc-mr9r-gcjh: https://github.com/scrapy/scrapy/security/advisories/GHSA-q7wc-mr9r-gcjh
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -357,14 +377,6 @@ Backward-incompatible changes
     :exc:`ModuleNotFoundError` instead. Fix the import path or remove the
     entry.
     (:gh:`7820`, :gh:`8159`)
-
--   :class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` now also
-    extracts links with the ``data`` and ``s3`` schemes by default, since
-    Scrapy can download them. Use its new ``schemes`` parameter, which
-    defaults to :data:`scrapy.linkextractors.SUPPORTED_SCHEMES`, to choose the
-    URL schemes of extracted links, e.g. ``schemes=["file", "ftp", "http",
-    "https"]`` to extract only the schemes that it extracted before.
-    (:gh:`4979`, :gh:`7994`)
 
 -   :class:`HttpCompressionMiddleware
     <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>`
@@ -1130,6 +1142,12 @@ New features
     of :ref:`media pipeline <topics-media-pipeline>` files with a
     :mod:`hashlib` algorithm other than MD5.
     (:gh:`3306`, :gh:`7951`)
+
+-   :class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` has a new
+    ``schemes`` parameter to choose the URL schemes of extracted links, and
+    :data:`scrapy.linkextractors.SUPPORTED_SCHEMES` lists the URL schemes that
+    Scrapy can download out of the box.
+    (:gh:`4979`, :gh:`7994`)
 
 -   Added :meth:`SitemapSpider.sitemap_request()
     <scrapy.spiders.SitemapSpider.sitemap_request>`, which you can override to
