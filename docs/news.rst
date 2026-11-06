@@ -3,7 +3,7 @@
 Release notes
 =============
 
-Scrapy 2.20.0 (unreleased)
+Scrapy 2.20.0 (2026-11-06)
 --------------------------
 
 Highlights:
