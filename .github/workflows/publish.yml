@@ -92,14 +92,25 @@ jobs:
           fi
 
   read-the-docs:
-    name: Make the new branch the Read the Docs default
+    name: Create the new branch and make it the Read the Docs default
     if: endsWith(github.ref_name, '.0')
     needs:
       - publish
     runs-on: ubuntu-latest
     environment:
       name: pypi
+    permissions:
+      contents: write
     steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="${GITHUB_REF_NAME%.0}"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" > /dev/null 2>&1; then
+            echo "The $branch branch already exists"
+          else
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/$branch" -f sha="$GITHUB_SHA"
+          fi
       - env:
           RTD_TOKEN: ${{ secrets.RTD_TOKEN }}
         run: |
