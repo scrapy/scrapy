@@ -72,6 +72,19 @@ Security bug fixes
 
     (:gh:`8329`)
 
+-   When using a proxy from the ``http_proxy`` or ``https_proxy`` environment
+    variables, redirects now honor the ``no_proxy`` environment variable.
+
+    In previous Scrapy versions, a redirect to a URL with the same scheme kept
+    the proxy of the original request, even if the redirect host matched
+    ``no_proxy``. A website could redirect Scrapy to an internal host, and that
+    request would be sent through the proxy. For ``http://`` URLs, this exposed
+    the request to the proxy, including any cookies or credentials for that
+    host, and allowed the proxy to forge the response. See the
+    `x3px-j3qh-fp5w`_ security advisory for details.
+
+    .. _x3px-j3qh-fp5w: https://github.com/scrapy/scrapy/security/advisories/GHSA-x3px-j3qh-fp5w
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
