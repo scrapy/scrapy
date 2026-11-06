@@ -273,7 +273,7 @@ spider_closed
     Sent after a spider has been closed. This can be used to release per-spider
     resources reserved on :signal:`spider_opened`.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
        Added the *error* argument.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
@@ -611,7 +611,7 @@ robots_parsed
 
     .. versionadded:: 2.18.0
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
         Added *response*.
 
     Sent by

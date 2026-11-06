@@ -34,7 +34,7 @@ def urlparse_cached(request_or_response: Request | Response | str) -> ParseResul
     :class:`~scrapy.Request` or :class:`~scrapy.http.Response` object or a
     URL, with :func:`urllib.parse.urlparse`.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
         *request_or_response* can be a URL.
 
     The result is cached and shared by everything with the same URL: for as

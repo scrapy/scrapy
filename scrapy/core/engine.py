@@ -84,7 +84,7 @@ def _supports_skip_dupefilter_once(scheduler: BaseScheduler) -> bool:
 class EngineState(Enum):
     """The lifecycle state of :class:`ExecutionEngine`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     The engine goes through these states in order, possibly skipping some.
     """
@@ -274,7 +274,7 @@ class ExecutionEngine:
     def state(self) -> EngineState:
         """The current lifecycle state of the engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
         """
         return self._state
 
@@ -282,7 +282,7 @@ class ExecutionEngine:
     def response_active_size(self) -> int:
         """Size, in bytes, that counts toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
         """
         return self.downloader.middleware._total_active_size
 
@@ -290,7 +290,7 @@ class ExecutionEngine:
     def running(self) -> bool:
         """Whether the engine is in the :attr:`EngineState.RUNNING` state.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Became a read-only property.
         """
         return self._state is EngineState.RUNNING
@@ -331,14 +331,15 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
+        .. versionchanged:: 2.20.0
+            In earlier versions, if the spider was not open, it sent the
+            :signal:`engine_started` signal instead of raising
+            :exc:`RuntimeError`.
+
         Completes when the engine is stopped.
 
         Raises :exc:`RuntimeError` if the spider is not open, or if the engine
         has already been started or stopped.
-
-        .. versionchanged:: VERSION
-            Now raises :exc:`RuntimeError` instead of returning if the spider
-            is not open.
         """
         if self._state is not EngineState.SPIDER_OPEN:
             raise RuntimeError(
@@ -384,7 +385,7 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             This is now a shortcut for :meth:`close_spider_async`, see its docs
             for the behavior in different engine states, including when it
             completes.
@@ -752,15 +753,17 @@ class ExecutionEngine:
     async def open_spider_async(self, *, close_if_idle: bool = True) -> None:
         """Open the spider.
 
+        .. versionadded:: 2.14
+
+        .. versionchanged:: 2.20.0
+            In earlier versions, a :exc:`~scrapy.exceptions.CloseSpider`
+            exception raised while the spider was opening was re-raised.
+
         Raises :exc:`RuntimeError` if a spider has already been opened.
 
         If an exception is raised during opening, the spider is still
         considered open (the engine always transitions to the
         :attr:`EngineState.SPIDER_OPEN` state).
-
-        .. versionchanged:: VERSION
-            A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the
-            spider is opening now closes the spider instead of being re-raised.
 
         If the engine is requested to close the spider during opening, that is
         done right after the spider is opened.
@@ -935,7 +938,7 @@ class ExecutionEngine:
         ``mode="fast"`` was passed, it will also drop the requests left in the
         downloader.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Previously, calling it while the spider was closing waited for the
             in-flight requests to finish, and calling it after the spider had
             been closed raised :exc:`RuntimeError`.

@@ -181,7 +181,7 @@ class FeedStorageProtocol(Protocol):
         """Open the storage for *spider* and return the file-like object that
         item exporters write into.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``).
         """
 
@@ -191,7 +191,7 @@ class FeedStorageProtocol(Protocol):
         """Store *file*, the file-like object returned by :meth:`open`, and
         close it.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``).
         """
 

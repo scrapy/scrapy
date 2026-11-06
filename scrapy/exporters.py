@@ -67,7 +67,7 @@ class BaseItemExporter(ABC):
         """Exports the given item. This method must be implemented in
         subclasses.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``). Scrapy
            awaits its result when the exporter is used by the :ref:`feed
            exports <topics-feed-exports>`.
@@ -108,7 +108,7 @@ class BaseItemExporter(ABC):
         :class:`XmlItemExporter`). You must call this method before exporting
         any items.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``). Scrapy
            awaits its result when the exporter is used by the :ref:`feed
            exports <topics-feed-exports>`.
@@ -120,7 +120,7 @@ class BaseItemExporter(ABC):
         :class:`XmlItemExporter`). You must always call this method after you
         have no more items to export.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``). Scrapy
            awaits its result when the exporter is used by the :ref:`feed
            exports <topics-feed-exports>`.

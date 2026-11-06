@@ -395,7 +395,7 @@ class Crawler:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Calling it while the spider is being opened now closes the spider
             as soon as it is open.
 

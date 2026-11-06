@@ -646,7 +646,7 @@ HTTPCACHE_SCOPE
 
 Default: ``'spider'``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 How to partition the cache within :setting:`HTTPCACHE_DIR`:
 
@@ -941,7 +941,7 @@ key set to True, the request will be ignored by this middleware.
 
 .. reqmeta:: redirect_http_codes
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 The ``redirect_http_codes`` key of :attr:`Request.meta <scrapy.Request.meta>`
 overrides the :setting:`REDIRECT_HTTP_CODES` setting for a single request.
@@ -1016,7 +1016,7 @@ Whether the Redirect middleware will be enabled.
 REDIRECT_HTTP_CODES
 ^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``[301, 302, 303, 307, 308]``
 
@@ -1113,7 +1113,7 @@ restrict automatic redirection to the maximum delay.
 METAREFRESH_SCRIPTING
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. setting:: METAREFRESH_SCRIPTING
 

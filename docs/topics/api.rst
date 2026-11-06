@@ -209,7 +209,8 @@ Engine API
 
 .. autoclass:: scrapy.core.engine.ExecutionEngine()
    :members: close_spider_async, download_async, needs_backout,
-      response_active_size, running, scheduler, state
+      open_spider_async, response_active_size, running, scheduler, start_async,
+      state, stop_async
 
 .. autoclass:: scrapy.core.engine.EngineState
    :members:

@@ -196,7 +196,7 @@ and strptime directives <strftime-strptime-behavior>` respectively.
 LOG_ROOT_FORMATTER
 ~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. setting:: LOG_ROOT_FORMATTER
 

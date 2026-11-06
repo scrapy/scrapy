@@ -467,7 +467,7 @@ Supported options:
   command (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It cannot
   be combined with a URL argument.
 
-  .. versionadded:: VERSION
+  .. versionadded:: 2.20.0
 
 Usage examples::
 
@@ -514,7 +514,7 @@ Supported options:
   URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
   cannot be combined with a URL argument.
 
-  .. versionadded:: VERSION
+  .. versionadded:: 2.20.0
 
 Usage example::
 
@@ -548,7 +548,7 @@ Supported options:
   URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
   cannot be combined with a URL argument.
 
-  .. versionadded:: VERSION
+  .. versionadded:: 2.20.0
 
 Usage example::
 
@@ -592,7 +592,7 @@ Supported options:
   URL argument (see :meth:`Request.from_curl() <scrapy.Request.from_curl>`). It
   cannot be combined with a URL argument.
 
-  .. versionadded:: VERSION
+  .. versionadded:: 2.20.0
 
 * ``--meta`` or ``-m``: additional request meta that will be passed to the
   callback request. This must be a valid JSON string. Example:
@@ -667,7 +667,7 @@ a spider with ``--spider``::
     $ scrapy settings --get DOWNLOAD_DELAY --spider myspider
     2.0
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    Add-on settings are now taken into account, and the ``--spider`` option was
    added.
 
@@ -707,7 +707,7 @@ genrequest
 * Syntax: ``scrapy genrequest [curl command]``
 * Requires project: *no*
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Print the Python code of a :class:`~scrapy.Request` object equivalent to a
 `cURL <https://curl.se/>`_ command. If the curl command is not given as an
@@ -738,7 +738,7 @@ complete
 * Syntax: ``scrapy complete <bash|fish|zsh>``
 * Requires project: *no*
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Print a shell completion script. See :ref:`completion`.
 
@@ -747,7 +747,7 @@ Print a shell completion script. See :ref:`completion`.
 Shell completion
 ================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 The :command:`complete` command prints a completion script for Bash, fish or
 Zsh.
