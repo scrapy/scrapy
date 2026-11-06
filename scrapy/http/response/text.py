@@ -185,7 +185,7 @@ class TextResponse(Response):
         path. Setting it overrides the value read from the body.
         """
         if self._base_url is None:
-            self._navigate()
+            self._read_html_metadata()
         assert self._base_url is not None
         return self._base_url
 
@@ -203,7 +203,7 @@ class TextResponse(Response):
         Setting it overrides the value read from the body.
         """
         if self._meta_refresh is _UNSET:
-            self._navigate()
+            self._read_html_metadata()
         assert self._meta_refresh is not _UNSET
         return self._meta_refresh
 
@@ -211,8 +211,8 @@ class TextResponse(Response):
     def meta_refresh(self, value: tuple[float, str] | None) -> None:
         self._meta_refresh = None if value is None else MetaRefresh(*value)
 
-    def _navigate(self) -> None:
-        navigation = frostwork.navigation(
+    def _read_html_metadata(self) -> None:
+        metadata = frostwork.navigation(
             self.body,
             self.url,
             self.encoding,
@@ -220,9 +220,9 @@ class TextResponse(Response):
             meta_refresh=self._meta_refresh is _UNSET,
         )
         if self._base_url is None:
-            self._base_url = navigation.base_url
+            self._base_url = metadata.base_url
         if self._meta_refresh is _UNSET:
-            self.meta_refresh = navigation.meta_refresh
+            self.meta_refresh = metadata.meta_refresh
 
     @memoizemethod_noargs
     def _headers_encoding(self) -> str | None:

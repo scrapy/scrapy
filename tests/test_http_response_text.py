@@ -442,16 +442,16 @@ class TestTextResponse(TestResponseBase):
         response = self.response_class("http://www.example.com", body=body)
         assert response.meta_refresh == meta_refresh
 
-    def test_navigation_once(self) -> None:
+    def test_html_metadata_once(self) -> None:
         body = b'<base href="/a/"><meta http-equiv="refresh" content="0;url=b">'
         response = self.response_class("http://www.example.com", body=body)
-        with mock.patch("frostwork.navigation", wraps=frostwork.navigation) as nav:
+        with mock.patch("frostwork.navigation", wraps=frostwork.navigation) as read:
             assert response.base_url == "http://www.example.com/a/"
             assert response.meta_refresh == (0.0, "http://www.example.com/a/b")
             assert isinstance(response.meta_refresh, MetaRefresh)
-        nav.assert_called_once()
+        read.assert_called_once()
 
-    def test_navigation_set(self) -> None:
+    def test_html_metadata_set(self) -> None:
         body = b'<base href="/a/"><meta http-equiv="refresh" content="0;url=b">'
         response = self.response_class("http://www.example.com", body=body)
         response.base_url = "http://example.net/"
