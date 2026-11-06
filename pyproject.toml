@@ -97,7 +97,6 @@ docs = [
     "sphinx-reredirects",
     "sphinx-rtd-dark-mode",
     "sphinx-rtd-theme",
-    "twisted>=26.10.0rc1",
 ]
 
 [tool.hatch.build.targets.sdist]
