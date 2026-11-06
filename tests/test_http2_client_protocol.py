@@ -785,6 +785,22 @@ class TestHttps2ClientProtocol:
         assert client.transport is not None
         assert client.transport.disconnecting
 
+    @pytest.mark.parametrize(("method", "path"), [("GET", b"/"), ("OPTIONS", b"*")])
+    @deferred_f_from_coro_f
+    async def test_empty_path(
+        self, method: str, path: bytes, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(
+            f"{self.scheme}://{self.host}:{server_port}",
+            method=method,
+            meta={"verbatim_url": True},
+        )
+        with mock.patch.object(
+            client.conn, "send_headers", wraps=client.conn.send_headers
+        ) as send_headers:
+            await make_request(client, request)
+        assert (b":path", path) in send_headers.call_args.args[1]
+
     @deferred_f_from_coro_f
     async def test_request_headers_received(
         self, server_port: int, client: H2ClientProtocol
