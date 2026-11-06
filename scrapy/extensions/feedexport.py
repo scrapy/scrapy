@@ -627,11 +627,11 @@ class FeedSlot:
     async def start_exporting(self) -> None:
         if not self._fileloaded:
             self.file = await _maybe_coroutine(self.storage.open, self.spider)
-            if "postprocessing" in self.feed_options:
+            if plugins := self.feed_options.get("postprocessing"):
                 self.file = cast(
                     "IO[bytes]",
                     PostProcessingManager(
-                        self.feed_options["postprocessing"],
+                        plugins,
                         self.file,
                         self.feed_options,
                     ),

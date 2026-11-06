@@ -551,9 +551,14 @@ async def test_storage_file_no_postprocessing(
     assert Storage.open_file is Storage.store_file
 
 
+@pytest.mark.parametrize(
+    "postprocessing",
+    [[], ["scrapy.extensions.postprocessing.GzipPlugin"]],
+    ids=["empty", "gzip"],
+)
 @coroutine_test
 async def test_storage_file_postprocessing(
-    mockserver: MockServer, tmp_path: Path
+    mockserver: MockServer, tmp_path: Path, postprocessing: list[str]
 ) -> None:
     class Storage:
         open_file: IO[bytes]
@@ -576,9 +581,7 @@ async def test_storage_file_postprocessing(
         "FEEDS": {
             unique_path(tmp_path): {
                 "format": "jsonlines",
-                "postprocessing": [
-                    "scrapy.extensions.postprocessing.GzipPlugin",
-                ],
+                "postprocessing": postprocessing,
             },
         },
         "FEED_STORAGES": {"file": Storage},
