@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 from itertools import chain
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
 
 from scrapy.downloadermiddlewares.redirect import MetaRefreshMiddleware
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
@@ -19,6 +20,9 @@ from tests.utils.redirect import (
     REDIRECT_SCHEME_CASES,
     SCHEME_PARAMS,
 )
+
+if TYPE_CHECKING:
+    from scrapy.settings import BaseSettings
 
 
 def meta_refresh_body(url: str, interval: int = 5) -> bytes:
@@ -91,19 +95,90 @@ class TestMetaRefreshMiddleware(TestRedirectBase):
         response = self.mw.process_response(req, rsp)
         assert isinstance(response, Response)
 
-    def test_ignore_tags_1_x_list(self):
-        """Test that Scrapy 1.x behavior remains possible"""
-        settings = {"METAREFRESH_IGNORE_TAGS": ["script", "noscript"]}
-        crawler = get_crawler(Spider, settings)
+    def test_scripting_false(self):
+        crawler = get_crawler(Spider, {"METAREFRESH_SCRIPTING": False})
         mw = build_from_crawler(MetaRefreshMiddleware, crawler)
         req = Request(url="http://example.org")
-        body = (
-            """<noscript><meta http-equiv="refresh" """
-            """content="0;URL='http://example.org/newpage'"></noscript>"""
+        body = b"<noscript>" + self._body(interval=0) + b"</noscript>"
+        req2 = mw.process_response(req, HtmlResponse(req.url, body=body))
+        assert isinstance(req2, Request)
+        assert req2.url == "http://example.org/newpage"
+
+    @pytest.mark.parametrize("content", ["0", "0;url=#x", "0;url=http://EXAMPLE.org/"])
+    def test_refresh_self(self, content: str) -> None:
+        req = Request(url="http://example.org")
+        body = f'<meta http-equiv="refresh" content="{content}">'.encode()
+        rsp = HtmlResponse(req.url, body=body)
+        assert self.mw.process_response(req, rsp) is rsp
+
+    def test_maxdelay_shortest(self):
+        req = Request(url="http://example.org")
+        body = self._body(interval=1000, url="/slow") + self._body(
+            interval=1, url="/fast"
         )
-        rsp = HtmlResponse(req.url, body=body.encode())
-        response = mw.process_response(req, rsp)
-        assert isinstance(response, Response)
+        req2 = self.mw.process_response(req, HtmlResponse(req.url, body=body))
+        assert isinstance(req2, Request)
+        assert req2.url == "http://example.org/fast"
+
+
+NOSCRIPT_REFRESH = (
+    b"<noscript>" + meta_refresh_body("http://example.org/newpage", 0) + b"</noscript>"
+)
+
+
+def _process_noscript_refresh(mw: MetaRefreshMiddleware) -> Request | Response:
+    req = Request(url="http://example.org")
+    return mw.process_response(req, HtmlResponse(req.url, body=NOSCRIPT_REFRESH))
+
+
+@pytest.mark.parametrize(
+    ("ignore_tags", "scripting"),
+    [
+        (["script", "noscript"], True),
+        (["noscript", "template"], True),
+        (["script"], False),
+        ([], False),
+    ],
+)
+def test_ignore_tags(ignore_tags: list[str], scripting: bool) -> None:
+    crawler = get_crawler(Spider, {"METAREFRESH_IGNORE_TAGS": ignore_tags})
+    with pytest.warns(
+        ScrapyDeprecationWarning, match=f"METAREFRESH_SCRIPTING = {scripting}"
+    ):
+        mw = build_from_crawler(MetaRefreshMiddleware, crawler)
+    assert isinstance(_process_noscript_refresh(mw), Request) is not scripting
+
+
+class _RemoveNoscriptAddon:
+    def update_settings(self, settings: BaseSettings) -> None:
+        settings.remove_from_list("METAREFRESH_IGNORE_TAGS", "noscript")
+
+
+def test_ignore_tags_removed_from_list() -> None:
+    crawler = get_crawler(Spider, {"ADDONS": {_RemoveNoscriptAddon: 0}})
+    with pytest.warns(ScrapyDeprecationWarning, match="METAREFRESH_SCRIPTING = False"):
+        mw = build_from_crawler(MetaRefreshMiddleware, crawler)
+    assert isinstance(_process_noscript_refresh(mw), Request)
+
+
+def test_ignore_tags_unsupported() -> None:
+    crawler = get_crawler(Spider, {"METAREFRESH_IGNORE_TAGS": ["noscript", "div"]})
+    with pytest.raises(ValueError, match="METAREFRESH_SCRIPTING"):
+        build_from_crawler(MetaRefreshMiddleware, crawler)
+
+
+class _IgnoreNoTagsAddon:
+    def update_settings(self, settings: BaseSettings) -> None:
+        settings.set("METAREFRESH_IGNORE_TAGS", [], priority="addon")
+
+
+def test_ignore_tags_overridden() -> None:
+    crawler = get_crawler(
+        Spider,
+        {"ADDONS": {_IgnoreNoTagsAddon: 0}, "METAREFRESH_SCRIPTING": True},
+    )
+    mw = build_from_crawler(MetaRefreshMiddleware, crawler)
+    assert isinstance(_process_noscript_refresh(mw), Response)
 
 
 @pytest.mark.parametrize(

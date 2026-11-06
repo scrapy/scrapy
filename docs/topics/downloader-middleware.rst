@@ -1079,8 +1079,8 @@ The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`METAREFRESH_ENABLED`
-* :setting:`METAREFRESH_IGNORE_TAGS`
 * :setting:`METAREFRESH_MAXDELAY`
+* :setting:`METAREFRESH_SCRIPTING`
 
 This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
 :reqmeta:`redirect_urls` and :reqmeta:`redirect_reasons` request meta keys as described
@@ -1099,19 +1099,6 @@ Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
 
-.. setting:: METAREFRESH_IGNORE_TAGS
-
-METAREFRESH_IGNORE_TAGS
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Default: ``["noscript"]``
-
-Meta tags within these tags are ignored.
-
-.. versionchanged:: 2.11.2
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``[]`` to ``["noscript"]``.
-
 .. setting:: METAREFRESH_MAXDELAY
 
 METAREFRESH_MAXDELAY
@@ -1122,6 +1109,19 @@ Default: ``100``
 The maximum meta-refresh delay (in seconds) to follow the redirection.
 Some sites use meta-refresh for redirecting to a session expired page, so we
 restrict automatic redirection to the maximum delay.
+
+METAREFRESH_SCRIPTING
+^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: VERSION
+
+.. setting:: METAREFRESH_SCRIPTING
+
+Default: ``True``
+
+Whether to follow the meta refresh that a web browser would follow with
+JavaScript enabled (``True``), ignoring those within ``<noscript>``, or with
+JavaScript disabled (``False``).
 
 RetryMiddleware
 ---------------

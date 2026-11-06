@@ -234,7 +234,7 @@ class TestRedirectMiddleware(TestRedirectBase):
     @pytest.mark.parametrize("status", [307, 308])
     def test_cross_origin_maintain_body(self, status):
         source_url = "https://example.com"
-        target_url = "https://attacker.example"
+        target_url = "https://attacker.example/"
         body = b"secret"
         request = Request(
             source_url,

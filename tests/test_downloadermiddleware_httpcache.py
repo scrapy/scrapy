@@ -1004,7 +1004,7 @@ class TestConcurrentDownloads(TestBase):
 
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
     storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
-    url = "http://www.example.com"
+    url = "http://www.example.com/"
 
     @contextmanager
     def _manager(
@@ -1204,7 +1204,7 @@ class TestInFlightTracking(TestBase):
 
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
     storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
-    url = "http://www.example.com"
+    url = "http://www.example.com/"
 
     @coroutine_test
     async def test_garbage_collected_request(self):
