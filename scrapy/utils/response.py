@@ -20,6 +20,7 @@ from twisted.web import http
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.headers import Headers
 from scrapy.http.response.body_file import BodyFileResponse
+from scrapy.http.response.text import MetaRefresh
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
@@ -47,18 +48,17 @@ def get_base_url(response: TextResponse) -> str:
 _IGNORABLE_TAGS = {"script", "noscript", "template"}
 
 
-def _get_meta_refresh(
-    response: TextResponse, *, scripting: bool
-) -> tuple[float, str] | None:
+def _get_meta_refresh(response: TextResponse, *, scripting: bool) -> MetaRefresh | None:
     if scripting:
         return response.meta_refresh
-    return frostwork.navigation(
+    meta_refresh = frostwork.navigation(
         response.body,
         response.url,
         response.encoding,
         base_url=False,
         scripting=False,
     ).meta_refresh
+    return None if meta_refresh is None else MetaRefresh(*meta_refresh)
 
 
 def get_meta_refresh(
@@ -77,7 +77,9 @@ def get_meta_refresh(
             f"Unsupported ignore_tags: {sorted(ignore_tags - _IGNORABLE_TAGS)}"
         )
     meta_refresh = _get_meta_refresh(response, scripting="noscript" in ignore_tags)
-    return meta_refresh or (None, None)
+    if meta_refresh is None:
+        return None, None
+    return meta_refresh.delay, meta_refresh.url
 
 
 def response_from_dict(d: dict[str, Any]) -> Response:

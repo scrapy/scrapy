@@ -1589,7 +1589,7 @@ TextResponse objects
         Constructs an absolute url by combining :attr:`base_url` with a
         possible relative url.
 
-.. autoclass:: MetaRefresh
+.. autoclass:: scrapy.http.response.text.MetaRefresh
     :members:
 
 .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark

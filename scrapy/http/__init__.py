@@ -14,7 +14,7 @@ from scrapy.http.response import Response
 from scrapy.http.response.body_file import BodyFileResponse
 from scrapy.http.response.html import HtmlResponse
 from scrapy.http.response.json import JsonResponse
-from scrapy.http.response.text import MetaRefresh, TextResponse
+from scrapy.http.response.text import TextResponse
 from scrapy.http.response.xml import XmlResponse
 
 __all__ = [
@@ -24,7 +24,6 @@ __all__ = [
     "HtmlResponse",
     "JsonRequest",
     "JsonResponse",
-    "MetaRefresh",
     "Request",
     "Response",
     "TextResponse",

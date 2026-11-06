@@ -10,7 +10,8 @@ import frostwork
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import HtmlResponse, MetaRefresh, TextResponse, XmlResponse
+from scrapy.http import HtmlResponse, TextResponse, XmlResponse
+from scrapy.http.response.text import MetaRefresh
 from scrapy.selector import Selector
 from tests.utils.bases.http_response import TestResponseBase
 
@@ -413,7 +414,7 @@ class TestTextResponse(TestResponseBase):
             (b"", None),
             (
                 b'<base href="/c/"><meta http-equiv="refresh" content="5;url=d">',
-                (5.0, "http://www.example.com/c/d"),
+                MetaRefresh(5.0, "http://www.example.com/c/d"),
             ),
             (
                 (
@@ -422,7 +423,7 @@ class TestTextResponse(TestResponseBase):
                     b'<meta http-equiv="refresh" content="1;url=/c">'
                     b'<meta http-equiv="refresh" content="3;url=/d">'
                 ),
-                (1.0, "http://www.example.com/c"),
+                MetaRefresh(1.0, "http://www.example.com/c"),
             ),
             (
                 (
@@ -436,9 +437,7 @@ class TestTextResponse(TestResponseBase):
             ),
         ],
     )
-    def test_meta_refresh(
-        self, body: bytes, meta_refresh: tuple[float, str] | None
-    ) -> None:
+    def test_meta_refresh(self, body: bytes, meta_refresh: MetaRefresh | None) -> None:
         response = self.response_class("http://www.example.com", body=body)
         assert response.meta_refresh == meta_refresh
 
@@ -447,15 +446,16 @@ class TestTextResponse(TestResponseBase):
         response = self.response_class("http://www.example.com", body=body)
         with mock.patch("frostwork.navigation", wraps=frostwork.navigation) as read:
             assert response.base_url == "http://www.example.com/a/"
-            assert response.meta_refresh == (0.0, "http://www.example.com/a/b")
-            assert isinstance(response.meta_refresh, MetaRefresh)
+            assert response.meta_refresh == MetaRefresh(
+                0.0, "http://www.example.com/a/b"
+            )
         read.assert_called_once()
 
     def test_html_metadata_set(self) -> None:
         body = b'<base href="/a/"><meta http-equiv="refresh" content="0;url=b">'
         response = self.response_class("http://www.example.com", body=body)
         response.base_url = "http://example.net/"
-        assert response.meta_refresh == (0.0, "http://www.example.com/a/b")
+        assert response.meta_refresh == MetaRefresh(0.0, "http://www.example.com/a/b")
         assert response.base_url == "http://example.net/"
         response.meta_refresh = None
         assert response.meta_refresh is None
@@ -463,8 +463,10 @@ class TestTextResponse(TestResponseBase):
         response = self.response_class("http://www.example.com", body=body)
         response.meta_refresh = (1.0, "http://example.net/")
         assert response.base_url == "http://www.example.com/a/"
-        assert response.meta_refresh == (1.0, "http://example.net/")
-        assert isinstance(response.meta_refresh, MetaRefresh)
+        assert response.meta_refresh == MetaRefresh(1.0, "http://example.net/")
+        meta_refresh = MetaRefresh(2.0, "http://example.org/")
+        response.meta_refresh = meta_refresh
+        assert response.meta_refresh is meta_refresh
 
     def test_follow_selector(self):
         resp = self._links_response()

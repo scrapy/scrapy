@@ -313,9 +313,9 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
             return response
 
         meta_refresh = _get_meta_refresh(response, scripting=self._scripting)
-        if not meta_refresh:
+        if meta_refresh is None:
             return response
-        interval, url = meta_refresh
+        url = meta_refresh.url
         # A refresh without a URL reloads the page, which the dupefilter would
         # drop.
         if canonicalize_url(url) == canonicalize_url(response.url):
@@ -323,6 +323,6 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
         redirected = self._redirect_request_using_get(request, response, url)
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
-        if interval < self._maxdelay:
+        if meta_refresh.delay < self._maxdelay:
             return self._redirect(redirected, request, "meta refresh")
         return response

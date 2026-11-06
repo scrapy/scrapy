@@ -11,8 +11,9 @@ import json
 import warnings
 import weakref
 from contextlib import suppress
+from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 from urllib.parse import urljoin
 
 import frostwork
@@ -48,9 +49,11 @@ class _Unset(Enum):
 _UNSET = _Unset.UNSET
 
 
-class MetaRefresh(NamedTuple):
-    """Meta refresh of a :class:`TextResponse`, as
-    :attr:`TextResponse.meta_refresh` reports it.
+@dataclass(frozen=True)
+class MetaRefresh:
+    """Meta refresh of a :class:`~scrapy.http.TextResponse`, as
+    :attr:`TextResponse.meta_refresh <scrapy.http.TextResponse.meta_refresh>`
+    reports it.
 
     .. versionadded:: 2.20.0
     """
@@ -195,8 +198,8 @@ class TextResponse(Response):
 
     @property
     def meta_refresh(self) -> MetaRefresh | None:
-        """:class:`MetaRefresh` that a web browser with JavaScript enabled
-        would follow, or ``None``.
+        """:class:`~scrapy.http.response.text.MetaRefresh` that a web browser
+        with JavaScript enabled would follow, or ``None``.
 
         .. versionadded:: 2.20.0
 
@@ -208,8 +211,11 @@ class TextResponse(Response):
         return self._meta_refresh
 
     @meta_refresh.setter
-    def meta_refresh(self, value: tuple[float, str] | None) -> None:
-        self._meta_refresh = None if value is None else MetaRefresh(*value)
+    def meta_refresh(self, value: MetaRefresh | tuple[float, str] | None) -> None:
+        if value is None or isinstance(value, MetaRefresh):
+            self._meta_refresh = value
+        else:
+            self._meta_refresh = MetaRefresh(*value)
 
     def _read_html_metadata(self) -> None:
         metadata = frostwork.navigation(

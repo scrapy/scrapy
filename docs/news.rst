@@ -886,10 +886,9 @@ New features
 -   Added :attr:`TextResponse.base_url <scrapy.http.TextResponse.base_url>` and
     :attr:`TextResponse.meta_refresh <scrapy.http.TextResponse.meta_refresh>`,
     which return the base URL of a response and the
-    :class:`~scrapy.http.MetaRefresh` that a web browser with JavaScript
-    enabled would follow, and which you can set to override what the response
-    body says. When
-    :setting:`METAREFRESH_SCRIPTING` is ``False``,
+    :class:`~scrapy.http.response.text.MetaRefresh` that a web browser with
+    JavaScript enabled would follow, and which you can set to override what the
+    response body says. When :setting:`METAREFRESH_SCRIPTING` is ``False``,
     :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
     ignores an overridden :attr:`~scrapy.http.TextResponse.meta_refresh`.
     (:gh:`8393`)
