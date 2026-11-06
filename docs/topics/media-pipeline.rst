@@ -698,6 +698,10 @@ To handle media redirections, set this setting to ``True``:
 
     MEDIA_ALLOW_REDIRECTS = True
 
+To override this setting for a single media request, set the
+:reqmeta:`dont_redirect` request meta key in
+:meth:`~scrapy.pipelines.files.FilesPipeline.get_media_requests`.
+
 Media files created on the fly
 ------------------------------
 
