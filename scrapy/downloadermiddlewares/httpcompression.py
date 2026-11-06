@@ -44,6 +44,12 @@ ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate", b"br", b"zstd"]
 _THREAD_DECODE_MIN_SIZE = 8192
 
 
+class _MaxEncodingCountExceeded(ValueError):
+    def __init__(self, count: int, max_count: int) -> None:
+        self.count = count
+        self.max_count = max_count
+
+
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate etc.) traffic to be
     sent/received from websites"""
@@ -64,10 +70,12 @@ class HttpCompressionMiddleware:
             self.stats = stats
             self._max_size = 1073741824
             self._warn_size = 33554432
+            self._max_encodings = 1
             return
         self.stats = crawler.stats
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+        self._max_encodings = crawler.settings.getint("COMPRESSION_MAX_ENCODINGS")
         crawler.signals.connect(self.open_spider, signals.spider_opened)
 
     @classmethod
@@ -119,6 +127,14 @@ class HttpCompressionMiddleware:
                 )
                 logger.warning(msg)
                 raise IgnoreRequest(msg) from e
+            except _MaxEncodingCountExceeded as e:
+                msg = (
+                    f"Ignored response {response} because its Content-Encoding "
+                    f"header lists {e.count} supported encodings, which exceeds "
+                    f"COMPRESSION_MAX_ENCODINGS ({e.max_count})."
+                )
+                logger.warning(msg)
+                raise IgnoreRequest(msg) from e
             except _DECOMPRESSION_ERRORS as e:
                 encodings = b", ".join(content_encoding).decode()
                 raise DecompressionError(
@@ -156,6 +172,8 @@ class HttpCompressionMiddleware:
         self, body: bytes, content_encoding: list[bytes], max_size: int
     ) -> tuple[bytes, list[bytes]]:
         to_decode, to_keep = self._split_encodings(content_encoding)
+        if len(to_decode) > self._max_encodings:
+            raise _MaxEncodingCountExceeded(len(to_decode), self._max_encodings)
         for encoding in to_decode:
             if len(body) >= _THREAD_DECODE_MIN_SIZE:
                 body = await run_in_thread(self._decode, body, encoding, max_size)

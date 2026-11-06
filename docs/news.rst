@@ -40,6 +40,21 @@ Security bug fixes
 
     (:gh:`482`, :gh:`4583`, :gh:`6430`, :gh:`8417`, :gh:`8459`, :gh:`8460`)
 
+-   :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    now decodes at most 1 content coding per response by default, and drops
+    responses that apply more with :exc:`~scrapy.exceptions.IgnoreRequest`.
+
+    In previous Scrapy versions, the number of content codings was unlimited,
+    so a malicious server could send a response with a ``Content-Encoding``
+    header that chains thousands of codings (e.g. ``gzip, gzip, gzip, …``) to
+    make Scrapy run as many decompression passes, causing high CPU and memory
+    usage. See the `j72p-v7rm-cwm3`_ security advisory for details.
+
+    To allow more content codings per response, set the new
+    :setting:`COMPRESSION_MAX_ENCODINGS` setting.
+
+    .. _j72p-v7rm-cwm3: https://github.com/scrapy/scrapy/security/advisories/GHSA-j72p-v7rm-cwm3
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 

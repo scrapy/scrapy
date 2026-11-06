@@ -809,6 +809,25 @@ Default: ``True``
 Whether the Compression middleware will be enabled.
 
 
+.. setting:: COMPRESSION_MAX_ENCODINGS
+
+COMPRESSION_MAX_ENCODINGS
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.20.0
+
+Default: ``1``
+
+Maximum number of chained content codings that
+:class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+decodes from the ``Content-Encoding`` of a response. A response that chains
+more codings than this is dropped with :exc:`~scrapy.exceptions.IgnoreRequest`.
+
+Raise it only to scrape servers that legitimately apply multiple codings to a
+response, keeping in mind that a high value lets a malicious server force many
+decompression passes.
+
+
 HttpProxyMiddleware
 -------------------
 
