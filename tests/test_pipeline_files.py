@@ -20,6 +20,7 @@ from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
 from unittest.mock import MagicMock
+from urllib.parse import urlparse
 
 import attr
 import pytest
@@ -1396,6 +1397,23 @@ class TestS3FilesStore:
         config: Any = store.s3_client.meta.config
         assert config.max_pool_connections == expected
 
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, "https"),
+            ({"AWS_USE_SSL": None}, "https"),
+            ({"AWS_USE_SSL": True}, "https"),
+            ({"AWS_USE_SSL": False}, "http"),
+        ],
+    )
+    def test_use_ssl(self, settings: dict[str, Any], expected: str) -> None:
+        crawler = get_crawler(
+            settings_dict={"FILES_STORE": "s3://mybucket/prefix/", **settings}
+        )
+        store = build_from_crawler(FilesPipeline, crawler).store
+        assert isinstance(store, S3FilesStore)
+        assert urlparse(store.s3_client.meta.endpoint_url).scheme == expected
+
 
 @pytest.mark.requires_aiobotocore
 @pytest.mark.only_asyncio
@@ -1450,6 +1468,22 @@ class TestS3FilesStoreAsync:
         store = S3FilesStore("s3://mybucket/prefix/", AWS_MAX_POOL_CONNECTIONS=30)
         client = await store._get_aio_client()
         assert client.meta.config.max_pool_connections == 30
+        await store.close()
+
+    @pytest.mark.parametrize(
+        ("config", "expected"),
+        [
+            ({}, "https"),
+            ({"AWS_USE_SSL": None}, "https"),
+            ({"AWS_USE_SSL": True}, "https"),
+            ({"AWS_USE_SSL": False}, "http"),
+        ],
+    )
+    @coroutine_test
+    async def test_use_ssl(self, config: dict[str, Any], expected: str) -> None:
+        store = S3FilesStore("s3://mybucket/prefix/", **config)
+        client = await store._get_aio_client()
+        assert urlparse(client.meta.endpoint_url).scheme == expected
         await store.close()
 
     @coroutine_test

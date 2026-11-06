@@ -85,6 +85,29 @@ Security bug fixes
 
     .. _x3px-j3qh-fp5w: https://github.com/scrapy/scrapy/security/advisories/GHSA-x3px-j3qh-fp5w
 
+-   :class:`~scrapy.pipelines.files.S3FilesStore` now uses HTTPS with the
+    default Scrapy settings.
+
+    In previous Scrapy versions, the default value of :setting:`AWS_USE_SSL`,
+    ``None``, was incorrectly interpreted to mean "disable HTTPS", so
+    :class:`~scrapy.pipelines.files.S3FilesStore` used plain HTTP when talking
+    to S3 unless that setting was explicitly set to ``True`` or
+    :setting:`AWS_ENDPOINT_URL` was set to a custom HTTPS URL.
+
+    An attacker who could observe that traffic could read the contents, S3
+    paths and metadata of the files uploaded by
+    :class:`~scrapy.pipelines.files.FilesPipeline` and
+    :class:`~scrapy.pipelines.images.ImagesPipeline`, the AWS access key ID
+    (but not the secret access key) and, with temporary credentials, the
+    session token (``X-Amz-Security-Token``). An attacker who could tamper with
+    that traffic could make Scrapy falsely think that a file is up to date or
+    was successfully stored. See the `fwm7-29m4-rrj9`_ security advisory for
+    details.
+
+    To restore the previous behavior, set :setting:`AWS_USE_SSL` to ``False``.
+
+    .. _fwm7-29m4-rrj9: https://github.com/scrapy/scrapy/security/advisories/GHSA-fwm7-29m4-rrj9
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 

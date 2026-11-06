@@ -231,7 +231,7 @@ class S3FilesStore:
             "aws_session_token": self.AWS_SESSION_TOKEN,
             "endpoint_url": self.AWS_ENDPOINT_URL,
             "region_name": self.AWS_REGION_NAME,
-            "use_ssl": self.AWS_USE_SSL,
+            "use_ssl": True if self.AWS_USE_SSL is None else self.AWS_USE_SSL,
             "verify": self.AWS_VERIFY,
             "config": Config(**config_kwargs),
         }
