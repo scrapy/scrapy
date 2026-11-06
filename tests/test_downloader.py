@@ -250,30 +250,6 @@ class TestResponseRoughSize:
         ],
     )
 
-    @ coroutine_test
-    async def test_body_file_requests_do_not_count_toward_limit(self):
-            crawler = get_crawler(
-                        OfflineSpider,
-                        settings_dict = {
-                            "RESPONSE_MAX_ACTIVE_SIZE": 1,
-                           "RESPONSE_ROUGH_SIZE": 1,
-                        },)
-            await maybe_deferred_to_future(crawler.crawl())
-            assert crawler.engine
-            downloader = crawler.engine.downloader
-            middleware = downloader.middleware
-            request = Request("data:,", meta={"body_file": True})
-
-            middleware._count_rough_size(request)
-
-            assert middleware._rough_active_size == 0
-            downloader._add_unscheduled_request(request)
-            slot = Slot(1, 0)
-            slot.transferring.add(request)
-            downloader.slots["test"] = slot
-            downloader._unscheduled_transfers = 1
-            assert not downloader._unscheduled_size_exceeded()
-
     @coroutine_test
     async def test_value(self, settings_dict, expected):
         crawler = get_crawler(OfflineSpider, settings_dict=settings_dict)
@@ -387,6 +363,30 @@ class TestResponseRoughSize:
             "request_backout_seconds/total": gt(0),
         }
         assert _backout_stats(crawler) == expected_stats
+
+    @coroutine_test
+    async def test_body_file_requests_do_not_count_toward_limit(self):
+        crawler = get_crawler(
+            OfflineSpider,
+            settings_dict={
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+                "RESPONSE_ROUGH_SIZE": 1,
+            }, )
+        await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
+        downloader = crawler.engine.downloader
+        middleware = downloader.middleware
+        request = Request("data:,", meta={"body_file": True})
+
+        middleware._count_rough_size(request)
+
+        assert middleware._rough_active_size == 0
+        downloader._add_unscheduled_request(request)
+        slot = Slot(1, 0)
+        slot.transferring.add(request)
+        downloader.slots["test"] = slot
+        downloader._unscheduled_transfers = 1
+        assert not downloader._unscheduled_size_exceeded()
 
 
 class TestRequestBackout:
