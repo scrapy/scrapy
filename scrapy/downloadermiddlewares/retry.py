@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from logging import Logger, getLevelNamesMapping, getLogger
 from typing import TYPE_CHECKING, Self
+from weakref import WeakSet
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg
@@ -27,6 +28,11 @@ if TYPE_CHECKING:
 
 
 retry_logger = getLogger(__name__)
+
+# Requests built by get_retry_request(), which carry the meta of the request
+# they retry on purpose, so that MetaCopyDetectionMiddleware does not warn
+# about them.
+_retry_requests: WeakSet[Request] = WeakSet()
 
 
 def get_retry_request(
@@ -106,6 +112,7 @@ def get_retry_request(
         new_request: Request = request.copy()
         new_request.meta["retry_times"] = retry_times
         new_request.meta["skip_dupefilter_once"] = True
+        _retry_requests.add(new_request)
         if priority_adjust is None:
             priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
         new_request.priority = request.priority + priority_adjust

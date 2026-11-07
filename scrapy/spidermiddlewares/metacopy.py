@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from scrapy.downloadermiddlewares.retry import _retry_requests
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ class MetaCopyDetectionMiddleware(BaseSpiderMiddleware):
         if response is None:
             return request
 
-        if not self._warned:
+        if not self._warned and request not in _retry_requests:
             found = self._keys & request.meta.keys()
             if found:
                 spider_name = type(self.crawler.spider).__name__
