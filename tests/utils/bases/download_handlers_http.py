@@ -40,10 +40,7 @@ from scrapy.http import (
     Response,
     TextResponse,
 )
-from scrapy.utils._deps_compat import (
-    TWISTED_TLS_LIMITS_OFFBY1,
-    W3LIB_STRIPS_IPV6_BRACKETS,
-)
+from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.reactor import is_reactor_installed
@@ -248,9 +245,6 @@ class TestHttpBase(ABC):
 
     @pytest.mark.skipif(
         not ipv6_loopback_available(), reason="IPv6 loopback is not available"
-    )
-    @pytest.mark.skipif(
-        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
     )
     @coroutine_test
     async def test_download_ipv6_literal(self, mockserver_ipv6: MockServer) -> None:
@@ -2133,9 +2127,6 @@ class TestMitmProxyBase(ABC):
 
     @pytest.mark.skipif(
         not ipv6_loopback_available(), reason="IPv6 loopback is not available"
-    )
-    @pytest.mark.skipif(
-        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
     )
     @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
     @pytest.mark.parametrize(

@@ -19,6 +19,8 @@ from typing import (
 )
 from urllib.parse import quote, urlsplit
 
+from w3lib.url import add_http_if_no_scheme
+
 from scrapy import Request, signals
 from scrapy.exceptions import (
     DownloadCancelledError,
@@ -35,7 +37,6 @@ from scrapy.utils._download_handlers import (
     normalize_bind_address,
 )
 from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -349,7 +350,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
         proxy: str | None = request.meta.get("proxy")
         if not proxy:
             return None, None
-        proxy = _add_http_if_no_scheme(proxy)
+        proxy = add_http_if_no_scheme(proxy)
         auth_header: bytes | None = request.headers.get(b"Proxy-Authorization")
         return proxy, auth_header.decode("ascii") if auth_header else None
 
