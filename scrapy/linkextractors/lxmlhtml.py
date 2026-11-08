@@ -22,9 +22,10 @@ from scrapy.linkextractors import IGNORED_EXTENSIONS, _matches
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
-from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
+    from urllib.parse import ParseResult
+
     from lxml.html import HtmlElement
 
     from scrapy import Selector
@@ -66,6 +67,23 @@ def _has_extension(path: str, extensions: set[str]) -> bool:
         if path[dot:].lower() in extensions:
             return True
         dot = path.rfind(".", 0, dot)
+    return False
+
+
+def _url_is_from_any_domain(parsed_url: ParseResult, domains: set[str]) -> bool:
+    """Return whether the host of *parsed_url* is one of *domains*, which are
+    all lowercase, or a subdomain of one of them.
+    """
+    host = parsed_url.netloc.lower()
+    if not host:
+        return False
+    if host in domains:
+        return True
+    dot = host.find(".")
+    while dot != -1:
+        if host[dot + 1 :] in domains:
+            return True
+        dot = host.find(".", dot + 1)
     return False
 
 
@@ -358,8 +376,8 @@ class LxmlLinkExtractor:
         self.allow_res: list[re.Pattern[str]] = self._compile_regexes(allow)
         self.deny_res: list[re.Pattern[str]] = self._compile_regexes(deny)
 
-        self.allow_domains: set[str] = set(arg_to_iter(allow_domains))
-        self.deny_domains: set[str] = set(arg_to_iter(deny_domains))
+        self.allow_domains: set[str] = {d.lower() for d in arg_to_iter(allow_domains)}
+        self.deny_domains: set[str] = {d.lower() for d in arg_to_iter(deny_domains)}
 
         self.restrict_xpaths: tuple[str, ...] = tuple(arg_to_iter(restrict_xpaths))
         self.restrict_xpaths += tuple(
@@ -390,11 +408,11 @@ class LxmlLinkExtractor:
             return False
         if self.deny_res and _matches(link.url, self.deny_res):
             return False
-        if self.allow_domains and not url_is_from_any_domain(
+        if self.allow_domains and not _url_is_from_any_domain(
             parsed_url, self.allow_domains
         ):
             return False
-        if self.deny_domains and url_is_from_any_domain(parsed_url, self.deny_domains):
+        if self.deny_domains and _url_is_from_any_domain(parsed_url, self.deny_domains):
             return False
         if self.deny_extensions and _has_extension(
             parsed_url.path, self.deny_extensions
@@ -403,9 +421,12 @@ class LxmlLinkExtractor:
         return not self.restrict_text or _matches(link.text, self.restrict_text)
 
     def matches(self, url: str) -> bool:
-        if self.allow_domains and not url_is_from_any_domain(url, self.allow_domains):
+        parsed_url = urlparse_cached(url)
+        if self.allow_domains and not _url_is_from_any_domain(
+            parsed_url, self.allow_domains
+        ):
             return False
-        if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
+        if self.deny_domains and _url_is_from_any_domain(parsed_url, self.deny_domains):
             return False
 
         allowed = (

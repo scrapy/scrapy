@@ -850,6 +850,25 @@ class TestLxmlLinkExtractor:
         ]
         assert len(calls) == 10
 
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("http://example.com/", True),
+            ("http://EXAMPLE.com:8080/", False),
+            ("http://sub.Example.COM/", True),
+            ("http://a.b.example.com/", True),
+            ("http://notexample.com/", False),
+            ("http://example.com.example/", False),
+            ("http://foo.example.org/", False),
+            ("http://example.org/", True),
+        ],
+    )
+    def test_matches_domains(self, url, expected):
+        lx = LxmlLinkExtractor(
+            allow_domains=["Example.com", "example.org"], deny_domains="FOO.example.org"
+        )
+        assert lx.matches(url) is expected
+
     def test_link_restrict_text(self):
         html = b"""
         <a href="http://example.org/item1.html">Pic of a cat</a>
