@@ -446,6 +446,23 @@ class TestDownloaderAwarePriorityQueue:
         popped = _pop(queue)
         assert popped.url == req_b.url
 
+    def test_pop_when_every_slot_is_busy(
+        self, downloader: MockDownloader, queue: DownloaderAwarePriorityQueue
+    ) -> None:
+        for slot in ("slot-a", "slot-b", "slot-c"):
+            for i in range(2):
+                req = Request(f"https://example.org/{slot}/{i}")
+                req.meta[Downloader.DOWNLOAD_SLOT] = slot
+                queue.push(req)
+
+        downloader.increment("slot-a")
+        downloader.increment("slot-a")
+        downloader.increment("slot-b")
+        downloader.increment("slot-c")
+
+        slots = [_pop(queue).meta[Downloader.DOWNLOAD_SLOT] for _ in range(3)]
+        assert slots == ["slot-b", "slot-c", "slot-b"]
+
     def test_contains(self, queue: DownloaderAwarePriorityQueue) -> None:
         req = Request("https://example.org/")
         req.meta[Downloader.DOWNLOAD_SLOT] = "example-slot"

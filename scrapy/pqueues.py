@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from bisect import bisect_left, bisect_right, insort
 from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, Self, cast
@@ -402,18 +403,37 @@ class DownloaderAwarePriorityQueue:
         self.crawler: Crawler = crawler
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
+        self._sorted_slots: list[str] = []  # keys of pqueues, sorted
         self._last_selected_slot: str | None = None
         self.changed: bool = False
         if slot_startprios:
             for slot, startprios in slot_startprios.items():
                 self.pqueues[slot] = self.pqfactory(slot, startprios)
                 self._collect_change(self.pqueues[slot])
+            self._sorted_slots = sorted(self.pqueues)
 
-    def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
-        # Lexicographic on (active, slot): the least-loaded slot, and the
-        # lowest-named one among ties.
-        min_active, slot = min(stats)
+    def _next_slot(self, *, update_state: bool) -> str:
+        # Pick the least-loaded slot. Among ties, take the first one after the
+        # last selected, so that equally-loaded slots take turns.
+        slots = self._sorted_slots
         last = self._last_selected_slot
+        start = 0 if last is None else bisect_right(slots, last)
+        # Most slots usually have no active downloads, so walk the sorted
+        # slots from there and take the first idle one. At most
+        # CONCURRENT_REQUESTS slots can be busy, which bounds the walk.
+        for i in range(start, start + len(slots)):
+            slot = slots[i % len(slots)]
+            if not self._downloader_interface._active_downloads(slot):
+                break
+        else:
+            slot = self._next_busy_slot(last)
+        if update_state:
+            self._last_selected_slot = slot
+        return slot
+
+    def _next_busy_slot(self, last: str | None) -> str:
+        stats = self._downloader_interface.stats(self._sorted_slots)
+        min_active, slot = min(stats)
         if last is not None:
             # Round-robin among the tied slots: the first one after the last
             # selected, so that equally-loaded slots take turns.
@@ -421,8 +441,6 @@ class DownloaderAwarePriorityQueue:
                 (s for active, s in stats if active == min_active and s > last),
                 default=slot,
             )
-        if update_state:
-            self._last_selected_slot = slot
         return slot
 
     def pqfactory(
@@ -442,17 +460,16 @@ class DownloaderAwarePriorityQueue:
             self.changed = True
 
     def pop(self) -> Request | None:
-        stats = self._downloader_interface.stats(self.pqueues)
-
-        if not stats:
+        if not self.pqueues:
             return None
 
-        slot = self._next_slot(stats, update_state=True)
+        slot = self._next_slot(update_state=True)
         queue = self.pqueues[slot]
         request = queue.pop()
         self._collect_change(queue)
         if len(queue) == 0:
             del self.pqueues[slot]
+            del self._sorted_slots[bisect_left(self._sorted_slots, slot)]
             queue.close()
             self.changed = True
             if self.key:
@@ -466,6 +483,7 @@ class DownloaderAwarePriorityQueue:
         slot = self._downloader_interface.get_slot_key(request)
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
+            insort(self._sorted_slots, slot)
             self.changed = True
         queue = self.pqueues[slot]
         queue.push(request)
@@ -478,18 +496,16 @@ class DownloaderAwarePriorityQueue:
         Raises :exc:`NotImplementedError` if the underlying queue class does
         not implement a ``peek`` method, which is optional for queues.
         """
-        stats = self._downloader_interface.stats(self.pqueues)
-        if not stats:
+        if not self.pqueues:
             return None
-        slot = self._next_slot(stats, update_state=False)
+        slot = self._next_slot(update_state=False)
         queue = self.pqueues[slot]
         return queue.peek()
 
     def next_priority(self) -> int | None:
         if not self.pqueues:
             return None
-        stats = self._downloader_interface.stats(self.pqueues)
-        slot = self._next_slot(stats, update_state=False)
+        slot = self._next_slot(update_state=False)
         return self.pqueues[slot].next_priority()
 
     def state(self) -> dict[str, list[int]]:
@@ -500,6 +516,7 @@ class DownloaderAwarePriorityQueue:
         for queue in self.pqueues.values():
             queue.close()
         self.pqueues.clear()
+        self._sorted_slots.clear()
         return active
 
     def __len__(self) -> int:
