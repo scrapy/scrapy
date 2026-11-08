@@ -1,21 +1,26 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from urllib.parse import urljoin
 
 import pytest
 from twisted.internet import defer
 
 from scrapy.core.scheduler import BaseScheduler
+from scrapy.dupefilters import BaseDupeFilter
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import global_object_name
 from scrapy.utils.request import fingerprint
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
     from tests.mockserver.http import MockServer
 
 PATHS = ["/a", "/b", "/c"]
@@ -44,11 +49,11 @@ class MinimalScheduler:
 
 
 class SimpleScheduler(MinimalScheduler):
-    def open(self, spider: Spider) -> defer.Deferred[str]:
-        return defer.succeed("open")
+    async def open(self, spider: Spider) -> str:
+        return "open"
 
-    def close(self, reason: str) -> defer.Deferred[str]:
-        return defer.succeed("close")
+    async def close(self, reason: str) -> str:
+        return "close"
 
     def __len__(self) -> int:
         return len(self.requests)
@@ -123,9 +128,9 @@ class TestSimpleScheduler(InterfaceCheckMixin):
     def setup_method(self):
         self.scheduler = SimpleScheduler()
 
-    @inline_callbacks_test
-    def test_enqueue_dequeue(self):
-        open_result = yield self.scheduler.open(Spider("foo"))
+    @coroutine_test
+    async def test_enqueue_dequeue(self):
+        open_result = await self.scheduler.open(Spider("foo"))
         assert open_result == "open"
         assert not self.scheduler.has_pending_requests()
 
@@ -145,7 +150,7 @@ class TestSimpleScheduler(InterfaceCheckMixin):
         assert not self.scheduler.has_pending_requests()
         assert len(self.scheduler) == 0
 
-        close_result = yield self.scheduler.close("")
+        close_result = await self.scheduler.close("")
         assert close_result == "close"
 
 
@@ -169,3 +174,111 @@ class TestMinimalSchedulerCrawl:
 
 class TestSimpleSchedulerCrawl(TestMinimalSchedulerCrawl):
     scheduler_cls = SimpleScheduler
+
+
+class CallsSpider(DefaultSpider):
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.calls: list[str] = []
+
+
+class CoroutineScheduler(MinimalScheduler):
+    async def open(self, spider: Spider) -> None:
+        assert isinstance(spider, CallsSpider)
+        self.spider = spider
+        spider.calls.append("open")
+
+    async def close(self, reason: str) -> None:
+        self.spider.calls.append("close")
+
+
+class DeferredScheduler(MinimalScheduler):
+    def open(self, spider: Spider) -> defer.Deferred[None]:
+        assert isinstance(spider, CallsSpider)
+        self.spider = spider
+        spider.calls.append("open")
+        return defer.succeed(None)
+
+    def close(self, reason: str) -> defer.Deferred[None]:
+        self.spider.calls.append("close")
+        return defer.succeed(None)
+
+
+class RecordingDupeFilter(BaseDupeFilter):
+    def __init__(self, crawler: Crawler):
+        self.crawler = crawler
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        return cls(crawler)
+
+    def record(self, call: str) -> None:
+        assert isinstance(self.crawler.spider, CallsSpider)
+        self.crawler.spider.calls.append(call)
+
+
+class CoroutineDupeFilter(RecordingDupeFilter):
+    async def open(self) -> None:
+        self.record("open")
+
+    async def close(self, reason: str) -> None:
+        self.record("close")
+
+
+class DeferredDupeFilter(RecordingDupeFilter):
+    def open(self) -> defer.Deferred[None]:
+        self.record("open")
+        return defer.succeed(None)
+
+    def close(self, reason: str) -> defer.Deferred[None]:
+        self.record("close")
+        return defer.succeed(None)
+
+
+class TestOpenClose:
+    """Scheduler and dupefilter open() and close() are awaited, and returning
+    a Deferred from them is deprecated."""
+
+    @staticmethod
+    async def crawl(settings: dict[str, Any]) -> list[str]:
+        crawler = get_crawler(CallsSpider, settings)
+        await crawler.crawl_async()
+        assert isinstance(crawler.spider, CallsSpider)
+        return crawler.spider.calls
+
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            {"SCHEDULER": CoroutineScheduler},
+            {"DUPEFILTER_CLASS": CoroutineDupeFilter},
+        ],
+    )
+    @coroutine_test
+    async def test_coroutine(self, settings: dict[str, Any]) -> None:
+        assert await self.crawl(settings) == ["open", "close"]
+
+    @pytest.mark.parametrize(
+        ("setting", "cls"),
+        [
+            ("SCHEDULER", DeferredScheduler),
+            ("DUPEFILTER_CLASS", DeferredDupeFilter),
+        ],
+    )
+    @coroutine_test
+    async def test_deferred(
+        self, setting: str, cls: type[DeferredScheduler | DeferredDupeFilter]
+    ) -> None:
+        with pytest.warns(ScrapyDeprecationWarning) as record:
+            calls = await self.crawl({setting: cls})
+        assert calls == ["open", "close"]
+        suffix = (
+            " returned a Deferred, this is deprecated."
+            " Please refactor this function to return a coroutine."
+        )
+        # The dupefilter methods are named instead of the Scheduler ones that
+        # return their result, in every reactor mode.
+        assert [
+            str(w.message).removesuffix(suffix)
+            for w in record
+            if str(w.message).endswith(suffix)
+        ] == [global_object_name(cls.open), global_object_name(cls.close)]

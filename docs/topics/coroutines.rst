@@ -105,6 +105,16 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
       .. versionadded:: 2.20.0
 
+-   The ``open()`` and ``close()`` methods of :ref:`custom schedulers
+    <topics-scheduler>` (see :setting:`SCHEDULER`).
+
+    .. versionadded:: VERSION
+
+-   The ``open()`` and ``close()`` methods of custom dupefilters (see
+    :setting:`DUPEFILTER_CLASS`).
+
+    .. versionadded:: VERSION
+
 Most callables above may also :ref:`await a request <inline-requests>` to send
 it and get its response.
 
@@ -144,28 +154,10 @@ return coroutines are listed in :ref:`coroutine-support`):
 
     - ``fetch()``
 
--   Custom scheduler implementations (see :setting:`SCHEDULER`):
-
-    - :meth:`~scrapy.core.scheduler.BaseScheduler.open`
-
-    - :meth:`~scrapy.core.scheduler.BaseScheduler.close`
-
--   Custom dupefilters (see :setting:`DUPEFILTER_CLASS`):
-
-    - ``open()``
-
-    - ``close()``
-
 In most cases, you can use these APIs in code that otherwise uses coroutines by
 wrapping a :class:`~twisted.internet.defer.Deferred` object into a
 :class:`~asyncio.Future` object or vice versa. See :ref:`asyncio-await-dfd` for
 more information about this.
-
-For example: a custom scheduler needs to define an ``open()`` method that can
-return a :class:`~twisted.internet.defer.Deferred` object. You can write a
-method that works with Deferreds and returns one directly, or you can write a
-coroutine and convert it into a function that returns a Deferred with
-:func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
 
 
 General usage

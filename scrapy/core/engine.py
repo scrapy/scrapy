@@ -791,10 +791,11 @@ class ExecutionEngine:
             # is open.
             try:
                 self._start = await self.scraper.spidermw.process_start()
-                if hasattr(scheduler, "open") and (
-                    d := scheduler.open(self.crawler.spider)
-                ):
-                    await maybe_deferred_to_future(d)
+                if hasattr(scheduler, "open"):
+                    await ensure_awaitable(
+                        scheduler.open(self.crawler.spider),
+                        _warn=global_object_name(scheduler.open),
+                    )
                 await self.scraper.open_spider_async()
             except CloseSpider as exc:
                 await self.close_spider_async(reason=exc.reason, error=exc.error)
@@ -1009,8 +1010,10 @@ class ExecutionEngine:
 
         if hasattr(self._slot.scheduler, "close"):
             try:
-                if (d := self._slot.scheduler.close(reason)) is not None:
-                    await maybe_deferred_to_future(d)
+                await ensure_awaitable(
+                    self._slot.scheduler.close(reason),
+                    _warn=global_object_name(self._slot.scheduler.close),
+                )
             except Exception:
                 logger.exception("Scheduler close failure", extra={"spider": spider})
 
