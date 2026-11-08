@@ -350,11 +350,14 @@ class LxmlLinkExtractor:
         self.link_extractor = LxmlParserLinkExtractor(
             tag=partial(_name_matches, tags, deny_tags),
             attr=partial(_name_matches, attrs, deny_attrs),
-            unique=unique,
+            # Duplicates are removed in extract_links(), after filtering, so
+            # that a filtered-out link does not hide a duplicate that passes.
+            unique=False,
             process=process_value,
             strip=strip,
             canonicalized=True,
         )
+        self._unique: bool = unique
         self.allow_res: list[re.Pattern[str]] = self._compile_regexes(allow)
         self.deny_res: list[re.Pattern[str]] = self._compile_regexes(deny)
 
@@ -453,6 +456,6 @@ class LxmlLinkExtractor:
         for doc in docs:
             links = self._extract_links(doc, response.url, response.encoding, base_url)
             all_links.extend(self._process_links(links, schemes))
-        if self.link_extractor.unique and len(docs) > 1:
+        if self._unique:
             return unique_list(all_links, key=self.link_extractor.link_key)
         return all_links

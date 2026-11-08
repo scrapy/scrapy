@@ -850,6 +850,17 @@ class TestLxmlLinkExtractor:
         ]
         assert len(calls) == 10
 
+    def test_link_restrict_text_duplicate_url(self):
+        html = b"""
+        <a href="http://example.org/page2.html">2</a>
+        <a href="http://example.org/page2.html">Next</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        lx = LxmlLinkExtractor(restrict_text="Next")
+        assert lx.extract_links(response) == [
+            Link(url="http://example.org/page2.html", text="Next", nofollow=False),
+        ]
+
     def test_link_restrict_text(self):
         html = b"""
         <a href="http://example.org/item1.html">Pic of a cat</a>
