@@ -9,6 +9,7 @@ import logging
 import marshal
 import pickle
 import pprint
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
@@ -239,6 +240,10 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(data)
 
 
+# Characters that XML 1.0 does not allow, even as character references.
+_XML_INVALID_CHARS = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]")
+
+
 class XmlItemExporter(BaseItemExporter):
     def __init__(self, file: BytesIO, **kwargs: Any):
         self.item_element = kwargs.pop("item_element", "item")
@@ -297,10 +302,8 @@ class XmlItemExporter(BaseItemExporter):
             for value in serialized_value:
                 self._export_xml_field("value", value, depth=depth + 1)
             self._beautify_indent(depth=depth)
-        elif isinstance(serialized_value, str):
-            self.xg.characters(serialized_value)
         else:
-            self.xg.characters(str(serialized_value))
+            self.xg.characters(_XML_INVALID_CHARS.sub("\ufffd", str(serialized_value)))
         self.xg.endElement(name)
         self._beautify_newline()
 

@@ -563,6 +563,19 @@ class TestXmlItemExporter(TestBaseItemExporter):
             """,
         )
 
+    def test_invalid_xml_chars(self):
+        self.assertExportResult(
+            self.item_class(name="a\x0cb\x00c", age="22"),
+            b"""<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <age>22</age>
+                        <name>a\xef\xbf\xbdb\xef\xbf\xbdc</name>
+                    </item>
+                </items>
+            """,
+        )
+
 
 class TestXmlItemExporterDataclass(TestXmlItemExporter):
     item_class = MyDataClass
