@@ -123,7 +123,7 @@ class PeriodicLog:
         self.stats_prev: dict[str, int | float] = {}
 
         self.task = create_looping_call(self.log)
-        self.task.start(self.interval)
+        self.task.start(self.interval, now=False)
 
     def log(self) -> None:
         data: dict[str, Any] = {}

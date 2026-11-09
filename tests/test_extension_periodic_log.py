@@ -241,9 +241,11 @@ async def test_log_timing(caplog: pytest.LogCaptureFixture) -> None:
         await crawler.crawl_async()
 
     records = [r for r in caplog.records if r.name == "scrapy.extensions.periodic_log"]
-    assert records, "PeriodicLog logged nothing"
-    # Only the timing section is enabled, and it is logged on spider close.
-    data = json.loads(records[-1].getMessage())
+    # The crawl is shorter than the interval, so only the line logged on
+    # spider close is expected.
+    assert len(records) == 1
+    # Only the timing section is enabled.
+    data = json.loads(records[0].getMessage())
     assert list(data) == ["time"]
     assert data["time"]["log_interval"] == 30
     assert data["time"]["log_interval_real"] >= 0
