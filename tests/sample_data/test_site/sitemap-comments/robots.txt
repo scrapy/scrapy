@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: sitemap.xml # generated sitemap
