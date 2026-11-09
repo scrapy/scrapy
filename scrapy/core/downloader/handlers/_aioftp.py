@@ -218,9 +218,9 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
         return super()._get_body(buffer, response, request)
 
     async def _read_response(
-        self, response: _AioftpResponse, request: Request
+        self, response: _AioftpResponse, request: Request, deadline: float
     ) -> Response:
-        result = await super()._read_response(response, request)
+        result = await super()._read_response(response, request, deadline)
         if response.data is not None:
             self._add_ftp_headers(result, response, request)
         return result

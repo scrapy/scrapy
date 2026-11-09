@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import logging
 import time
 from abc import abstractmethod
+from contextlib import AsyncExitStack
 from io import BytesIO
 from pathlib import Path
 from typing import (
@@ -22,6 +24,7 @@ from urllib.parse import quote, urlsplit
 from scrapy import Request, signals
 from scrapy.exceptions import (
     DownloadCancelledError,
+    DownloadTimeoutError,
     NotConfigured,
     ResponseDataLossError,
 )
@@ -71,13 +74,12 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
 
     _DEFAULT_CONNECT_TIMEOUT: ClassVar[float] = 10
     experimental: ClassVar[bool] = False
-    requires_asyncio: ClassVar[bool] = True
     # require subclasses to disable proxies explicitly with an explanation
     supports_proxies: ClassVar[bool] = True
     supports_per_request_bindaddress: ClassVar[bool] = False
 
     def __init__(self, crawler: Crawler):
-        if self.requires_asyncio and not is_asyncio_available():  # pragma: no cover
+        if not is_asyncio_available():  # pragma: no cover
             raise NotConfigured(f"{type(self).__name__} requires the asyncio support.")
         self._check_deps_installed()
         super().__init__(crawler)
@@ -166,15 +168,27 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
                 f"The 'bindaddress' request meta key is not supported by"
                 f" {type(self).__name__} and will be ignored."
             )
-        timeout: float = request.meta.get(
-            "download_timeout", self._DEFAULT_CONNECT_TIMEOUT
+        timeout: float = (
+            request.meta.get("download_timeout") or self._DEFAULT_CONNECT_TIMEOUT
         )
+        deadline = asyncio.get_running_loop().time() + timeout
         start_time = time.monotonic()
-        async with self._make_request(request, timeout) as response:
-            request.meta["download_latency"] = time.monotonic() - start_time
-            return await self._read_response(response, request)
+        try:
+            async with AsyncExitStack() as stack:
+                async with asyncio.timeout_at(deadline):
+                    response = await stack.enter_async_context(
+                        self._make_request(request, timeout)
+                    )
+                request.meta["download_latency"] = time.monotonic() - start_time
+                return await self._read_response(response, request, deadline)
+        except TimeoutError as e:
+            raise DownloadTimeoutError(
+                f"Getting {request.url} took longer than {timeout} seconds."
+            ) from e
 
-    async def _read_response(self, response: _ResponseT, request: Request) -> Response:
+    async def _read_response(
+        self, response: _ResponseT, request: Request, deadline: float
+    ) -> Response:
         maxsize: int = request.meta.get("download_maxsize", self._default_maxsize)
         warnsize = get_warnsize(request.meta, self._default_warnsize)
 
@@ -214,32 +228,37 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
 
             bytes_received = 0
             try:
-                async for chunk in self._iter_body_chunks(response):
-                    response_body.write(chunk)
-                    bytes_received += len(chunk)
+                async with asyncio.timeout_at(deadline):
+                    async for chunk in self._iter_body_chunks(response):
+                        response_body.write(chunk)
+                        bytes_received += len(chunk)
 
-                    if stop_download := check_stop_download(
-                        signals.bytes_received, self.crawler, request, data=chunk
-                    ):
-                        return make_response(
-                            **make_response_base_args,
-                            body=self._get_body(response_body, response, request),
-                            stop_download=stop_download,
-                        )
-
-                    if maxsize and bytes_received > maxsize:
-                        response_body.truncate(0)
-                        self._cancel_maxsize(
-                            bytes_received, maxsize, request, expected=False
-                        )
-
-                    if warnsize and bytes_received > warnsize and not reached_warnsize:
-                        reached_warnsize = True
-                        logger.warning(
-                            get_warnsize_msg(
-                                bytes_received, warnsize, request, expected=False
+                        if stop_download := check_stop_download(
+                            signals.bytes_received, self.crawler, request, data=chunk
+                        ):
+                            return make_response(
+                                **make_response_base_args,
+                                body=self._get_body(response_body, response, request),
+                                stop_download=stop_download,
                             )
-                        )
+
+                        if maxsize and bytes_received > maxsize:
+                            response_body.truncate(0)
+                            self._cancel_maxsize(
+                                bytes_received, maxsize, request, expected=False
+                            )
+
+                        if (
+                            warnsize
+                            and bytes_received > warnsize
+                            and not reached_warnsize
+                        ):
+                            reached_warnsize = True
+                            logger.warning(
+                                get_warnsize_msg(
+                                    bytes_received, warnsize, request, expected=False
+                                )
+                            )
             except Exception as e:
                 return self._handle_body_exception(
                     e,
@@ -263,7 +282,9 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
         """Turn an exception raised while reading the response body into a
         partial response, if the request allows for it, or reraise it."""
         is_dataloss = self._is_dataloss_exception(exc)
-        if not is_dataloss and not self._is_timeout_exception(exc):
+        # TimeoutError also comes from the deadline set in download_request()
+        is_timeout = isinstance(exc, TimeoutError) or self._is_timeout_exception(exc)
+        if not is_dataloss and not is_timeout:
             raise exc
         fail_on_dataloss: bool = request.meta.get(
             "download_fail_on_dataloss", self._fail_on_dataloss

@@ -644,6 +644,38 @@ class TestHttpBase(ABC):
         assert response.body == b"some bytes"
         assert response.flags == ["dataloss"]
 
+    @coroutine_test
+    async def test_timeout_download_from_spider_slow_body(
+        self, mockserver: MockServer
+    ) -> None:
+        # the server sends body bytes well within the timeout of each other,
+        # but the whole body takes longer than the timeout
+        meta = {"download_timeout": 0.5}
+        request = Request(
+            mockserver.url("/trickle?n=20&interval=0.1", is_secure=self.is_secure),
+            meta=meta,
+        )
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadTimeoutError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_timeout_download_from_spider_slow_body_partial_response(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.handler_supports_partial_response_on_timeout:
+            pytest.skip("This handler doesn't support partial responses on timeout")
+        meta = {"download_timeout": 0.5, "download_fail_on_dataloss": False}
+        request = Request(
+            mockserver.url("/trickle?n=20&interval=0.1", is_secure=self.is_secure),
+            meta=meta,
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert 0 < len(response.body) < 20
+        assert response.flags == ["dataloss"]
+
     @pytest.mark.parametrize("send_header", [True, False])
     @coroutine_test
     async def test_host_header(self, send_header: bool, mockserver: MockServer) -> None:
