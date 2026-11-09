@@ -3,6 +3,38 @@
 Release notes
 =============
 
+Scrapy VERSION (unreleased)
+---------------------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The engine status that the :ref:`telnet console <topics-telnetconsole>`
+    reports now includes:
+
+    - ``engine.state``
+
+    - ``len(engine.requests_in_progress)``
+
+    - ``engine.items_in_progress``
+
+    and no longer includes:
+
+    - ``engine.scraper.is_idle()``
+
+    - ``engine._slot.closing``
+
+    - ``len(engine._slot.inprogress)``
+
+    - ``len(engine.scraper.slot.queue)``
+
+    - ``len(engine.scraper.slot.active)``
+
+    - ``engine.scraper.slot.itemproc_size``
+
+    (TBD)
+
+
 Scrapy 2.20.0 (2026-11-06)
 --------------------------
 

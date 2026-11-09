@@ -426,6 +426,17 @@ class TestMisuse:
             await engine.close_async()
 
 
+@coroutine_test
+async def test_progress_before_open() -> None:
+    engine = ExecutionEngine(get_crawler(DefaultSpider))
+    try:
+        assert engine.requests_in_progress == frozenset()
+        assert engine.items_in_progress == 0
+        assert engine.response_active_size == 0
+    finally:
+        await engine.close_async()
+
+
 class BrokenScheduler(BaseScheduler):
     """A scheduler that cannot be built."""
 
