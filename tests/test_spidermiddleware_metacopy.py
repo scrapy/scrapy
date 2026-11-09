@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from logging import WARNING
+from logging import WARNING, LogRecord
 from typing import TYPE_CHECKING
 
 import pytest
@@ -135,6 +135,12 @@ def test_no_warning_for_start_requests(
     assert not caplog.records
 
 
+def warnings(caplog: pytest.LogCaptureFixture) -> list[LogRecord]:
+    """Return the captured warnings, leaving out e.g. the debug message that
+    get_retry_request() logs."""
+    return [record for record in caplog.records if record.levelno >= WARNING]
+
+
 def make_downloaded_response(url: str = "https://example.com") -> Response:
     """Return a response whose request has the meta keys that Scrapy
     components set while downloading it."""
@@ -162,7 +168,7 @@ def test_no_warning_for_retry_request(
     assert req is not None
     with caplog.at_level(WARNING):
         assert process(mw, [req], response=response) == [req]
-    assert not caplog.records
+    assert not warnings(caplog)
 
 
 def test_no_warning_for_second_retry_request(
@@ -179,7 +185,7 @@ def test_no_warning_for_second_retry_request(
     assert req.meta["retry_times"] == 2
     with caplog.at_level(WARNING):
         process(mw, [req], response=response)
-    assert not caplog.records
+    assert not warnings(caplog)
 
 
 def test_warns_on_copied_meta_after_retry_request(
@@ -196,7 +202,7 @@ def test_warns_on_copied_meta_after_retry_request(
     copy = Request("https://example.com/1", meta=response.meta)
     with caplog.at_level(WARNING):
         process(mw, [retry, copy], response=response)
-    assert len(caplog.records) == 1
+    assert len(warnings(caplog)) == 1
     assert "download_latency" in caplog.text
     assert "https://example.com/1" in caplog.text
 
@@ -216,5 +222,5 @@ def test_warns_on_copy_of_retry_request(
     req = retry.replace(url="https://example.com/1")
     with caplog.at_level(WARNING):
         process(mw, [req], response=response)
-    assert len(caplog.records) == 1
+    assert len(warnings(caplog)) == 1
     assert "retry_times" in caplog.text
