@@ -16,9 +16,8 @@ from scrapy.crawler import (
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
-from scrapy.utils.test import get_reactor_settings
 from tests.spiders import ExceptionSpider, NoRequestsSpider, SimpleSpider
-from tests.utils import assert_option_is_default
+from tests.utils import CURRENT_DEFAULTS, assert_option_is_default, get_test_settings
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -89,7 +88,7 @@ class TestAsyncCrawlerProcess:
 class TestCrawlerRunnerHasSpider:
     @pytest.fixture
     def runner(self) -> CrawlerRunnerBase:
-        return CrawlerRunner(get_reactor_settings())
+        return CrawlerRunner(get_test_settings())
 
     @staticmethod
     async def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> None:
@@ -142,23 +141,19 @@ class TestCrawlerRunnerHasSpider:
     async def test_crawler_runner_asyncio_enabled_true(
         self, reactor_pytest: str
     ) -> None:
+        runner = CrawlerRunner(
+            settings={
+                "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                **CURRENT_DEFAULTS,
+            }
+        )
         if reactor_pytest != "asyncio":
-            runner = CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
             with pytest.raises(
                 Exception,
                 match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
             ):
                 await self._crawl(runner, NoRequestsSpider)
         else:
-            runner = CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
             await self._crawl(runner, NoRequestsSpider)
 
 
@@ -166,7 +161,7 @@ class TestCrawlerRunnerHasSpider:
 class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
     @pytest.fixture
     def runner(self) -> CrawlerRunnerBase:
-        return AsyncCrawlerRunner(get_reactor_settings())
+        return AsyncCrawlerRunner(get_test_settings())
 
     def test_crawler_runner_asyncio_enabled_true(self) -> None:  # type: ignore[override]
         pytest.skip("This test is only for CrawlerRunner")
@@ -228,7 +223,7 @@ def test_crawl_rejects_spider_object(runner_cls: type[CrawlerRunnerBase]) -> Non
 async def test_crawlerrunner_accepts_crawler(
     caplog: pytest.LogCaptureFixture, mockserver: MockServer
 ) -> None:
-    crawler = Crawler(SimpleSpider, get_reactor_settings())
+    crawler = Crawler(SimpleSpider, get_test_settings())
     runner = CrawlerRunner()
     with caplog.at_level(logging.DEBUG):
         await maybe_deferred_to_future(
@@ -245,7 +240,7 @@ async def test_crawlerrunner_accepts_crawler(
 async def test_crawl_multiple(
     caplog: pytest.LogCaptureFixture, mockserver: MockServer
 ) -> None:
-    settings_dict = get_reactor_settings()
+    settings_dict = get_test_settings()
     runner_cls = (
         CrawlerRunner
         if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
