@@ -107,11 +107,11 @@ class FilesStoreProtocol(Protocol):
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> Deferred[Any] | None: ...
+    ) -> Awaitable[Any] | None: ...
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
-    ) -> StatInfo | Deferred[StatInfo]: ...
+    ) -> StatInfo | Awaitable[StatInfo]: ...
 
 
 class FSFilesStore:
@@ -510,27 +510,25 @@ class FTPFilesStore:
         self.password: str = u.password or self.FTP_PASSWORD
         self.basedir: str = u.path.rstrip("/")
 
-    def persist_file(
+    async def persist_file(
         self,
         path: str,
         buf: BytesIO,
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> Deferred[Any]:
+    ) -> None:
         path = f"{self.basedir}/{path}"
-        return deferred_from_coro(
-            run_in_thread(
-                ftp_store_file,
-                path=path,
-                file=buf,
-                host=self.host,
-                port=self.port,
-                username=self.username,
-                password=self.password,
-                use_active_mode=bool(self.USE_ACTIVE_MODE),
-                timeout=self.UPLOAD_TIMEOUT,
-            )
+        await run_in_thread(
+            ftp_store_file,
+            path=path,
+            file=buf,
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+            use_active_mode=bool(self.USE_ACTIVE_MODE),
+            timeout=self.UPLOAD_TIMEOUT,
         )
 
     def _stat_file(self, path: str) -> StatInfo:
@@ -555,10 +553,8 @@ class FTPFilesStore:
         except Exception:
             return {}
 
-    def stat_file(
-        self, path: str, info: MediaPipeline.SpiderInfo
-    ) -> Deferred[StatInfo]:
-        return deferred_from_coro(run_in_thread(self._stat_file, path))
+    async def stat_file(self, path: str, info: MediaPipeline.SpiderInfo) -> StatInfo:
+        return await run_in_thread(self._stat_file, path)
 
 
 _STORE_SCHEMES_DEPRECATION = (

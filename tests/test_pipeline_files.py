@@ -6,12 +6,13 @@ import logging
 import mimetypes
 import random
 import re
+import threading
 import time
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta, timezone
-from ftplib import FTP
+from ftplib import FTP, error_perm
 from io import BytesIO
 from pathlib import Path
 from posixpath import split
@@ -42,6 +43,7 @@ from scrapy.pipelines.files import (
 )
 from scrapy.pipelines.media import FileException, _MediaRequestFiltered
 from scrapy.settings import Settings
+from scrapy.utils._ftp import ftp_store_file
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -1728,12 +1730,24 @@ class TestGCSFilesStore:
 
 
 class TestFTPFileStore:
-    @inline_callbacks_test
-    def test_persist(self):
+    @coroutine_test
+    async def test_persist(self, monkeypatch: pytest.MonkeyPatch):
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)
         meta = {"foo": "bar"}
         path = "full/filename"
+        thread_ids: list[int] = []
+
+        def _ftp() -> FTP:
+            thread_ids.append(threading.get_ident())
+            return FTP()
+
+        def _ftp_store_file(**kwargs: Any) -> None:
+            thread_ids.append(threading.get_ident())
+            ftp_store_file(**kwargs)
+
+        monkeypatch.setattr(files, "FTP", _ftp)
+        monkeypatch.setattr(files, "ftp_store_file", _ftp_store_file)
         with MockFTPServer() as ftp_server:
             crawler = get_crawler(
                 settings_dict={
@@ -1744,12 +1758,12 @@ class TestFTPFileStore:
             )
             store = build_from_crawler(FilesPipeline, crawler).store
             assert isinstance(store, FTPFilesStore)
-            empty_dict = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
+            empty_dict = await store.stat_file(path, info=DUMMY_SPIDER_INFO)
             assert empty_dict == {}
-            yield store.persist_file(
+            await store.persist_file(
                 path, buf, info=DUMMY_SPIDER_INFO, meta=meta, headers=None
             )
-            stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
+            stat = await store.stat_file(path, info=DUMMY_SPIDER_INFO)
             assert "last_modified" in stat
             assert stat["last_modified"] == pytest.approx(time.time(), abs=60)
             assert "checksum" in stat
@@ -1764,6 +1778,8 @@ class TestFTPFileStore:
                 bool(store.USE_ACTIVE_MODE),
             )
         assert data == content
+        assert len(thread_ids) == 3
+        assert threading.get_ident() not in thread_ids
 
     @pytest.mark.parametrize(
         ("response", "expected"),
@@ -1772,8 +1788,8 @@ class TestFTPFileStore:
             ("213 20191201010203.123456", 1575162123.123456),
         ],
     )
-    @inline_callbacks_test
-    def test_stat_timestamp(
+    @coroutine_test
+    async def test_stat_timestamp(
         self,
         monkeypatch: pytest.MonkeyPatch,
         response: str,
@@ -1784,15 +1800,21 @@ class TestFTPFileStore:
         ftp.voidcmd.return_value = response
         ftp.retrbinary.side_effect = lambda command, callback: callback(b"data")
         monkeypatch.setattr(files, "FTP", lambda: ftp)
-        store = FTPFilesStore(
-            "ftp://example.com:21/", FTP_USERNAME="anonymous", FTP_PASSWORD="guest"
+        crawler = get_crawler(
+            settings_dict={
+                "FILES_STORE": "ftp://example.com:21/",
+                "FTP_USER": "anonymous",
+                "FTP_PASSWORD": "guest",
+            }
         )
-        stat = yield store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
+        store = build_from_crawler(FilesPipeline, crawler).store
+        assert isinstance(store, FTPFilesStore)
+        stat = await store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
 
         assert stat["last_modified"] == expected
 
-    @inline_callbacks_test
-    def test_persist_active_mode(self):
+    @coroutine_test
+    async def test_persist_active_mode(self):
         data = b"active mode"
         path = "full/filename"
         with MockFTPServer() as ftp_server:
@@ -1807,9 +1829,49 @@ class TestFTPFileStore:
             store = build_from_crawler(FilesPipeline, crawler).store
             assert isinstance(store, FTPFilesStore)
             assert store.USE_ACTIVE_MODE
-            yield store.persist_file(path, BytesIO(data), info=DUMMY_SPIDER_INFO)
-            stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
+            await store.persist_file(path, BytesIO(data), info=DUMMY_SPIDER_INFO)
+            stat = await store.stat_file(path, info=DUMMY_SPIDER_INFO)
         assert stat["checksum"] == "ff1575649a39a27c13faa0d37c84bab3"
+
+    @coroutine_test
+    async def test_ftp_error(self):
+        with MockFTPServer() as ftp_server:
+            crawler = get_crawler(
+                settings_dict={
+                    "FILES_STORE": ftp_server.url("/"),
+                    "FTP_USER": "invalid",
+                    "FTP_PASSWORD": "invalid",
+                }
+            )
+            store = build_from_crawler(FilesPipeline, crawler).store
+            assert isinstance(store, FTPFilesStore)
+            assert await store.stat_file("full/filename", info=DUMMY_SPIDER_INFO) == {}
+            with pytest.raises(error_perm, match="530"):
+                await store.persist_file(
+                    "full/filename", BytesIO(b"data"), info=DUMMY_SPIDER_INFO
+                )
+
+    @coroutine_test
+    async def test_file_not_expired(self):
+        data = b"data"
+        request = _prepare_request_object("https://example.com/file.pdf", body=data)
+        with MockFTPServer() as ftp_server:
+            crawler = get_crawler(settings_dict={"FILES_STORE": ftp_server.url("/")})
+            crawler.spider = crawler._create_spider()
+            pipeline = build_from_crawler(FilesPipeline, crawler)
+            pipeline.open_spider()
+            store = pipeline.store
+            assert isinstance(store, FTPFilesStore)
+            path = pipeline.file_path(request)
+            await store.persist_file(path, BytesIO(data), info=DUMMY_SPIDER_INFO)
+            dfd = pipeline.media_to_download(request, DUMMY_SPIDER_INFO)
+            assert dfd is not None
+            result = await maybe_deferred_to_future(dfd)
+
+        assert result is not None
+        assert result["status"] == "uptodate"
+        assert result["checksum"] == hashlib.md5(data).hexdigest()
+        assert result["path"] == path
 
     def test_wrong_uri_scheme(self):
         with pytest.raises(
