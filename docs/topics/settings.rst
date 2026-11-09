@@ -1248,9 +1248,12 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
+A value of ``0`` or ``None`` doesn't mean a timeout of 0 or infinity: a
+non-zero handler-specific value will be used instead.
+
 .. note::
 
-    This timeout can be per-request using the :reqmeta:`download_timeout`
+    This timeout can be set per-request using the :reqmeta:`download_timeout`
     :attr:`.Request.meta` key.
 
 .. note::
