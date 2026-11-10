@@ -4,16 +4,19 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, ParamSpec, Self, cast
 
-# working around https://github.com/sphinx-doc/sphinx/issues/10400
-from twisted.internet.defer import Deferred  # noqa: TC002
+from twisted.internet.defer import Deferred
 
 from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.conf import _job_dir
+from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
+
     from queuelib.queue import BaseQueue
 
     from scrapy.crawler import Crawler
@@ -24,6 +27,33 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+_P = ParamSpec("_P")
+
+
+def _call_dupefilter(
+    f: Callable[_P, Coroutine[Any, Any, None] | Deferred[None] | None],
+    *args: _P.args,
+    **kwargs: _P.kwargs,
+) -> Coroutine[Any, Any, None] | None:
+    """Call a method of a custom dupefilter from the default scheduler,
+    warning the correct amount of times."""
+    result = f(*args, **kwargs)
+    if not isinstance(result, Deferred):
+        # happy path
+        return result
+
+    awaitable = ensure_awaitable(result, _warn=global_object_name(f))
+
+    # This wrapping is needed so that we don't return a deferred directly
+    # (on non-asyncio reactors). Otherwise there will be a second warning from
+    # an ensure_awaitable() call in ExecutionEngine (and that call is needed
+    # for non-default schedulers).
+
+    async def wait() -> None:
+        await awaitable
+
+    return wait()
 
 
 class BaseSchedulerMeta(type):
@@ -78,19 +108,25 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         return cls()
 
-    def open(self, spider: Spider) -> Deferred[None] | None:
+    def open(self, spider: Spider) -> Coroutine[Any, Any, None] | Deferred[None] | None:
         """
         Called when the spider is opened by the engine. It receives the spider
         instance as argument and it's useful to execute initialization code.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``).
 
         :param spider: the spider object for the current crawl
         :type spider: :class:`~scrapy.spiders.Spider`
         """
 
-    def close(self, reason: str) -> Deferred[None] | None:
+    def close(self, reason: str) -> Coroutine[Any, Any, None] | Deferred[None] | None:
         """
         Called when the spider is closed by the engine. It receives the reason why the crawl
         finished as argument and it's useful to execute cleaning code.
+
+        .. versionchanged:: VERSION
+           This method may now be a coroutine function (``async def``).
 
         :param reason: a string which describes the reason why the spider was closed
         :type reason: :class:`str`
@@ -361,7 +397,7 @@ class Scheduler(BaseScheduler):
     def has_pending_requests(self) -> bool:
         return len(self) > 0
 
-    def open(self, spider: Spider) -> Deferred[None] | None:
+    def open(self, spider: Spider) -> Coroutine[Any, Any, None] | None:
         """
         (1) initialize the memory queue
         (2) initialize the disk queue if the ``jobdir`` argument wasn't empty
@@ -372,9 +408,9 @@ class Scheduler(BaseScheduler):
         self.dqs: PriorityQueueProtocol | None = self._dq() if self.dqdir else None
         self._dqs_changes = 0
         self._sync_dqs_state()
-        return self.df.open()
+        return _call_dupefilter(self.df.open)
 
-    def close(self, reason: str) -> Deferred[None] | None:
+    def close(self, reason: str) -> Coroutine[Any, Any, None] | None:
         """
         (1) dump pending requests to disk if there is a disk queue
         (2) return the result of the dupefilter's ``close`` method
@@ -383,7 +419,7 @@ class Scheduler(BaseScheduler):
             state = self.dqs.close()
             assert isinstance(self.dqdir, str)
             self._write_dqs_state(self.dqdir, state)
-        return self.df.close(reason)
+        return _call_dupefilter(self.df.close, reason)
 
     def enqueue_request(self, request: Request) -> bool:
         """

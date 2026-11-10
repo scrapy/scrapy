@@ -1430,11 +1430,11 @@ interface:
             return False
 
         def open(self):
-            """Called before the spider opens. It may return a deferred."""
+            """Called before the spider opens. It may be a coroutine function."""
             pass
 
         def close(self, reason):
-            """Called before the spider closes. It may return a deferred."""
+            """Called before the spider closes. It may be a coroutine function."""
             pass
 
         def log(self, request, spider):
