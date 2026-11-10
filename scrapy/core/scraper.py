@@ -243,8 +243,12 @@ class Scraper:
                 self.itemproc.close_spider(self.crawler.spider)
             )
 
-    def is_idle(self) -> bool:
-        """Return True if there isn't any more spiders to process"""
+    def is_idle(self) -> bool:  # pragma: no cover
+        warnings.warn(
+            "Scraper.is_idle() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return not self.slot
 
     def _check_if_closing(self) -> None:
