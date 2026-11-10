@@ -41,6 +41,7 @@ from twisted.web.client import Response as TxResponse
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IResponse
+from w3lib.url import add_http_if_no_scheme
 from zope.interface import implementer
 
 from scrapy import Request, signals
@@ -69,7 +70,6 @@ from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -802,7 +802,7 @@ class _ScrapyAgent:
         bindaddress = normalize_bind_address(bindaddress)
         proxy = request.meta.get("proxy")
         if proxy:
-            proxy = _add_http_if_no_scheme(proxy)
+            proxy = add_http_if_no_scheme(proxy)
             proxy_parsed = urlparse_cached(proxy)
             proxy_host = proxy_parsed.hostname
             proxy_port = proxy_parsed.port

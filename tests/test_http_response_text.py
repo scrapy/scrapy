@@ -246,10 +246,7 @@ class TestTextResponse(TestResponseBase):
             body=b"\xef\xbb\xbfWORD\xe3\xab",
         )
         assert r6.encoding == "utf-8"
-        assert r6.text in {
-            "WORD\ufffd\ufffd",  # w3lib < 1.19.0
-            "WORD\ufffd",  # w3lib >= 1.19.0
-        }
+        assert r6.text == "WORD\ufffd"
 
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,
