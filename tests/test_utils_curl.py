@@ -385,6 +385,113 @@ class TestCurlToRequestKwargs:
         expected_result = {"method": "DELETE", "url": "https://www.url.com/page"}
         self._test_command(curl_command, expected_result)
 
+    def test_proxy_option(self):
+        curl_command = "curl -x http://127.0.0.1:8080 https://example.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "meta": {"proxy": "http://127.0.0.1:8080"},
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_user_agent_option(self):
+        curl_command = "curl -A ua/1 https://example.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "headers": [("User-Agent", "ua/1")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_user_agent_option_does_not_override_header(self):
+        curl_command = "curl https://example.org/get -A ua/1 -H 'User-Agent: other/2'"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "headers": [("User-Agent", "other/2")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_referer_option(self):
+        curl_command = "curl -e http://referrer.example/ https://example.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "headers": [("Referer", "http://referrer.example/")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_head_option(self):
+        curl_command = "curl -I https://example.org/get"
+        expected_result = {"method": "HEAD", "url": "https://example.org/get"}
+        self._test_command(curl_command, expected_result)
+
+    def test_get_option_with_data(self):
+        curl_command = "curl -G https://example.org/get -d q=a"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get?q=a",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_option_with_data_and_existing_query(self):
+        curl_command = "curl -G 'https://example.org/get?x=1' -d q=a"
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get?x=1&q=a",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_data_binary(self):
+        curl_command = "curl https://example.org/post --data-binary a=1"
+        expected_result = {
+            "method": "POST",
+            "url": "https://example.org/post",
+            "body": "a=1",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_json_option(self):
+        curl_command = """curl https://example.org/post --json '{"a": 1}'"""
+        expected_result = {
+            "method": "POST",
+            "url": "https://example.org/post",
+            "headers": [
+                ("Content-Type", "application/json"),
+                ("Accept", "application/json"),
+            ],
+            "body": '{"a": 1}',
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_json_option_does_not_override_content_type_header(self):
+        curl_command = (
+            "curl https://example.org/post --json '{\"a\": 1}'"
+            " -H 'Content-Type: application/vnd.api+json'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://example.org/post",
+            "headers": [
+                ("Content-Type", "application/vnd.api+json"),
+                ("Accept", "application/json"),
+            ],
+            "body": '{"a": 1}',
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_pseudo_header_is_ignored(self):
+        curl_command = (
+            "curl https://example.org/get -H ':authority: example.org'"
+            " -H 'X-Other: value'"
+        )
+        expected_result = {
+            "method": "GET",
+            "url": "https://example.org/get",
+            "headers": [("X-Other", "value")],
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_get_silent(self):
         curl_command = 'curl --silent "www.example.com"'
         expected_result = {"method": "GET", "url": "http://www.example.com"}

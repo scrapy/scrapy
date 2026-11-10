@@ -6,7 +6,7 @@ import warnings
 from http.cookies import SimpleCookie
 from shlex import quote, split
 from typing import TYPE_CHECKING, Any, NoReturn
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit, urlunsplit
 
 from w3lib.http import basic_auth_header
 
@@ -42,8 +42,22 @@ curl_parser.add_argument("url")
 curl_parser.add_argument("-H", "--header", dest="headers", action="append")
 curl_parser.add_argument("-X", "--request", dest="method")
 curl_parser.add_argument("-b", "--cookie", dest="cookies", action="append")
-curl_parser.add_argument("-d", "--data", "--data-raw", dest="data", action=DataAction)
+curl_parser.add_argument(
+    "-d",
+    "--data",
+    "--data-raw",
+    "--data-binary",
+    "--data-ascii",
+    dest="data",
+    action=DataAction,
+)
+curl_parser.add_argument("--json", dest="json", action=DataAction)
 curl_parser.add_argument("-u", "--user", dest="auth")
+curl_parser.add_argument("-A", "--user-agent", dest="user_agent")
+curl_parser.add_argument("-e", "--referer", dest="referer")
+curl_parser.add_argument("-x", "--proxy", dest="proxy")
+curl_parser.add_argument("-G", "--get", dest="get", action="store_true")
+curl_parser.add_argument("-I", "--head", dest="head", action="store_true")
 
 
 safe_to_ignore_arguments = [
@@ -65,6 +79,12 @@ def _parse_headers_and_cookies(
     headers: list[tuple[str, str | bytes | None]] = []
     cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
+        if header.lstrip().startswith(":"):
+            # HTTP/2 pseudo-header (e.g. ":authority: example.org"), which
+            # some browsers include when copying a request as cURL. It is
+            # not a real header, and parsing it would produce a header with
+            # an empty name.
+            continue
         val: str | None
         if ":" in header:
             name, val = header.split(":", 1)
@@ -92,7 +112,30 @@ def _parse_headers_and_cookies(
         user, _, password = parsed_args.auth.partition(":")
         headers.append(("Authorization", basic_auth_header(user, password)))
 
+    _add_option_headers(headers, parsed_args)
+
     return headers, cookies
+
+
+def _add_option_headers(
+    headers: list[tuple[str, str | bytes | None]],
+    parsed_args: argparse.Namespace,
+) -> None:
+    """Add the headers implied by options such as -A/--user-agent.
+
+    An explicit -H header wins over the value of the corresponding
+    option, as it does in curl.
+    """
+    header_names = {name.lower() for name, _ in headers}
+    if parsed_args.user_agent is not None and "user-agent" not in header_names:
+        headers.append(("User-Agent", parsed_args.user_agent))
+    if parsed_args.referer is not None and "referer" not in header_names:
+        headers.append(("Referer", parsed_args.referer))
+    if parsed_args.json is not None:
+        if "content-type" not in header_names:
+            headers.append(("Content-Type", "application/json"))
+        if "accept" not in header_names:
+            headers.append(("Accept", "application/json"))
 
 
 _ANSI_C_QUOTED_RE = re.compile(r"\$'((?:[^'\\]|\\.)*)'", re.DOTALL)
@@ -224,7 +267,20 @@ def curl_to_request_kwargs(
     if not parsed_url.scheme:
         url = "http://" + url
 
+    # Data from the -d/--data-* and --json options forms a single payload.
+    data = "&".join(part for part in (parsed_args.data, parsed_args.json) if part)
+
+    if data and parsed_args.get:
+        # With -G/--get, curl appends the data to the URL query string
+        # instead of sending it in the body of a POST request.
+        url_parts = urlsplit(url)
+        query = f"{url_parts.query}&{data}" if url_parts.query else data
+        url = urlunsplit(url_parts._replace(query=query))
+        data = ""
+
     method = parsed_args.method or "GET"
+    if parsed_args.head and not parsed_args.method:
+        method = "HEAD"
 
     result: dict[str, Any] = {"method": method.upper(), "url": url}
 
@@ -234,9 +290,11 @@ def curl_to_request_kwargs(
         result["headers"] = headers
     if cookies:
         result["cookies"] = cookies
-    if parsed_args.data:
-        result["body"] = parsed_args.data
-        if not parsed_args.method:
+    if parsed_args.proxy:
+        result["meta"] = {"proxy": parsed_args.proxy}
+    if data:
+        result["body"] = data
+        if not parsed_args.method and not parsed_args.head:
             # if the "data" is specified but the "method" is not specified,
             # the default method is 'POST'
             result["method"] = "POST"
