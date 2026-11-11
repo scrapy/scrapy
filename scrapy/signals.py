@@ -30,6 +30,7 @@ feed_exporter_closed = object()
 feed_slots_initialized = object()
 spider_state_loaded = object()
 spider_state_saving = object()
+contract_failed = object()
 
 _signal_args: dict[object, frozenset[str]] = {
     engine_started: frozenset(),
@@ -57,6 +58,7 @@ _signal_args: dict[object, frozenset[str]] = {
     feed_slots_initialized: frozenset({"slots"}),
     spider_state_loaded: frozenset({"state"}),
     spider_state_saving: frozenset({"state"}),
+    contract_failed: frozenset({"contract", "exception", "spider"}),
 }
 """Arguments that each signal sends, used to catch handlers that declare an
 argument their signal never sends. ``signal`` and ``sender`` are omitted

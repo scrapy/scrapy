@@ -677,3 +677,31 @@ response_downloaded
 
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.Spider` object
+
+
+Contract signals
+----------------
+
+contract_failed
+~~~~~~~~~~~~~~~
+
+.. signal:: contract_failed
+.. function:: contract_failed(contract, exception, spider)
+
+    Sent when a :ref:`spider contract <topics-contracts>` fails, i.e. when its
+    ``pre_process`` or ``post_process`` method raises an
+    :exc:`AssertionError` such as :exc:`~scrapy.exceptions.ContractFail`.
+
+    .. versionadded:: VERSION
+
+    This signal does not support
+    :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param contract: the contract that failed
+    :type contract: :class:`~scrapy.contracts.Contract` object
+
+    :param exception: the exception raised by the contract
+    :type exception: :exc:`AssertionError` exception
+
+    :param spider: the spider whose callback the contract checks
+    :type spider: :class:`~scrapy.Spider` object

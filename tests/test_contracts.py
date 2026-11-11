@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import inspect
 from typing import TYPE_CHECKING, Any
 from unittest import TestCase, TextTestResult, TextTestRunner
 
 import pytest
 from twisted.python import failure
 
+from scrapy import signals
 from scrapy.contracts import Contract, ContractsManager
 from scrapy.contracts.default import (
     CallbackKeywordArgumentsContract,
@@ -1005,6 +1007,83 @@ class TestCustomContractPrePostProcess:
 
         assert self.results.errors
         assert self.results.stopped_tests.count(contract.testcase_post) == 1
+
+
+class TestContractFailedSignal:
+    @inline_callbacks_test
+    def test_crawl(self):
+        conman = ContractsManager(
+            [
+                UrlContract,
+                ReturnsContract,
+                PreProcessAssertionFailContract,
+                PreProcessErrorContract,
+            ]
+        )
+        results = TextTestResult(  # type: ignore[type-var]
+            stream=None, descriptions=False, verbosity=0
+        )
+        received: list[tuple[str, AssertionError, Spider]] = []
+
+        def on_contract_failed(
+            contract: Contract, exception: AssertionError, spider: Spider
+        ) -> None:
+            received.append((contract.name, exception, spider))
+
+        class SignalSpider(Spider):
+            name = "contract_failed_signal"
+
+            async def start(self):
+                for request in conman.from_spider(self, results):
+                    yield request
+
+            def parse_ok(self, response):
+                return DemoItem(url=response.url)
+
+            def parse_post_fail(self, response):
+                return None
+
+            @classmethod
+            def parse_classmethod_fail(cls, response):
+                return None
+
+            async def parse_async_fail(self, response):
+                return None
+
+            def parse_pre_fail(self, response):
+                return None
+
+            def parse_pre_error(self, response):
+                return None
+
+        with MockServer() as mockserver:
+            url = f"@url {mockserver.url('/status?n=200')}\n"
+            for name, contract_line in (
+                ("parse_ok", "@returns items 1 1"),
+                ("parse_post_fail", "@returns items 1 1"),
+                ("parse_classmethod_fail", "@returns items 1 1"),
+                ("parse_async_fail", "@returns items 1 1"),
+                ("parse_pre_fail", "@pre_assertion_fail"),
+                ("parse_pre_error", "@pre_error"),
+            ):
+                callback = inspect.getattr_static(SignalSpider, name)
+                getattr(callback, "__func__", callback).__doc__ = url + contract_line
+
+            crawler = get_crawler(SignalSpider)
+            crawler.signals.connect(on_contract_failed, signals.contract_failed)
+            yield crawler.crawl()
+
+        assert sorted(name for name, _, _ in received) == [
+            "pre_assertion_fail",
+            "returns",
+            "returns",
+            "returns",
+        ]
+        assert len(results.failures) == len(received)
+        assert len(results.errors) == 1
+        for _, exception, spider in received:
+            assert isinstance(exception, AssertionError)
+            assert spider is crawler.spider
 
 
 class LegacyHookContract(Contract):
