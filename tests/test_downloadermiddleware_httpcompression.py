@@ -576,23 +576,41 @@ class TestHttpCompression:
         assert result[0].body == plain
 
     @pytest.mark.parametrize(
+        "wbits", [pytest.param(15, id="zlib"), pytest.param(-15, id="raw")]
+    )
+    @pytest.mark.parametrize(
         "size", [_CHUNK_SIZE - 1, _CHUNK_SIZE, _CHUNK_SIZE + 1, 4 * _CHUNK_SIZE]
     )
-    def test_deflate_chunked_output_leaves_nothing_to_flush(self, size: int) -> None:
-        """Guard the zlib behaviour that lets ``_inflate()`` skip ``flush()``.
+    @coroutine_test
+    async def test_deflate_output_larger_than_chunk(self, wbits: int, size: int):
+        # zlib can consume all input of a raw deflate stream while output is
+        # still pending, e.g. when the output size is _CHUNK_SIZE + 1.
+        plain = b"a" * size
+        compressor = zlib.compressobj(9, zlib.DEFLATED, wbits)
+        response = Response(
+            "http://example.com",
+            body=compressor.compress(plain) + compressor.flush(),
+            headers={"Content-Encoding": "deflate"},
+        )
+        newresponse = await self.mw.process_response(
+            Request("http://example.com"), response
+        )
+        assert newresponse.body == plain
 
-        ``decompress(max_length=...)`` leaves the input it could not turn into
-        output in ``unconsumed_tail``, so once that is empty every complete
-        stream has been fully emitted. If a future zlib buffers output instead,
-        this fails and ``_inflate()`` needs to flush the remainder again.
-        """
-        decompressor = zlib.decompressobj()
-        decompressor.decompress(zlib.compress(b"a" * size), max_length=_CHUNK_SIZE)
-        while decompressor.unconsumed_tail and not decompressor.eof:
-            decompressor.decompress(
-                decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
-            )
-        assert decompressor.flush() == b""
+    @coroutine_test
+    async def test_deflate_truncated_output_larger_than_chunk(self):
+        plain = b"".join(str(i).encode() for i in range(100_000))
+        body = zlib.compress(plain)
+        response = Response(
+            "http://example.com",
+            body=body[: len(body) // 2],
+            headers={"Content-Encoding": "deflate"},
+        )
+        newresponse = await self.mw.process_response(
+            Request("http://example.com"), response
+        )
+        assert len(newresponse.body) > _CHUNK_SIZE
+        assert plain.startswith(newresponse.body)
 
     async def _test_compression_bomb_setting(self, compression_id: str) -> None:
         settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
