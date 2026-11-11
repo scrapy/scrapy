@@ -250,12 +250,9 @@ class MediaPipeline(ABC):
     async def _check_media_to_download(
         self, request: Request, info: SpiderInfo, item: Any
     ) -> FileInfo:
+        self._modify_media_request(request)
         try:
-            self._modify_media_request(request)
             response = await self.crawler.engine.download_async(request)
-            return await ensure_awaitable(
-                self.media_downloaded(response, request, info, item=item)
-            )
         except Exception:
             failure = self.media_failed(Failure(), request, info)
             if isinstance(failure, Failure):
@@ -266,6 +263,10 @@ class MediaPipeline(ABC):
                     stacklevel=2,
                 )
                 failure.raiseException()
+        else:
+            return await ensure_awaitable(
+                self.media_downloaded(response, request, info, item=item)
+            )
 
     def _cache_result_and_execute_waiters(
         self, result: FileInfo | Failure, fp: bytes, info: SpiderInfo

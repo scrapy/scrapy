@@ -570,6 +570,38 @@ class TestBuildFromCrawler:
         assert pipe._from_crawler_called
 
 
+class MediaDownloadedErrorPipeline(MockedMediaPipeline):
+    def media_downloaded(
+        self,
+        response: Response,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        *,
+        item: Any = None,
+    ) -> FileInfo:
+        self._mockcalled.append("media_downloaded")
+        raise ValueError("foo")
+
+
+class TestMediaDownloadedError(TestBaseMediaPipeline):
+    pipeline_class = MediaDownloadedErrorPipeline
+
+    @coroutine_test
+    async def test_error_skips_media_failed(self):
+        url = "https://example.com"
+        req = Request(url, meta={"response": Response(url)})
+        new_item = await self.pipe.process_item({"requests": req})
+        ((ok, failure),) = new_item["results"]
+        assert ok is False
+        assert isinstance(failure.value, ValueError)
+        assert self.mocked_pipe._mockcalled == [
+            "get_media_requests",
+            "media_to_download",
+            "media_downloaded",
+            "item_completed",
+        ]
+
+
 class MediaFailedNonePipeline(MockedMediaPipeline):
     def media_failed(  # type: ignore[override]
         self, failure: Failure, request: Request, info: MediaPipeline.SpiderInfo
