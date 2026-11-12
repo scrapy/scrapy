@@ -18,11 +18,10 @@ from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
-from scrapy.linkextractors import IGNORED_EXTENSIONS, SUPPORTED_SCHEMES, _matches
+from scrapy.linkextractors import IGNORED_EXTENSIONS, _matches
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
-from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
@@ -164,7 +163,7 @@ class LxmlParserLinkExtractor:
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response: TextResponse) -> list[Link]:
-        base_url = get_base_url(response)
+        base_url = response.base_url
         return self._extract_links(
             response.selector, response.url, response.encoding, base_url
         )
@@ -216,11 +215,11 @@ class LxmlLinkExtractor:
     :type deny_extensions: list
 
     :param schemes: a single value or list of strings containing the URL
-        schemes that extracted links may use. If not given, it will default to
-        :data:`scrapy.linkextractors.SUPPORTED_SCHEMES`. Use ``()`` to extract
-        links regardless of their scheme.
+        schemes that extracted links may use. If not given, links may only use
+        ``http``, ``https`` or the scheme of the response. Use ``()`` to
+        extract links regardless of their scheme.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
     :type schemes: str or list
 
     :param restrict_xpaths: an XPath (or list of XPaths) that defines regions
@@ -369,11 +368,11 @@ class LxmlLinkExtractor:
 
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS
-        if schemes is None:
-            schemes = SUPPORTED_SCHEMES
         self.canonicalize: bool = canonicalize
         self.deny_extensions: set[str] = {"." + e for e in arg_to_iter(deny_extensions)}
-        self.schemes: set[str] = set(arg_to_iter(schemes))
+        self.schemes: set[str] | None = (
+            None if schemes is None else set(arg_to_iter(schemes))
+        )
         self.restrict_text: list[re.Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
@@ -383,9 +382,9 @@ class LxmlLinkExtractor:
             for x in arg_to_iter(value)
         ]
 
-    def _link_allowed(self, link: Link) -> bool:
+    def _link_allowed(self, link: Link, schemes: set[str]) -> bool:
         parsed_url = urlparse_cached(link.url)
-        if self.schemes and parsed_url.scheme not in self.schemes:
+        if schemes and parsed_url.scheme not in schemes:
             return False
         if self.allow_res and not _matches(link.url, self.allow_res):
             return False
@@ -417,8 +416,8 @@ class LxmlLinkExtractor:
         denied = (regex.search(url) for regex in self.deny_res) if self.deny_res else ()
         return any(allowed) and not any(denied)
 
-    def _process_links(self, links: list[Link]) -> list[Link]:
-        links = [x for x in links if self._link_allowed(x)]
+    def _process_links(self, links: list[Link], schemes: set[str]) -> list[Link]:
+        links = [x for x in links if self._link_allowed(x, schemes)]
         if self.canonicalize:
             for link in links:
                 link.url = canonicalize_url(link.url)
@@ -438,17 +437,22 @@ class LxmlLinkExtractor:
         Duplicate links are omitted if the ``unique`` attribute is set to ``True``,
         otherwise they are returned.
         """
-        base_url = get_base_url(response)
+        base_url = response.base_url
         if self.restrict_xpaths:
             docs = [
                 subdoc for x in self.restrict_xpaths for subdoc in response.xpath(x)
             ]
         else:
             docs = [response.selector]
+        schemes = (
+            {"http", "https", urlparse_cached(response).scheme}
+            if self.schemes is None
+            else self.schemes
+        )
         all_links = []
         for doc in docs:
             links = self._extract_links(doc, response.url, response.encoding, base_url)
-            all_links.extend(self._process_links(links))
+            all_links.extend(self._process_links(links, schemes))
         if self.link_extractor.unique and len(docs) > 1:
             return unique_list(all_links, key=self.link_extractor.link_key)
         return all_links

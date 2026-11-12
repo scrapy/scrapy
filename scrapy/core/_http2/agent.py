@@ -13,9 +13,10 @@ from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFac
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
-    from twisted.internet.endpoints import HostnameEndpoint
+    from twisted.internet.interfaces import IStreamClientEndpoint
     from twisted.python.failure import Failure
 
+    from scrapy.core.downloader.contextfactory import _PolicyForHTTPS
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
     from scrapy.spiders import Spider
@@ -43,7 +44,7 @@ class H2ConnectionPool:
         )
 
     def get_connection(
-        self, key: ConnectionKey, uri: URI, endpoint: HostnameEndpoint
+        self, key: ConnectionKey, uri: URI, endpoint: IStreamClientEndpoint
     ) -> Deferred[H2ClientProtocol]:
         if key in self._pending_requests:
             # Received a request while connecting to remote
@@ -63,7 +64,7 @@ class H2ConnectionPool:
         return self._new_connection(key, uri, endpoint)
 
     def _new_connection(
-        self, key: ConnectionKey, uri: URI, endpoint: HostnameEndpoint
+        self, key: ConnectionKey, uri: URI, endpoint: IStreamClientEndpoint
     ) -> Deferred[H2ClientProtocol]:
         self._enforce_limit()
         self._pending_requests[key] = deque()
@@ -76,7 +77,7 @@ class H2ConnectionPool:
             conn_lost_deferred,
             tls_verbose_logging=self._tls_verbose_logging,
         )
-        conn_d = endpoint.connect(factory)
+        conn_d: Deferred[H2ClientProtocol] = endpoint.connect(factory)
         d = self._pending_request(key)
         conn_d.addCallback(self.put_connection, key, conn_lost_deferred)
         conn_d.addErrback(self._connection_failed, key)
@@ -160,7 +161,7 @@ class H2Agent:
         self,
         reactor: ReactorBase,
         pool: H2ConnectionPool,
-        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
+        context_factory: _PolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
         bind_address: tuple[str, int] | None = None,
     ) -> None:
@@ -173,8 +174,8 @@ class H2Agent:
             self._reactor, self._context_factory, connect_timeout, bind_address
         )
 
-    def get_endpoint(self, uri: URI) -> HostnameEndpoint:
-        return self.endpoint_factory.endpointForURI(uri)  # type: ignore[no-any-return]
+    def get_endpoint(self, uri: URI) -> IStreamClientEndpoint:
+        return self.endpoint_factory.endpointForURI(uri)
 
     def get_key(self, uri: URI) -> ConnectionKey:
         """

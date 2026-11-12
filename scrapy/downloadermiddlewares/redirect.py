@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Self, cast
+import warnings
+from typing import TYPE_CHECKING, Any, Self
+
+from w3lib.url import canonicalize_url
 
 from scrapy import signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response
 from scrapy.spidermiddlewares.referer import RefererMiddleware
 from scrapy.utils._httpstatus import StatusHandling
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import global_object_name
-from scrapy.utils.response import _body_size, get_meta_refresh
+from scrapy.utils.response import _IGNORABLE_TAGS, _body_size, _get_meta_refresh
 from scrapy.utils.url import _redirect_url
 
 if TYPE_CHECKING:
@@ -133,14 +136,10 @@ class BaseRedirectMiddleware:
             cls=None,
             cookies=None,
         )
-        if "_scheme_proxy" in redirect_request.meta:
-            source_request_scheme = urlparse_cached(source_request).scheme
-            redirect_request_scheme = urlparse_cached(redirect_request).scheme
-            if source_request_scheme != redirect_request_scheme:
-                redirect_request.meta.pop("_scheme_proxy")
-                redirect_request.meta.pop("proxy", None)
-                redirect_request.meta.pop("_auth_proxy", None)
-                redirect_request.headers.pop(b"Proxy-Authorization", None)
+        if redirect_request.meta.pop("_scheme_proxy", False):
+            redirect_request.meta.pop("proxy", None)
+            redirect_request.meta.pop("_auth_proxy", None)
+            redirect_request.headers.pop(b"Proxy-Authorization", None)
 
         has_cookie_header = "Cookie" in redirect_request.headers
         has_authorization_header = "Authorization" in redirect_request.headers
@@ -271,6 +270,33 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         return self._redirect(redirected, request, response.status)
 
 
+def _get_scripting(settings: BaseSettings) -> bool:
+    ignore_tags: list[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
+    ignore_tags_priority = settings.getpriority("METAREFRESH_IGNORE_TAGS") or 0
+    scripting_priority = settings.getpriority("METAREFRESH_SCRIPTING") or 0
+    # remove_from_list() keeps the default priority, hence the value check.
+    if (not ignore_tags_priority and ignore_tags == ["noscript"]) or (
+        scripting_priority and scripting_priority >= ignore_tags_priority
+    ):
+        return settings.getbool("METAREFRESH_SCRIPTING")
+    if not set(ignore_tags) <= _IGNORABLE_TAGS:
+        raise ValueError(
+            f"METAREFRESH_IGNORE_TAGS is set to {ignore_tags!r}, but only "
+            f"{sorted(_IGNORABLE_TAGS)!r} are supported. "
+            f"METAREFRESH_IGNORE_TAGS is deprecated, we strongly recommend "
+            f"removing it and using METAREFRESH_SCRIPTING instead. As a last "
+            f"resort, subclass MetaRefreshMiddleware."
+        )
+    scripting = "noscript" in ignore_tags
+    warnings.warn(
+        f"The METAREFRESH_IGNORE_TAGS setting is deprecated, replace it "
+        f"with METAREFRESH_SCRIPTING = {scripting}.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return scripting
+
+
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
     """Handle redirection of requests based on meta-refresh html tag."""
 
@@ -278,7 +304,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
     def __init__(self, settings: BaseSettings):
         super().__init__(settings)
-        self._ignore_tags: list[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
+        self._scripting: bool = _get_scripting(settings)
         self._maxdelay: int = settings.getint("METAREFRESH_MAXDELAY")
 
     @_warn_spider_arg
@@ -293,12 +319,17 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
         ):
             return response
 
-        interval, url = get_meta_refresh(response, ignore_tags=self._ignore_tags)
-        if not url:
+        meta_refresh = _get_meta_refresh(response, scripting=self._scripting)
+        if meta_refresh is None:
+            return response
+        url = meta_refresh.url
+        # A refresh without a URL reloads the page, which the dupefilter would
+        # drop.
+        if canonicalize_url(url) == canonicalize_url(response.url):
             return response
         redirected = self._redirect_request_using_get(request, response, url)
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
-        if cast("float", interval) < self._maxdelay:
+        if meta_refresh.delay < self._maxdelay:
             return self._redirect(redirected, request, "meta refresh")
         return response

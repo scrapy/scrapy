@@ -482,7 +482,11 @@ class MySpider(scrapy.Spider):
                 "{'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor'}",
             )
 
-        self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
+        _, _, err = proc(self.name, "sp", cwd=proj_path)
+        assert self.NORMAL_MSG in err
+        assert "It works!" in err
+        assert "Spider closed (finished)" in err
+        assert "FORCE_CRAWLER_PROCESS setting is deprecated" in err
         self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
 
 

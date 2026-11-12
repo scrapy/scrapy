@@ -128,5 +128,6 @@ mailto:orders@example.com
 javascript:void(0)
 tel:+441234567890
 
-# A scheme other than HTTP that Scrapy can download.
+# A scheme other than HTTP that Scrapy can download, which is rejected because
+# it is not the scheme of the page.
 data:text/plain,hello

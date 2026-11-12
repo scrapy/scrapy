@@ -29,6 +29,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_SCALAR_TYPES: frozenset[type] = frozenset({bool, bytes, float, int, str, type(None)})
+
 __all__ = [
     "BaseItemExporter",
     "CsvItemExporter",
@@ -65,7 +67,7 @@ class BaseItemExporter(ABC):
         """Exports the given item. This method must be implemented in
         subclasses.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``). Scrapy
            awaits its result when the exporter is used by the :ref:`feed
            exports <topics-feed-exports>`.
@@ -81,6 +83,8 @@ class BaseItemExporter(ABC):
         return serializer(value)
 
     def _serialize_value(self, value: Any) -> Any:
+        if type(value) in _SCALAR_TYPES:
+            return value
         if is_item(value):
             adapter = ItemAdapter(value)
             field_names = (
@@ -104,7 +108,7 @@ class BaseItemExporter(ABC):
         :class:`XmlItemExporter`). You must call this method before exporting
         any items.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``). Scrapy
            awaits its result when the exporter is used by the :ref:`feed
            exports <topics-feed-exports>`.
@@ -116,7 +120,7 @@ class BaseItemExporter(ABC):
         :class:`XmlItemExporter`). You must always call this method after you
         have no more items to export.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``). Scrapy
            awaits its result when the exporter is used by the :ref:`feed
            exports <topics-feed-exports>`.

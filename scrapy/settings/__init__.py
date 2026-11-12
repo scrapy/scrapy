@@ -225,11 +225,13 @@ class BaseSettings(MutableMapping[str, Any]):
     def getlist(self, name: str, default: list[Any] | None = None) -> list[Any]:
         """
         Get a setting value as a list. If the setting original type is a list,
-        a copy of it will be returned. If it's a string it will be split by
-        ",". If it is an empty string, an empty list will be returned.
+        a copy of it will be returned. If it's a string it will be evaluated as
+        a JSON list, or split by "," as a fallback. If it is an empty string,
+        an empty list will be returned.
 
         For example, settings populated through environment variables set to
-        ``'one,two'`` will return a list ['one', 'two'] when using this method.
+        ``'one,two'`` or ``'["one", "two"]'`` will return a list ['one', 'two']
+        when using this method.
 
         :param name: the setting name
         :type name: str
@@ -241,7 +243,11 @@ class BaseSettings(MutableMapping[str, Any]):
         if not value:
             return []
         if isinstance(value, str):
-            value = value.split(",")
+            try:
+                value_loaded = json.loads(value)
+            except ValueError:
+                value_loaded = None
+            value = value_loaded if isinstance(value_loaded, list) else value.split(",")
         return list(value)
 
     def getdict(

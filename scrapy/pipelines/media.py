@@ -6,6 +6,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
+from traceback import clear_frames
 from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias, TypedDict, cast
 
 from twisted.internet.defer import Deferred, DeferredList
@@ -186,7 +187,7 @@ class MediaPipeline(ABC):
                         (deferred_from_coro(coro) for coro in coros), consumeErrors=True
                     ),
                 )
-        return self.item_completed(results, item, info)
+        return await ensure_awaitable(self.item_completed(results, item, info))
 
     async def _process_request(
         self, request: Request, info: SpiderInfo, item: Any
@@ -271,32 +272,14 @@ class MediaPipeline(ABC):
     ) -> None:
         if isinstance(result, Failure):
             # minimize cached information for failure
+            exception: BaseException | None = result.value
+            while exception is not None:
+                clear_frames(exception.__traceback__)
+                exception = exception.__context__
             result.cleanFailure()
             result.frames.clear()
             if TWISTED_FAILURE_HAS_STACK:
                 result.stack.clear()
-            # This code fixes a memory leak by avoiding to keep references to
-            # the Request and Response objects on the Media Pipeline cache.
-            #
-            # What happens when the media_downloaded callback raises an
-            # exception, for example a FileException('download-error') when
-            # the Response status code is not 200 OK, is that the original
-            # StopIteration exception (which in turn contains the failed
-            # Response and by extension, the original Request) gets encapsulated
-            # within the FileException context.
-            #
-            # Originally, Scrapy was using twisted.internet.defer.returnValue
-            # inside functions decorated with twisted.internet.defer.inlineCallbacks,
-            # encapsulating the returned Response in a _DefGen_Return exception
-            # instead of a StopIteration.
-            #
-            # To avoid keeping references to the Response and therefore Request
-            # objects on the Media Pipeline cache, we should wipe the context of
-            # the encapsulated exception when it is a StopIteration instance
-            context = getattr(result.value, "__context__", None)
-            if isinstance(context, StopIteration):
-                assert result.value is not None
-                result.value.__context__ = None
 
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result

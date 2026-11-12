@@ -40,7 +40,8 @@ from twisted.web.client import (
 from twisted.web.client import Response as TxResponse
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IResponse
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IResponse
+from w3lib.url import add_http_if_no_scheme
 from zope.interface import implementer
 
 from scrapy import Request, signals
@@ -69,7 +70,6 @@ from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.url import _add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -81,6 +81,7 @@ if TYPE_CHECKING:
     from twisted.internet.interfaces import IAddress, IConsumer, IProtocol
     from twisted.web._newclient import Request as TxRequest
 
+    from scrapy.core.downloader.contextfactory import _PolicyForHTTPS
     from scrapy.crawler import Crawler
 
 
@@ -289,7 +290,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         )
         self._pool.maxPersistentPerHost = self._pool_size_per_host
 
-        self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
+        self._contextFactory: _PolicyForHTTPS = _load_context_factory_from_settings(
             crawler
         )
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
@@ -614,7 +615,7 @@ class _BindAddressAgent(Agent):
     def __init__(
         self,
         reactor: ReactorBase,
-        contextFactory: IPolicyForHTTPS,
+        contextFactory: _PolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
@@ -655,14 +656,14 @@ class _TunnelingAgent(_BindAddressAgent):
         *,
         reactor: ReactorBase,
         proxyConf: tuple[str, int, tuple[tuple[str, str], ...], bool],
-        contextFactory: IPolicyForHTTPS,
+        contextFactory: _PolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
         self._proxyConf: tuple[str, int, tuple[tuple[str, str], ...], bool] = proxyConf
-        self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._contextFactory: _PolicyForHTTPS = contextFactory
 
     def _getEndpoint(self, uri: URI) -> IStreamClientEndpoint:
         proxyHost, proxyPort, proxyHeaders, proxyTLS = self._proxyConf
@@ -690,19 +691,15 @@ class _TunnelingAgent(_BindAddressAgent):
         if proxyTLS:
             # Set up TLS with the proxy itself, so that the CONNECT request and
             # the tunneled traffic are sent over it (TLS-in-TLS).
-            proxyCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                proxyHost.encode("ascii"),  # type: ignore[arg-type]
-                proxyPort,
+            proxyCreator = self._contextFactory.creatorForNetloc(
+                proxyHost.encode("ascii"), proxyPort
             )
             endpoint = wrapClientTLS(proxyCreator, endpoint)
         endpoint = _TunnelEndpoint(
             endpoint, uri.host, uri.port, proxyHost, proxyPort, proxyHeaders
         )
         # Set proper Server Name Indication extension for the destination.
-        destCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-            uri.host,
-            uri.port,
-        )
+        destCreator = self._contextFactory.creatorForNetloc(uri.host, uri.port)
         return wrapClientTLS(destCreator, endpoint)
 
     def _requestWithEndpoint(
@@ -736,7 +733,7 @@ class _ScrapyProxyAgent(_BindAddressAgent):
         self,
         reactor: ReactorBase,
         proxyURI: bytes,
-        contextFactory: IPolicyForHTTPS,
+        contextFactory: _PolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
@@ -777,7 +774,7 @@ class _ScrapyAgent:
     def __init__(
         self,
         *,
-        contextFactory: IPolicyForHTTPS,
+        contextFactory: _PolicyForHTTPS,
         connectTimeout: float = 10,
         bindAddress: str | tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
@@ -787,7 +784,7 @@ class _ScrapyAgent:
         crawler: Crawler,
         tls_verbose_logging: bool = False,
     ):
-        self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._contextFactory: _PolicyForHTTPS = contextFactory
         self._connectTimeout: float = connectTimeout
         self._bindAddress: str | tuple[str, int] | None = bindAddress
         self._pool: HTTPConnectionPool | None = pool
@@ -805,7 +802,7 @@ class _ScrapyAgent:
         bindaddress = normalize_bind_address(bindaddress)
         proxy = request.meta.get("proxy")
         if proxy:
-            proxy = _add_http_if_no_scheme(proxy)
+            proxy = add_http_if_no_scheme(proxy)
             proxy_parsed = urlparse_cached(proxy)
             proxy_host = proxy_parsed.hostname
             proxy_port = proxy_parsed.port
@@ -1165,11 +1162,8 @@ class _ResponseReader(Protocol):
         # Twisted ends a response body in one of three ways: ResponseDone,
         # PotentialDataLoss, or a ResponseFailed wrapping _DataLoss. See
         # twisted.web._newclient.HTTPClientParser.connectionLost().
-        assert reason.check(ResponseFailed)
-        assert any(
-            r.check(_DataLoss)
-            for r in reason.value.reasons  # type: ignore[union-attr]
-        )
+        assert isinstance(reason.value, ResponseFailed)
+        assert any(r.check(_DataLoss) for r in reason.value.reasons)
         if not self._fail_on_dataloss:
             self._finish_response(flags=["dataloss"])
             return

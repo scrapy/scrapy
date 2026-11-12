@@ -407,7 +407,7 @@ For more information, see `Predefined ACLs`_ in the Google Cloud Platform Develo
 Custom storage
 --------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. setting:: MEDIA_STORAGES
 
@@ -539,7 +539,7 @@ adjust this retention delay use the :setting:`FILES_EXPIRES` setting (or
 :setting:`IMAGES_EXPIRES`, in case of Images Pipeline), which
 specifies the delay in number of days:
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    Fractional numbers of days are now supported.
 
 .. code-block:: python
@@ -570,7 +570,7 @@ which is then compared to the set expiration time to determine if the file is ex
 Checksum algorithm
 ------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. setting:: FILES_CHECKSUM_ALGORITHM
 .. setting:: IMAGES_CHECKSUM_ALGORITHM
@@ -705,7 +705,7 @@ To override this setting for a single media request, set the
 Media files created on the fly
 ------------------------------
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    Added support for HTTP 201 responses.
 
 Some servers create media files on the fly and report that with an HTTP 201
@@ -734,7 +734,7 @@ that a file referenced by several items is downloaded once. By default every
 outcome is kept for the whole crawl, which takes about 600 bytes per distinct
 media URL.
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 To cap that memory, set :setting:`MEDIA_CACHE_SIZE` to the number of most
 recently used outcomes to keep, or to ``0`` to keep none:

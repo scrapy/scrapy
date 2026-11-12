@@ -7,6 +7,8 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
+from inspect import iscoroutine
+from traceback import clear_frames
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -20,19 +22,19 @@ from scrapy.exceptions import (
     IgnoreRequest,
     ScrapyDeprecationWarning,
 )
-from scrapy.http import BodyFileResponse, Request, Response
+from scrapy.http import Request, Response
 from scrapy.http.request import _active_crawler_scope
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _aiter_errback,
+    _parallel_async,
     _process_pending_io_before_callback,
     _schedule_coro,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
-    parallel_async,
 )
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
@@ -76,16 +78,13 @@ async def _aset_parent_id(
         yield o
 
 
-class Slot:
+class _Slot:
     """Scraper slot (one per running spider)"""
 
-    MIN_RESPONSE_SIZE = 1024
-
-    def __init__(self, max_active_size: int = 5000000):
-        self.max_active_size: int = max_active_size
+    def __init__(self, crawler: Crawler) -> None:
+        self._crawler = crawler
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
-        self.active_size: int = 0
         self.itemproc_size: int = 0
         self.closing: Deferred[Spider] | None = None
 
@@ -95,10 +94,6 @@ class Slot:
         # this Deferred will be awaited in enqueue_scrape()
         deferred: Deferred[None] = Deferred()
         self.queue.append((result, request, deferred))
-        if isinstance(result, Response) and not isinstance(result, BodyFileResponse):
-            self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
-        else:
-            self.active_size += self.MIN_RESPONSE_SIZE
         return deferred
 
     def next_response_request_deferred(self) -> QueueTuple:
@@ -106,23 +101,48 @@ class Slot:
         self.active.add(request)
         return result, request, deferred
 
-    def finish_response(self, result: Response | Failure, request: Request) -> None:
+    def finish_response(self, request: Request) -> None:
         self.active.remove(request)
-        if isinstance(result, Response) and not isinstance(result, BodyFileResponse):
-            self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
-        else:
-            self.active_size -= self.MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
         return not (self.queue or self.active or self.itemproc_size)
 
+    @property
+    def active_size(self) -> int:
+        warnings.warn(
+            "Scraper.slot.active_size is deprecated, use "
+            "ExecutionEngine.response_active_size instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        assert self._crawler.engine is not None
+        return self._crawler.engine.response_active_size
+
+    @property
+    def max_active_size(self) -> int:
+        warnings.warn(
+            "Scraper.slot.max_active_size is deprecated, use the "
+            "RESPONSE_MAX_ACTIVE_SIZE setting instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        assert self._crawler.engine is not None
+        return self._crawler.engine.downloader.middleware._max_active_size
+
     def needs_backout(self) -> bool:
-        return self.active_size > self.max_active_size
+        warnings.warn(
+            "Scraper.slot.needs_backout() is deprecated, use "
+            "ExecutionEngine.needs_backout() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        assert self._crawler.engine is not None
+        return self._crawler.engine.downloader._exceeds_max_active_size()
 
 
 class Scraper:
     def __init__(self, crawler: Crawler) -> None:
-        self.slot: Slot | None = None
+        self.slot: _Slot | None = None
         self.spidermw: SpiderMiddlewareManager = build_from_crawler(
             SpiderMiddlewareManager, crawler
         )
@@ -185,7 +205,7 @@ class Scraper:
 
         .. versionadded:: 2.14
         """
-        self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
+        self.slot = _Slot(self.crawler)
         if not self.crawler.spider:
             raise RuntimeError(
                 "Scraper.open_spider() called before Crawler.spider is set."
@@ -223,8 +243,12 @@ class Scraper:
                 self.itemproc.close_spider(self.crawler.spider)
             )
 
-    def is_idle(self) -> bool:
-        """Return True if there isn't any more spiders to process"""
+    def is_idle(self) -> bool:  # pragma: no cover
+        warnings.warn(
+            "Scraper.is_idle() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return not self.slot
 
     def _check_if_closing(self) -> None:
@@ -250,7 +274,7 @@ class Scraper:
                 extra={"spider": self.crawler.spider},
             )
         finally:
-            self.slot.finish_response(result, request)
+            self.slot.finish_response(request)
             self._check_if_closing()
             self._scrape_next()
 
@@ -316,6 +340,11 @@ class Scraper:
                     self._handle_spider_error(spider_exc, request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
+            finally:
+                # Twisted keeps failures in frames of their own traceback, a
+                # reference cycle that would keep alive any response that those
+                # frames refer to.
+                clear_frames(result.tb)
 
     async def _wait_for_processing(
         self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]
@@ -364,12 +393,24 @@ class Scraper:
         else:  # result is a Failure
             cast("FailureWithRequest", result).request = request
             parent_id = request.id
-            if not request.errback:
-                result.raiseException()
-            warn_on_generator_with_return_value(self.crawler.spider, request.errback)
-            output = request.errback(result)
+            if request.errback:
+                warn_on_generator_with_return_value(
+                    self.crawler.spider, request.errback
+                )
+                output = request.errback(result)
+            else:
+                output = result
             if isinstance(output, Failure):
-                output.raiseException()
+                assert output.value is not None
+                exception = output.value.with_traceback(output.tb)
+                # The traceback of the exception includes this frame, so these
+                # local variables would keep them in a reference cycle, and
+                # with them the response.
+                del result, output
+                try:
+                    raise exception
+                finally:
+                    del exception
             # else the errback returned actual output (like a callback),
             # which needs to be passed to iterate_spider_output()
             if isinstance(output, Deferred):
@@ -379,6 +420,8 @@ class Scraper:
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
+        if iscoroutine(output):
+            output = await output
         output = await ensure_awaitable(iterate_spider_output(output))
         if isinstance(output, AsyncIterator):
             return _aset_parent_id(output, parent_id)
@@ -472,7 +515,7 @@ class Scraper:
             )
             return
         await maybe_deferred_to_future(
-            parallel_async(
+            _parallel_async(
                 it,
                 self.concurrent_items,
                 self._process_spidermw_output,
@@ -602,3 +645,14 @@ class Scraper:
         finally:
             self.slot.itemproc_size -= 1
             self._check_if_closing()
+
+
+def __getattr__(name: str) -> Any:
+    if name == "Slot":
+        warnings.warn(
+            "scrapy.core.scraper.Slot is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return _Slot
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -45,12 +45,12 @@ jobs:
                 persist-credentials: false
 
             - name: Set up Python 3.15
-              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+              uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
               with:
                   python-version: '3.15'
 
             - name: Set up uv
-              uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+              uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
               with:
                   cache-dependency-glob: |
                       pyproject.toml
@@ -61,7 +61,7 @@ jobs:
                   uv tool install --with tox-uv tox
                   tox -n -e benchmark
             - name: Run benchmarks
-              uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
+              uses: CodSpeedHQ/action@78102a468f96d8e0ccb92d0ec49425753fc42062 # v5.6.0
               with:
                   mode: walltime
                   # No benchmark is walltime-marked on some branches (e.g.

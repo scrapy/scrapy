@@ -4,10 +4,8 @@
 asyncio
 =======
 
-Scrapy supports :mod:`asyncio` natively. New projects created with
-:command:`startproject` have asyncio enabled by default, and you can use
-:mod:`asyncio` and :mod:`asyncio`-powered libraries in any :doc:`coroutine
-<coroutines>`.
+Scrapy supports :mod:`asyncio` natively. You can use :mod:`asyncio` and
+:mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
 
 The rest of this page covers advanced topics. If you are starting a new project,
 no additional setup is needed.
@@ -15,27 +13,22 @@ no additional setup is needed.
 
 .. _install-asyncio:
 
-Configuring the asyncio reactor
-===============================
+Installing the asyncio reactor
+==============================
 
-New projects generated with :command:`startproject` have the asyncio
-reactor configured by default. No manual setup is needed.
-
-The :setting:`TWISTED_REACTOR` setting controls which Twisted reactor Scrapy
-uses. Its default value is
-``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``, which enables
-:mod:`asyncio` support.
-
-If you are using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerRunner`, you also need to
-install the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
-reactor manually. You can do that using
-:func:`~scrapy.utils.reactor.install_reactor`:
+When Scrapy installs a reactor, it will install the correct one automatically.
+If you are managing the reactor yourself, when using
+:class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner`, you need to install the
+:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` reactor
+manually. You can do that using :func:`~scrapy.utils.reactor.install_reactor`:
 
 .. skip: next
 .. code-block:: python
 
     install_reactor()
+
+.. autofunction:: scrapy.utils.reactor.install_reactor
 
 
 .. _asyncio-preinstalled-reactor:
@@ -47,8 +40,7 @@ Handling a pre-installed reactor
 Twisted reactor as a side effect. Once a Twisted reactor is installed, it is
 not possible to switch to a different reactor at run time.
 
-If you :ref:`configure the asyncio Twisted reactor <install-asyncio>` and, at
-run time, Scrapy complains that a different reactor is already installed,
+If at run time Scrapy complains that a different reactor is already installed,
 chances are you have some such imports in your code.
 
 You can usually fix the issue by moving those offending module-level Twisted
@@ -84,21 +76,9 @@ Integrating Deferred code and asyncio code
 ==========================================
 
 Coroutine functions can await on Deferreds by wrapping them into
-:class:`asyncio.Future` objects. Scrapy provides two helpers for this:
+:class:`asyncio.Future` objects. Scrapy provides a helper for this:
 
 .. autofunction:: scrapy.utils.defer.deferred_to_future
-.. autofunction:: scrapy.utils.defer.maybe_deferred_to_future
-
-.. tip:: If you don't need to support reactors other than the default
-         :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, you
-         can use :func:`~scrapy.utils.defer.deferred_to_future`, otherwise you
-         should use :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
-
-.. tip:: If you need to use these functions in code that aims to be compatible
-         with lower versions of Scrapy that do not provide these functions,
-         down to Scrapy 2.0 (earlier versions do not support
-         :mod:`asyncio`), you can copy the implementation of these functions
-         into your own code.
 
 Coroutines and futures can be wrapped into Deferreds (for example, when a
 Scrapy API requires passing a Deferred to it) using the following helpers:
@@ -110,33 +90,7 @@ The following function helps with a reverse wrapping:
 
 .. autofunction:: scrapy.utils.defer.ensure_awaitable
 
-
-.. _enforce-asyncio-requirement:
-
-Enforcing asyncio as a requirement
-==================================
-
-If you are writing a :ref:`component <topics-components>` that requires asyncio
-to work, use :func:`scrapy.utils.asyncio.is_asyncio_available` to
-:ref:`enforce it as a requirement <enforce-component-requirements>`. For
-example:
-
-.. code-block:: python
-
-    from scrapy.utils.asyncio import is_asyncio_available
-
-
-    class MyComponent:
-        def __init__(self):
-            if not is_asyncio_available():
-                raise ValueError(
-                    f"{MyComponent.__qualname__} requires the asyncio support. "
-                    f"Make sure you have configured the asyncio reactor in the "
-                    f"TWISTED_REACTOR setting. See the asyncio documentation "
-                    f"of Scrapy for more information."
-                )
-
-.. autofunction:: scrapy.utils.asyncio.is_asyncio_available
+.. seealso:: :ref:`asyncio-old-versions`
 
 
 .. _asyncio-without-reactor:
@@ -248,8 +202,9 @@ Here are some examples of APIs and patterns that need a replacement:
   execute code in other threads. You can use :func:`asyncio.to_thread`,
   :meth:`asyncio.loop.call_soon_threadsafe` and related APIs instead.
 * Using :class:`twisted.internet.task.LoopingCall` for scheduling repeated
-  tasks. As there is no direct replacement in the standard library, you may
-  need to write your own one using :func:`asyncio.sleep` in a task.
+  tasks. As there is no direct replacement in the standard library, you can use
+  :class:`scrapy.utils.asyncio.AsyncioLoopingCall` or write your own simple
+  implementation using :func:`asyncio.sleep` in a task.
 * Using Twisted network client and server APIs (:meth:`reactor.connectTCP()
   <twisted.internet.interfaces.IReactorTCP.connectTCP>`,
   :meth:`reactor.listenTCP()
@@ -261,13 +216,10 @@ Here are some examples of APIs and patterns that need a replacement:
   :class:`~scrapy.crawler.AsyncCrawlerProcess` or
   :class:`~scrapy.crawler.AsyncCrawlerRunner` respectively instead.
 
-Scrapy provides unified helpers for some of these examples:
+Scrapy provides this replacement for
+:class:`~twisted.internet.task.LoopingCall`:
 
-.. autofunction:: scrapy.utils.asyncio.sleep
-.. autofunction:: scrapy.utils.asyncio.call_later
-.. autofunction:: scrapy.utils.asyncio.create_looping_call
 .. autoclass:: scrapy.utils.asyncio.AsyncioLoopingCall
-.. autofunction:: scrapy.utils.asyncio.run_in_thread
 
 If your code needs to know whether the reactor is available, you can either
 check for the value of the :setting:`TWISTED_REACTOR_ENABLED` setting (you need
@@ -341,21 +293,85 @@ automatically when installing the asyncio reactor.
 Using custom asyncio loops
 ==========================
 
-You can also use custom asyncio event loops with the asyncio reactor. Set the
-:setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event
-loop class to use it instead of the default asyncio event loop.
+You can use custom asyncio event loops. Set the :setting:`ASYNCIO_EVENT_LOOP`
+setting to the import path of the desired event loop class to use it instead of
+the default asyncio event loop.
 
 
-.. _disable-asyncio:
+.. _asyncio-old-versions:
 
-Switching to a non-asyncio reactor
-==================================
+Supporting older Scrapy versions
+================================
 
-If for some reason your code doesn't work with the asyncio reactor, you can use
-a different reactor by setting the :setting:`TWISTED_REACTOR` setting to its
-import path (e.g. ``'twisted.internet.epollreactor.EPollReactor'``) or to
-``None``, which will use the default reactor for your platform. If you are
-using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.AsyncCrawlerProcess` you also need to switch to their
-Deferred-based counterparts: :class:`~scrapy.crawler.CrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerProcess` respectively.
+Scrapy before 2.13.0 doesn't use the asyncio reactor by default, and users of
+newer versions can opt out of it, so if you have code that uses asyncio APIs
+you should decide which configurations to support.
+
+.. _enforce-asyncio-requirement:
+
+Enforcing asyncio as a requirement
+----------------------------------
+
+If your code requires asyncio to work, or you want to make it simpler, use
+:func:`scrapy.utils.asyncio.is_asyncio_available` to :ref:`enforce asyncio as a
+requirement <enforce-component-requirements>`. For example:
+
+.. code-block:: python
+
+    try:
+        from scrapy.utils.asyncio import is_asyncio_available
+    except ImportError:  # Scrapy < 2.14
+        from scrapy.utils.reactor import (
+            is_asyncio_reactor_installed as is_asyncio_available,
+        )
+
+
+    class MyComponent:
+        def __init__(self):
+            if not is_asyncio_available():
+                raise ValueError(f"{MyComponent.__qualname__} requires asyncio support.")
+
+With this in place you can safely write code that assumes asyncio support, e.g.
+code that calls asyncio APIs, awaits on futures and uses
+:func:`~scrapy.utils.defer.deferred_to_future` to await on Deferreds.
+
+.. autofunction:: scrapy.utils.asyncio.is_asyncio_available
+
+Making asyncio optional
+-----------------------
+
+If, instead, you also want to support configurations where asyncio isn't
+available, you cannot use asyncio-specific APIs directly. This includes
+:func:`~scrapy.utils.defer.deferred_to_future`; you should use the following
+function instead:
+
+.. autofunction:: scrapy.utils.defer.maybe_deferred_to_future
+
+You can also write two branches of the same code for asyncio and non-asyncio
+environments, switching between them using
+:func:`~scrapy.utils.asyncio.is_asyncio_available`.
+
+Additionally, Scrapy provides unified helpers for some useful APIs that
+automatically choose a Twisted-based implementation when asyncio is not
+available:
+
+.. autofunction:: scrapy.utils.asyncio.sleep
+.. autofunction:: scrapy.utils.asyncio.call_later
+.. autofunction:: scrapy.utils.asyncio.create_looping_call
+.. autofunction:: scrapy.utils.asyncio.run_in_thread
+
+Using newer helpers
+-------------------
+
+Many of the asyncio-related Scrapy helpers are only available in some Scrapy
+versions; in that case their documentation shows the first version where that
+specific helper is available. If you want to use a helper with a Scrapy version
+where it's not available, you can simply copy the relevant code into your
+project.
+
+When you want to check whether the Scrapy version used provides a given helper,
+prefer a ``try ... except ImportError`` approach to comparing the versions
+directly, as future Scrapy versions will drop some of these helpers.
+
+You can also :ref:`require a specific minimum Scrapy version
+<enforce-component-requirements>`.

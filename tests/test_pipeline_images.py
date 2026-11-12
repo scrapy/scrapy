@@ -16,7 +16,7 @@ import attr
 import pytest
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore
@@ -125,7 +125,7 @@ class TestImagesPipeline:
         )
         assert (
             thumb_path(Request("file://foo.png"), name)
-            == "thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg"
+            == "thumbs/50/3f7f26a0132d8c3df6b56f0691b89083df00d62a.jpg"
         )
         assert (
             thumb_path(Request("file:///tmp/foo"), name)
@@ -219,6 +219,23 @@ class TestImagesPipeline:
         thumb_path, _, thumb_buf = next(get_images_gen)
         assert thumb_path == "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert orig_thumb_buf.getvalue() == thumb_buf.getvalue()
+
+    def test_get_images_convert_image_without_image_format(self):
+        class OldImagesPipeline(ImagesPipeline):
+            def convert_image(self, image, size=None, *, response_body):  # type: ignore[override]
+                return super().convert_image(image, size, response_body=response_body)
+
+        crawler = get_crawler(None, {"IMAGES_STORE": self.tempdir})
+        with pytest.warns(ScrapyDeprecationWarning, match="Overriding convert_image"):
+            pipeline = build_from_crawler(OldImagesPipeline, crawler)
+        _, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        resp = Response(url="https://example.com/image.jpg", body=buf.getvalue())
+        req = Request(url="https://example.com/image.jpg")
+        with pytest.warns(ScrapyDeprecationWarning, match="without an image_format"):
+            _, image, _ = next(
+                pipeline.get_images(response=resp, request=req, info=DUMMY_SPIDER_INFO)
+            )
+        assert image.format == "JPEG"
 
     def test_get_transposed_images(self):
         orig_im = Image.new("RGB", (2, 2), (0, 0, 0))
@@ -386,6 +403,14 @@ class TestImagesPipeline:
         )
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (128, 128, 128))]
+
+    def test_convert_image_without_image_format(self):
+        im, buf = _create_image("PNG", "RGBA", (100, 100), (0, 127, 255, 50))
+        with pytest.warns(ScrapyDeprecationWarning, match="without an image_format"):
+            converted, _ = self.pipeline.convert_image(im, response_body=buf)
+        # The format of the image is used, so transparency becomes white.
+        assert converted.mode == "RGB"
+        assert converted.getcolors() == [(10000, (205, 230, 255))]
 
     @pytest.mark.parametrize(
         "bad_type",

@@ -66,6 +66,12 @@ class TestHttpCompression:
         self.mw = build_from_crawler(HttpCompressionMiddleware, self.crawler)
         self.crawler.stats.open_spider()
 
+    def _mw(self, max_encodings: int) -> HttpCompressionMiddleware:
+        crawler = get_crawler(
+            Spider, settings_dict={"COMPRESSION_MAX_ENCODINGS": max_encodings}
+        )
+        return build_from_crawler(HttpCompressionMiddleware, crawler)
+
     def _getresponse(self, coding: str) -> Response:
         if coding not in FORMAT:
             raise ValueError
@@ -255,7 +261,7 @@ class TestHttpCompression:
         response = self._getresponse("gzip-deflate")
         assert response.request
         request = response.request
-        newresponse = await self.mw.process_response(request, response)
+        newresponse = await self._mw(2).process_response(request, response)
         assert newresponse is not response
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
@@ -292,7 +298,7 @@ class TestHttpCompression:
         response.headers["Content-Encoding"] = ["gzip", "deflate"]
         assert response.request
         request = response.request
-        newresponse = await self.mw.process_response(request, response)
+        newresponse = await self._mw(2).process_response(request, response)
         assert newresponse is not response
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
@@ -313,7 +319,7 @@ class TestHttpCompression:
         response.headers["Content-Encoding"] = ["gzip", "deflate, gzip"]
         assert response.request
         request = response.request
-        newresponse = await self.mw.process_response(request, response)
+        newresponse = await self._mw(3).process_response(request, response)
         assert newresponse is not response
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
@@ -329,6 +335,31 @@ class TestHttpCompression:
         newresponse = await self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.headers.getlist("Content-Encoding") == [b"gzip", b"foo"]
+
+    @coroutine_test
+    async def test_max_encodings_default(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        response = self._getresponse("gzip-deflate")
+        assert response.request
+        request = response.request
+        with (
+            caplog.at_level(
+                WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+            ),
+            pytest.raises(IgnoreRequest),
+        ):
+            await self.mw.process_response(request, response)
+        assert "COMPRESSION_MAX_ENCODINGS (1)" in caplog.text
+
+    @coroutine_test
+    async def test_max_encodings_rejects_before_decompressing(self) -> None:
+        response = self._getresponse("gzip")
+        response.headers["Content-Encoding"] = [b", ".join([b"gzip"] * 5000)]
+        assert response.request
+        request = response.request
+        with pytest.raises(IgnoreRequest, match="lists 5000 supported encodings"):
+            await self.mw.process_response(request, response)
 
     @coroutine_test
     async def test_process_response_encoding_inside_body(self):

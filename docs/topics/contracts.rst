@@ -34,7 +34,7 @@ A callback docstring can also be split into several batches of contracts, one
 per paragraph separated by a blank line, and a batch may repeat ``@url`` to
 check the callback against more than one sample request:
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. code-block:: python
 

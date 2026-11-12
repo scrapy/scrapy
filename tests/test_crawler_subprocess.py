@@ -98,6 +98,10 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             in log
         )
         assert "RuntimeError" not in log
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            not in log
+        )
 
     def test_ipv6_default_name_resolver(self) -> None:
         log = self.run_script("default_name_resolver.py")
@@ -321,6 +325,10 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             # also starts using the select reactor by default in a future
             # version of Twisted), then we will need to rethink this test.
             assert "Spider closed (finished)" in log
+            assert (
+                "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+                in log
+            )
         else:
             assert "Spider closed (finished)" not in log
             assert (
@@ -340,6 +348,10 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         log = self.run_script("reactor_select_twisted_reactor_select.py")
         assert "Spider closed (finished)" in log
         assert "ReactorAlreadyInstalledError" not in log
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
+        )
 
     def test_reactor_select_subclass_twisted_reactor_select(self) -> None:
         log = self.run_script("reactor_select_subclass_twisted_reactor_select.py")
@@ -353,6 +365,11 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         log = self.run_script("twisted_reactor_select.py")
         assert "Spider closed (finished)" in log
         assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
+        )
+        assert "install_reactor() is deprecated" not in log
 
     @pytest.mark.skipif(
         platform.system() == "Windows", reason="PollReactor is not supported on Windows"
@@ -361,12 +378,20 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         log = self.run_script("twisted_reactor_poll.py")
         assert "Spider closed (finished)" in log
         assert "Using reactor: twisted.internet.pollreactor.PollReactor" in log
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
+        )
 
     def test_twisted_reactor_asyncio_custom_settings_conflict(self) -> None:
         log = self.run_script("twisted_reactor_custom_settings_conflict.py")
         assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
         assert (
             "(twisted.internet.selectreactor.SelectReactor) does not match the requested one"
+            in log
+        )
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
             in log
         )
 
@@ -624,6 +649,20 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             not in log
+        )
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
+        )
+
+    def test_install_reactor_select(self) -> None:
+        log = self.run_script("install_reactor_select.py")
+        assert "Spider closed (finished)" in log
+        assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
+        assert "Passing a non-asyncio reactor to install_reactor() is deprecated" in log
+        assert (
+            "Using a Twisted reactor other than twisted.internet.asyncioreactor.AsyncioSelectorReactor is deprecated"
+            in log
         )
 
     def test_response_ip_address(self) -> None:

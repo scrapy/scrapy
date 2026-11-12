@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import CSVFeedSpider, Spider, XMLFeedSpider
+from scrapy.utils.asyncgen import collect_asyncgen
 from tests import get_testdata
 from tests.spiders import RawResponseSpider
 from tests.utils.bases.spider import TestSpiderBase
@@ -14,6 +15,9 @@ from tests.utils.crawl import crawl_items
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable
+
+    from scrapy.selector import Selector
     from tests.mockserver.http import MockServer
 
 
@@ -24,6 +28,30 @@ class RawFeedSpider(RawResponseSpider):
         yield Request(self.raw_url)
 
 
+async def parse_id_coroutine(
+    self: Spider, response: Response, selector: Selector
+) -> dict[str, str | None]:
+    return {"id": selector.xpath("id/text()").get()}
+
+
+async def parse_id_async_generator(
+    self: Spider, response: Response, selector: Selector
+) -> AsyncIterator[dict[str, str | None]]:
+    yield {"id": selector.xpath("id/text()").get()}
+
+
+async def parse_row_coroutine(
+    self: Spider, response: Response, row: dict[str, str]
+) -> dict[str, str]:
+    return row
+
+
+async def parse_row_async_generator(
+    self: Spider, response: Response, row: dict[str, str]
+) -> AsyncIterator[dict[str, str]]:
+    yield row
+
+
 class TestSpider(TestSpiderBase):
     spider_class = Spider
 
@@ -32,7 +60,8 @@ class TestXMLFeedSpider(TestSpiderBase):
     spider_class = XMLFeedSpider
 
     @pytest.mark.parametrize("iterator", ["iternodes", "xml"])
-    def test_register_namespace(self, iterator: str) -> None:
+    @coroutine_test
+    async def test_register_namespace(self, iterator: str) -> None:
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
         <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
                 xmlns:y="http://www.example.com/schemas/extras/1.0">
@@ -59,7 +88,7 @@ class TestXMLFeedSpider(TestSpiderBase):
                 }
 
         spider = _XMLSpider("example", iterator=iterator)
-        output = list(spider._parse(response))
+        output = await collect_asyncgen(spider._parse(response))
         assert len(output) == 2
         assert output == [
             {
@@ -106,6 +135,23 @@ class TestXMLFeedSpider(TestSpiderBase):
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
+
+    @pytest.mark.parametrize(
+        "parse_node", [parse_id_coroutine, parse_id_async_generator]
+    )
+    @coroutine_test
+    async def test_async_parse_node(
+        self, parse_node: Callable[..., Any], mockserver: MockServer
+    ) -> None:
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            itertag = "item"
+
+            def raw_body(self):
+                return "<items><item><id>1</id></item><item><id>2</id></item></items>"
+
+        _Spider.parse_node = parse_node
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"id": "1"}, {"id": "2"}]
 
     @coroutine_test
     async def test_html_iterator(self, mockserver: MockServer):
@@ -164,7 +210,8 @@ class TestXMLFeedSpider(TestSpiderBase):
 class TestCSVFeedSpider(TestSpiderBase):
     spider_class = CSVFeedSpider
 
-    def test_parse_rows(self):
+    @coroutine_test
+    async def test_parse_rows(self) -> None:
         body = get_testdata("feeds", "feed-sample6.csv")
         response = Response("http://example.org/dummy.csv", body=body)
 
@@ -177,7 +224,7 @@ class TestCSVFeedSpider(TestSpiderBase):
                 return row
 
         spider = _CrawlSpider()
-        rows = list(spider.parse_rows(response))
+        rows = await collect_asyncgen(spider.parse_rows(response))
         assert rows[0] == {"id": "1", "name": "alpha", "value": "foobar"}
         assert len(rows) == 4
 
@@ -197,6 +244,23 @@ class TestCSVFeedSpider(TestSpiderBase):
         items, _ = await crawl_items(_Spider, mockserver)
         assert items[0] == {"id": "1", "name": "alpha", "value": "foobar"}
         assert len(items) == 4
+
+    @pytest.mark.parametrize(
+        "parse_row", [parse_row_coroutine, parse_row_async_generator]
+    )
+    @coroutine_test
+    async def test_async_parse_row(
+        self, parse_row: Callable[..., Any], mockserver: MockServer
+    ) -> None:
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            content_type = "text/csv"
+
+            def raw_body(self):
+                return "id\n1\n2\n"
+
+        _Spider.parse_row = parse_row
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"id": "1"}, {"id": "2"}]
 
     @coroutine_test
     async def test_parse_row_not_defined(self, mockserver: MockServer):

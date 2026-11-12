@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from time import monotonic, time
+from time import get_clock_info, monotonic, time
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
@@ -196,6 +196,12 @@ def _downloader() -> Downloader:
     return Downloader(crawler)
 
 
+# asyncio runs timers that are due within one tick of the monotonic clock, so a
+# delay can end up to one tick early, which is 15.6 ms on Windows before Python
+# 3.13.
+_DELAY_TOLERANCE = get_clock_info("monotonic").resolution
+
+
 @coroutine_test
 async def test_delay_meta() -> None:
     delay = 0.2
@@ -212,12 +218,12 @@ async def test_delay_meta() -> None:
         held_for_the_new_delay = monotonic() - start - delayed - held_again
     finally:
         downloader.close()
-    assert delayed >= delay
+    assert delayed >= delay - _DELAY_TOLERANCE
     assert "delay" not in request.meta
     # Downloading the same request again does not hold it again, but setting the
     # key again does.
     assert held_again < delay
-    assert held_for_the_new_delay >= delay
+    assert held_for_the_new_delay >= delay - _DELAY_TOLERANCE
     assert request.meta["delayed"] == [delay, delay]
 
 
@@ -234,7 +240,7 @@ async def test_delay_meta_stale_deadline() -> None:
         elapsed = monotonic() - start
     finally:
         downloader.close()
-    assert delay <= elapsed < 2 * delay
+    assert delay - _DELAY_TOLERANCE <= elapsed < 2 * delay
 
 
 class DelaySpider(MockServerSpider):
@@ -331,7 +337,9 @@ class TestContextFactory(TestContextFactoryBase):
     @pytest.fixture
     def factory(self) -> _ScrapyClientContextFactory:
         crawler = get_crawler()
-        return _load_context_factory_from_settings(crawler)
+        factory = _load_context_factory_from_settings(crawler)
+        assert isinstance(factory, _ScrapyClientContextFactory)
+        return factory
 
     @staticmethod
     def _get_dummy_protocol() -> TLSMemoryBIOProtocol:
@@ -429,9 +437,7 @@ class TestContextFactory(TestContextFactoryBase):
         crawler = get_crawler(
             settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": verify_certs}
         )
-        factory: _ScrapyClientContextFactory = _load_context_factory_from_settings(
-            crawler
-        )
+        factory = _load_context_factory_from_settings(crawler)
         creator = factory.creatorForNetloc(b"website.tld", 443)
         conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
         assert conn.get_context()._keylog_callback is not None
@@ -517,6 +523,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def test_setting_default(self, server_url: str) -> None:
         crawler = get_crawler()
         client_context_factory = _load_context_factory_from_settings(crawler)
+        assert isinstance(client_context_factory, _ScrapyClientContextFactory)
         assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
@@ -553,6 +560,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
             match="Setting DOWNLOADER_CLIENT_TLS_METHOD to a non-default value is deprecated",
         ):
             client_context_factory = _load_context_factory_from_settings(crawler)
+        assert isinstance(client_context_factory, _ScrapyClientContextFactory)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
