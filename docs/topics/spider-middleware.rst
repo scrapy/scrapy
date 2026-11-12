@@ -285,6 +285,11 @@ MetaCopyDetectionMiddleware
    should not be copied from :attr:`response.meta <scrapy.http.Response.meta>`
    into new requests. See :attr:`~scrapy.http.Request.meta` to learn why.
 
+   Requests built with
+   :func:`~scrapy.downloadermiddlewares.retry.get_retry_request` are not
+   checked, since a retry carries the meta of the request it retries on
+   purpose.
+
    Only 1 warning is emitted per crawl.
 
    MetaCopyDetectionMiddleware settings

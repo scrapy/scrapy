@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from logging import WARNING
+from logging import WARNING, LogRecord
 from typing import TYPE_CHECKING
 
 import pytest
 
+from scrapy.downloadermiddlewares.retry import get_retry_request
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.metacopy import MetaCopyDetectionMiddleware
 from scrapy.spiders import Spider
@@ -132,3 +133,94 @@ def test_no_warning_for_start_requests(
     with caplog.at_level(WARNING):
         list(mw.process_spider_output(None, [req]))
     assert not caplog.records
+
+
+def warnings(caplog: pytest.LogCaptureFixture) -> list[LogRecord]:
+    """Return the captured warnings, leaving out e.g. the debug message that
+    get_retry_request() logs."""
+    return [record for record in caplog.records if record.levelno >= WARNING]
+
+
+def make_downloaded_response(url: str = "https://example.com") -> Response:
+    """Return a response whose request has the meta keys that Scrapy
+    components set while downloading it."""
+    request = Request(
+        url,
+        meta={
+            "cache_timestamp": 1700000000,
+            "download_latency": 0.5,
+            "redirect_times": 1,
+            "redirect_urls": ["https://example.com/old"],
+        },
+    )
+    return Response(url, request=request)
+
+
+def test_no_warning_for_retry_request(
+    crawler: Crawler,
+    mw: MetaCopyDetectionMiddleware,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    crawler.spider = crawler._create_spider("foo")
+    response = make_downloaded_response()
+    assert response.request is not None
+    req = get_retry_request(response.request, spider=crawler.spider, reason="empty")
+    assert req is not None
+    with caplog.at_level(WARNING):
+        assert process(mw, [req], response=response) == [req]
+    assert not warnings(caplog)
+
+
+def test_no_warning_for_second_retry_request(
+    crawler: Crawler,
+    mw: MetaCopyDetectionMiddleware,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    crawler.spider = crawler._create_spider("foo")
+    response = make_downloaded_response()
+    assert response.request is not None
+    response.request.meta["retry_times"] = 1
+    req = get_retry_request(response.request, spider=crawler.spider, reason="empty")
+    assert req is not None
+    assert req.meta["retry_times"] == 2
+    with caplog.at_level(WARNING):
+        process(mw, [req], response=response)
+    assert not warnings(caplog)
+
+
+def test_warns_on_copied_meta_after_retry_request(
+    crawler: Crawler,
+    mw: MetaCopyDetectionMiddleware,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Skipping a retry does not use up the warning of the crawl."""
+    crawler.spider = crawler._create_spider("foo")
+    response = make_downloaded_response()
+    assert response.request is not None
+    retry = get_retry_request(response.request, spider=crawler.spider, reason="empty")
+    assert retry is not None
+    copy = Request("https://example.com/1", meta=response.meta)
+    with caplog.at_level(WARNING):
+        process(mw, [retry, copy], response=response)
+    assert len(warnings(caplog)) == 1
+    assert "download_latency" in caplog.text
+    assert "https://example.com/1" in caplog.text
+
+
+def test_warns_on_copy_of_retry_request(
+    crawler: Crawler,
+    mw: MetaCopyDetectionMiddleware,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Only the request that get_retry_request() returns is skipped, not
+    requests built from it."""
+    crawler.spider = crawler._create_spider("foo")
+    response = make_downloaded_response()
+    assert response.request is not None
+    retry = get_retry_request(response.request, spider=crawler.spider, reason="empty")
+    assert retry is not None
+    req = retry.replace(url="https://example.com/1")
+    with caplog.at_level(WARNING):
+        process(mw, [req], response=response)
+    assert len(warnings(caplog)) == 1
+    assert "retry_times" in caplog.text
