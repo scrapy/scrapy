@@ -1811,6 +1811,34 @@ class TestFTPFileStore:
             stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
         assert stat["checksum"] == "ff1575649a39a27c13faa0d37c84bab3"
 
+    @pytest.mark.parametrize(
+        ("uri", "settings", "expected"),
+        [
+            ("ftp://example.com/files", {}, (21, "anonymous", "guest")),
+            (
+                "ftp://user:pass@example.com:2121/files",
+                {"FTP_USER": "", "FTP_PASSWORD": ""},
+                (2121, "user", "pass"),
+            ),
+            (
+                "ftp://example.com/files",
+                {"FTP_USER": None, "FTP_PASSWORD": None},
+                (21, "", ""),
+            ),
+        ],
+    )
+    def test_uri(
+        self,
+        uri: str,
+        settings: dict[str, str | None],
+        expected: tuple[int, str, str],
+    ) -> None:
+        crawler = get_crawler(settings_dict={"FILES_STORE": uri, **settings})
+        store = build_from_crawler(FilesPipeline, crawler).store
+        assert isinstance(store, FTPFilesStore)
+        assert store.host == "example.com"
+        assert (store.port, store.username, store.password) == expected
+
     def test_wrong_uri_scheme(self):
         with pytest.raises(
             ValueError,
