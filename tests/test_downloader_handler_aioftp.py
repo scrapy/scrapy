@@ -231,12 +231,28 @@ async def test_connection_lost() -> None:
             await _download(Request(url))
 
 
+async def _write_slowly(
+    writer: asyncio.StreamWriter, data: bytes, interval: float
+) -> None:
+    """Write *data* one byte every *interval* seconds, until *writer* is
+    closed."""
+    for i in range(len(data)):
+        if writer.is_closing():
+            return
+        writer.write(data[i : i + 1])
+        await asyncio.sleep(interval)
+
+
 def _fake_ftp(
-    retr_reply: bytes | None, data: bytes = b""
+    retr_reply: bytes | None, data: bytes = b"", interval: float = 0
 ) -> Callable[[asyncio.StreamReader, asyncio.StreamWriter], Any]:
     """Return a minimal FTP server connection handler that sends *data*, if
     any, and then answers RETR with *retr_reply*, or hangs if *retr_reply* is
-    ``None``."""
+    ``None``.
+
+    If *interval* is set, *data* is sent one byte every *interval* seconds,
+    until the client closes the data connection.
+    """
 
     async def handle(
         reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -267,7 +283,10 @@ def _fake_ftp(
                 w = await data_writer
                 if data:
                     writer.write(b"150 Sending\r\n")
-                    w.write(data)
+                    if interval:
+                        await _write_slowly(w, data, interval)
+                    else:
+                        w.write(data)
                 if retr_reply is None:
                     await reader.read()
                 w.close()
@@ -332,6 +351,15 @@ async def test_timeout_partial_response() -> None:
         )
     assert response.body == b"partial"
     assert response.flags == ["dataloss"]
+
+
+@coroutine_test
+async def test_timeout_slow_transfer() -> None:
+    # the server sends data bytes well within the timeout of each other, but
+    # the whole transfer takes longer than the timeout
+    async with _serve(_fake_ftp(b"226 Done\r\n", b"x" * 20, interval=0.1)) as url:
+        with pytest.raises(DownloadTimeoutError):
+            await _download(Request(url, meta={"download_timeout": 0.5}))
 
 
 @coroutine_test
