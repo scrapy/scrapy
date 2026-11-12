@@ -35,6 +35,23 @@ class TestCrawlCommand(TestProjectBase):
             "running 'scrapy crawl' with more than one spider is not supported" in err
         )
 
+    def test_nameless_spider(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    async def start(self):
+        self.logger.debug('It works!')
+        return
+        yield
+"""
+        (proj_path / self.project_name / "spiders" / "myspider.py").write_text(
+            spider_code, encoding="utf-8"
+        )
+        _, _, log = proc("crawl", "MySpider", cwd=proj_path)
+        assert "[MySpider] DEBUG: It works!" in log
+        assert "Spider closed (finished)" in log
+
     def test_no_output(self, proj_path: Path) -> None:
         spider_code = """
 import scrapy
