@@ -1,13 +1,7 @@
-"""Shared resolution of the statuses that a spider handles itself.
-
-Used by :class:`~scrapy.spidermiddlewares.httperror.HttpErrorMiddleware` and
-:class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware`.
-"""
-
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from weakref import WeakKeyDictionary
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -21,7 +15,7 @@ if TYPE_CHECKING:
 
     # True means every status, False means no status, and a container is
     # checked for membership.
-    HandledCodes = bool | Container[int]
+    HandledCodes: TypeAlias = bool | Container[int]
 
 
 SETTING = "HANDLE_HTTP_CODES"
