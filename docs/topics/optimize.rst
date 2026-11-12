@@ -40,8 +40,8 @@ what every part of the engine is doing at a given moment:
 
     len(engine.downloader.active)                   : 16
     len(engine.scheduler.mqs)                       : 92
-    len(engine.scraper.slot.active)                 : 0
     engine.response_active_size                     : 1310720
+    engine.items_in_progress                        : 0
 
 A coding agent using the :ref:`Scrapy MCP server <using-mcp-server>` can also
 retrieve these values directly.
@@ -69,7 +69,10 @@ Take a few readings at different points of the crawl:
     :stat:`request_backout_seconds/response_max_active_size` stat grows (see
     :ref:`crawl-bottlenecks`): responses arrive faster than your callbacks and
     :ref:`item pipelines <topics-item-pipeline>` handle them, or your code
-    keeps responses in memory. The bottleneck is your own code.
+    keeps responses in memory. The bottleneck is your own code. A high
+    :attr:`engine.items_in_progress
+    <scrapy.core.engine.ExecutionEngine.items_in_progress>` points at the item
+    pipelines.
 
 -   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
     requests faster than it downloads them. This is what makes long crawls run
@@ -224,8 +227,9 @@ Move the slow code to a thread so that downloads continue while it runs:
 
 .. code-block:: python
 
+    import asyncio
+
     from scrapy import Spider
-    from scrapy.utils.asyncio import run_in_thread
 
 
     class SlowParseSpider(Spider):
@@ -233,7 +237,7 @@ Move the slow code to a thread so that downloads continue while it runs:
         start_urls = ["https://toscrape.com"]
 
         async def parse(self, response):
-            yield await run_in_thread(self.extract_item, response)
+            yield await asyncio.to_thread(self.extract_item, response)
 
         def extract_item(self, response):
             # CPU-heavy parsing
@@ -341,9 +345,6 @@ Other tips
     :setting:`ASYNCIO_EVENT_LOOP` to ``"uvloop.Loop"``.
 
     .. _uvloop: https://github.com/MagicStack/uvloop
-
-    Alternatively, try :ref:`switching to a non-asyncio reactor
-    <disable-asyncio>`.
 
 -   Disable unused :ref:`components <topics-components>`.
 

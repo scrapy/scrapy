@@ -124,16 +124,33 @@ def set_asyncio_event_loop_policy() -> None:
 
 
 def install_reactor(
-    reactor_path: str | None = None, event_loop_path: str | None = None
+    reactor_path: str | None = None,
+    event_loop_path: str | None = None,
 ) -> None:
-    """Installs the :mod:`~twisted.internet.reactor` with the specified
-    import path. Also installs the asyncio event loop with the specified import
-    path if the asyncio reactor is enabled.
+    """Install the asyncio Twisted reactor.
 
-    If `reactor_path` is `None`, the asyncio reactor will be installed.
+    .. versionchanged:: 2.20.0
+        *reactor_path* is now optional and accepts ``None``.
+
+    *reactor_path* can be ``None`` or
+    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``; these values
+    have the same effect.
+
+    *event_loop_path*, if not ``None``, should be the import path of the
+    asyncio event loop class to be used.
     """
     if reactor_path is None:
         reactor_path = _asyncio_reactor_path
+    elif load_object(reactor_path) is not asyncioreactor.AsyncioSelectorReactor:
+        warnings.warn(
+            "Passing a non-asyncio reactor to install_reactor() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+    _install_reactor(reactor_path, event_loop_path)
+
+
+def _install_reactor(reactor_path: str, event_loop_path: str | None) -> None:
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         set_asyncio_event_loop_policy()
@@ -237,7 +254,8 @@ def is_reactor_installed() -> bool:
 
 
 def _is_asyncio_reactor_installed() -> bool:
-    """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    """Check whether the installed reactor is
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
     """
@@ -252,17 +270,18 @@ def _is_asyncio_reactor_installed() -> bool:
 
 
 def is_asyncio_reactor_installed() -> bool:
-    """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    """Check whether the installed reactor is
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
     """
     warnings.warn(
         "is_asyncio_reactor_installed() is deprecated."
         " If you need to check for asyncio support, use is_asyncio_available()."
-        " If you need to check whether a reactor is installed or not,"
-        " use is_reactor_installed() or is_reactorless()."
-        " If you need to check that specifically the asyncio reactor (or the non-asyncio one)"
-        " is installed, use is_reactor_installed() and is_asyncio_available().",
+        " If you need to check whether a reactor is installed,"
+        " use is_reactor_installed()."
+        " See https://docs.scrapy.org/en/latest/topics/asyncio.html#asyncio-old-versions"
+        " about supporting older Scrapy versions.",
         ScrapyDeprecationWarning,
         stacklevel=2,
     )

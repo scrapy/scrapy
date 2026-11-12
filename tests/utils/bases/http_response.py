@@ -246,7 +246,7 @@ class TestResponseBase(ABC):
     # Response.follow
 
     def test_follow_url_absolute(self):
-        self._assert_followed_url("http://foo.example.com", "http://foo.example.com")
+        self._assert_followed_url("http://foo.example.com/", "http://foo.example.com/")
 
     def test_follow_url_relative(self):
         self._assert_followed_url("foo", "http://example.com/foo")
@@ -333,10 +333,10 @@ class TestResponseBase(ABC):
 
     def test_follow_all_absolute(self):
         url_list = [
-            "http://example.org",
-            "http://www.example.org",
-            "http://example.com",
-            "http://www.example.com",
+            "http://example.org/",
+            "http://www.example.org/",
+            "http://example.com/",
+            "http://www.example.com/",
         ]
         self._assert_followed_all_urls(url_list, url_list)
 

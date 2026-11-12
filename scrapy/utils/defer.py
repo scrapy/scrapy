@@ -387,19 +387,34 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_P, _T]):
         return d
 
 
+def _parallel_async(
+    async_iterable: AsyncIterator[_T],
+    count: int,
+    callable_: Callable[Concatenate[_T, _P], Deferred[Any] | None],
+    *args: _P.args,
+    **named: _P.kwargs,
+) -> Deferred[None]:
+    """Like ``parallel`` but for async iterators"""
+    work = _AsyncCooperatorAdapter(async_iterable, callable_, *args, **named)
+    tasks = _ParallelTasks(work, count)
+    work.on_value = tasks.start
+    tasks.start()
+    return tasks.finished
+
+
 def parallel_async(
     async_iterable: AsyncIterator[_T],
     count: int,
     callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[None]:
-    """Like ``parallel`` but for async iterators"""
-    work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
-    tasks = _ParallelTasks(work, count)
-    work.on_value = tasks.start
-    tasks.start()
-    return tasks.finished
+) -> Deferred[None]:  # pragma: no cover
+    warnings.warn(
+        "scrapy.utils.defer.parallel_async() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _parallel_async(async_iterable, count, callable, *args, **named)
 
 
 def process_chain(
@@ -615,10 +630,11 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
     This function requires an installed asyncio reactor or a running asyncio
     event loop, see :ref:`using-asyncio`.
 
-    In this state you cannot await on :class:`~twisted.internet.defer.Deferred`
-    objects from :ref:`Scrapy callables defined as coroutines
-    <coroutine-support>`, you can only await on ``Future`` objects. Wrapping
-    ``Deferred`` objects into ``Future`` objects allows you to wait on them:
+    This function is needed because you cannot await on
+    :class:`~twisted.internet.defer.Deferred` objects from :ref:`Scrapy
+    callables defined as coroutines <coroutine-support>`; you can only await on
+    :class:`~asyncio.Future` objects. Wrapping ``Deferred`` objects into
+    ``Future`` objects allows you to await on them:
 
     .. code-block:: python
 
@@ -646,27 +662,12 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     """Return *d* as an object that can be awaited from a :ref:`Scrapy callable
     defined as a coroutine <coroutine-support>`.
 
-    What you can await in Scrapy callables defined as coroutines depends on the
-    value of :setting:`TWISTED_REACTOR` and :setting:`TWISTED_REACTOR_ENABLED`:
+    This is similar to :func:`deferred_to_future`, but when a non-asyncio
+    Twisted reactor is installed (which is deprecated), it returns *d* as is,
+    because in that case it can be awaited directly.
 
-    -   When :ref:`using the asyncio reactor <install-asyncio>`, or :ref:`not
-        using a reactor at all <asyncio-without-reactor>`, you can only await
-        on :class:`asyncio.Future` objects.
-
-    -   When :ref:`using a non-asyncio reactor <disable-asyncio>`, you can only
-        await on :class:`~twisted.internet.defer.Deferred` objects.
-
-    If you want to write code that uses ``Deferred`` objects but works in both
-    of these states, use this function on all ``Deferred`` objects:
-
-    .. code-block:: python
-
-        class MySpider(Spider):
-            ...
-
-            async def parse(self, response):
-                deferred = some_dfd_helper()
-                result = await maybe_deferred_to_future(deferred)
+    Use this function only if you need to support non-asyncio reactors. It will
+    be deprecated in a later Scrapy version.
     """
     if not is_asyncio_available():
         return d
@@ -721,3 +722,22 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
         return o
 
     return coro()
+
+
+async def _maybe_coroutine(
+    f: Callable[_P, Any], *args: _P.args, **kw: _P.kwargs
+) -> Any:
+    """Call *f* and return its result, awaiting it first if it is awaitable.
+
+    Raise :exc:`TypeError` if *f* returns a
+    :class:`~twisted.internet.defer.Deferred`.
+    """
+    result = f(*args, **kw)
+    if isinstance(result, Deferred):
+        raise TypeError(
+            f"{global_object_name(f)} returned a Deferred, which is not supported."
+            f" Please refactor this function to return a coroutine."
+        )
+    if _is_awaitable(result):
+        return await result
+    return result

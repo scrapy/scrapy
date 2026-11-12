@@ -84,7 +84,7 @@ def _supports_skip_dupefilter_once(scheduler: BaseScheduler) -> bool:
 class EngineState(Enum):
     """The lifecycle state of :class:`ExecutionEngine`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     The engine goes through these states in order, possibly skipping some.
     """
@@ -274,7 +274,7 @@ class ExecutionEngine:
     def state(self) -> EngineState:
         """The current lifecycle state of the engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
         """
         return self._state
 
@@ -282,15 +282,42 @@ class ExecutionEngine:
     def response_active_size(self) -> int:
         """Size, in bytes, that counts toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
         """
         return self.downloader.middleware._total_active_size
+
+    @property
+    def requests_in_progress(self) -> frozenset[Request]:
+        """A snapshot of the requests that the engine has taken and not
+        finished with yet.
+
+        .. versionadded:: VERSION
+
+        A request from the scheduler is in progress until its callback or
+        errback, and the :ref:`item pipelines <topics-item-pipeline>` that
+        process its items, are done. A request passed to :meth:`download_async`
+        is in progress until it is downloaded.
+        """
+        if self._slot is None:
+            return frozenset()
+        return frozenset(self._slot.inprogress)
+
+    @property
+    def items_in_progress(self) -> int:
+        """Number of items that the :ref:`item pipelines
+        <topics-item-pipeline>` are processing.
+
+        .. versionadded:: VERSION
+        """
+        if self.scraper.slot is None:
+            return 0
+        return self.scraper.slot.itemproc_size
 
     @property
     def running(self) -> bool:
         """Whether the engine is in the :attr:`EngineState.RUNNING` state.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Became a read-only property.
         """
         return self._state is EngineState.RUNNING
@@ -331,14 +358,15 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
+        .. versionchanged:: 2.20.0
+            In earlier versions, if the spider was not open, it sent the
+            :signal:`engine_started` signal instead of raising
+            :exc:`RuntimeError`.
+
         Completes when the engine is stopped.
 
         Raises :exc:`RuntimeError` if the spider is not open, or if the engine
         has already been started or stopped.
-
-        .. versionchanged:: VERSION
-            Now raises :exc:`RuntimeError` instead of returning if the spider
-            is not open.
         """
         if self._state is not EngineState.SPIDER_OPEN:
             raise RuntimeError(
@@ -384,7 +412,7 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             This is now a shortcut for :meth:`close_spider_async`, see its docs
             for the behavior in different engine states, including when it
             completes.
@@ -687,7 +715,7 @@ class ExecutionEngine:
             self._slot.add_request(request)
             try:
                 response_or_request = await maybe_deferred_to_future(
-                    self._download(request)
+                    self._download(request, unscheduled=True)
                 )
             finally:
                 self._slot.remove_request(request)
@@ -697,10 +725,13 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def _download(
-        self, request: Request
+        self, request: Request, *, unscheduled: bool = False
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
         assert self.spider is not None
+
+        if unscheduled and hasattr(self.downloader, "_add_unscheduled_request"):
+            self.downloader._add_unscheduled_request(request)
 
         # Lets Request.__await__() find this crawler while the downloader
         # middlewares run.
@@ -749,15 +780,17 @@ class ExecutionEngine:
     async def open_spider_async(self, *, close_if_idle: bool = True) -> None:
         """Open the spider.
 
+        .. versionadded:: 2.14
+
+        .. versionchanged:: 2.20.0
+            In earlier versions, a :exc:`~scrapy.exceptions.CloseSpider`
+            exception raised while the spider was opening was re-raised.
+
         Raises :exc:`RuntimeError` if a spider has already been opened.
 
         If an exception is raised during opening, the spider is still
         considered open (the engine always transitions to the
         :attr:`EngineState.SPIDER_OPEN` state).
-
-        .. versionchanged:: VERSION
-            A :exc:`~scrapy.exceptions.CloseSpider` exception raised while the
-            spider is opening now closes the spider instead of being re-raised.
 
         If the engine is requested to close the spider during opening, that is
         done right after the spider is opened.
@@ -785,10 +818,11 @@ class ExecutionEngine:
             # is open.
             try:
                 self._start = await self.scraper.spidermw.process_start()
-                if hasattr(scheduler, "open") and (
-                    d := scheduler.open(self.crawler.spider)
-                ):
-                    await maybe_deferred_to_future(d)
+                if hasattr(scheduler, "open"):
+                    await ensure_awaitable(
+                        scheduler.open(self.crawler.spider),
+                        _warn=global_object_name(scheduler.open),
+                    )
                 await self.scraper.open_spider_async()
             except CloseSpider as exc:
                 await self.close_spider_async(reason=exc.reason, error=exc.error)
@@ -932,7 +966,7 @@ class ExecutionEngine:
         ``mode="fast"`` was passed, it will also drop the requests left in the
         downloader.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Previously, calling it while the spider was closing waited for the
             in-flight requests to finish, and calling it after the spider had
             been closed raised :exc:`RuntimeError`.
@@ -1003,8 +1037,10 @@ class ExecutionEngine:
 
         if hasattr(self._slot.scheduler, "close"):
             try:
-                if (d := self._slot.scheduler.close(reason)) is not None:
-                    await maybe_deferred_to_future(d)
+                await ensure_awaitable(
+                    self._slot.scheduler.close(reason),
+                    _warn=global_object_name(self._slot.scheduler.close),
+                )
             except Exception:
                 logger.exception("Scheduler close failure", extra={"spider": spider})
 

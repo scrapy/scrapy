@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import dataclasses
 import hashlib
@@ -19,6 +20,7 @@ from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
 from unittest.mock import MagicMock
+from urllib.parse import urlparse
 
 import attr
 import pytest
@@ -217,6 +219,30 @@ class TestFilesPipeline:
                 "stat_file",
                 return_value={"checksum": "abc", "last_modified": time.time()},
             ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["checksum"] == "abc"
+        assert result["files"][0]["status"] == "uptodate"
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_file_not_expired_async_stat_file(self):
+        """A coroutine stat_file() can await asyncio futures."""
+
+        async def stat_file(path: str, info: Any) -> dict[str, Any]:
+            await asyncio.sleep(0.01)
+            return {"checksum": "abc", "last_modified": time.time()}
+
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(self.pipeline.store, "stat_file", stat_file),
             mock.patch.object(
                 FilesPipeline,
                 "get_media_requests",
@@ -1308,7 +1334,7 @@ class TestS3FilesStore:
         bucket = "mybucket"
         key = "export.csv"
         # S3FilesStore needs to be fixed to emit tz-aware datetimes
-        last_modified = datetime(2019, 12, 1)  # noqa: DTZ001
+        last_modified = datetime(2019, 12, 1)
 
         store = S3FilesStore(f"s3://{bucket}/{key}")
         monkeypatch.setattr(store, "_use_async", lambda: False)
@@ -1371,6 +1397,23 @@ class TestS3FilesStore:
         config: Any = store.s3_client.meta.config
         assert config.max_pool_connections == expected
 
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, "https"),
+            ({"AWS_USE_SSL": None}, "https"),
+            ({"AWS_USE_SSL": True}, "https"),
+            ({"AWS_USE_SSL": False}, "http"),
+        ],
+    )
+    def test_use_ssl(self, settings: dict[str, Any], expected: str) -> None:
+        crawler = get_crawler(
+            settings_dict={"FILES_STORE": "s3://mybucket/prefix/", **settings}
+        )
+        store = build_from_crawler(FilesPipeline, crawler).store
+        assert isinstance(store, S3FilesStore)
+        assert urlparse(store.s3_client.meta.endpoint_url).scheme == expected
+
 
 @pytest.mark.requires_aiobotocore
 @pytest.mark.only_asyncio
@@ -1425,6 +1468,22 @@ class TestS3FilesStoreAsync:
         store = S3FilesStore("s3://mybucket/prefix/", AWS_MAX_POOL_CONNECTIONS=30)
         client = await store._get_aio_client()
         assert client.meta.config.max_pool_connections == 30
+        await store.close()
+
+    @pytest.mark.parametrize(
+        ("config", "expected"),
+        [
+            ({}, "https"),
+            ({"AWS_USE_SSL": None}, "https"),
+            ({"AWS_USE_SSL": True}, "https"),
+            ({"AWS_USE_SSL": False}, "http"),
+        ],
+    )
+    @coroutine_test
+    async def test_use_ssl(self, config: dict[str, Any], expected: str) -> None:
+        store = S3FilesStore("s3://mybucket/prefix/", **config)
+        client = await store._get_aio_client()
+        assert urlparse(client.meta.endpoint_url).scheme == expected
         await store.close()
 
     @coroutine_test

@@ -6,6 +6,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
+from traceback import clear_frames
 from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias, TypedDict, cast
 
 from twisted.internet.defer import Deferred, DeferredList
@@ -168,7 +169,7 @@ class MediaPipeline(ABC):
                         (deferred_from_coro(coro) for coro in coros), consumeErrors=True
                     ),
                 )
-        return self.item_completed(results, item, info)
+        return await ensure_awaitable(self.item_completed(results, item, info))
 
     async def _process_request(
         self, request: Request, info: SpiderInfo, item: Any
@@ -253,6 +254,10 @@ class MediaPipeline(ABC):
     ) -> None:
         if isinstance(result, Failure):
             # minimize cached information for failure
+            exception: BaseException | None = result.value
+            while exception is not None:
+                clear_frames(exception.__traceback__)
+                exception = exception.__context__
             result.cleanFailure()
             result.frames.clear()
             if TWISTED_FAILURE_HAS_STACK:

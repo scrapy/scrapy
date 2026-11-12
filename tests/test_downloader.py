@@ -2,17 +2,24 @@ import asyncio
 import gc
 import logging
 import warnings
+from pathlib import Path
 from typing import Any
 
 import pytest
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
-from scrapy import Request, Spider
+from scrapy import Request, Spider, signals
+from scrapy.core.downloader import Downloader
+from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
+from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import Crawler
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import HtmlResponse, Response
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.http import BodyFileResponse, HtmlResponse, Response
+from scrapy.http.request import NO_CALLBACK
+from scrapy.pipelines.files import FilesPipeline
 from scrapy.utils.asyncio import call_later, sleep
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -78,6 +85,48 @@ def _assert_scraper_slot_deprecation(
 
 def _raise(response: Response) -> None:
     raise ValueError(response.url)
+
+
+def _ignore(failure: Failure) -> None:
+    pass
+
+
+class _RaiseOnSpiderInput:
+    def process_spider_input(self, response: Response) -> None:
+        raise ValueError(response.url)
+
+
+class _IgnoreResponse:
+    def process_response(self, request: Request, response: Response) -> Response:
+        raise IgnoreRequest
+
+
+class _BodyFileHandler:
+    lazy = False
+
+    async def download_request(self, request: Request) -> BodyFileResponse:
+        await sleep(0.01)
+        body_file = request.meta["body_file"]
+        Path(body_file).write_bytes(b"a" * 2048)
+        return BodyFileResponse(request.url, body_file=body_file)
+
+
+async def _crawl_without_gc(crawler: Crawler) -> None:
+    # The log capture of pytest keeps the tracebacks of logged errors, and with
+    # them the responses they refer to.
+    logging.disable()
+    gc.disable()
+    try:
+        crawl_deferred = crawler.crawl()
+        # A stall would otherwise hang the test.
+        timeout = call_later(10, crawl_deferred.cancel)
+        try:
+            await maybe_deferred_to_future(crawl_deferred)
+        finally:
+            timeout.cancel()
+    finally:
+        gc.enable()
+        logging.disable(logging.NOTSET)
 
 
 class gt:
@@ -328,6 +377,88 @@ class TestResponseRoughSize:
         }
         assert _backout_stats(crawler) == expected_stats
 
+    @coroutine_test
+    async def test_body_file(self, tmp_path):
+        """Requests and responses whose body is written to a file do not count
+        toward the limit."""
+
+        class TestSpider(Spider):
+            name = "test"
+            custom_settings = {
+                "DOWNLOAD_HANDLERS": {"https": _BodyFileHandler},
+                "RESPONSE_MAX_ACTIVE_SIZE": 512,
+                "RESPONSE_ROUGH_SIZE": 1024,
+            }
+
+            async def start(self):
+                for n in range(2):
+                    yield Request(
+                        f"https://example.com/{n}",
+                        meta={"body_file": tmp_path / str(n)},
+                    )
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 2
+        assert _count_backout_logs(self.caplog) == 0
+        assert _backout_stats(crawler) == {}
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_body_file_download_async(self, tmp_path):
+        """download_async() requests whose response body is written to a file
+        are not held back by the limit."""
+        active = 0
+        max_active = 0
+
+        class Handler(_BodyFileHandler):
+            async def download_request(self, request: Request) -> BodyFileResponse:
+                nonlocal active, max_active
+                active += 1
+                max_active = max(max_active, active)
+                try:
+                    return await super().download_request(request)
+                finally:
+                    active -= 1
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "DOWNLOAD_HANDLERS": {"https": Handler},
+                "RESPONSE_MAX_ACTIVE_SIZE": 512,
+                "RESPONSE_ROUGH_SIZE": 1024,
+            }
+
+            async def parse(self, response):
+                assert self.crawler.engine
+                await asyncio.gather(
+                    *(
+                        self.crawler.engine.download_async(
+                            Request(
+                                f"https://example.com/{n}",
+                                meta={"body_file": tmp_path / str(n)},
+                            )
+                        )
+                        for n in range(2)
+                    )
+                )
+                yield {}
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 1
+        assert max_active == 2
+
 
 class TestRequestBackout:
     @pytest.fixture(autouse=True)
@@ -426,19 +557,45 @@ class TestRequestBackout:
         assert _backout_stats(crawler) == expected_stats
 
     @pytest.mark.parametrize(
-        ("status", "callback"),
+        ("status", "callback", "errback", "settings"),
         [
-            (200, lambda response: response.css("a")),
-            (200, _raise),
-            (404, None),
+            (200, lambda response: response.css("a"), _ignore, {}),
+            (200, _raise, _ignore, {}),
+            (404, None, _ignore, {}),
+            (404, None, None, {}),
+            (404, None, lambda failure: failure, {}),
+            (
+                200,
+                None,
+                None,
+                {"SPIDER_MIDDLEWARES": {_RaiseOnSpiderInput: 0}},
+            ),
+            (
+                200,
+                None,
+                None,
+                {"DOWNLOADER_MIDDLEWARES": {_IgnoreResponse: 1}},
+            ),
         ],
-        ids=["selector", "callback-exception", "errback"],
+        ids=[
+            "selector",
+            "callback-exception",
+            "errback",
+            "no-errback",
+            "errback-failure",
+            "spider-middleware-exception",
+            "downloader-middleware-ignore",
+        ],
     )
     @coroutine_test
-    async def test_response_max_active_size_no_cycles(self, status, callback):
+    async def test_response_max_active_size_no_cycles(
+        self, monkeypatch, status, callback, errback, settings
+    ):
         """Scrapy frees responses through reference counting alone, so a crawl
         does not stall on RESPONSE_MAX_ACTIVE_SIZE without garbage
         collection."""
+        # Keep the bypass, which collects garbage first, from lifting a stall.
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 60)
 
         class ResponseMiddleware:
             def process_request(self, request):
@@ -447,37 +604,61 @@ class TestRequestBackout:
         class TestSpider(Spider):
             name = "test"
             custom_settings = {
-                "DOWNLOADER_MIDDLEWARES": {ResponseMiddleware: 0},
+                **settings,
+                "DOWNLOADER_MIDDLEWARES": {
+                    ResponseMiddleware: 0,
+                    **settings.get("DOWNLOADER_MIDDLEWARES", {}),
+                },
                 "RESPONSE_MAX_ACTIVE_SIZE": 1,
             }
 
             async def start(self):
                 for n in range(3):
                     yield Request(
-                        f"https://example.com/{n}",
-                        callback=callback,
-                        errback=lambda failure: None,
+                        f"https://example.com/{n}", callback=callback, errback=errback
                     )
 
+            def parse(self, response):
+                pass
+
         crawler = get_crawler(TestSpider)
-        # The log capture of pytest keeps the tracebacks of logged errors, and
-        # with them the responses they refer to.
-        logging.disable()
-        gc.disable()
-        try:
-            crawl_deferred = crawler.crawl()
-            # A stall would otherwise hang the test.
-            timeout = call_later(10, crawl_deferred.cancel)
-            try:
-                await maybe_deferred_to_future(crawl_deferred)
-            finally:
-                timeout.cancel()
-        finally:
-            gc.enable()
-            logging.disable(logging.NOTSET)
+        await _crawl_without_gc(crawler)
 
         assert crawler.stats
-        assert crawler.stats.get_value("response_received_count") == 3
+        assert crawler.stats.get_value("downloader/response_count") == 3
+
+    @coroutine_test
+    async def test_response_max_active_size_no_cycles_media(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 60)
+
+        class ResponseMiddleware:
+            def process_request(self, request):
+                status = 404 if request.url.endswith("/file") else 200
+                return Response(request.url, status=status, body=b"a")
+
+        class TestSpider(Spider):
+            name = "test"
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {ResponseMiddleware: 0},
+                "FILES_STORE": str(tmp_path),
+                "ITEM_PIPELINES": {FilesPipeline: 1},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            async def start(self):
+                for n in range(3):
+                    yield Request(f"https://example.com/{n}")
+
+            def parse(self, response):
+                yield {"file_urls": [f"{response.url}/file"]}
+
+        crawler = get_crawler(TestSpider)
+        await _crawl_without_gc(crawler)
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 3
 
     @coroutine_test
     async def test_response_size_process_request(self):
@@ -656,3 +837,332 @@ class TestRequestBackout:
             "request_backout_seconds/total": gt(0),
         }
         assert _backout_stats(crawler) == expected_stats
+
+    @pytest.mark.parametrize("shared_slot", [True, False])
+    @coroutine_test
+    async def test_response_max_active_size_media_downloads(self, shared_slot):
+        """Responses of media pipeline requests waiting for a slow upload hold
+        back the next media downloads.
+        """
+        max_active_size = 3000
+        uploads = 0
+        peak_uploads = 0
+
+        class SlowStore(_NoStatStore):
+            async def persist_file(self, path, buf, info, meta=None, headers=None):
+                nonlocal uploads, peak_uploads
+                uploads += 1
+                peak_uploads = max(peak_uploads, uploads)
+                await sleep(0.05)
+                uploads -= 1
+
+        class TestSpider(_MediaSpider):
+            file_count = 20
+            file_size = 1000
+            custom_settings = {
+                "FILES_STORE": "test://",
+                "ITEM_PIPELINES": {
+                    _SharedSlotFilesPipeline
+                    if shared_slot
+                    else _SlotPerFileFilesPipeline: 1
+                },
+                "MEDIA_STORAGES": {"test": SlowStore},
+                "RESPONSE_MAX_ACTIVE_SIZE": max_active_size,
+                "RESPONSE_ROUGH_SIZE": file_size,
+            }
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("file_count") == 20
+        assert peak_uploads == max_active_size // TestSpider.file_size
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") is None
+
+    @coroutine_test
+    async def test_response_max_active_size_scheduled_response_with_files(self):
+        """A scheduled response above the limit does not hold back the media
+        downloads that it waits for.
+        """
+
+        class TestSpider(_MediaSpider):
+            start_urls = [f"data:,{'a' * 2000}"]
+            custom_settings = {
+                "FILES_STORE": "test://",
+                "ITEM_PIPELINES": {_SharedSlotFilesPipeline: 1},
+                "MEDIA_STORAGES": {"test": _NoStatStore},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1000,
+            }
+            file_count = 3
+            file_size = 10
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("file_count") == 3
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") is None
+
+    @coroutine_test
+    async def test_response_max_active_size_scheduled_request_behind_held_back(
+        self, monkeypatch
+    ):
+        """Scheduled requests queued in a slot behind a held-back
+        download_async() request are downloaded first, and the bypass lets it
+        through even if it is due while the slot waits for its download
+        delay. Once it is through, scheduled requests are not held back.
+        """
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
+        downloads: list[int | str] = []
+        scheduled_reached: Deferred[None] = Deferred()
+        scheduled_downloaded: Deferred[None] = Deferred()
+
+        class Handler(DataURIDownloadHandler):
+            async def download_request(self, request: Request) -> Response:
+                # Keeps the slot busy until the scheduled requests are queued
+                # behind the held-back one.
+                if request.meta.get("wait_for_scheduled"):
+                    await maybe_deferred_to_future(scheduled_reached)
+                return await super().download_request(request)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
+                "DOWNLOAD_DELAY": 0.2,
+                "DOWNLOAD_DELAY_JITTER": 0,
+                "DOWNLOAD_HANDLERS": {"data": Handler},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1000,
+                "RESPONSE_ROUGH_SIZE": 1,
+            }
+            scheduled_count = 0
+
+            def request_reached_downloader(self, request: Request) -> None:
+                if request.url[-1].isdigit():
+                    self.scheduled_count += 1
+                    if self.scheduled_count == 4:
+                        scheduled_reached.callback(None)
+
+            def response_downloaded(self, response: Response) -> None:
+                if response.url == "data:,a":
+                    downloads.append("a")
+                elif response.url[-1].isdigit():
+                    downloads.append(int(response.text))
+                    if len(downloads) == 5:
+                        scheduled_downloaded.callback(None)
+
+            async def parse(self, response):
+                assert self.crawler.engine
+                self.crawler.signals.connect(
+                    self.request_reached_downloader,
+                    signals.request_reached_downloader,
+                )
+                self.crawler.signals.connect(
+                    self.response_downloaded, signals.response_downloaded
+                )
+                download_async = self.crawler.engine.download_async
+                kept_dfd = deferred_from_coro(
+                    download_async(
+                        Request(
+                            f"data:,{'a' * 2000}", meta={"wait_for_scheduled": True}
+                        )
+                    )
+                )
+                held_back_dfd = deferred_from_coro(download_async(Request("data:,a")))
+                for n in range(4):
+                    yield Request(f"data:,{n}", callback=self.parse_b)
+                kept = await maybe_deferred_to_future(kept_dfd)
+                await maybe_deferred_to_future(held_back_dfd)
+                await maybe_deferred_to_future(scheduled_downloaded)
+                assert kept
+                yield {}
+
+            def parse_b(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        crawl_deferred = crawler.crawl()
+        # Scheduled requests held back after the bypass would otherwise hang
+        # the test.
+        timeout = call_later(10, crawl_deferred.cancel)
+        try:
+            await maybe_deferred_to_future(crawl_deferred)
+        finally:
+            timeout.cancel()
+
+        assert crawler.stats
+        assert downloads == [3, "a", 2, 1, 0]
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") == 1
+
+    @pytest.mark.parametrize(
+        ("kept_count", "kept_size", "examples", "more"),
+        [(1, 2000, 1, ""), (4, 300, 3, " (+1 more)")],
+    )
+    @coroutine_test
+    async def test_response_max_active_size_bypass(
+        self, monkeypatch, kept_count, kept_size, examples, more
+    ):
+        """Code that keeps a response to a download_async() request above the
+        limit while it awaits another one slows down instead of stalling.
+        """
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 1000,
+            }
+
+            async def parse(self, response):
+                assert self.crawler.engine
+                kept = [
+                    await self.crawler.engine.download_async(
+                        Request(f"data:,{n:0{kept_size}}")
+                    )
+                    for n in range(kept_count)
+                ]
+                for n in range(2):
+                    await self.crawler.engine.download_async(Request(f"data:,{n}"))
+                assert kept
+                yield {}
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 1
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") == 2
+        messages = [
+            record.getMessage()
+            for record in self.caplog.records
+            if record.getMessage().startswith("Letting")
+        ]
+        assert len(messages) == 1
+        assert "<GET data:,0>" in messages[0]
+        assert messages[0].count("<200 data:,") == examples
+        assert f">{more}, have used" in messages[0]
+
+    @coroutine_test
+    async def test_response_max_active_size_scheduled_bypass(self, monkeypatch):
+        """Code that keeps responses to scheduled requests above the limit
+        slows down instead of stalling.
+        """
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
+        monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.01)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = [f"data:,{n}" for n in range(3)]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+            kept: list[Response] = []
+
+            def parse(self, response):
+                self.kept.append(response)
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            crawl_deferred = crawler.crawl()
+            # A stall would otherwise hang the test.
+            timeout = call_later(10, crawl_deferred.cancel)
+            try:
+                await maybe_deferred_to_future(crawl_deferred)
+            finally:
+                timeout.cancel()
+
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 3
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") == 2
+        records = [
+            record
+            for record in self.caplog.records
+            if record.getMessage().startswith("Letting")
+        ]
+        assert len(records) == 1
+        assert records[0].levelno == logging.WARNING
+        assert "<200 data:," in records[0].getMessage()
+
+    @pytest.mark.parametrize("awaited", [False, True])
+    @coroutine_test
+    async def test_response_max_active_size_collects_cycles(self, monkeypatch, awaited):
+        """Responses in a reference cycle stop counting toward the limit once
+        it holds back requests, even with automatic garbage collection
+        disabled.
+        """
+        monkeypatch.setattr(Downloader, "_SIZE_BYPASS_DELAY", 0.01)
+        monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.01)
+
+        def keep_in_cycle(response: Response) -> None:
+            cycle: list[Any] = [response]
+            cycle.append(cycle)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"] if awaited else [f"data:,{n}" for n in range(3)]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            async def parse(self, response):
+                if not awaited:
+                    keep_in_cycle(response)
+                    yield {}
+                    return
+                assert self.crawler.engine
+                for n in range(3):
+                    keep_in_cycle(
+                        await self.crawler.engine.download_async(Request(f"data:,{n}"))
+                    )
+                    yield {}
+
+        crawler = get_crawler(TestSpider)
+        await _crawl_without_gc(crawler)
+
+        assert crawler.stats
+        assert crawler.stats.get_value("item_scraped_count") == 3
+        assert crawler.stats.get_value("response_max_active_size/bypass_count") is None
+
+
+class _NoStatStore:
+    checksum_algorithm = "md5"
+
+    def __init__(self, uri: str):
+        pass
+
+    def stat_file(self, path, info):
+        return {}
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        pass
+
+
+class _SharedSlotFilesPipeline(FilesPipeline):
+    pass
+
+
+class _SlotPerFileFilesPipeline(FilesPipeline):
+    def get_media_requests(self, item, info):
+        return [
+            Request(url, meta={"download_slot": url}, callback=NO_CALLBACK)
+            for url in item["file_urls"]
+        ]
+
+
+class _MediaSpider(Spider):
+    name = "test"
+    start_urls = ["data:,"]
+    file_count: int
+    file_size: int
+
+    def parse(self, response):
+        yield {
+            "file_urls": [
+                f"data:,{n:0{self.file_size}}" for n in range(self.file_count)
+            ]
+        }

@@ -247,7 +247,7 @@ BaseItemExporter
       method (in your custom Item Exporters) if you want to control how a
       particular field or value will be serialized/exported.
 
-      .. versionchanged:: VERSION
+      .. versionchanged:: 2.20.0
          Nested items, and lists of them, are now serialized recursively
          using their own declared serializers, instead of unchanged.
 

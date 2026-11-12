@@ -423,7 +423,7 @@ class TestRequestToCurl:
 
     def test_get(self) -> None:
         request_object = Request("https://www.example.com")
-        expected_curl_command = "curl -X GET https://www.example.com"
+        expected_curl_command = "curl -X GET https://www.example.com/"
         self._test_request(request_object, expected_curl_command)
 
     def test_post(self) -> None:
@@ -464,7 +464,7 @@ class TestRequestToCurl:
     )
     def test_header_values(self, headers: dict[str, Any], expected_args: str) -> None:
         request_object = Request("https://www.example.com", headers=headers)
-        expected_curl_command = f"curl -X GET https://www.example.com {expected_args}"
+        expected_curl_command = f"curl -X GET https://www.example.com/ {expected_args}"
         self._test_request(request_object, expected_curl_command)
 
     def test_headers_from_curl(self) -> None:

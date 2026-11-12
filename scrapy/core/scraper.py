@@ -7,6 +7,8 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
+from inspect import iscoroutine
+from traceback import clear_frames
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -27,12 +29,12 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _aiter_errback,
+    _parallel_async,
     _process_pending_io_before_callback,
     _schedule_coro,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
-    parallel_async,
 )
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
@@ -241,8 +243,12 @@ class Scraper:
                 self.itemproc.close_spider(self.crawler.spider)
             )
 
-    def is_idle(self) -> bool:
-        """Return True if there isn't any more spiders to process"""
+    def is_idle(self) -> bool:  # pragma: no cover
+        warnings.warn(
+            "Scraper.is_idle() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return not self.slot
 
     def _check_if_closing(self) -> None:
@@ -334,6 +340,11 @@ class Scraper:
                     self._handle_spider_error(spider_exc, request, result)
             else:
                 await self.handle_spider_output_async(output, request, result)
+            finally:
+                # Twisted keeps failures in frames of their own traceback, a
+                # reference cycle that would keep alive any response that those
+                # frames refer to.
+                clear_frames(result.tb)
 
     async def _wait_for_processing(
         self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]
@@ -382,12 +393,24 @@ class Scraper:
         else:  # result is a Failure
             cast("FailureWithRequest", result).request = request
             parent_id = request.id
-            if not request.errback:
-                result.raiseException()
-            warn_on_generator_with_return_value(self.crawler.spider, request.errback)
-            output = request.errback(result)
+            if request.errback:
+                warn_on_generator_with_return_value(
+                    self.crawler.spider, request.errback
+                )
+                output = request.errback(result)
+            else:
+                output = result
             if isinstance(output, Failure):
-                output.raiseException()
+                assert output.value is not None
+                exception = output.value.with_traceback(output.tb)
+                # The traceback of the exception includes this frame, so these
+                # local variables would keep them in a reference cycle, and
+                # with them the response.
+                del result, output
+                try:
+                    raise exception
+                finally:
+                    del exception
             # else the errback returned actual output (like a callback),
             # which needs to be passed to iterate_spider_output()
             if isinstance(output, Deferred):
@@ -397,6 +420,8 @@ class Scraper:
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
+        if iscoroutine(output):
+            output = await output
         output = await ensure_awaitable(iterate_spider_output(output))
         if isinstance(output, AsyncIterator):
             return _aset_parent_id(output, parent_id)
@@ -490,7 +515,7 @@ class Scraper:
             )
             return
         await maybe_deferred_to_future(
-            parallel_async(
+            _parallel_async(
                 it,
                 self.concurrent_items,
                 self._process_spidermw_output,

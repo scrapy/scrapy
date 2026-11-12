@@ -211,6 +211,26 @@ class Delay(LeafResource):
         request.finish()
 
 
+class Trickle(LeafResource):
+    """Send a body of *n* bytes one byte at a time, one every *interval*
+    seconds."""
+
+    def render_GET(self, request: Request) -> int:
+        n = getarg(request, b"n", 10, type_=int)
+        interval = getarg(request, b"interval", 0.1, type_=float)
+        self._write(request, n, interval)
+        return NOT_DONE_YET
+
+    def _write(self, request: Request, remaining: int, interval: float) -> None:
+        request.write(b"x")
+        if remaining == 1:
+            request.finish()
+            return
+        self.deferRequest(
+            request, interval, self._write, request, remaining - 1, interval
+        )
+
+
 class Status(LeafResource):
     def render_GET(self, request: Request) -> bytes:
         n = getarg(request, b"n", 200, type_=int)

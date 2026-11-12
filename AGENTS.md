@@ -74,10 +74,10 @@ This file adds what agents tend to get wrong.
 - Give new anchors short names without the `topics-` prefix. Keep existing
   anchors.
 - Wrap paragraphs at 79 characters.
-- To upgrade `sphinx-scrapy`, change its `rev` in `.pre-commit-config.yaml`,
-  run `pre-commit run sphinx-scrapy --all-files` to sync `tox.ini` and
-  `docs/requirements.in`, then run `uv pip compile requirements.in -o
-  requirements.txt` in `docs/`.
+- To upgrade `sphinx-scrapy`, change its `rev` in `.pre-commit-config.yaml`
+  and run `pre-commit run sphinx-scrapy --all-files` to sync `tox.ini`.
+- Documentation dependencies other than `sphinx-scrapy` go in the `docs`
+  dependency group of `pyproject.toml`.
 
 ## Git and GitHub
 

@@ -78,7 +78,7 @@ class RobotParser(metaclass=ABCMeta):
         of the robots.txt file, or an empty iterable if there are none or the
         backend does not support reading them.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
         """
         return ()
 

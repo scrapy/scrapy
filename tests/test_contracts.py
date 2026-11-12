@@ -623,9 +623,9 @@ class TestContractsManager:
 
         requests = self.conman.from_method(spider.returns_multiple_urls, self.results)
         assert sorted(request.url for request in requests) == [
-            "http://example.com",
-            "http://scrapy.org",
-            "http://scrapy.org",
+            "http://example.com/",
+            "http://scrapy.org/",
+            "http://scrapy.org/",
         ]
 
         for request in requests:

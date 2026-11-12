@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -18,7 +18,7 @@ from scrapy.utils.request import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Coroutine, Iterator
 
     from twisted.internet.defer import Deferred
 
@@ -54,10 +54,10 @@ class BaseDupeFilter:
     def request_seen(self, request: Request) -> bool:
         return False
 
-    def open(self) -> Deferred[None] | None:
+    def open(self) -> Coroutine[Any, Any, None] | Deferred[None] | None:
         pass
 
-    def close(self, reason: str) -> Deferred[None] | None:
+    def close(self, reason: str) -> Coroutine[Any, Any, None] | Deferred[None] | None:
         pass
 
     def log(self, request: Request, spider: Spider) -> None:
@@ -182,7 +182,7 @@ class DiskDupeFilter(RFPDupeFilter):
     in memory, trading some speed for a much lower memory usage on crawls that
     send a large number of requests.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.20.0
 
     Job directory contents
     ======================

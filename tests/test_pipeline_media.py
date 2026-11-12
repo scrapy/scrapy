@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import MagicMock
 
 import pytest
+from twisted.internet.defer import succeed
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -141,6 +142,33 @@ class TestBaseMediaPipeline:
         item = {"name": "name"}
         new_item = await self.pipe.process_item(item)
         assert new_item is item
+
+
+class DeferredItemCompletedPipeline(UserDefinedPipeline):
+    def item_completed(
+        self, results: list[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo
+    ) -> Deferred[Any]:
+        return succeed(item)
+
+
+class AsyncItemCompletedPipeline(UserDefinedPipeline):
+    async def item_completed(
+        self, results: list[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo
+    ) -> Any:
+        return item
+
+
+@pytest.mark.parametrize(
+    "pipeline_class", [DeferredItemCompletedPipeline, AsyncItemCompletedPipeline]
+)
+@coroutine_test
+async def test_awaitable_item_completed(pipeline_class: type[MediaPipeline]) -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    pipe = build_from_crawler(pipeline_class, crawler)
+    pipe.open_spider()
+    item = {"name": "name"}
+    assert await pipe.process_item(item) is item
 
 
 class MockedMediaPipeline(UserDefinedPipeline):

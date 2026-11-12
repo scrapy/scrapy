@@ -264,23 +264,23 @@ class TestRedirectBase(ABC):
         with set_environ(**env):
             proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
-        request1 = Request(url, meta=meta)
-        proxy_mw.process_request(request1)
-        assert_proxy(request1, expected[0])
+            request1 = Request(url, meta=meta)
+            proxy_mw.process_request(request1)
+            assert_proxy(request1, expected[0])
 
-        response1 = self.get_response(request1, location1)
-        request2 = redirect_mw.process_response(request1, response1)
-        assert isinstance(request2, Request)
-        assert_proxy(request2, expected[1])
-        proxy_mw.process_request(request2)
-        assert_proxy(request2, expected[2])
+            response1 = self.get_response(request1, location1)
+            request2 = redirect_mw.process_response(request1, response1)
+            assert isinstance(request2, Request)
+            assert_proxy(request2, expected[1])
+            proxy_mw.process_request(request2)
+            assert_proxy(request2, expected[2])
 
-        response2 = self.get_response(request2, location2)
-        request3 = redirect_mw.process_response(request2, response2)
-        assert isinstance(request3, Request)
-        assert_proxy(request3, expected[3])
-        proxy_mw.process_request(request3)
-        assert_proxy(request3, expected[4])
+            response2 = self.get_response(request2, location2)
+            request3 = redirect_mw.process_response(request2, response2)
+            assert isinstance(request3, Request)
+            assert_proxy(request3, expected[3])
+            proxy_mw.process_request(request3)
+            assert_proxy(request3, expected[4])
 
     # A proxy set through Request.meta is kept on redirects, even on
     # cross-scheme ones.
@@ -289,18 +289,18 @@ class TestRedirectBase(ABC):
         [
             pytest.param(
                 "http://example.com",
-                "http://example.com",
-                "http://example.com",
+                "http://example.com/a",
+                "http://example.com/b",
                 id="http-absolute",
             ),
-            pytest.param("http://example.com", "/a", "/a", id="http-relative"),
+            pytest.param("http://example.com", "/a", "/b", id="http-relative"),
             pytest.param(
                 "https://example.com",
-                "https://example.com",
-                "https://example.com",
+                "https://example.com/a",
+                "https://example.com/b",
                 id="https-absolute",
             ),
-            pytest.param("https://example.com", "/a", "/a", id="https-relative"),
+            pytest.param("https://example.com", "/a", "/b", id="https-relative"),
             pytest.param(
                 "http://example.com",
                 "https://example.com",
@@ -325,44 +325,60 @@ class TestRedirectBase(ABC):
             expected=("a", "a", "a", "a", "a"),
         )
 
-    # A proxy set from the environment is scheme-specific, so a cross-scheme
-    # redirect drops it and HttpProxyMiddleware then sets the proxy of the new
-    # scheme, if any. Cross-scheme scenarios use proxy a for http and proxy b
-    # for https.
+    # A proxy set from the environment depends on the scheme and host of the
+    # URL, so a redirect drops it and HttpProxyMiddleware then sets the proxy
+    # of the new URL, if any. Cross-scheme scenarios use proxy a for http and
+    # proxy b for https.
     @pytest.mark.parametrize(
         ("env", "url", "location1", "location2", "expected"),
         [
             pytest.param(
                 {"http_proxy": PROXY_A},
                 "http://example.com",
-                "http://example.com",
-                "http://example.com",
-                ("a", "a", "a", "a", "a"),
+                "http://example.com/a",
+                "http://example.com/b",
+                ("a", None, "a", None, "a"),
                 id="http-absolute",
             ),
             pytest.param(
                 {"http_proxy": PROXY_A},
                 "http://example.com",
                 "/a",
-                "/a",
-                ("a", "a", "a", "a", "a"),
+                "/b",
+                ("a", None, "a", None, "a"),
                 id="http-relative",
             ),
             pytest.param(
                 {"https_proxy": PROXY_A},
                 "https://example.com",
-                "https://example.com",
-                "https://example.com",
-                ("a", "a", "a", "a", "a"),
+                "https://example.com/a",
+                "https://example.com/b",
+                ("a", None, "a", None, "a"),
                 id="https-absolute",
             ),
             pytest.param(
                 {"https_proxy": PROXY_A},
                 "https://example.com",
                 "/a",
-                "/a",
-                ("a", "a", "a", "a", "a"),
+                "/b",
+                ("a", None, "a", None, "a"),
                 id="https-relative",
+            ),
+            pytest.param(
+                {"http_proxy": PROXY_A, "no_proxy": "internal.example"},
+                "http://example.com",
+                "http://internal.example",
+                "http://example.com",
+                ("a", None, None, None, "a"),
+                id="http-to-no-proxy-http",
+            ),
+            pytest.param(
+                {"https_proxy": PROXY_A, "no_proxy": "internal.example"},
+                "https://example.com",
+                "https://internal.example",
+                "https://example.com",
+                ("a", None, None, None, "a"),
+                id="https-to-no-proxy-https",
             ),
             pytest.param(
                 {"http_proxy": PROXY_A, "https_proxy": PROXY_B},

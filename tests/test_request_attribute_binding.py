@@ -14,7 +14,7 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
-OVERRIDDEN_URL = "https://example.org"
+OVERRIDDEN_URL = "https://example.org/"
 
 
 class ProcessResponseMiddleware:

@@ -27,6 +27,7 @@ from scrapy.utils.engine import (
 )
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.utils import _free_port
 from tests.spiders import (
     AsyncAwaitRequestInItemPipelineSpider,
     AsyncDefAsyncioGenComplexSpider,
@@ -51,7 +52,9 @@ from tests.spiders import (
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
+    CrawlSpiderWithAsyncErrback,
     CrawlSpiderWithAsyncGeneratorCallback,
+    CrawlSpiderWithAsyncGeneratorErrback,
     CrawlSpiderWithCallbackException,
     CrawlSpiderWithErrback,
     CrawlSpiderWithoutErrback,
@@ -68,6 +71,7 @@ from tests.spiders import (
     StartGoodAndBadOutput,
     StartItemSpider,
 )
+from tests.utils.crawl import crawl_items
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -205,7 +209,7 @@ class TestCrawl:
         crawler = get_crawler(SimpleSpider)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                "http://localhost:65432/status?n=503", mockserver=mockserver
+                f"http://127.0.0.1:{_free_port()}/status?n=503", mockserver=mockserver
             )
         self._assert_retried(caplog.text)
 
@@ -416,7 +420,49 @@ with multiples lines
         assert len(est) == 1, est
         s = dict(est[0])
         assert s["engine.spider.name"] == crawler.spider.name
-        assert s["len(engine.scraper.slot.active)"] == 1
+        assert s["len(engine.requests_in_progress)"] == 1
+
+    @coroutine_test
+    async def test_engine_progress(self, mockserver: MockServer) -> None:
+        readings: list[tuple[frozenset[Request], int, int]] = []
+
+        def read() -> None:
+            assert crawler.engine
+            readings.append(
+                (
+                    crawler.engine.requests_in_progress,
+                    crawler.engine.items_in_progress,
+                    crawler.engine.response_active_size,
+                )
+            )
+
+        class ProgressPipeline:
+            def process_item(self, item: Any) -> Any:
+                read()
+                return item
+
+        def cb(response: Response) -> Any:
+            read()
+            return [{"url": response.url}]
+
+        crawler = get_crawler(
+            SingleRequestSpider, {"ITEM_PIPELINES": {ProgressPipeline: 300}}
+        )
+        await crawler.crawl_async(
+            seed=mockserver.url("/"), callback_func=cb, mockserver=mockserver
+        )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        (response,) = crawler.spider.meta["responses"]
+        assert response.request
+        in_progress = frozenset({response.request})
+        assert [(requests, items) for requests, items, _ in readings] == [
+            (in_progress, 0),
+            (in_progress, 1),
+        ]
+        assert all(size >= len(response.body) for _, _, size in readings)
+        assert crawler.engine
+        assert crawler.engine.requests_in_progress == frozenset()
+        assert crawler.engine.items_in_progress == 0
 
     @coroutine_test
     async def test_print_engine_status(
@@ -457,7 +503,7 @@ with multiples lines
         s = dict(zip(it, it, strict=True))
 
         assert s["engine.spider.name"] == crawler.spider.name
-        assert s["len(engine.scraper.slot.active)"] == "1"
+        assert s["len(engine.requests_in_progress)"] == "1"
 
     @coroutine_test
     async def test_open_spider_error_on_faulty_pipeline(
@@ -589,6 +635,17 @@ class TestCrawlSpider:
         assert "[errback] status 404" in caplog.text
         assert "[errback] status 500" in caplog.text
         assert "[errback] status 501" in caplog.text
+
+    @pytest.mark.parametrize(
+        "spider_cls",
+        [CrawlSpiderWithAsyncErrback, CrawlSpiderWithAsyncGeneratorErrback],
+    )
+    @coroutine_test
+    async def test_crawlspider_with_async_errback(
+        self, spider_cls: type[CrawlSpiderWithErrback], mockserver: MockServer
+    ) -> None:
+        items, _ = await crawl_items(spider_cls, mockserver)
+        assert sorted(item["status"] for item in items) == [404, 500, 501]
 
     @coroutine_test
     async def test_crawlspider_without_errback(

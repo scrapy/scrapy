@@ -69,10 +69,8 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 .. skip: next
 .. code-block:: python
 
-    import json
-
+    import aiohttp
     import scrapy
-    import treq
 
 
     class SignalSpider(scrapy.Spider):
@@ -87,13 +85,8 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
         async def item_scraped(self, item):
             # Send the scraped item to the server
-            response = await treq.post(
-                "http://example.com/post",
-                json.dumps(item).encode("ascii"),
-                headers={b"Content-Type": [b"application/json"]},
-            )
-
-            return response
+            async with aiohttp.ClientSession() as session:
+                await session.post("http://example.com/post", json=item)
 
         def parse(self, response):
             for quote in response.css("div.quote"):
@@ -280,7 +273,7 @@ spider_closed
     Sent after a spider has been closed. This can be used to release per-spider
     resources reserved on :signal:`spider_opened`.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
        Added the *error* argument.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
@@ -618,7 +611,7 @@ robots_parsed
 
     .. versionadded:: 2.18.0
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.20.0
         Added *response*.
 
     Sent by

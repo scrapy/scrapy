@@ -83,9 +83,9 @@ class BlockingScheduler(BaseScheduler):
     def next_request(self) -> Any:
         return None
 
-    def close(self, reason: str) -> Deferred[None]:
+    async def close(self, reason: str) -> None:
         self.entered_close.callback(None)
-        return self.unblock_close
+        await maybe_deferred_to_future(self.unblock_close)
 
 
 class ClosingPipeline:

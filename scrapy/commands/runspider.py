@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -30,7 +31,16 @@ def _import_file(filepath: str | PathLike[str]) -> ModuleType:
     spec = importlib.util.spec_from_file_location(module_name, abspath, loader=loader)
     assert spec
     module = importlib.util.module_from_spec(spec)
-    loader.exec_module(module)
+    # Registering the module lets code that looks it up by name, e.g.
+    # dataclasses and load_object(), find it. A module already registered under
+    # that name, e.g. a standard library module, is left alone.
+    if module_name not in sys.modules:
+        sys.modules[module_name] = module
+    sys.path = [str(abspath.parent), *sys.path]
+    try:
+        loader.exec_module(module)
+    finally:
+        sys.path.pop(0)
     return module
 
 

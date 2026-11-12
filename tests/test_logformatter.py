@@ -38,7 +38,7 @@ class TestLogFormatter:
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        assert logline == "Crawled (200) <GET http://www.example.com> (referer: None)"
+        assert logline == "Crawled (200) <GET http://www.example.com/> (referer: None)"
 
     def test_crawled_with_referer(self):
         req = Request(
@@ -49,7 +49,7 @@ class TestLogFormatter:
         logline = logkws["msg"] % logkws["args"]
         assert (
             logline
-            == "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']"
+            == "Crawled (200) <GET http://www.example.com/> (referer: http://example.com) ['cached']"
         )
 
     def test_flags_in_request(self):
@@ -59,7 +59,7 @@ class TestLogFormatter:
         logline = logkws["msg"] % logkws["args"]
         assert (
             logline
-            == "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)"
+            == "Crawled (200) <GET http://www.example.com/> ['test', 'flag'] (referer: None)"
         )
 
     def test_dropped(self):
@@ -149,7 +149,7 @@ class TestLogFormatter:
         logline = logkws["msg"] % logkws["args"]
         assert (
             logline
-            == "Spider error processing <GET http://www.example.com> (referer: http://example.org)"
+            == "Spider error processing <GET http://www.example.com/> (referer: http://example.org)"
         )
 
     def test_download_error_short(self):
@@ -159,7 +159,7 @@ class TestLogFormatter:
         request = Request("http://www.example.com")
         logkws = self.formatter.download_error(failure, request, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        assert logline == "Error downloading <GET http://www.example.com>"
+        assert logline == "Error downloading <GET http://www.example.com/>"
 
     def test_download_error_long(self):
         # In practice, the complete traceback is shown by passing the
@@ -170,7 +170,9 @@ class TestLogFormatter:
             failure, request, self.spider, "Some message"
         )
         logline = logkws["msg"] % logkws["args"]
-        assert logline == "Error downloading <GET http://www.example.com>: Some message"
+        assert (
+            logline == "Error downloading <GET http://www.example.com/>: Some message"
+        )
 
     def test_scraped(self):
         item = CustomItem()
@@ -208,7 +210,7 @@ class TestLogformatterSubclass(TestLogFormatter):
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
         assert (
-            logline == "Crawled (200) <GET http://www.example.com> (referer: None) []"
+            logline == "Crawled (200) <GET http://www.example.com/> (referer: None) []"
         )
 
     def test_crawled_with_referer(self):
@@ -222,7 +224,7 @@ class TestLogformatterSubclass(TestLogFormatter):
         logline = logkws["msg"] % logkws["args"]
         assert (
             logline
-            == "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']"
+            == "Crawled (200) <GET http://www.example.com/> (referer: http://example.com) ['cached']"
         )
 
     def test_flags_in_request(self):
@@ -232,7 +234,7 @@ class TestLogformatterSubclass(TestLogFormatter):
         logline = logkws["msg"] % logkws["args"]
         assert (
             logline
-            == "Crawled (200) <GET http://www.example.com> (referer: None) ['test', 'flag']"
+            == "Crawled (200) <GET http://www.example.com/> (referer: None) ['test', 'flag']"
         )
 
 

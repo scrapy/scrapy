@@ -15,17 +15,14 @@ def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, object]]:
     tests = [
         "time()-engine.start_time",
         "len(engine.downloader.active)",
-        "engine.scraper.is_idle()",
         "engine.spider.name",
         "engine.spider_is_idle()",
-        "engine._slot.closing",
-        "len(engine._slot.inprogress)",
+        "engine.state",
+        "len(engine.requests_in_progress)",
         "len(engine.scheduler.dqs or [])",
         "len(engine.scheduler.mqs)",
-        "len(engine.scraper.slot.queue)",
-        "len(engine.scraper.slot.active)",
         "engine.response_active_size",
-        "engine.scraper.slot.itemproc_size",
+        "engine.items_in_progress",
     ]
 
     checks: list[tuple[str, object]] = []

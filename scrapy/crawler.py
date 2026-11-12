@@ -23,7 +23,7 @@ from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils._ossignals import install_shutdown_handlers, signal_names
 from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import _get_running_or_installed_loop, _has_running_loop
-from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro, ensure_awaitable
+from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro
 from scrapy.utils.log import (
     _configure_logger_levels,
     configure_logging,
@@ -33,8 +33,10 @@ from scrapy.utils.log import (
     log_scrapy_info,
 )
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
+    _install_reactor,
     _is_asyncio_reactor_installed,
     install_reactor,
     is_reactor_installed,
@@ -161,9 +163,7 @@ class Crawler:
         self._started: bool = False
 
         self.spider: Spider | None = None
-        self._force_stop_callback: (
-            Callable[[], Awaitable[None] | Deferred[None] | None] | None
-        ) = None
+        self._force_stop_callback: Callable[[], None] | None = None
 
         self._engine: ExecutionEngine | None = None
         self._extensions: ExtensionManager | None = None
@@ -173,7 +173,7 @@ class Crawler:
 
     def _set_force_stop_callback(
         self,
-        callback: Callable[[], Awaitable[None] | Deferred[None] | None] | None,
+        callback: Callable[[], None] | None,
     ) -> None:
         self._force_stop_callback = callback
 
@@ -183,7 +183,7 @@ class Crawler:
             _configure_logger_levels(self.settings)
             install_scrapy_root_handler(self.settings)
 
-    def _apply_settings(self) -> None:
+    def _apply_settings(self) -> None:  # noqa: PLR0912
         if self.settings.frozen:
             return
 
@@ -214,10 +214,10 @@ class Crawler:
                 # but before something imports twisted.internet.reactor.
                 if reactor_class:
                     # Install a specific reactor.
-                    install_reactor(reactor_class, event_loop)
+                    _install_reactor(reactor_class, event_loop)
                 else:
                     # Install the default one.
-                    from twisted.internet import reactor  # noqa: F401
+                    from twisted.internet import reactor
             elif not is_reactor_installed():
                 # We need a reactor to be already installed.
                 raise RuntimeError(
@@ -231,6 +231,25 @@ class Crawler:
 
             if self._init_reactor or reactor_class:
                 log_reactor_info()
+
+            if not _is_asyncio_reactor_installed():
+                from twisted.internet import reactor
+
+                warnings.warn(
+                    f"Using a Twisted reactor other than {_asyncio_reactor_path}"
+                    f" is deprecated (the installed reactor is {global_object_name(type(reactor))})."
+                    " Remove any custom TWISTED_REACTOR setting and make sure that"
+                    " a different reactor is not installed by code outside Scrapy.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+            elif not reactor_class:
+                # TWISTED_REACTOR = None or "" (for "-s TWISTED_REACTOR="), asyncio reactor pre-installed
+                warnings.warn(
+                    'Setting TWISTED_REACTOR to None or "" is deprecated.',
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
         else:
             # We expect a reactor to not be installed.
             if is_reactor_installed():
@@ -376,7 +395,7 @@ class Crawler:
 
         .. versionadded:: 2.14
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Calling it while the spider is being opened now closes the spider
             as soon as it is open.
 
@@ -394,7 +413,7 @@ class Crawler:
 
         if mode == "force":
             if self._force_stop_callback is not None:
-                await ensure_awaitable(self._force_stop_callback())
+                self._force_stop_callback()
                 return
             logger.warning(
                 "Force stop requested, but no process-level force stop callback is available. Falling back to fast stop."

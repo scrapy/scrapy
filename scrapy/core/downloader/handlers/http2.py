@@ -5,6 +5,8 @@ from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
+from twisted.python.failure import Failure
+
 from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
 from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
@@ -26,8 +28,8 @@ from scrapy.utils.httpobj import urlparse_cached
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
     from twisted.internet.defer import Deferred
-    from twisted.web.iweb import IPolicyForHTTPS
 
+    from scrapy.core.downloader.contextfactory import _PolicyForHTTPS
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
     from scrapy.spiders import Spider
@@ -81,7 +83,7 @@ class H2DownloadHandler(BaseHttpDownloadHandler):
 class _ScrapyH2Agent:
     def __init__(
         self,
-        context_factory: IPolicyForHTTPS,
+        context_factory: _PolicyForHTTPS,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
         bind_address: str | tuple[str, int] | None = None,
@@ -135,6 +137,9 @@ class _ScrapyH2Agent:
     ) -> Response:
         if timeout_cl.active():
             timeout_cl.cancel()
+            return response
+
+        if not isinstance(response, Failure) and "dataloss" in response.flags:
             return response
 
         url = urldefrag(request.url)[0]

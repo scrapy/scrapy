@@ -653,6 +653,24 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
         self.logger.info("[errback] status %i", failure.value.response.status)
 
 
+class CrawlSpiderWithAsyncErrback(CrawlSpiderWithErrback):
+    name = "crawl_spider_with_async_errback"
+
+    async def errback(self, failure: Failure) -> dict[str, int]:  # type: ignore[override]
+        assert isinstance(failure.value, HttpError)
+        return {"status": failure.value.response.status}
+
+
+class CrawlSpiderWithAsyncGeneratorErrback(CrawlSpiderWithErrback):
+    name = "crawl_spider_with_async_generator_errback"
+
+    async def errback(  # type: ignore[override]
+        self, failure: Failure
+    ) -> AsyncIterator[dict[str, int]]:
+        assert isinstance(failure.value, HttpError)
+        yield {"status": failure.value.response.status}
+
+
 class CrawlSpiderWithoutErrback(CrawlSpiderWithParseMethod):
     name = "crawl_spider_without_errback"
 

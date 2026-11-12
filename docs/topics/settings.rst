@@ -318,7 +318,7 @@ A key that cannot be resolved into a component, such as the import path of a
 component that no longer exists, raises an exception, even if its priority is
 :data:`None`.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    Unresolvable keys used to be silently ignored in some cases.
 
 .. warning:: Component priority dictionaries are regular :class:`dict` objects.
@@ -371,7 +371,6 @@ These settings are:
 
 -   :setting:`ADDONS`
 -   :setting:`COMMANDS_MODULE`
--   :setting:`FORCE_CRAWLER_PROCESS`
 -   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
     spider loader class, e.g. :setting:`SPIDER_MODULES` and
     :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
@@ -381,10 +380,6 @@ These settings are:
 ``update_pre_crawler_settings()`` method of :ref:`add-ons <topics-addons>`
 enabled that way is not called.
 
-:setting:`TWISTED_REACTOR` also acts as a pre-crawler setting when running a
-:ref:`command that needs a CrawlerProcess <topics-commands-crawlerprocess>`,
-since its project-level value determines the crawler process class.
-
 .. _reactor-settings:
 
 Reactor settings
@@ -393,7 +388,7 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
    :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
    instead of being read from the project settings and ignored in
@@ -403,22 +398,23 @@ Because only 1 reactor can be used per process, these settings cannot use a
 different value per spider when :ref:`running multiple spiders in the same
 process <run-multiple-spiders>`.
 
-These settings are used upon installing the reactor:
-
--   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
-    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
-
--   :setting:`TWISTED_REACTOR` (ignored when using
-    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
-
-They can be :ref:`set from a spider <spider-settings>`, but only the values
-from the first spider that runs are used, since that is when the reactor is
-installed. If a later spider asks for a different reactor or a different event
-loop, an exception is raised. With
-:class:`~scrapy.crawler.CrawlerRunner` and
+The :setting:`ASYNCIO_EVENT_LOOP` setting is used upon installing the reactor.
+It can be :ref:`set from a spider <spider-settings>`, but only the value
+from the first spider that runs is used, since that is when the reactor is
+installed. If a later spider asks for a different event loop, an exception is
+raised. With :class:`~scrapy.crawler.CrawlerRunner` and
 :class:`~scrapy.crawler.AsyncCrawlerRunner` the reactor must be installed
-beforehand, so these settings are only used to check that the installed reactor
-and event loop match them.
+beforehand, so this setting is only used to check that the installed event loop
+matches it.
+
+There is an additional restriction when using
+:class:`~scrapy.crawler.AsyncCrawlerProcess`: when this class is instantiated,
+it installs :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`,
+using the value of :setting:`ASYNCIO_EVENT_LOOP` that was passed to
+:meth:`AsyncCrawlerProcess.__init__()
+<scrapy.crawler.AsyncCrawlerProcess.__init__>`. If a different value for
+:setting:`ASYNCIO_EVENT_LOOP` is provided later, e.g. in :ref:`per-spider
+settings <spider-settings>`, an exception will be raised.
 
 These settings are applied when starting the reactor:
 
@@ -433,18 +429,6 @@ values from the first spider that runs are used; if a later spider defines a
 different value, a warning is issued. They are ignored altogether when using
 :class:`~scrapy.crawler.CrawlerRunner` or
 :class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
-
-There is an additional restriction for :setting:`TWISTED_REACTOR` and
-:setting:`ASYNCIO_EVENT_LOOP` when using
-:class:`~scrapy.crawler.AsyncCrawlerProcess`: when this class is instantiated,
-it installs :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`,
-ignoring the value of :setting:`TWISTED_REACTOR` and using the value of
-:setting:`ASYNCIO_EVENT_LOOP` that was passed to
-:meth:`AsyncCrawlerProcess.__init__()
-<scrapy.crawler.AsyncCrawlerProcess.__init__>`. If a different value for
-:setting:`TWISTED_REACTOR` or :setting:`ASYNCIO_EVENT_LOOP` is provided later,
-e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
-raised.
 
 All of these settings, except for :setting:`ASYNCIO_EVENT_LOOP`, are only used
 when the Twisted reactor is used, i.e. when :setting:`TWISTED_REACTOR_ENABLED`
@@ -515,12 +499,9 @@ Default: ``None``
 
 Import path of a given ``asyncio`` event loop class.
 
-If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) or when
-:ref:`running Scrapy without a reactor <asyncio-without-reactor>` this setting
-can be used to specify the
-asyncio event loop to be used with it. Set the setting to the import path of the
-desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
-event loop will be used.
+This setting can be used to specify the asyncio event loop class to be used.
+Set the setting to the import path of the desired asyncio event loop class. If
+the setting is set to ``None`` the default asyncio event loop will be used.
 
 If you are installing the asyncio reactor manually using the :func:`~scrapy.utils.reactor.install_reactor`
 function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop
@@ -653,7 +634,7 @@ CONCURRENT_CONNECTIONS_PER_HANDLER
 
 Default: ``None``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 The maximum number of connections that a single :ref:`download handler
 <topics-download-handlers>` may keep open, whether they are being used for a
@@ -730,7 +711,7 @@ It is possible to change this setting per domain by using
 CONNECTION_KEEPALIVE_TIMEOUT
 ----------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``240.0``
 
@@ -1074,7 +1055,7 @@ should never modify this setting in your project, modify
 DOWNLOADER_MIDDLEWARE_RESPONSE_EXCEPTIONS
 -----------------------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``False``
 
@@ -1271,7 +1252,7 @@ handler (without replacement), place this in your ``settings.py``:
 DOWNLOAD_HANDLERS_BY_NAME
 -------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``{}``
 
@@ -1313,7 +1294,7 @@ Redirects and retries are assigned to a slot based on their own URL domain,
 unless the slot of their original request was set through the ``download_slot``
 key, in which case they keep that slot.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
    In earlier versions, redirects and retries always kept the slot of their
    original request, even when they pointed to a different domain.
 
@@ -1327,9 +1308,12 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
+A value of ``0`` or ``None`` doesn't mean a timeout of 0 or infinity: a
+non-zero handler-specific value will be used instead.
+
 .. note::
 
-    This timeout can be per-request using the :reqmeta:`download_timeout`
+    This timeout can be set per-request using the :reqmeta:`download_timeout`
     :attr:`.Request.meta` key.
 
 .. note::
@@ -1509,11 +1493,11 @@ interface:
             return False
 
         def open(self):
-            """Called before the spider opens. It may return a deferred."""
+            """Called before the spider opens. It may be a coroutine function."""
             pass
 
         def close(self, reason):
-            """Called before the spider closes. It may return a deferred."""
+            """Called before the spider closes. It may be a coroutine function."""
             pass
 
         def log(self, request, spider):
@@ -1634,33 +1618,6 @@ Default: ``""``
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
 For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://docs.cloud.google.com/storage/docs/access-control/lists>`_.
 
-.. setting:: FORCE_CRAWLER_PROCESS
-
-FORCE_CRAWLER_PROCESS
----------------------
-
-Default: ``False``
-
-If ``False``, :ref:`Scrapy commands that need a CrawlerProcess
-<topics-commands-crawlerprocess>`, when :setting:`TWISTED_REACTOR_ENABLED`
-is set to ``True``, will decide between using
-:class:`scrapy.crawler.AsyncCrawlerProcess` and
-:class:`scrapy.crawler.CrawlerProcess` based on the value of the
-:setting:`TWISTED_REACTOR` setting, but ignoring its value in :ref:`per-spider
-settings <spider-settings>`.
-
-If ``True``, these commands will always use
-:class:`~scrapy.crawler.CrawlerProcess` when :setting:`TWISTED_REACTOR_ENABLED`
-is set to ``True``.
-
-When :setting:`TWISTED_REACTOR_ENABLED` is set to ``False``,
-:class:`~scrapy.crawler.AsyncCrawlerProcess` will be used in all cases.
-
-Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
-non-default value in :ref:`per-spider settings <spider-settings>`.
-
-.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
-
 .. reqmeta:: ftp_passive
 .. setting:: FTP_PASSIVE_MODE
 
@@ -1691,7 +1648,7 @@ in ``Request`` meta.
 
 This is a :ref:`secret setting <secret-settings>`.
 
-It can be overriden in a request in any of the following ways:
+It can be overridden in a request in any of the following ways:
 
 -   Specifying ``ftp_password`` in :attr:`Request.meta <scrapy.http.Request.meta>`
 
@@ -1722,7 +1679,7 @@ Default: ``"anonymous"``
 
 The default username to use for FTP connections.
 
-It can be overriden in a request in any of the following ways:
+It can be overridden in a request in any of the following ways:
 
 -   Specifying ``ftp_user`` in :attr:`Request.meta <scrapy.http.Request.meta>`
 
@@ -1827,7 +1784,7 @@ A string indicating the directory for storing the state of a crawl when
 JOBDIR_SYNC_EVERY
 -----------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``0``
 
@@ -1952,7 +1909,7 @@ LOG_LEVELS
 
 Default: ``{}``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Minimum level to log for specific loggers.
 
@@ -1963,6 +1920,7 @@ It takes precedence over the levels that Scrapy sets by default::
         "hpack": "ERROR",
         "httpcore": "ERROR",
         "httpx": "WARNING",
+        "parso": "ERROR",
         "scrapy": "DEBUG",
         "twisted": "ERROR",
     }
@@ -2146,40 +2104,60 @@ Adjust redirect request priority relative to original request:
 RESPONSE_MAX_ACTIVE_SIZE
 ------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``5_000_000``
 
-Soft limit (in bytes) on the total size of responses being kept in memory.
+Soft limit (in bytes) on the total size of responses being kept in memory. A
+higher value improves crawl speed at the cost of memory usage. ``0`` disables
+the limit.
 
-This counts both the size of response bodies that have passed through
+It counts the body size of responses that have been downloaded or returned by
 :ref:`downloader middlewares <topics-downloader-middleware>` and remain in
 memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
-currently being downloaded.
+currently being downloaded. Requests that use :reqmeta:`body_file` do not
+count, and neither do their responses. While that total is above this value,
+Scrapy stops taking requests from the scheduler. While the part of it that
+comes from requests sent with
+:meth:`~scrapy.core.engine.ExecutionEngine.download_async`, which include
+:ref:`awaited requests <inline-requests>` and those of :ref:`media pipelines
+<topics-media-pipeline>`, is above this value, new requests of that kind wait
+before being downloaded.
 
-While the total is above this value, Scrapy pauses sending new requests to the
-downloader. A higher value improves crawl speed at the cost of memory usage.
-``0`` disables the limit.
+Requests already being downloaded when the limit is reached still finish: up to
+:setting:`CONCURRENT_REQUESTS` from the scheduler, and up to this value divided
+by :setting:`RESPONSE_ROUGH_SIZE` sent with
+:meth:`~scrapy.core.engine.ExecutionEngine.download_async`. So, in practice,
+responses can take up to about twice this value, plus the size of the responses
+to those requests.
+
+If requests have been waiting for 5 seconds with none being downloaded and no
+response released, e.g. because your code keeps responses, Scrapy runs Python's
+garbage collector, and if that releases no response, lets one request through.
+Each time that happens, memory use can grow by one more response, and the
+:stat:`response_max_active_size/bypass_count` stat increases. Scrapy logs a
+warning the first time it does.
 
 Scrapy logs an info-level message the first time the limit is reached. To see
-how long request processing was paused because of it over a whole crawl, check
-the :stat:`request_backout_seconds/response_max_active_size` stat.
+how long Scrapy stopped taking requests from the scheduler because of it over a
+whole crawl, check the :stat:`request_backout_seconds/response_max_active_size`
+stat.
 
 .. caution::
 
     Responses that your code keeps a strong reference to, e.g. in the
     :attr:`.Request.meta` of a scheduled request or in a component attribute,
     count toward this limit until that reference is gone, so accumulating them
-    can pause a crawl indefinitely. So do responses in a reference cycle,
-    until Python's garbage collector frees them. To find out whether your
-    crawl keeps responses alive, see :ref:`topics-leaks`.
+    slows down a crawl. So do responses in a reference cycle, until Python's
+    garbage collector frees them. To find out whether your crawl keeps
+    responses alive, see :ref:`topics-leaks`.
 
 .. setting:: RESPONSE_ROUGH_SIZE
 
 RESPONSE_ROUGH_SIZE
 -------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``None``
 
@@ -2499,6 +2477,8 @@ For more info see: :ref:`topics-stats`.
 STICKY_META_KEYS
 ----------------
 
+.. versionadded:: 2.20.0
+
 Default: ``[]`` (empty list)
 
 The :attr:`Request.meta <scrapy.http.Request.meta>` keys to copy automatically
@@ -2612,8 +2592,7 @@ Default: ``True``
 Whether to install and use the Twisted reactor.
 
 If this is set to ``True``, Scrapy will use the Twisted reactor and will
-install one according to the :setting:`TWISTED_REACTOR` setting value when
-appropriate (e.g. when running via :ref:`the command-line tool
+install one when appropriate (e.g. when running via :ref:`the command-line tool
 <topics-commands>`). This is the traditional mode of using Scrapy.
 
 If this is set to ``False``, Scrapy will use the asyncio event loop directly
@@ -2631,120 +2610,12 @@ See :ref:`asyncio-without-reactor` for more information about this mode.
 
 .. versionadded:: 2.15.0
 
-.. setting:: TWISTED_REACTOR
-
-TWISTED_REACTOR
----------------
-
-Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
-
-Import path of a given :mod:`~twisted.internet.reactor`.
-
-.. note::
-    This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
-
-Scrapy will install this reactor if no other reactor is installed yet, such as
-when the ``scrapy`` CLI program is invoked or when using the
-:class:`~scrapy.crawler.AsyncCrawlerProcess` class or the
-:class:`~scrapy.crawler.CrawlerProcess` class.
-
-If you are using the :class:`~scrapy.crawler.AsyncCrawlerRunner` class or the
-:class:`~scrapy.crawler.CrawlerRunner` class, you also
-need to install the correct reactor manually. You can do that using
-:func:`~scrapy.utils.reactor.install_reactor`:
-
-.. autofunction:: scrapy.utils.reactor.install_reactor
-
-If a reactor is already installed,
-:func:`~scrapy.utils.reactor.install_reactor` has no effect.
-
-:class:`~scrapy.crawler.AsyncCrawlerRunner` and other similar classes raise an
-exception if the installed reactor does not match the
-:setting:`TWISTED_REACTOR` setting; therefore, having top-level
-:mod:`~twisted.internet.reactor` imports in project files and imported
-third-party libraries will make Scrapy raise an exception when it checks which
-reactor is installed.
-
-In order to use the reactor installed by Scrapy:
-
-.. skip: next
-.. code-block:: python
-
-    import scrapy
-    from twisted.internet import reactor
-
-
-    class QuotesSpider(scrapy.Spider):
-        name = "quotes"
-
-        def __init__(self, *args, **kwargs):
-            self.timeout = int(kwargs.pop("timeout", "60"))
-            super().__init__(*args, **kwargs)
-
-        async def start(self):
-            reactor.callLater(self.timeout, self.stop)
-
-            urls = ["https://quotes.toscrape.com/page/1"]
-            for url in urls:
-                yield scrapy.Request(url=url, callback=self.parse)
-
-        def parse(self, response):
-            for quote in response.css("div.quote"):
-                yield {"text": quote.css("span.text::text").get()}
-
-        def stop(self):
-            self.crawler.engine.close_spider(self, "timeout")
-
-
-which raises an exception, becomes:
-
-.. code-block:: python
-
-    import scrapy
-
-
-    class QuotesSpider(scrapy.Spider):
-        name = "quotes"
-
-        def __init__(self, *args, **kwargs):
-            self.timeout = int(kwargs.pop("timeout", "60"))
-            super().__init__(*args, **kwargs)
-
-        async def start(self):
-            from twisted.internet import reactor
-
-            reactor.callLater(self.timeout, self.stop)
-
-            urls = ["https://quotes.toscrape.com/page/1"]
-            for url in urls:
-                yield scrapy.Request(url=url, callback=self.parse)
-
-        def parse(self, response):
-            for quote in response.css("div.quote"):
-                yield {"text": quote.css("span.text::text").get()}
-
-        def stop(self):
-            self.crawler.engine.close_spider(self, "timeout")
-
-
-If this setting is set ``None``, Scrapy will use the existing reactor if one is
-already installed, or install the default reactor defined by Twisted for the
-current platform.
-
-.. versionchanged:: 2.13
-   The default value was changed from ``None`` to
-   ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
-
-For additional information, see :doc:`core/howto/choosing-reactor`.
-
-.. note:: This is a :ref:`reactor setting <reactor-settings>`.
-
 .. setting:: UPLOAD_TIMEOUT
 
 UPLOAD_TIMEOUT
 --------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``None``
 

@@ -126,9 +126,10 @@ SUPPORTED_SCHEMES = [
     "https",
     "s3",
 ]
-"""URL schemes that Scrapy can download out of the box, and hence the default
-value of the ``schemes`` parameter of :class:`LinkExtractor
-<scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`."""
+"""URL schemes that Scrapy can download out of the box. Pass it as the
+``schemes`` parameter of :class:`LinkExtractor
+<scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` to extract links that use
+any of them."""
 
 
 def _matches(url: str, regexs: Iterable[Pattern[str]]) -> bool:

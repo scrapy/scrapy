@@ -137,7 +137,7 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/sitemap-relative-url.xml",
         ]
 
-    def test_get_sitemap_urls_from_robotstxt_skips_invalid_utf8_urls(self):
+    def test_get_sitemap_urls_from_robotstxt_invalid_utf8_urls(self):
         robots = (
             b"User-agent: *\n"
             b"Sitemap: http://example.com/\xff.xml\n"
@@ -148,6 +148,7 @@ Sitemap: /sitemap-relative-url.xml
         spider = self.spider_class("example.com")
 
         assert [req.url for req in spider._parse_sitemap(r)] == [
+            "http://example.com/.xml",
             "http://example.com/ok.xml",
         ]
 
@@ -257,6 +258,8 @@ Sitemap: /sitemap-relative-url.xml
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
         <url>
             <loc>http://www.example.com/english/</loc>
+            <xhtml:link rel="canonical"
+                href="http://www.example.com/canonical/"/>
             <xhtml:link rel="alternate" hreflang="de"
                 href="http://www.example.com/deutsch/"/>
             <xhtml:link rel="alternate" hreflang="de-ch"
@@ -456,6 +459,18 @@ Sitemap: /sitemap-relative-url.xml
                     f"<url><loc>{loc}</loc></url>"
                     "</urlset>"
                 )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"url": mockserver.url("/text")}]
+
+    @coroutine_test
+    async def test_robots_txt_sitemap_comment(self, mockserver: MockServer):
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            name = "robots_txt_sitemap_comment"
+            sitemap_urls = [mockserver.url("/static/sitemap-comments/robots.txt")]
+
+            def parse(self, response):
+                yield {"url": response.url}
 
         items, _ = await crawl_items(_Spider, mockserver)
         assert items == [{"url": mockserver.url("/text")}]
@@ -895,6 +910,137 @@ Sitemap: /sitemap-relative-url.xml
         assert request.url == "https://toscrape.com/sitemap.xml"
         assert request.dont_filter is False
         assert request.callback == spider._parse_sitemap  # pylint: disable=comparison-with-callable
+
+    @pytest.mark.parametrize(
+        ("schemes", "expected"),
+        [
+            (None, ["http"]),
+            ((), ["file", "http"]),
+            (["file"], ["file"]),
+        ],
+    )
+    @coroutine_test
+    async def test_sitemap_schemes_urlset(
+        self,
+        mockserver: MockServer,
+        tmp_path: Path,
+        schemes: list[str] | None,
+        expected: list[str],
+    ) -> None:
+        page = tmp_path / "page.html"
+        page.write_text("<html></html>")
+        urls = {"file": page.as_uri(), "http": mockserver.url("/text")}
+
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_schemes = schemes
+
+            def parse(self, response):
+                yield {"url": response.url}
+
+            def raw_body(self):
+                return (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    f"<url><loc>{urls['file']}</loc></url>"
+                    f"<url><loc>{urls['http']}</loc></url>"
+                    "</urlset>"
+                )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert sorted(item["url"] for item in items) == sorted(
+            urls[scheme] for scheme in expected
+        )
+
+    @pytest.mark.parametrize(("schemes", "followed"), [(None, False), ((), True)])
+    @coroutine_test
+    async def test_sitemap_schemes_sitemapindex(
+        self,
+        mockserver: MockServer,
+        tmp_path: Path,
+        schemes: list[str] | None,
+        followed: bool,
+    ) -> None:
+        sitemap = tmp_path / "sitemap.xml"
+        sitemap.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            f"<url><loc>{mockserver.url('/text')}</loc></url>"
+            "</urlset>"
+        )
+
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_schemes = schemes
+
+            def parse(self, response):
+                yield {"url": response.url}
+
+            def raw_body(self):
+                return (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    f"<sitemap><loc>{sitemap.as_uri()}</loc></sitemap>"
+                    "</sitemapindex>"
+                )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == ([{"url": mockserver.url("/text")}] if followed else [])
+
+    @coroutine_test
+    async def test_sitemap_schemes_source_scheme(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        page = tmp_path / "page.html"
+        page.write_text("<html></html>")
+        sitemap = tmp_path / "sitemap.xml"
+        sitemap.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            f"<url><loc>{page.as_uri()}</loc></url>"
+            "</urlset>"
+        )
+
+        class _Spider(self.spider_class):  # type: ignore[name-defined,misc]
+            name = "test"
+            sitemap_urls = [sitemap.as_uri()]
+
+            def parse(self, response):
+                yield {"url": response.url}
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"url": page.as_uri()}]
+
+    def test_sitemap_schemes_robotstxt(self):
+        robots = (
+            b"Sitemap: file:///etc/sitemap.xml\n"
+            b"Sitemap: ftp://example.com/sitemap.xml\n"
+            b"Sitemap: https://example.com/sitemap.xml\n"
+        )
+        r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
+        spider = self.spider_class("example.com")
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "https://example.com/sitemap.xml",
+        ]
+
+    def test_sitemap_schemes_robots_parsed_signal(self):
+        crawler = get_crawler(self.spider_class, settings_dict={"ROBOTSTXT_OBEY": True})
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+        crawler.engine = mock.MagicMock()
+        spider._signal_only_netlocs.add("www.example.com")
+
+        class FakeRobotParser:
+            def sitemaps(self):
+                return ["file:///etc/sitemap.xml", "/sitemap.xml"]
+
+        crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=FakeRobotParser(),
+            request=Request("http://www.example.com/some/page"),
+            response=TextResponse("http://www.example.com/robots.txt"),
+        )
+
+        crawler.engine.crawl.assert_called_once()
+        scheduled = crawler.engine.crawl.call_args[0][0]
+        assert scheduled.url == "http://www.example.com/sitemap.xml"
 
 
 def test_iterloc_deprecated():

@@ -77,7 +77,7 @@ class TestProcessSpiderExceptionInvalidOutput(TestSpiderMiddleware):
         class RaiseExceptionProcessSpiderOutputMiddleware:
             async def process_spider_output(self, response, result):
                 raise RuntimeError
-                yield  # pylint: disable=unreachable
+                yield
 
         self.mwman._add_middleware(InvalidProcessSpiderOutputExceptionMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
