@@ -154,6 +154,8 @@ these exceptions.
 
 .. autoexception:: scrapy.exceptions.ResponseDataLossError
 
+.. autoexception:: scrapy.exceptions.ResponseHeadersTooLargeError
+
 .. autoexception:: scrapy.exceptions.UnsupportedURLSchemeError
 
 .. _download-handlers-ref:
@@ -180,6 +182,7 @@ individual handler docs for more differences:
      - Requirements
      - HTTP
      - Proxies
+     - Headers limit
      - Bad headers
      - TLS
      - IPv6
@@ -188,6 +191,7 @@ individual handler docs for more differences:
      - asyncio
      - 1.1
      - HTTP
+     - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Fail
      - Stdlib ``ssl``
      - Yes
@@ -196,6 +200,7 @@ individual handler docs for more differences:
      - Reactor, :ref:`twisted-http2 <extras>` extra
      - 2
      - None
+     - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Not applicable
      - ``cryptography``
      - Needs a setting
@@ -204,6 +209,7 @@ individual handler docs for more differences:
      - Reactor
      - 1.1
      - HTTP
+     - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Skip bad
      - ``cryptography``
      - Needs a setting
@@ -212,6 +218,8 @@ individual handler docs for more differences:
      - asyncio, :ref:`httpx <extras>` extra
      - 1.1, 2
      - HTTP, SOCKS
+     - | HTTP/1.1: 100 KiB
+       | HTTP/2: 64 KiB
      - Fail
      - Stdlib ``ssl``
      - Yes, except through a proxy
@@ -291,6 +299,11 @@ Per-request ``bindaddress`` No (not supported by the library)
 :reqmeta:`body_file`        Yes
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
+
+Other limitations:
+
+-   Responses with more than 128 header lines are rejected, regardless of
+    :setting:`DOWNLOAD_HEADERS_MAXSIZE`.
 
 .. _twisted-http2-handler:
 
@@ -450,6 +463,12 @@ Other limitations:
 -   The handler creates a separate connection pool for each proxy URL (due to
     limitations of ``httpx``) which may lead to higher resource usage when
     using proxy rotation.
+
+-   ``httpx`` does not allow configuring the response header size limit of its
+    HTTP client, so :setting:`DOWNLOAD_HEADERS_MAXSIZE` and
+    :setting:`DOWNLOAD_HEADERS_WARNSIZE` have no effect. Over HTTP/1.1 the
+    limit is also approximate, as it only applies while the response head is
+    still incomplete, so a complete head slightly above it is accepted.
 
 -   Requests to a URL with an IPv6 address literal, such as
     ``https://[::1]/``, `do not work through a proxy
