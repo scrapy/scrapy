@@ -66,6 +66,18 @@ class TestDownloaderStats:
         self.mw.process_response(self.req, res)
         self.assertStatsEqual("downloader/response_bytes", len(raw_response))
 
+    @pytest.mark.parametrize(
+        ("status", "raw_response"),
+        [
+            (429, b"HTTP/1.1 429 Too Many Requests\r\n\r\nbody"),
+            (599, b"HTTP/1.1 599 \r\n\r\nbody"),
+        ],
+    )
+    def test_response_bytes_status(self, status: int, raw_response: bytes) -> None:
+        res = Response("http://scrapytest.org", status=status, body=b"body")
+        self.mw.process_response(self.req, res)
+        self.assertStatsEqual("downloader/response_bytes", len(raw_response))
+
     def test_response_bytes_body_file(self, tmp_path: Path) -> None:
         body_file = tmp_path / "body"
         body_file.write_bytes(b"body")
