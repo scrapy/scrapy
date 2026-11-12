@@ -173,9 +173,9 @@ class S3FilesStore:
     # checksums that were requested when the object was uploaded.
     checksum_algorithm: str = "md5"
 
-    AWS_ACCESS_KEY_ID = None
-    AWS_SECRET_ACCESS_KEY = None
-    AWS_SESSION_TOKEN = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_SESSION_TOKEN: str | None = None
     AWS_ENDPOINT_URL = None
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
@@ -201,9 +201,9 @@ class S3FilesStore:
     ) -> dict[str, Any]:
         settings = crawler.settings
         return {
-            "AWS_ACCESS_KEY_ID": settings["AWS_ACCESS_KEY_ID"],
-            "AWS_SECRET_ACCESS_KEY": settings["AWS_SECRET_ACCESS_KEY"],
-            "AWS_SESSION_TOKEN": settings["AWS_SESSION_TOKEN"],
+            "AWS_ACCESS_KEY_ID": settings.getsecret("AWS_ACCESS_KEY_ID"),
+            "AWS_SECRET_ACCESS_KEY": settings.getsecret("AWS_SECRET_ACCESS_KEY"),
+            "AWS_SESSION_TOKEN": settings.getsecret("AWS_SESSION_TOKEN"),
             "AWS_ENDPOINT_URL": settings["AWS_ENDPOINT_URL"],
             "AWS_REGION_NAME": settings["AWS_REGION_NAME"],
             "AWS_USE_SSL": settings["AWS_USE_SSL"],
@@ -489,7 +489,7 @@ class FTPFilesStore:
         settings = crawler.settings
         return {
             "FTP_USERNAME": settings["FTP_USER"],
-            "FTP_PASSWORD": settings["FTP_PASSWORD"],
+            "FTP_PASSWORD": settings.getsecret("FTP_PASSWORD"),
             "USE_ACTIVE_MODE": settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
             "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
         }

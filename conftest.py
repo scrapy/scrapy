@@ -289,6 +289,7 @@ def pytest_runtest_setup(item):
         "botocore",
         "boto3",
         "aioboto3",
+        "keyring",
         "psutil",
     ]
 
