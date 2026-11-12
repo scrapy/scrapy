@@ -70,7 +70,11 @@ class StatsCollector(MutableMapping[str, Any]):
         self._stats = stats
 
     def inc_value(
-        self, key: str, count: int = 1, start: int = 0, spider: Spider | None = None
+        self,
+        key: str,
+        count: float = 1,
+        start: float = 0,
+        spider: Spider | None = None,
     ) -> None:
         """Increment the *key* stat by *count*, or set it to *start* if it is
         not set."""
@@ -176,7 +180,11 @@ class DummyStatsCollector(StatsCollector):
         pass
 
     def inc_value(
-        self, key: str, count: int = 1, start: int = 0, spider: Spider | None = None
+        self,
+        key: str,
+        count: float = 1,
+        start: float = 0,
+        spider: Spider | None = None,
     ) -> None:
         pass
 

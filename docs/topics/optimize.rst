@@ -40,9 +40,8 @@ what every part of the engine is doing at a given moment:
 
     len(engine.downloader.active)                   : 16
     len(engine.scheduler.mqs)                       : 92
-    len(engine.scraper.slot.active)                 : 0
-    engine.scraper.slot.active_size                 : 0
-    engine.scraper.slot.needs_backout()             : False
+    engine.response_active_size                     : 1310720
+    engine.items_in_progress                        : 0
 
 A coding agent using the :ref:`Scrapy MCP server <using-mcp-server>` can also
 retrieve these values directly.
@@ -64,10 +63,16 @@ Take a few readings at different points of the crawl:
     page at a time cannot use more concurrency than it creates. See
     :ref:`optimize-requests`.
 
--   ``needs_backout()`` is ``True``, or ``active_size`` approaches
-    :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`: responses arrive faster than your
-    callbacks and :ref:`item pipelines <topics-item-pipeline>` handle them. The
-    bottleneck is your own code.
+-   :attr:`engine.response_active_size
+    <scrapy.core.engine.ExecutionEngine.response_active_size>` approaches
+    :setting:`RESPONSE_MAX_ACTIVE_SIZE`, or the
+    :stat:`request_backout_seconds/response_max_active_size` stat grows (see
+    :ref:`crawl-bottlenecks`): responses arrive faster than your callbacks and
+    :ref:`item pipelines <topics-item-pipeline>` handle them, or your code
+    keeps responses in memory. The bottleneck is your own code. A high
+    :attr:`engine.items_in_progress
+    <scrapy.core.engine.ExecutionEngine.items_in_progress>` points at the item
+    pipelines.
 
 -   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
     requests faster than it downloads them. This is what makes long crawls run
@@ -222,8 +227,9 @@ Move the slow code to a thread so that downloads continue while it runs:
 
 .. code-block:: python
 
+    import asyncio
+
     from scrapy import Spider
-    from scrapy.utils.asyncio import run_in_thread
 
 
     class SlowParseSpider(Spider):
@@ -231,7 +237,7 @@ Move the slow code to a thread so that downloads continue while it runs:
         start_urls = ["https://toscrape.com"]
 
         async def parse(self, response):
-            yield await run_in_thread(self.extract_item, response)
+            yield await asyncio.to_thread(self.extract_item, response)
 
         def extract_item(self, response):
             # CPU-heavy parsing
@@ -252,7 +258,7 @@ Lowering resource usage
 Lowering memory usage
 ---------------------
 
--   Lower :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`.
+-   Lower :setting:`RESPONSE_MAX_ACTIVE_SIZE`.
 
 -   Lower :setting:`DOWNLOAD_MAXSIZE`, which allows a single response to take up
     to 1 GiB of memory by default, multiplied by your concurrency. Set
@@ -340,9 +346,6 @@ Other tips
 
     .. _uvloop: https://github.com/MagicStack/uvloop
 
-    Alternatively, try :ref:`switching to a non-asyncio reactor
-    <disable-asyncio>`.
-
 -   Disable unused :ref:`components <topics-components>`.
 
     For example, set :setting:`COOKIES_ENABLED` to ``False`` unless you need
@@ -373,7 +376,7 @@ For broad crawls, consider these adjustments:
         (e.g. 8 × 10 domains = 80 concurrent requests) as your CPU and memory
         allow.
 
-    -   Increase :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` when increasing
+    -   Increase :setting:`RESPONSE_MAX_ACTIVE_SIZE` when increasing
         :setting:`CONCURRENT_REQUESTS` stops making a difference.
 
 -   .. _broad-crawls-bfo:

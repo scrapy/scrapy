@@ -646,7 +646,7 @@ HTTPCACHE_SCOPE
 
 Default: ``'spider'``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 How to partition the cache within :setting:`HTTPCACHE_DIR`:
 
@@ -809,6 +809,25 @@ Default: ``True``
 Whether the Compression middleware will be enabled.
 
 
+.. setting:: COMPRESSION_MAX_ENCODINGS
+
+COMPRESSION_MAX_ENCODINGS
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.20.0
+
+Default: ``1``
+
+Maximum number of chained content codings that
+:class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+decodes from the ``Content-Encoding`` of a response. A response that chains
+more codings than this is dropped with :exc:`~scrapy.exceptions.IgnoreRequest`.
+
+Raise it only to scrape servers that legitimately apply multiple codings to a
+response, keeping in mind that a high value lets a malicious server force many
+decompression passes.
+
+
 HttpProxyMiddleware
 -------------------
 
@@ -941,13 +960,14 @@ key set to True, the request will be ignored by this middleware.
 
 .. reqmeta:: redirect_http_codes
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 The ``redirect_http_codes`` key of :attr:`Request.meta <scrapy.Request.meta>`
 overrides the :setting:`REDIRECT_HTTP_CODES` setting for a single request.
 
-If you want to handle some redirect status codes in your spider, you can
-specify these in the ``handle_httpstatus_list`` spider attribute.
+If you want to handle some redirect status codes in your spider, declare them
+through the :setting:`HANDLE_HTTP_CODES` setting or the
+:reqmeta:`handle_http_codes` request meta key.
 
 For example, if you want the redirect middleware to ignore 301 and 302
 responses (and pass them through to your spider) you can do this:
@@ -955,13 +975,7 @@ responses (and pass them through to your spider) you can do this:
 .. code-block:: python
 
     class MySpider(CrawlSpider):
-        handle_httpstatus_list = [301, 302]
-
-The ``handle_httpstatus_list`` key of :attr:`Request.meta
-<scrapy.Request.meta>` can also be used to specify which response codes to
-allow on a per-request basis. You can also set the meta key
-``handle_httpstatus_all`` to ``True`` if you want to allow any response code
-for a request.
+        custom_settings = {"HANDLE_HTTP_CODES": [301, 302]}
 
 To decide whether to follow a redirect based on its target URL, subclass
 :class:`RedirectMiddleware` and override
@@ -1016,7 +1030,7 @@ Whether the Redirect middleware will be enabled.
 REDIRECT_HTTP_CODES
 ^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Default: ``[301, 302, 303, 307, 308]``
 
@@ -1052,9 +1066,10 @@ Use the :reqmeta:`redirect_http_codes` :attr:`Request.meta
 :meth:`Response.follow_redirect() <scrapy.http.Response.follow_redirect>` to
 follow a ``Location`` header from a spider callback instead.
 
-To stop following a status code, you can also use the ``handle_httpstatus_list``
-spider attribute or :attr:`Request.meta <scrapy.Request.meta>` key, which
-additionally lets your spider callbacks receive the affected responses.
+To stop following a status code, you can also use the
+:setting:`HANDLE_HTTP_CODES` setting or the :reqmeta:`handle_http_codes`
+request meta key, which additionally let your spider callbacks receive the
+affected responses.
 
 For media pipelines, see also :setting:`MEDIA_ALLOW_REDIRECTS`.
 
@@ -1079,8 +1094,8 @@ The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`METAREFRESH_ENABLED`
-* :setting:`METAREFRESH_IGNORE_TAGS`
 * :setting:`METAREFRESH_MAXDELAY`
+* :setting:`METAREFRESH_SCRIPTING`
 
 This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
 :reqmeta:`redirect_urls` and :reqmeta:`redirect_reasons` request meta keys as described
@@ -1099,19 +1114,6 @@ Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
 
-.. setting:: METAREFRESH_IGNORE_TAGS
-
-METAREFRESH_IGNORE_TAGS
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Default: ``["noscript"]``
-
-Meta tags within these tags are ignored.
-
-.. versionchanged:: 2.11.2
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``[]`` to ``["noscript"]``.
-
 .. setting:: METAREFRESH_MAXDELAY
 
 METAREFRESH_MAXDELAY
@@ -1122,6 +1124,19 @@ Default: ``100``
 The maximum meta-refresh delay (in seconds) to follow the redirection.
 Some sites use meta-refresh for redirecting to a session expired page, so we
 restrict automatic redirection to the maximum delay.
+
+METAREFRESH_SCRIPTING
+^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.20.0
+
+.. setting:: METAREFRESH_SCRIPTING
+
+Default: ``True``
+
+Whether to follow the meta refresh that a web browser would follow with
+JavaScript enabled (``True``), ignoring those within ``<noscript>``, or with
+JavaScript disabled (``False``).
 
 RetryMiddleware
 ---------------
@@ -1186,7 +1201,7 @@ precedence over the :setting:`RETRY_TIMES` setting.
 RETRY_HTTP_CODES
 ^^^^^^^^^^^^^^^^
 
-Default: ``[500, 502, 503, 504, 522, 524, 408, 429]``
+Default: ``[408, 429, 500, 502, 503, 504, 522, 524]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
 connections lost, etc) are always retried.
@@ -1389,9 +1404,7 @@ DownloaderStats
 UriUserInfoMiddleware
 ---------------------
 
-.. module:: scrapy.downloadermiddlewares.uriuserinfo
-
-.. autoclass:: UriUserInfoMiddleware
+.. autoclass:: scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware
 
 
 UserAgentMiddleware

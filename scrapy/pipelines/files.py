@@ -33,7 +33,6 @@ from typing import (
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
-from twisted.internet.defer import Deferred, maybeDeferred
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
@@ -54,7 +53,7 @@ from scrapy.utils.boto import (
     is_botocore_available,
 )
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
+from scrapy.utils.defer import _maybeDeferred_coro, deferred_from_coro, ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import load_object
@@ -65,6 +64,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
     from os import PathLike
 
+    from twisted.internet.defer import Deferred
     from twisted.python.failure import Failure
 
     from scrapy import Spider
@@ -173,9 +173,9 @@ class S3FilesStore:
     # checksums that were requested when the object was uploaded.
     checksum_algorithm: str = "md5"
 
-    AWS_ACCESS_KEY_ID = None
-    AWS_SECRET_ACCESS_KEY = None
-    AWS_SESSION_TOKEN = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_SESSION_TOKEN: str | None = None
     AWS_ENDPOINT_URL = None
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
@@ -201,9 +201,9 @@ class S3FilesStore:
     ) -> dict[str, Any]:
         settings = crawler.settings
         return {
-            "AWS_ACCESS_KEY_ID": settings["AWS_ACCESS_KEY_ID"],
-            "AWS_SECRET_ACCESS_KEY": settings["AWS_SECRET_ACCESS_KEY"],
-            "AWS_SESSION_TOKEN": settings["AWS_SESSION_TOKEN"],
+            "AWS_ACCESS_KEY_ID": settings.getsecret("AWS_ACCESS_KEY_ID"),
+            "AWS_SECRET_ACCESS_KEY": settings.getsecret("AWS_SECRET_ACCESS_KEY"),
+            "AWS_SESSION_TOKEN": settings.getsecret("AWS_SESSION_TOKEN"),
             "AWS_ENDPOINT_URL": settings["AWS_ENDPOINT_URL"],
             "AWS_REGION_NAME": settings["AWS_REGION_NAME"],
             "AWS_USE_SSL": settings["AWS_USE_SSL"],
@@ -231,7 +231,7 @@ class S3FilesStore:
             "aws_session_token": self.AWS_SESSION_TOKEN,
             "endpoint_url": self.AWS_ENDPOINT_URL,
             "region_name": self.AWS_REGION_NAME,
-            "use_ssl": self.AWS_USE_SSL,
+            "use_ssl": True if self.AWS_USE_SSL is None else self.AWS_USE_SSL,
             "verify": self.AWS_VERIFY,
             "config": Config(**config_kwargs),
         }
@@ -489,7 +489,7 @@ class FTPFilesStore:
         settings = crawler.settings
         return {
             "FTP_USERNAME": settings["FTP_USER"],
-            "FTP_PASSWORD": settings["FTP_PASSWORD"],
+            "FTP_PASSWORD": settings.getsecret("FTP_PASSWORD"),
             "USE_ACTIVE_MODE": settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
             "UPLOAD_TIMEOUT": settings.getfloat("UPLOAD_TIMEOUT") or None,
         }
@@ -790,8 +790,9 @@ class FilesPipeline(MediaPipeline):
         self, request: Request, info: MediaPipeline.SpiderInfo, *, item: Any = None
     ) -> Deferred[FileInfo | None] | None:
         path = self.file_path(request, info=info, item=item)
-        # maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
-        dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[call-overload]
+        dfd: Deferred[StatInfo] = _maybeDeferred_coro(
+            self.store.stat_file, False, path, info
+        )
         dfd2: Deferred[FileInfo | None] = dfd.addCallback(
             functools.partial(self._onsuccess, request=request, info=info, path=path)
         )

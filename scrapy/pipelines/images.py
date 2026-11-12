@@ -21,6 +21,7 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FilesPipeline, _checksum_algorithm
 from scrapy.pipelines.media import FileException
 from scrapy.utils.defer import ensure_awaitable
+from scrapy.utils.python import get_func_args_dict
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -112,6 +113,18 @@ class ImagesPipeline(FilesPipeline):
         self.preserve_format: bool = settings.getbool(
             resolve("IMAGES_PRESERVE_FORMAT"), self.PRESERVE_FORMAT
         )
+        params = get_func_args_dict(self.convert_image)
+        self._convert_image_takes_format: bool = "image_format" in params or any(
+            param.kind is param.VAR_KEYWORD for param in params.values()
+        )
+        if not self._convert_image_takes_format:
+            warnings.warn(
+                f"{type(self).__name__}.convert_image() does not accept an"
+                f" image_format keyword argument. Overriding convert_image()"
+                f" without it is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -185,7 +198,7 @@ class ImagesPipeline(FilesPipeline):
                 f"{self.min_width}x{self.min_height})"
             )
 
-        image, buf = self.convert_image(
+        image, buf = self._convert_image(
             transposed_image,
             image_format=image_format,
             response_body=BytesIO(response.body),
@@ -196,12 +209,12 @@ class ImagesPipeline(FilesPipeline):
             thumb_path = self.thumb_path(
                 request, thumb_id, response=response, info=info, item=item
             )
-            thumb_image, thumb_buf = self.convert_image(
+            thumb_image, thumb_buf = self._convert_image(
                 image, size, image_format=image_format, response_body=buf
             )
             yield thumb_path, thumb_image, thumb_buf
 
-    def convert_image(
+    def _convert_image(
         self,
         image: Image.Image,
         size: tuple[int, int] | None = None,
@@ -209,7 +222,32 @@ class ImagesPipeline(FilesPipeline):
         image_format: str,
         response_body: BytesIO,
     ) -> tuple[Image.Image, BytesIO]:
-        target_format = image_format if self.preserve_format else "JPEG"
+        if self._convert_image_takes_format:
+            return self.convert_image(
+                image, size, image_format=image_format, response_body=response_body
+            )
+        return self.convert_image(image, size, response_body=response_body)
+
+    def convert_image(
+        self,
+        image: Image.Image,
+        size: tuple[int, int] | None = None,
+        *,
+        image_format: str | None = None,
+        response_body: BytesIO,
+    ) -> tuple[Image.Image, BytesIO]:
+        if image_format is None:
+            warnings.warn(
+                f"Calling {type(self).__name__}.convert_image() without an"
+                f" image_format keyword argument is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            image_format = image.format
+        if self.preserve_format and image_format is not None:
+            target_format = image_format
+        else:
+            target_format = "JPEG"
         if target_format == "JPEG":
             if image_format in {"PNG", "WEBP"} and image.mode == "RGBA":
                 background = self._Image.new("RGBA", image.size, (255, 255, 255))

@@ -36,7 +36,7 @@ def get_reactor_settings() -> dict[str, Any]:
 
     ``Crawler._apply_settings()`` checks that the installed reactor matches the
     settings, so tests that run the crawler in the current process may need to
-    pass a correct :setting:`TWISTED_REACTOR` setting value when creating it.
+    pass a correct ``TWISTED_REACTOR`` setting value when creating it.
     """
     settings: dict[str, Any] = {}
     if is_reactor_installed():

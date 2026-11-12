@@ -18,7 +18,9 @@ class TestHttpProxyMiddleware:
         with pytest.raises(NotConfigured):
             build_from_crawler(HttpProxyMiddleware, crawler)
 
-    @pytest.mark.parametrize("url", ["http://e.com", "https://e.com", "file:///tmp/a"])
+    @pytest.mark.parametrize(
+        "url", ["http://e.com/", "https://e.com/", "file:///tmp/a"]
+    )
     def test_no_environment_proxies(
         self, url: str, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -35,8 +37,8 @@ class TestHttpProxyMiddleware:
     @pytest.mark.parametrize(
         ("url", "proxy"),
         [
-            ("http://e.com", "https://proxy.for.http:3128"),
-            ("https://e.com", "http://proxy.for.https:8080"),
+            ("http://e.com/", "https://proxy.for.http:3128"),
+            ("https://e.com/", "http://proxy.for.https:8080"),
             ("file://tmp/a", None),
         ],
     )

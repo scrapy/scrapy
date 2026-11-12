@@ -48,7 +48,7 @@ Request objects
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the request headers.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
             Header names keep the case you write them in, instead of being
             converted to ``Title-Case``.
 
@@ -829,8 +829,7 @@ Those are:
 * :reqmeta:`ftp_password`
 * :reqmeta:`ftp_user`
 * :reqmeta:`give_up_log_level`
-* :reqmeta:`handle_httpstatus_all`
-* :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`handle_http_codes`
 * :reqmeta:`http_auth_domain`
 * :reqmeta:`http_pass`
 * :reqmeta:`http_user`
@@ -900,7 +899,7 @@ the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 body_file
 ---------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Path of a file where the response body is written as it is downloaded, or
 ``True`` to write it to a new temporary file, so that responses of any size can
@@ -933,7 +932,7 @@ ones <download-handlers-ref>`, make the request fail with
 delay
 -----
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Number of seconds to hold a request before sending it:
 
@@ -955,7 +954,7 @@ key again asks for a new delay. See also :reqmeta:`delayed`.
 delayed
 -------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Delays, in seconds, that a request has been held for because of
 :reqmeta:`delay`. Read-only.
@@ -971,7 +970,7 @@ Delays, in seconds, that a request has been held for because of
 download_handler
 ----------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 ID of the :ref:`download handler <topics-download-handlers>` to use for this
 request, either a name from :setting:`DOWNLOAD_HANDLERS_BY_NAME` or a URL
@@ -1060,7 +1059,7 @@ Overrides :setting:`HTTPAUTH_USER` for this request.
 is_robotstxt_request
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 ``True`` on the ``robots.txt`` requests that
 :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` sends, so
@@ -1081,7 +1080,7 @@ The meta key is used set retry times per request. When set, the
 proxy_headers
 -------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Headers for the proxy set in the :reqmeta:`proxy` metadata key, as a mapping,
 e.g. ``{"X-Proxy-Country": "us"}``.
@@ -1116,7 +1115,7 @@ the proxy to consume them instead of passing them on to the target server.
 skip_dupefilter_once
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 Set this key to ``True`` to skip :setting:`duplicate filtering
 <DUPEFILTER_CLASS>` for this request. The :ref:`scheduler <topics-scheduler>`
@@ -1454,10 +1453,12 @@ TextResponse objects
     is the same as for the :class:`Response` class and is not documented here.
 
     :param encoding: is a string which contains the encoding to use for this
-       response. If you create a :class:`TextResponse` object with a string as
-       body, it will be converted to bytes encoded using this encoding. If
-       *encoding* is ``None`` (default), the encoding will be looked up in the
-       response headers and body instead.
+       response, as a label of the `Encoding Standard`_, which web browsers
+       implement, or as the name of the Python codec of one of its encodings,
+       e.g. ``cp932`` for Shift_JIS. If you create a :class:`TextResponse`
+       object with a string as body, it will be converted to bytes encoded
+       using this encoding. If *encoding* is ``None`` (default), the encoding
+       will be looked up in the response headers and body instead.
     :type encoding: str
 
     :class:`TextResponse` objects support the following attributes in addition
@@ -1467,8 +1468,7 @@ TextResponse objects
 
        Response body, as a string.
 
-       The same as ``response.body.decode(response.encoding)``, but the
-       result is cached after the first call, so you can access
+       The result is cached after the first call, so you can access
        ``response.text`` multiple times without extra overhead.
 
        .. note::
@@ -1540,6 +1540,10 @@ TextResponse objects
         A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
 
+    .. autoattribute:: TextResponse.base_url
+
+    .. autoattribute:: TextResponse.meta_refresh
+
     .. autoattribute:: TextResponse.attributes
 
     :class:`TextResponse` objects support the following methods in addition to
@@ -1581,12 +1585,14 @@ TextResponse objects
 
     .. method:: TextResponse.urljoin(url)
 
-        Constructs an absolute url by combining the Response's base url with
-        a possible relative url. The base url shall be extracted from the
-        ``<base>`` tag, or just :attr:`Response.url` if there is no such
-        tag.
+        Constructs an absolute url by combining :attr:`base_url` with a
+        possible relative url.
+
+.. autoclass:: scrapy.http.response.text.MetaRefresh
+    :members:
 
 .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+.. _Encoding Standard: https://encoding.spec.whatwg.org/
 .. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 

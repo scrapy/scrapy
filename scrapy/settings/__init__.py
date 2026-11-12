@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
+from scrapy.utils._secrets import _resolve_secret
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 
@@ -225,11 +226,13 @@ class BaseSettings(MutableMapping[str, Any]):
     def getlist(self, name: str, default: list[Any] | None = None) -> list[Any]:
         """
         Get a setting value as a list. If the setting original type is a list,
-        a copy of it will be returned. If it's a string it will be split by
-        ",". If it is an empty string, an empty list will be returned.
+        a copy of it will be returned. If it's a string it will be evaluated as
+        a JSON list, or split by "," as a fallback. If it is an empty string,
+        an empty list will be returned.
 
         For example, settings populated through environment variables set to
-        ``'one,two'`` will return a list ['one', 'two'] when using this method.
+        ``'one,two'`` or ``'["one", "two"]'`` will return a list ['one', 'two']
+        when using this method.
 
         :param name: the setting name
         :type name: str
@@ -241,7 +244,11 @@ class BaseSettings(MutableMapping[str, Any]):
         if not value:
             return []
         if isinstance(value, str):
-            value = value.split(",")
+            try:
+                value_loaded = json.loads(value)
+            except ValueError:
+                value_loaded = None
+            value = value_loaded if isinstance(value_loaded, list) else value.split(",")
         return list(value)
 
     def getdict(
@@ -315,6 +322,19 @@ class BaseSettings(MutableMapping[str, Any]):
                 f"got {type(value).__name__}: {value!r}"
             )
         return copy.deepcopy(value)
+
+    def getsecret(self, name: str, default: str | None = None) -> str | None:
+        """Get a setting value as a string, resolving :ref:`secret references
+        <secret-settings>`.
+
+        If the setting is not defined or its value is ``None``, *default* is
+        returned. If the referenced environment variable or keyring entry does
+        not exist, :exc:`KeyError` is raised.
+        """
+        value = self.get(name)
+        if value is None:
+            return default
+        return _resolve_secret(value)
 
     def getwithbase(self, name: str) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its ``_BASE``

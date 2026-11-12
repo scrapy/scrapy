@@ -474,10 +474,10 @@ class TestUtilsCsv:
             {"id": "2", "name": "something", "value": "\xf1\xe1\xe9\xf3"},
         ]
 
-        response = TextResponse(url="http://example.com/", body=body2, encoding="cp852")
+        response = TextResponse(url="http://example.com/", body=body2, encoding="cp866")
         csv = csviter(response)
         assert list(csv) == [
-            {"id": "1", "name": "cp852", "value": "test"},
+            {"id": "1", "name": "cp866", "value": "test"},
             {
                 "id": "2",
                 "name": "something",

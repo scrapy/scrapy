@@ -4,14 +4,12 @@ from typing import Any
 from urllib.parse import urlparse
 
 import pytest
-import w3lib.url
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
 from scrapy.utils.url import (
-    _add_http_if_no_scheme,
     _is_filesystem_path,
     add_http_if_no_scheme,
     guess_scheme,
@@ -126,81 +124,11 @@ def test_url_has_any_extension(url: str, expected: bool) -> None:
     assert url_has_any_extension(url, deny_extensions) is expected
 
 
-@pytest.mark.parametrize(
-    ("url", "expected"),
-    [
-        ("www.example.com", "http://www.example.com"),
-        ("example.com", "http://example.com"),
-        ("www.example.com/some/page.html", "http://www.example.com/some/page.html"),
-        ("www.example.com:80", "http://www.example.com:80"),
-        ("www.example.com/some/page#frag", "http://www.example.com/some/page#frag"),
-        ("www.example.com/do?a=1&b=2&c=3", "http://www.example.com/do?a=1&b=2&c=3"),
-        (
-            "username:password@www.example.com",
-            "http://username:password@www.example.com",
-        ),
-        (
-            "username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag",
-            "http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag",
-        ),
-        ("http://www.example.com", "http://www.example.com"),
-        ("http://example.com", "http://example.com"),
-        (
-            "http://www.example.com/some/page.html",
-            "http://www.example.com/some/page.html",
-        ),
-        ("http://www.example.com:80", "http://www.example.com:80"),
-        (
-            "http://www.example.com/some/page#frag",
-            "http://www.example.com/some/page#frag",
-        ),
-        (
-            "http://www.example.com/do?a=1&b=2&c=3",
-            "http://www.example.com/do?a=1&b=2&c=3",
-        ),
-        (
-            "http://username:password@www.example.com",
-            "http://username:password@www.example.com",
-        ),
-        (
-            "http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag",
-            "http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag",
-        ),
-        ("//www.example.com", "http://www.example.com"),
-        ("//example.com", "http://example.com"),
-        ("//www.example.com/some/page.html", "http://www.example.com/some/page.html"),
-        ("//www.example.com:80", "http://www.example.com:80"),
-        ("//www.example.com/some/page#frag", "http://www.example.com/some/page#frag"),
-        ("//www.example.com/do?a=1&b=2&c=3", "http://www.example.com/do?a=1&b=2&c=3"),
-        (
-            "//username:password@www.example.com",
-            "http://username:password@www.example.com",
-        ),
-        (
-            "//username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag",
-            "http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag",
-        ),
-        ("https://www.example.com", "https://www.example.com"),
-        ("ftp://www.example.com", "ftp://www.example.com"),
-    ],
-)
-def test_add_http_if_no_scheme(url: str, expected: str) -> None:
-    assert _add_http_if_no_scheme(url) == expected
-
-
-def test_add_http_if_no_scheme_deprecated(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        w3lib.url, "add_http_if_no_scheme", lambda url: url, raising=False
-    )
+def test_add_http_if_no_scheme_deprecated() -> None:
     with pytest.warns(
         ScrapyDeprecationWarning, match="use w3lib.url.add_http_if_no_scheme"
     ):
         assert add_http_if_no_scheme("www.example.com") == "http://www.example.com"
-
-
-def test_add_http_if_no_scheme_not_deprecated(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delattr(w3lib.url, "add_http_if_no_scheme", raising=False)
-    assert add_http_if_no_scheme("www.example.com") == "http://www.example.com"
 
 
 @pytest.mark.parametrize(

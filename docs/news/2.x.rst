@@ -205,13 +205,13 @@ Modified requirements
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   The default value of the :setting:`TWISTED_REACTOR` setting was changed
+-   The default value of the ``TWISTED_REACTOR`` setting was changed
     from ``None`` to
     ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``. This value
     was used in newly generated projects since Scrapy 2.7.0 but now existing
     projects that don't explicitly set this setting will also use the asyncio
-    reactor. You can :ref:`change this setting in your project
-    <disable-asyncio>` to use a different reactor.
+    reactor. You can change this setting in your project to use a different
+    reactor.
     (:gh:`6659`, :gh:`6713`)
 
 -   The iteration of start requests and items no longer stops once there are
@@ -2460,7 +2460,7 @@ Also fixes the following regressions introduced in 2.6.0:
 -   Installing a Twisted reactor before Scrapy does (e.g. importing
     :mod:`twisted.internet.reactor` somewhere at the module level) no longer
     prevents Scrapy from starting, as long as a different reactor is not
-    specified in :setting:`TWISTED_REACTOR` (:gh:`5525`, :gh:`5528`)
+    specified in ``TWISTED_REACTOR`` (:gh:`5525`, :gh:`5528`)
 
 -   Fixed an exception that was being logged after the spider finished under
     certain conditions (:gh:`5437`, :gh:`5440`)
@@ -2739,7 +2739,7 @@ New features
 Bug fixes
 ~~~~~~~~~
 
--   The :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` settings
+-   The ``TWISTED_REACTOR`` and :setting:`ASYNCIO_EVENT_LOOP` settings
     are no longer ignored if defined in :attr:`~scrapy.Spider.custom_settings`.
     (:gh:`4485`, :gh:`5352`)
 
@@ -3914,7 +3914,7 @@ Scrapy 2.0.1 (2020-03-18)
 
 *   Removed top-level :mod:`~twisted.internet.reactor` imports to prevent
     errors about the wrong Twisted reactor being installed when setting a
-    different Twisted reactor using :setting:`TWISTED_REACTOR` (:gh:`4401`,
+    different Twisted reactor using ``TWISTED_REACTOR`` (:gh:`4401`,
     :gh:`4406`)
 
 *   Fixed tests (:gh:`4422`)
@@ -4045,11 +4045,11 @@ New features
 *   A new ``DNS_RESOLVER`` setting allows enabling IPv6 support
     (:gh:`1031`, :gh:`4227`)
 
-*   A new :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` setting allows configuring
-    the existing soft limit that pauses request downloads when the total
-    response data being processed is too high (:gh:`1410`, :gh:`3551`)
+*   A new ``SCRAPER_SLOT_MAX_ACTIVE_SIZE`` setting allows configuring the
+    existing soft limit that pauses request downloads when the total response
+    data being processed is too high (:gh:`1410`, :gh:`3551`)
 
-*   A new :setting:`TWISTED_REACTOR` setting allows customizing the
+*   A new ``TWISTED_REACTOR`` setting allows customizing the
     :mod:`~twisted.internet.reactor` that Scrapy uses, allowing to
     :doc:`enable asyncio support <topics/asyncio>` or deal with a
     :ref:`common macOS issue <faq-specific-reactor>` (:gh:`2905`,

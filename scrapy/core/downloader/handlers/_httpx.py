@@ -219,7 +219,9 @@ class HttpxDownloadHandler(_Base):
                 timeout=timeout,
             ) as response:
                 yield response
-        except httpx.TimeoutException as e:
+        except httpx.TimeoutException as e:  # pragma: no cover
+            # this can only fire with a low-res loop clock, as the timer starts
+            # later than the BaseStreamingDownloadHandler one
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
             ) from e

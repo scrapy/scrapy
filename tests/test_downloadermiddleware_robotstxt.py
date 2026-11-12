@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import CancelledError, Deferred, DeferredList
 from twisted.python import failure
 
 from scrapy import Spider, signals
@@ -14,7 +14,7 @@ from scrapy.exceptions import CannotResolveHostError, IgnoreRequest, NotConfigur
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from scrapy.utils.asyncio import call_later
+from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
@@ -104,12 +104,17 @@ Disallow: /some/randome/page.html
             RobotsTxtMiddleware, self._get_successful_crawler()
         )
         d1 = deferred_from_coro(
-            middleware.process_request(Request("http://site.local/allowed1"))
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
         )
         d2 = deferred_from_coro(
-            middleware.process_request(Request("http://site.local/allowed2"))
+            self.assertIgnored(Request("http://site.local/admin/main"), middleware)
         )
-        await maybe_deferred_to_future(DeferredList([d1, d2], fireOnOneErrback=True))
+        d3 = deferred_from_coro(
+            self.assertIgnored(Request("http://site.local/static/"), middleware)
+        )
+        await maybe_deferred_to_future(
+            DeferredList([d1, d2, d3], fireOnOneErrback=True)
+        )
 
     @pytest.mark.only_asyncio
     @coroutine_test
@@ -117,9 +122,39 @@ Disallow: /some/randome/page.html
         middleware = build_from_crawler(
             RobotsTxtMiddleware, self._get_successful_crawler()
         )
-        c1 = middleware.process_request(Request("http://site.local/allowed1"))
-        c2 = middleware.process_request(Request("http://site.local/allowed2"))
-        await asyncio.gather(c1, c2)
+        await asyncio.gather(
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware),
+            self.assertIgnored(Request("http://site.local/admin/main"), middleware),
+            self.assertIgnored(Request("http://site.local/static/"), middleware),
+        )
+
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_cancelled(self) -> None:
+        """Cancelling one request doesn't affect others."""
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        release: Deferred[None] = Deferred()
+
+        async def return_response(request: Request) -> Response:
+            await maybe_deferred_to_future(release)
+            return TextResponse(request.url, body=b"User-Agent: *\nDisallow: /admin/")
+
+        self.crawler.engine.download_async.side_effect = return_response
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        d1 = deferred_from_coro(
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        )
+        d2 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/admin/1"))
+        )
+        d3 = deferred_from_coro(
+            self.assertIgnored(Request("http://site.local/admin/2"), middleware)
+        )
+        await sleep(0)
+        d2.cancel()
+        with pytest.raises((CancelledError, asyncio.CancelledError)):
+            await maybe_deferred_to_future(d2)
+        release.callback(None)
+        await maybe_deferred_to_future(DeferredList([d1, d3], fireOnOneErrback=True))
 
     @coroutine_test
     async def test_robotstxt_ready_parser(self):

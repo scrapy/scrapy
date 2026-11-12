@@ -155,9 +155,9 @@ def main() -> None:
     )
     pre_commit.write_text(config, encoding="utf-8")
 
-    # sphinx-scrapy syncs its pins in tox.ini and docs/requirements.in with its
-    # pre-commit rev, and sets the Python version of .readthedocs.yml to the
-    # latest one that Read the Docs supports.
+    # sphinx-scrapy syncs its pins in tox.ini with its pre-commit rev, and sets
+    # the Python version of .readthedocs.yml to the latest one that Read the
+    # Docs supports.
     subprocess.run(
         ["pre-commit", "run", "sphinx-scrapy", "--all-files"],  # noqa: S607
         check=False,
@@ -175,14 +175,6 @@ def main() -> None:
         ci.read_text(encoding="utf-8"),
     )
     ci.write_text(text, encoding="utf-8")
-    subprocess.run(  # noqa: S603
-        [
-            *("uv", "pip", "compile", "--upgrade", "--quiet", "requirements.in"),
-            *("-o", "requirements.txt", "--python-version", docs_python[1]),
-        ],
-        cwd="docs",
-        check=True,
-    )
 
     tox_ini = Path("tox.ini").read_text(encoding="utf-8")
     for env in TOX_ENVS:

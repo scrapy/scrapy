@@ -6,6 +6,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
+from traceback import clear_frames
 from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias, TypedDict, cast
 
 from twisted.internet.defer import Deferred, DeferredList
@@ -28,7 +29,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Container
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -70,6 +71,16 @@ def _media_request_filtered(failure: Failure) -> bool:
     return isinstance(failure.value, _MediaRequestFiltered)
 
 
+def _warn_deprecated_handle_httpstatus_list() -> None:
+    warnings.warn(
+        "MediaPipeline.handle_httpstatus_list is deprecated, use the "
+        "MEDIA_ALLOW_REDIRECTS setting or the handle_http_codes request meta "
+        "key instead.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=3,
+    )
+
+
 class MediaPipeline(ABC):
     LOG_FAILED_RESULTS: bool = True
 
@@ -104,23 +115,31 @@ class MediaPipeline(ABC):
         resolve = functools.partial(
             self._key_for_pipe, base_class_name="MediaPipeline", settings=settings
         )
-        self._redirect_http_codes: set[int] = {
-            int(x) for x in settings.getlist("REDIRECT_HTTP_CODES")
-        }
         self.allow_redirects: bool = settings.getbool(
             resolve("MEDIA_ALLOW_REDIRECTS"), False
         )
-        self._handle_statuses(self.allow_redirects)
+        self._legacy_handle_http_codes: Literal[True] | Container[int] | None = None
         self._cache_size: int = settings.getint(resolve("MEDIA_CACHE_SIZE"))
 
-    def _handle_statuses(self, allow_redirects: bool) -> None:
-        self.handle_httpstatus_list = None
-        if allow_redirects:
-            # Statuses that RedirectMiddleware may redirect, i.e. those from
-            # REDIRECT_HTTP_CODES, are left for it to handle.
-            self.handle_httpstatus_list = SequenceExclude(
-                {*range(300, 400), *self._redirect_http_codes}
-            )
+    @property
+    def handle_httpstatus_list(self) -> Container[int] | None:
+        _warn_deprecated_handle_httpstatus_list()
+        if self._legacy_handle_http_codes is not None:
+            if self._legacy_handle_http_codes is True:
+                return None
+            return self._legacy_handle_http_codes
+        if not self.allow_redirects:
+            return None
+        redirect_http_codes = self.crawler.settings.getlist("REDIRECT_HTTP_CODES")
+        return SequenceExclude(
+            {*range(300, 400), *(int(code) for code in redirect_http_codes)}
+        )
+
+    @handle_httpstatus_list.setter
+    def handle_httpstatus_list(self, value: Container[int] | None) -> None:
+        _warn_deprecated_handle_httpstatus_list()
+        # A false value has always meant handling every status code.
+        self._legacy_handle_http_codes = value or True
 
     def _key_for_pipe(
         self,
@@ -168,7 +187,7 @@ class MediaPipeline(ABC):
                         (deferred_from_coro(coro) for coro in coros), consumeErrors=True
                     ),
                 )
-        return self.item_completed(results, item, info)
+        return await ensure_awaitable(self.item_completed(results, item, info))
 
     async def _process_request(
         self, request: Request, info: SpiderInfo, item: Any
@@ -223,10 +242,10 @@ class MediaPipeline(ABC):
         return await maybe_deferred_to_future(wad)  # it must return wad at last
 
     def _modify_media_request(self, request: Request) -> None:
-        if self.handle_httpstatus_list:
-            request.meta["handle_httpstatus_list"] = self.handle_httpstatus_list
-        else:
-            request.meta["handle_httpstatus_all"] = True
+        if self._legacy_handle_http_codes is not None:
+            request.meta.setdefault("handle_http_codes", self._legacy_handle_http_codes)
+        elif not self.allow_redirects:
+            request.meta.setdefault("dont_redirect", True)
 
     async def _check_media_to_download(
         self, request: Request, info: SpiderInfo, item: Any
@@ -253,32 +272,14 @@ class MediaPipeline(ABC):
     ) -> None:
         if isinstance(result, Failure):
             # minimize cached information for failure
+            exception: BaseException | None = result.value
+            while exception is not None:
+                clear_frames(exception.__traceback__)
+                exception = exception.__context__
             result.cleanFailure()
             result.frames.clear()
             if TWISTED_FAILURE_HAS_STACK:
                 result.stack.clear()
-            # This code fixes a memory leak by avoiding to keep references to
-            # the Request and Response objects on the Media Pipeline cache.
-            #
-            # What happens when the media_downloaded callback raises an
-            # exception, for example a FileException('download-error') when
-            # the Response status code is not 200 OK, is that the original
-            # StopIteration exception (which in turn contains the failed
-            # Response and by extension, the original Request) gets encapsulated
-            # within the FileException context.
-            #
-            # Originally, Scrapy was using twisted.internet.defer.returnValue
-            # inside functions decorated with twisted.internet.defer.inlineCallbacks,
-            # encapsulating the returned Response in a _DefGen_Return exception
-            # instead of a StopIteration.
-            #
-            # To avoid keeping references to the Response and therefore Request
-            # objects on the Media Pipeline cache, we should wipe the context of
-            # the encapsulated exception when it is a StopIteration instance
-            context = getattr(result.value, "__context__", None)
-            if isinstance(context, StopIteration):
-                assert result.value is not None
-                result.value.__context__ = None
 
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result

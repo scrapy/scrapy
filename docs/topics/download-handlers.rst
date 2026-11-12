@@ -48,7 +48,7 @@ for additional schemes and to replace or disable default ones:
 Choosing a download handler per request
 ---------------------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 The :setting:`DOWNLOAD_HANDLERS_BY_NAME` setting registers handlers under a
 name instead of a URL scheme. Such handlers are only used by requests that ask
@@ -253,7 +253,7 @@ AiohttpDownloadHandler
 
 .. versionadded:: 2.19.0
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.20.0
     In earlier versions, the handler was not lazy.
 
 .. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
@@ -498,7 +498,7 @@ Built-in non-HTTP download handlers reference
 AioftpDownloadHandler
 ---------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.20.0
 
 .. autoclass:: scrapy.core.downloader.handlers._aioftp.AioftpDownloadHandler
 

@@ -31,7 +31,7 @@ class TestJsonEncoder:
                 id="time-microseconds",
             ),
             pytest.param(
-                datetime.datetime(2010, 1, 2, 10, 11, 12),  # noqa: DTZ001
+                datetime.datetime(2010, 1, 2, 10, 11, 12),
                 "2010-01-02T10:11:12",
                 id="datetime-naive",
             ),
@@ -46,7 +46,7 @@ class TestJsonEncoder:
             ),
             pytest.param({"foo"}, ["foo"], id="set"),
             pytest.param(
-                {datetime.datetime(2010, 1, 2, 10, 11, 12)},  # noqa: DTZ001
+                {datetime.datetime(2010, 1, 2, 10, 11, 12)},
                 ["2010-01-02T10:11:12"],
                 id="datetime-set",
             ),

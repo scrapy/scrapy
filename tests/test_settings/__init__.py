@@ -547,6 +547,23 @@ class TestBaseSettings:
         msg = caplog.records[0].message
         assert "tests.test_settings.Component1" in msg
 
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ('["one", "two"]', ["one", "two"]),
+            ('["a,b", "c"]', ["a,b", "c"]),
+            ("[500, 502]", [500, 502]),
+            ("[]", []),
+            ("one,two", ["one", "two"]),
+            ('{"a": 1}', ['{"a": 1}']),
+            ("123", ["123"]),
+            ("[one,two", ["[one", "two"]),
+        ],
+    )
+    def test_getlist_str(self, value, expected):
+        settings = BaseSettings({"S": value})
+        assert settings.getlist("S") == expected
+
     def test_getdictorlist(self):
         settings = BaseSettings()
 

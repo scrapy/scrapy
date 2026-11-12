@@ -41,10 +41,7 @@ from scrapy.http import (
     Response,
     TextResponse,
 )
-from scrapy.utils._deps_compat import (
-    TWISTED_TLS_LIMITS_OFFBY1,
-    W3LIB_STRIPS_IPV6_BRACKETS,
-)
+from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.reactor import is_reactor_installed
@@ -56,6 +53,7 @@ from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.proxy_stalling import StallingProxy
 from tests.mockserver.raw_http import RawHttpServer
 from tests.mockserver.simple_https import SimpleMockServer
+from tests.mockserver.utils import _free_port
 from tests.spiders import (
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
@@ -261,9 +259,6 @@ class TestHttpBase(ABC):
 
     @pytest.mark.skipif(
         not ipv6_loopback_available(), reason="IPv6 loopback is not available"
-    )
-    @pytest.mark.skipif(
-        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
     )
     @coroutine_test
     async def test_download_ipv6_literal(self, mockserver_ipv6: MockServer) -> None:
@@ -655,6 +650,38 @@ class TestHttpBase(ABC):
             response = await download_handler.download_request(request)
         assert response.status == 200
         assert response.body == b"some bytes"
+        assert response.flags == ["dataloss"]
+
+    @coroutine_test
+    async def test_timeout_download_from_spider_slow_body(
+        self, mockserver: MockServer
+    ) -> None:
+        # the server sends body bytes well within the timeout of each other,
+        # but the whole body takes longer than the timeout
+        meta = {"download_timeout": 0.5}
+        request = Request(
+            mockserver.url("/trickle?n=20&interval=0.1", is_secure=self.is_secure),
+            meta=meta,
+        )
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadTimeoutError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_timeout_download_from_spider_slow_body_partial_response(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.handler_supports_partial_response_on_timeout:
+            pytest.skip("This handler doesn't support partial responses on timeout")
+        meta = {"download_timeout": 0.5, "download_fail_on_dataloss": False}
+        request = Request(
+            mockserver.url("/trickle?n=20&interval=0.1", is_secure=self.is_secure),
+            meta=meta,
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert 0 < len(response.body) < 20
         assert response.flags == ["dataloss"]
 
     @pytest.mark.parametrize("send_header", [True, False])
@@ -1321,7 +1348,7 @@ class TestHttpBase(ABC):
     async def test_download_conn_failed(self) -> None:
         # copy of TestCrawl.test_retry_conn_failed()
         scheme = "https" if self.is_secure else "http"
-        request = Request(f"{scheme}://localhost:65432/")
+        request = Request(f"{scheme}://127.0.0.1:{_free_port()}/")
         async with self.get_dh() as download_handler:
             with pytest.raises(DownloadConnectionRefusedError):
                 await download_handler.download_request(request)
@@ -1995,7 +2022,6 @@ class TestHttpProxyBase(ABC):
     is_secure = False
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
-    expected_http_proxy_request_body = b"http://example.com"
 
     @property
     @abstractmethod
@@ -2003,7 +2029,8 @@ class TestHttpProxyBase(ABC):
         raise NotImplementedError
 
     @pytest.fixture(scope="session")
-    def proxy_mockserver(self) -> Generator[ProxyEchoMockServer]:
+    @staticmethod
+    def proxy_mockserver() -> Generator[ProxyEchoMockServer]:
         with ProxyEchoMockServer() as proxy:
             yield proxy
 
@@ -2027,7 +2054,7 @@ class TestHttpProxyBase(ABC):
             response = await download_handler.download_request(request)
         assert response.status == 200
         assert response.url == request.url
-        assert response.body == self.expected_http_proxy_request_body
+        assert response.body == b"http://example.com/"
 
     @coroutine_test
     async def test_download_without_proxy(
@@ -2088,7 +2115,7 @@ class TestHttpProxyBase(ABC):
             response = await download_handler.download_request(request)
         assert response.status == 200
         assert response.url == request.url
-        assert response.body == self.expected_http_proxy_request_body
+        assert response.body == b"http://example.com/"
 
 
 PROXY_KINDS = ["http", "https", "socks5"]
@@ -2260,9 +2287,6 @@ class TestMitmProxyBase(ABC):
 
     @pytest.mark.skipif(
         not ipv6_loopback_available(), reason="IPv6 loopback is not available"
-    )
-    @pytest.mark.skipif(
-        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
     )
     @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
     @pytest.mark.parametrize(

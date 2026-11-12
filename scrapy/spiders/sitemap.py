@@ -97,6 +97,17 @@ class SitemapSpider(Spider):
     ``http://example.com/`` would be retrieved.
     """
 
+    sitemap_schemes: Sequence[str] | None = None
+    """URL schemes that the URLs found in sitemaps and :file:`robots.txt` files
+    may use.
+
+    .. versionadded:: 2.20.0
+
+    If ``None``, they may only use ``http``, ``https`` or the scheme of the
+    sitemap or :file:`robots.txt` file they come from. Use ``()`` to follow
+    URLs regardless of their scheme.
+    """
+
     _max_size: int
     _warn_size: int
     _obey_robotstxt: bool
@@ -137,7 +148,9 @@ class SitemapSpider(Spider):
             # directly instead of stashing them for a response that never arrives.
             self._signal_only_netlocs.discard(netloc)
             for url in urls:
-                if any(x.search(url) for x in self._follow):
+                if self._scheme_allowed(url, response.url) and any(
+                    x.search(url) for x in self._follow
+                ):
                     self.crawler.engine.crawl(
                         self.sitemap_request(
                             url,
@@ -237,7 +250,7 @@ class SitemapSpider(Spider):
         """Return the request for the *loc* URL of the sitemap *entry*, to be
         parsed with *callback*.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.20.0
 
         Override this method to build those requests differently, e.g. to
         carry sitemap data and request metadata over to *callback*:
@@ -280,7 +293,8 @@ class SitemapSpider(Spider):
                     response=response,
                 )
                 for url in urls
-                if any(x.search(url) for x in self._follow)
+                if self._scheme_allowed(url, response.url)
+                and any(x.search(url) for x in self._follow)
             )
 
         body = self._get_sitemap_body(response)
@@ -333,7 +347,9 @@ class SitemapSpider(Spider):
     ) -> Iterable[tuple[str, dict[str, Any]]]:
         for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
             loc = urljoin(base_url, loc)  # noqa: PLW2901
-            if any(x.search(loc) for x in self._follow):
+            if self._scheme_allowed(loc, base_url) and any(
+                x.search(loc) for x in self._follow
+            ):
                 yield loc, entry
 
     def _get_urls_and_callbacks_from_urlset(
@@ -341,10 +357,19 @@ class SitemapSpider(Spider):
     ) -> Iterable[tuple[str, CallbackT, dict[str, Any]]]:
         for loc, entry in _iterlocs(it, self.sitemap_alternate_links):
             loc = urljoin(base_url, loc)  # noqa: PLW2901
+            if not self._scheme_allowed(loc, base_url):
+                continue
             for r, c in self._cbs:
                 if r.search(loc):
                     yield loc, c, entry
                     break
+
+    def _scheme_allowed(self, url: str, source_url: str) -> bool:
+        if self.sitemap_schemes is None:
+            schemes = {"http", "https", urlparse_cached(source_url).scheme}
+        else:
+            schemes = set(self.sitemap_schemes)
+        return not schemes or urlparse_cached(url).scheme in schemes
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,

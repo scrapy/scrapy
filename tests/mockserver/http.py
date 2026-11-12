@@ -46,6 +46,7 @@ from .http_resources import (
     ResponseHeadersResource,
     SetCookie,
     Status,
+    Trickle,
     UriResource,
     put_child,
 )
@@ -98,6 +99,7 @@ class Root(BaseResource):
         put_child(self, b"numbers", Data(b"".join(numbers), "text/plain"))
         put_child(self, b"wait", ForeverTakingResource())
         put_child(self, b"hang-after-headers", ForeverTakingResource(write=True))
+        put_child(self, b"trickle", Trickle())
         put_child(self, b"host", HostHeaderResource())
         put_child(self, b"client-ip", ClientIPResource())
         put_child(self, b"broken", BrokenDownloadResource())

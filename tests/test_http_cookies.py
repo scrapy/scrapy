@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from http.cookiejar import DefaultCookiePolicy
 
+import pytest
+
 from scrapy.http import Request, Response
 from scrapy.http.cookies import CookieJar, WrappedRequest, WrappedResponse
 from scrapy.utils.httpobj import urlparse_cached
@@ -54,6 +56,73 @@ class TestCookieJar:
         jar = CookieJar(check_expired_frequency=1)
         jar.add_cookie_header(self.request)
         assert jar.processed == 1
+
+    @pytest.mark.parametrize(
+        ("set_cookie_headers", "expected"),
+        [
+            pytest.param(
+                ["a=1; Path=/", "b=2; Path=/a"],
+                b"b=2; a=1",
+                id="longer-path-first",
+            ),
+            pytest.param(
+                ["id=old; Domain=example.com; Path=/", "id=new; Path=/"],
+                b"id=old; id=new",
+                id="older-first",
+            ),
+            pytest.param(
+                [
+                    "id=old; Domain=example.com; Path=/",
+                    "id=new; Path=/",
+                    "id=updated; Domain=example.com; Path=/",
+                ],
+                b"id=updated; id=new",
+                id="replacement-keeps-creation-time",
+            ),
+            pytest.param(
+                [
+                    "id=old; Domain=example.com; Path=/",
+                    "id=new; Path=/",
+                    "id=old; Domain=example.com; Path=/; Max-Age=0",
+                    "id=recreated; Domain=example.com; Path=/",
+                ],
+                b"id=new; id=recreated",
+                id="recreation-gets-new-creation-time",
+            ),
+        ],
+    )
+    def test_add_cookie_header_order(
+        self, set_cookie_headers: list[str], expected: bytes
+    ) -> None:
+        jar = CookieJar()
+        url = "https://www.example.com/a/b"
+        for header in set_cookie_headers:
+            response = Response(url, headers={"Set-Cookie": header})
+            jar.extract_cookies(response, Request(url))
+        request = Request(url)
+        jar.add_cookie_header(request)
+        assert request.headers["Cookie"] == expected
+
+    def test_cookie_without_creation_index(self) -> None:
+        jar = CookieJar()
+        url = "https://www.example.com/a/b"
+        for header in ["id=old; Domain=example.com; Path=/", "id=new; Path=/"]:
+            response = Response(url, headers={"Set-Cookie": header})
+            jar.extract_cookies(response, Request(url))
+        # e.g. a cookie added to the jar without going through set_cookie()
+        old_cookie = jar.jar._cookies[".example.com"]["/"]["id"]  # type: ignore[attr-defined]
+        del old_cookie._creation_index
+        request = Request(url)
+        jar.add_cookie_header(request)
+        assert request.headers["Cookie"] == b"id=old; id=new"
+
+        response = Response(
+            url, headers={"Set-Cookie": "id=updated; Domain=example.com; Path=/"}
+        )
+        jar.extract_cookies(response, Request(url))
+        request = Request(url)
+        jar.add_cookie_header(request)
+        assert request.headers["Cookie"] == b"id=updated; id=new"
 
 
 class TestWrappedRequest:

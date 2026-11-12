@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from twisted.internet.defer import succeed
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
 
     from twisted.internet.defer import Deferred
 
+    from scrapy.crawler import Crawler
     from tests.mockserver.http import MockServer
 
 
@@ -424,6 +426,17 @@ class TestMisuse:
             await engine.close_async()
 
 
+@coroutine_test
+async def test_progress_before_open() -> None:
+    engine = ExecutionEngine(get_crawler(DefaultSpider))
+    try:
+        assert engine.requests_in_progress == frozenset()
+        assert engine.items_in_progress == 0
+        assert engine.response_active_size == 0
+    finally:
+        await engine.close_async()
+
+
 class BrokenScheduler(BaseScheduler):
     """A scheduler that cannot be built."""
 
@@ -619,6 +632,39 @@ async def test_download_wrong_type(caplog: pytest.LogCaptureFixture) -> None:
     crawler = get_crawler(WrongTypeSpider, {"DOWNLOADER": WrongTypeDownloader})
     await crawler.crawl_async()
     assert "expected Response or Request, got <class 'str'>" in caplog.text
+
+
+@coroutine_test
+async def test_download_async_custom_downloader() -> None:
+    class CustomDownloader:
+        def __init__(self, crawler: Crawler) -> None:
+            self.active: set[Request] = set()
+
+        def fetch(self, request: Request) -> Deferred[Response]:
+            return succeed(Response(request.url))
+
+        def needs_backout(self) -> bool:
+            return False
+
+        def close(self) -> None:
+            pass
+
+    responses: list[Response] = []
+
+    class DownloadAsyncSpider(Spider):
+        name = "download_async"
+
+        async def start(self):
+            assert self.crawler.engine is not None
+            responses.append(
+                await self.crawler.engine.download_async(Request("data:,"))
+            )
+            return
+            yield
+
+    crawler = get_crawler(DownloadAsyncSpider, {"DOWNLOADER": CustomDownloader})
+    await crawler.crawl_async()
+    assert [response.url for response in responses] == ["data:,"]
 
 
 @coroutine_test

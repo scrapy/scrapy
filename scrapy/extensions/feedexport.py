@@ -33,6 +33,7 @@ from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
 from scrapy.utils.boto import _get_max_pool_connections, is_aioboto3_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import (
+    _maybe_coroutine,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
@@ -180,7 +181,7 @@ class FeedStorageProtocol(Protocol):
         """Open the storage for *spider* and return the file-like object that
         item exporters write into.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``).
         """
 
@@ -190,7 +191,7 @@ class FeedStorageProtocol(Protocol):
         """Store *file*, the file-like object returned by :meth:`open`, and
         close it.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.20.0
            This method may now be a coroutine function (``async def``).
         """
 
@@ -344,9 +345,9 @@ class S3FeedStorage(BlockingFeedStorage):
     ) -> Self:
         return cls(
             uri,
-            access_key=crawler.settings["AWS_ACCESS_KEY_ID"],
-            secret_key=crawler.settings["AWS_SECRET_ACCESS_KEY"],
-            session_token=crawler.settings["AWS_SESSION_TOKEN"],
+            access_key=crawler.settings.getsecret("AWS_ACCESS_KEY_ID"),
+            secret_key=crawler.settings.getsecret("AWS_SECRET_ACCESS_KEY"),
+            session_token=crawler.settings.getsecret("AWS_SESSION_TOKEN"),
             acl=crawler.settings["FEED_STORAGE_S3_ACL"] or None,
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
@@ -625,9 +626,7 @@ class FeedSlot:
 
     async def start_exporting(self) -> None:
         if not self._fileloaded:
-            self.file = cast(
-                "IO[bytes]", await ensure_awaitable(self.storage.open(self.spider))
-            )
+            self.file = await _maybe_coroutine(self.storage.open, self.spider)
             if "postprocessing" in self.feed_options:
                 self.file = cast(
                     "IO[bytes]",
@@ -649,7 +648,7 @@ class FeedSlot:
 
         if not self._exporting:
             assert self.exporter
-            await ensure_awaitable(self.exporter.start_exporting())
+            await _maybe_coroutine(self.exporter.start_exporting)
             self._exporting = True
 
     def _get_exporter(
@@ -662,7 +661,7 @@ class FeedSlot:
     async def finish_exporting(self) -> None:
         if self._exporting:  # pragma: no branch
             assert self.exporter
-            await ensure_awaitable(self.exporter.finish_exporting())
+            await _maybe_coroutine(self.exporter.finish_exporting)
             self._exporting = False
 
 
@@ -963,7 +962,11 @@ class FeedExporter:
         )
 
     async def item_scraped(self, item: Any, spider: Spider) -> None:
-        await maybe_deferred_to_future(self._export_lock.acquire())
+        if not self._export_lock.locked:
+            # Acquiring a free lock fires the returned Deferred right away
+            self._export_lock.acquire()
+        else:
+            await maybe_deferred_to_future(self._export_lock.acquire())
         try:
             await self._export_item(item, spider)
         finally:
@@ -988,7 +991,7 @@ class FeedExporter:
                 if not slot._skipped:
                     assert slot.exporter
                     try:
-                        await ensure_awaitable(slot.exporter.export_item(exported_item))
+                        await _maybe_coroutine(slot.exporter.export_item, exported_item)
                     except Exception as e:
                         e.add_note(f"Item: {exported_item!r}")
                         raise

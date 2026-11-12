@@ -194,8 +194,7 @@ def _get_cert_options_version_kwargs(
     if min_version:
         # We cannot pass both insecurelyLowerMinimumTo and raiseMinimumTo,
         # so we need to know the direction.
-
-        # 1.0 in Twisted 22.8.0 and older, 1.2 in Twisted 22.10.0 and newer
+        # 1.2 in all currently supported Twisted versions
         default_min = CertificateOptions._defaultMinimumTLSVersion
         if min_version < default_min:
             result["insecurelyLowerMinimumTo"] = min_version

@@ -15,10 +15,10 @@ from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.spiders import Spider
 from scrapy.utils.iterators import csviter, xmliter_lxml
-from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.spider import _await_spider_output, iterate_spider_output
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import AsyncIterator, Iterable, Sequence
 
 
 class XMLFeedSpider(Spider):
@@ -130,14 +130,19 @@ class XMLFeedSpider(Spider):
             return self.parse_item(response, selector)
         raise NotImplementedError
 
-    def parse_nodes(self, response: Response, nodes: Iterable[Selector]) -> Any:
+    async def parse_nodes(
+        self, response: Response, nodes: Iterable[Selector]
+    ) -> AsyncIterator[Any]:
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an iterable of Selectors.
         """
 
         for selector in nodes:
-            ret = iterate_spider_output(self.parse_node(response, selector))
-            yield from self.process_results(response, ret)
+            ret = iterate_spider_output(
+                await _await_spider_output(self.parse_node(response, selector))
+            )
+            for result_item in self.process_results(response, ret):
+                yield result_item
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
         response = self.adapt_response(response)
@@ -218,16 +223,20 @@ class CSVFeedSpider(Spider):
         """Handle *row*, a row of *response* as a dict with a key for each
         provided (or detected) header of the CSV file.
 
-        Overriding this method is mandatory. Otherwise, your spider won't work.
+        This is a :meth:`spider callback <scrapy.Spider.parse>`. Overriding it
+        is mandatory. Otherwise, your spider won't work.
         """
         raise NotImplementedError
 
-    def parse_rows(self, response: Response) -> Any:
+    async def parse_rows(self, response: Response) -> AsyncIterator[Any]:
         for row in csviter(
             response, self.delimiter, self.headers, quotechar=self.quotechar
         ):
-            ret = iterate_spider_output(self.parse_row(response, row))
-            yield from self.process_results(response, ret)
+            ret = iterate_spider_output(
+                await _await_spider_output(self.parse_row(response, row))
+            )
+            for result_item in self.process_results(response, ret):
+                yield result_item
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
         response = self.adapt_response(response)

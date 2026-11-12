@@ -4,11 +4,11 @@ import weakref
 from typing import Any, Literal
 
 from parsel import Selector as _ParselSelector
+from w3lib.encoding import resolve_encoding
 
 from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
 from scrapy.utils._deps_compat import PARSEL_BODY_ENCODING_FIXED
 from scrapy.utils.python import to_bytes
-from scrapy.utils.response import get_base_url
 from scrapy.utils.trackref import object_ref
 
 __all__ = ["Selector", "SelectorList"]
@@ -106,9 +106,12 @@ class Selector(_ParselSelector, object_ref):
             # "xml", and treats an empty body as absent, unlike empty text.
             if PARSEL_BODY_ENCODING_FIXED and type in ("html", "xml") and response.body:
                 encoding = response.encoding
-                # None means the encoding was declared, not inferred from
-                # the body, so the body hasn't been decoded as a side effect.
-                if response._cached_ubody is None:
+                # parsel decodes non-UTF-8 bodies with Python's codecs, which
+                # differ from the browser decoding of response.text.
+                if (
+                    response._cached_ubody is None
+                    and resolve_encoding(encoding) == "utf-8"
+                ):
                     kwargs["body"] = response.body
                     kwargs["encoding"] = encoding
                     text = None
@@ -116,7 +119,7 @@ class Selector(_ParselSelector, object_ref):
                     text = response.text
             else:
                 text = response.text
-            kwargs.setdefault("base_url", get_base_url(response))
+            kwargs.setdefault("base_url", response.base_url)
 
         self._response: TextResponse | weakref.ref[TextResponse] | None = response
 

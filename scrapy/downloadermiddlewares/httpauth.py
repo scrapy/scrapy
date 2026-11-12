@@ -94,10 +94,7 @@ class HttpAuthMiddleware:
     def process_request(
         self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
-        if (
-            b"Authorization" in request.headers
-            or urlparse_cached(request).scheme not in _DEFAULT_PORTS
-        ):
+        if urlparse_cached(request).scheme not in _DEFAULT_PORTS:
             return None
         # Per-request meta overrides
         usr = request.meta.get("http_user", "")
@@ -110,11 +107,13 @@ class HttpAuthMiddleware:
                 else _setdefault_auth_origin(request) == _origin(request)
             )
             if allowed:
-                request.headers[b"Authorization"] = basic_auth_header(usr, pwd)
+                request.headers.setdefault(
+                    b"Authorization", basic_auth_header(usr, pwd)
+                )
             return None
         # Middleware-level auth
         if self._auth and (
             not self._domain or url_is_from_any_domain(request, [self._domain])
         ):
-            request.headers[b"Authorization"] = self._auth
+            request.headers.setdefault(b"Authorization", self._auth)
         return None

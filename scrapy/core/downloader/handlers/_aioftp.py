@@ -107,7 +107,7 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
                 f"{type(self).__name__} does not support disabling FTP_PASSIVE_MODE."
             )
         self._user: str = crawler.settings["FTP_USER"]
-        self._password: str = crawler.settings["FTP_PASSWORD"]
+        self._password: str = crawler.settings.getsecret("FTP_PASSWORD") or ""
         self._ssl_context: ssl.SSLContext = _make_ssl_context(crawler.settings)
 
     @asynccontextmanager
@@ -218,9 +218,9 @@ class AioftpDownloadHandler(BaseStreamingDownloadHandler[_AioftpResponse]):
         return super()._get_body(buffer, response, request)
 
     async def _read_response(
-        self, response: _AioftpResponse, request: Request
+        self, response: _AioftpResponse, request: Request, deadline: float
     ) -> Response:
-        result = await super()._read_response(response, request)
+        result = await super()._read_response(response, request, deadline)
         if response.data is not None:
             self._add_ftp_headers(result, response, request)
         return result

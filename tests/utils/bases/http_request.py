@@ -36,7 +36,7 @@ class TestRequestBase(ABC):
 
         r = self.request_class("http://www.example.com")
         assert isinstance(r.url, str)
-        assert r.url == "http://www.example.com"
+        assert r.url == "http://www.example.com/"
         assert r.method == self.default_method
 
         assert isinstance(r.headers, Headers)

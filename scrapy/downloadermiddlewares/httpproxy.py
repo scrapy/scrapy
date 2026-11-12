@@ -3,11 +3,7 @@ from __future__ import annotations
 import base64
 from typing import TYPE_CHECKING, Self
 from urllib.parse import unquote, urlunparse
-from urllib.request import (  # type: ignore[attr-defined]
-    _parse_proxy,
-    getproxies,
-    proxy_bypass,
-)
+from urllib.request import _parse_proxy, getproxies, proxy_bypass  # type: ignore[attr-defined]
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg

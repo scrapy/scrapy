@@ -174,7 +174,7 @@ class TestHttpsWithCrawler(TestHttpWithCrawler):
 
 
 class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
-    expected_http_proxy_request_body = b"http://example.com/"
+    pass
 
 
 class TestHttpsProxy(TestHttpProxy):
@@ -193,7 +193,7 @@ class TestHttpsProxy(TestHttpProxy):
         request = Request("http://example.com", meta={"proxy": http_proxy})
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
-        assert response.body == self.expected_http_proxy_request_body
+        assert response.body == b"http://example.com/"
         assert keylog_file.read_text()
 
 
