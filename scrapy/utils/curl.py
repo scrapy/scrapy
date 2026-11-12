@@ -230,15 +230,20 @@ def curl_to_request_kwargs(
 
     headers, cookies = _parse_headers_and_cookies(parsed_args)
 
-    if headers:
-        result["headers"] = headers
-    if cookies:
-        result["cookies"] = cookies
     if parsed_args.data:
         result["body"] = parsed_args.data
         if not parsed_args.method:
             # if the "data" is specified but the "method" is not specified,
             # the default method is 'POST'
             result["method"] = "POST"
+        if not any(name.lower() == "content-type" for name, _ in headers):
+            # curl sets this header for -d/--data/--data-raw unless the
+            # command sets Content-Type itself.
+            headers.append(("Content-Type", "application/x-www-form-urlencoded"))
+
+    if headers:
+        result["headers"] = headers
+    if cookies:
+        result["cookies"] = cookies
 
     return result

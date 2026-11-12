@@ -242,6 +242,7 @@ class TestCurlToRequestKwargs:
                 "2xnamez32x201740686%20ascending&queryFunctions=%5B%5D&ranking"
                 "Functions=%5B%5D"
             ),
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -251,6 +252,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": '{"$filters":"Filter!"}',
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -260,6 +262,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "$top=10&$skip=5",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -271,6 +274,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "a=1&b=2&c=3",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -282,6 +286,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "a=1&b=2&c=3",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -293,6 +298,24 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": "a=1&b=2",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize(
+        ("name", "value"),
+        [
+            ("Content-Type", "application/json"),
+            ("content-type", "application/json"),
+        ],
+    )
+    def test_post_data_keeps_explicit_content_type(self, name, value):
+        curl_command = f"curl 'https://www.example.org/' -d 'a=1' -H '{name}: {value}'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1",
+            "headers": [(name, value)],
         }
         self._test_command(curl_command, expected_result)
 
@@ -333,6 +356,7 @@ class TestCurlToRequestKwargs:
             "method": "POST",
             "url": "https://www.example.org/",
             "body": body,
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
@@ -355,6 +379,7 @@ class TestCurlToRequestKwargs:
             "method": "GET",
             "url": "http://httpbin.org/anything",
             "body": "asdf",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
         }
         self._test_command(curl_command, expected_result)
 
