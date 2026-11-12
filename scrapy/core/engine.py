@@ -287,6 +287,33 @@ class ExecutionEngine:
         return self.downloader.middleware._total_active_size
 
     @property
+    def requests_in_progress(self) -> frozenset[Request]:
+        """A snapshot of the requests that the engine has taken and not
+        finished with yet.
+
+        .. versionadded:: VERSION
+
+        A request from the scheduler is in progress until its callback or
+        errback, and the :ref:`item pipelines <topics-item-pipeline>` that
+        process its items, are done. A request passed to :meth:`download_async`
+        is in progress until it is downloaded.
+        """
+        if self._slot is None:
+            return frozenset()
+        return frozenset(self._slot.inprogress)
+
+    @property
+    def items_in_progress(self) -> int:
+        """Number of items that the :ref:`item pipelines
+        <topics-item-pipeline>` are processing.
+
+        .. versionadded:: VERSION
+        """
+        if self.scraper.slot is None:
+            return 0
+        return self.scraper.slot.itemproc_size
+
+    @property
     def running(self) -> bool:
         """Whether the engine is in the :attr:`EngineState.RUNNING` state.
 

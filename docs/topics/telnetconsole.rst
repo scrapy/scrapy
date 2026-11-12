@@ -116,17 +116,14 @@ engine status::
 
     time()-engine.start_time                        : 8.62972998619
     len(engine.downloader.active)                   : 16
-    engine.scraper.is_idle()                        : False
     engine.spider.name                              : followall
     engine.spider_is_idle()                         : False
-    engine._slot.closing                            : False
-    len(engine._slot.inprogress)                    : 16
+    engine.state                                    : EngineState.RUNNING
+    len(engine.requests_in_progress)                : 16
     len(engine.scheduler.dqs or [])                 : 0
     len(engine.scheduler.mqs)                       : 92
-    len(engine.scraper.slot.queue)                  : 0
-    len(engine.scraper.slot.active)                 : 0
     engine.response_active_size                     : 1310720
-    engine.scraper.slot.itemproc_size               : 0
+    engine.items_in_progress                        : 0
 
 
 Pause, resume and stop the Scrapy engine

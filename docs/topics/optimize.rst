@@ -40,8 +40,8 @@ what every part of the engine is doing at a given moment:
 
     len(engine.downloader.active)                   : 16
     len(engine.scheduler.mqs)                       : 92
-    len(engine.scraper.slot.active)                 : 0
     engine.response_active_size                     : 1310720
+    engine.items_in_progress                        : 0
 
 A coding agent using the :ref:`Scrapy MCP server <using-mcp-server>` can also
 retrieve these values directly.
@@ -69,7 +69,10 @@ Take a few readings at different points of the crawl:
     :stat:`request_backout_seconds/response_max_active_size` stat grows (see
     :ref:`crawl-bottlenecks`): responses arrive faster than your callbacks and
     :ref:`item pipelines <topics-item-pipeline>` handle them, or your code
-    keeps responses in memory. The bottleneck is your own code.
+    keeps responses in memory. The bottleneck is your own code. A high
+    :attr:`engine.items_in_progress
+    <scrapy.core.engine.ExecutionEngine.items_in_progress>` points at the item
+    pipelines.
 
 -   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
     requests faster than it downloads them. This is what makes long crawls run
