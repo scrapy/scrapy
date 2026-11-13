@@ -10,6 +10,7 @@ import pytest
 from w3lib.url import add_or_replace_parameter
 
 from scrapy import Spider, signals
+from scrapy.pipelines.media import FileException
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
@@ -17,6 +18,7 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
     from tests.mockserver.http import MockServer
 
 
@@ -149,6 +151,7 @@ class TestFileDownloadCrawl:
         # check that logs do show the failure on the file downloads
         file_dl_failure = f"File (code: {code}): Error downloading file from"
         assert logs.count(file_dl_failure) == 3
+        assert "File (unknown-error)" not in logs
 
         # check that no files were written to the media store
         assert not list(self.tmpmediastore.iterdir())
@@ -178,6 +181,40 @@ class TestFileDownloadCrawl:
                 media_urls_key=self.media_urls_key,
             )
         self._assert_files_download_failure(crawler, self.items, 404, caplog.text)
+
+    @coroutine_test
+    async def test_download_media_failed_response(self, mockserver: MockServer) -> None:
+        class ResponseFileException(FileException):
+            def __init__(self, response: Response):
+                super().__init__(f"download-error ({response.status})")
+                self.response = response
+
+        class ResponsePipeline(load_object(self.pipeline_class)):  # type: ignore[misc]
+            async def media_downloaded(self, response, request, info, *, item=None):
+                try:
+                    return await super().media_downloaded(
+                        response, request, info, item=item
+                    )
+                except FileException as e:
+                    raise ResponseFileException(response) from e
+
+            def item_completed(self, results, item, info):
+                item["download_errors"] = [
+                    value.value.response.status
+                    for ok, value in results
+                    if not ok and value.check(ResponseFileException)
+                ]
+                return super().item_completed(results, item, info)
+
+        settings = {**self.settings, "ITEM_PIPELINES": {ResponsePipeline: 1}}
+        crawler = self._create_crawler(BrokenLinksMediaDownloadSpider, settings)
+        await crawler.crawl_async(
+            mockserver.url("/static/files/images/"),
+            media_key=self.media_key,
+            media_urls_key=self.media_urls_key,
+        )
+        assert len(self.items) == 1
+        assert self.items[0]["download_errors"] == [404, 404, 404]
 
     @coroutine_test
     async def test_download_media_redirected_default_failure(
