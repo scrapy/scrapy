@@ -11,11 +11,11 @@ import re
 import tempfile
 import warnings
 import webbrowser
+from http.client import responses
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import frostwork
-from twisted.web import http
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.headers import Headers
@@ -109,7 +109,7 @@ def response_from_dict(d: dict[str, Any]) -> Response:
 def response_status_message(status: bytes | float | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
-    message = http.RESPONSES.get(status_int, b"Unknown Status").decode()
+    message = responses.get(status_int, "Unknown Status")
     return f"{status_int} {message}"
 
 
