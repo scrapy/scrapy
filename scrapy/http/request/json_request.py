@@ -70,7 +70,14 @@ class JsonRequest(Request):
                 "Both body and data passed. data will be ignored", stacklevel=2
             )
         elif not body_passed and data_passed:
-            kwargs["body"] = self._dumps(data)
+            # Serialize with the options the new request will carry, not the
+            # ones of this request.
+            dumps_kwargs = (
+                {"sort_keys": True, **(kwargs["dumps_kwargs"] or {})}
+                if "dumps_kwargs" in kwargs
+                else self._dumps_kwargs
+            )
+            kwargs["body"] = json.dumps(data, **dumps_kwargs)
 
         return super().replace(*args, cls=cls, **kwargs)
 

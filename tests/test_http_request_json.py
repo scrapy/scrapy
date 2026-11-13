@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -171,6 +172,39 @@ class TestJsonRequest(TestRequestBase):
             kwargs = mock_dumps.call_args[1]
             assert kwargs["ensure_ascii"] is True
             assert kwargs["allow_nan"] is True
+
+    def test_replace_data_with_new_dumps_kwargs(self):
+        r1 = self.request_class(url="http://www.example.com/", data={"value": 1})
+        r2 = r1.replace(data={"value": Decimal("1.25")}, dumps_kwargs={"default": str})
+        assert r2.body == b'{"value": "1.25"}'
+        assert r2.dumps_kwargs == {"default": str, "sort_keys": True}
+
+    @pytest.mark.parametrize(
+        ("dumps_kwargs", "expected"),
+        [
+            ({"ensure_ascii": False}, '{"a": "é"}'.encode()),
+            ({}, b'{"a": "\\u00e9"}'),
+            (None, b'{"a": "\\u00e9"}'),
+        ],
+    )
+    def test_replace_data_ignores_original_dumps_kwargs(self, dumps_kwargs, expected):
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"a": 1},
+            dumps_kwargs={"separators": (",", ":")},
+        )
+        r2 = r1.replace(data={"a": "é"}, dumps_kwargs=dumps_kwargs)
+        assert r2.body == expected
+
+    def test_replace_dumps_kwargs_only_keeps_body(self):
+        """The body is already serialized, so only later replacements use the
+        new dumps_kwargs."""
+        r1 = self.request_class(url="http://www.example.com/", data={"value": 1})
+        r2 = r1.replace(dumps_kwargs={"default": str})
+        assert r2.body == r1.body
+        assert r2.dumps_kwargs == {"default": str, "sort_keys": True}
+        r3 = r2.replace(data={"value": Decimal("1.25")})
+        assert r3.body == b'{"value": "1.25"}'
 
     def test_replacement_both_body_and_data_warns(self):
         """Test that we get a warning if both body and data are passed"""
