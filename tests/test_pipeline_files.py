@@ -1153,6 +1153,13 @@ class TestFSFilesStore:
         store = FSFilesStore(tmp_path)
         assert store.stat_file("full/filename", DUMMY_SPIDER_INFO) == {}
 
+    def test_persist_file_rewinds_buffer(self, tmp_path: Path) -> None:
+        store = FSFilesStore(tmp_path)
+        buf = BytesIO(b"data")
+        buf.seek(0, 2)
+        store.persist_file("full/filename", buf, DUMMY_SPIDER_INFO)
+        assert (tmp_path / "full" / "filename").read_bytes() == b"data"
+
 
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
@@ -1616,10 +1623,16 @@ class TestGCSFilesStore:
     @coroutine_test
     async def test_persist(self) -> None:
         store, bucket, blob = self.build_gcs_files_store()
+        buf = BytesIO(b"hello")
+        buf.seek(0, 2)
+        uploaded: list[bytes] = []
+        blob.upload_from_file.side_effect = lambda file_obj, **kwargs: uploaded.append(
+            file_obj.read()
+        )
         await maybe_deferred_to_future(
             store.persist_file(
                 "full/filename",
-                BytesIO(b"hello"),
+                buf,
                 info=DUMMY_SPIDER_INFO,
                 meta={"foo": 1},
                 headers={"Content-Type": "image/png"},
@@ -1628,24 +1641,26 @@ class TestGCSFilesStore:
         bucket.blob.assert_called_once_with("my_prefix/full/filename")
         assert blob.cache_control == GCSFilesStore.CACHE_CONTROL
         assert blob.metadata == {"foo": "1"}
-        blob.upload_from_string.assert_called_once_with(
-            data=b"hello",
+        blob.upload_from_file.assert_called_once_with(
+            buf,
             content_type="image/png",
             predefined_acl=store.POLICY,
         )
+        assert uploaded == [b"hello"]
 
     @coroutine_test
     async def test_persist_defaults(self) -> None:
         store, _, blob = self.build_gcs_files_store()
+        buf = BytesIO(b"hello")
         await maybe_deferred_to_future(
             store.persist_file(
                 "full/filename",
-                BytesIO(b"hello"),
+                buf,
                 info=DUMMY_SPIDER_INFO,
             )
         )
-        blob.upload_from_string.assert_called_once_with(
-            data=b"hello",
+        blob.upload_from_file.assert_called_once_with(
+            buf,
             content_type="application/octet-stream",
             predefined_acl=store.POLICY,
         )
@@ -1660,7 +1675,7 @@ class TestGCSFilesStore:
                 "full/filename", BytesIO(b"hello"), info=DUMMY_SPIDER_INFO
             )
         )
-        assert blob.upload_from_string.call_args.kwargs["timeout"] == 300
+        assert blob.upload_from_file.call_args.kwargs["timeout"] == 300
 
     @coroutine_test
     async def test_stat(self) -> None:
