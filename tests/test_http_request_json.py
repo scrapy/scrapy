@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -171,6 +172,36 @@ class TestJsonRequest(TestRequestBase):
             kwargs = mock_dumps.call_args[1]
             assert kwargs["ensure_ascii"] is True
             assert kwargs["allow_nan"] is True
+
+    def test_replace_uses_new_dumps_kwargs_for_serialization(self):
+        """Test that replace() serializes data with replacement dumps_kwargs,
+        not the original request's dumps_kwargs."""
+        data = {"value": Decimal("1.25")}
+        r1 = self.request_class(url="http://www.example.com/", data={"value": 1})
+        r2 = r1.replace(data=data, dumps_kwargs={"default": str})
+        assert json.loads(r2.body) == {"value": "1.25"}
+        assert r2.dumps_kwargs["default"] is str
+
+    def test_replace_new_dumps_kwargs_gets_sort_keys_default(self):
+        """Test that replacement dumps_kwargs gets sort_keys=True by default,
+        matching the constructor behavior."""
+        data = {"b": 2, "a": 1}
+        r1 = self.request_class(url="http://www.example.com/", data={"x": 0})
+        r2 = r1.replace(data=data, dumps_kwargs={})
+        assert r2.body == b'{"a": 1, "b": 2}'
+
+    def test_replace_without_new_dumps_kwargs_uses_original(self):
+        """Test that replace() without dumps_kwargs still uses the original
+        request's dumps_kwargs for serialization."""
+        dumps_kwargs = {"ensure_ascii": False}
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"key": "value"},
+            dumps_kwargs=dumps_kwargs,
+        )
+        r2 = r1.replace(data={"key2": "value2"})
+        assert r2.dumps_kwargs["ensure_ascii"] is False
+        assert json.loads(r2.body) == {"key2": "value2"}
 
     def test_replacement_both_body_and_data_warns(self):
         """Test that we get a warning if both body and data are passed"""
