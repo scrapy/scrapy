@@ -397,6 +397,68 @@ class TestCurlToRequestKwargs:
         ):
             curl_to_request_kwargs("curl")
 
+    def test_user_agent_option(self):
+        curl_command = "curl -A ua/1 https://httpbin.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://httpbin.org/get",
+            "headers": [("User-Agent", "ua/1")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_referer_option(self):
+        curl_command = "curl -e https://referer.example/ https://httpbin.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://httpbin.org/get",
+            "headers": [("Referer", "https://referer.example/")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_proxy_option(self):
+        curl_command = "curl -x http://127.0.0.1:8080 https://httpbin.org/get"
+        expected_result = {
+            "method": "GET",
+            "url": "https://httpbin.org/get",
+            "meta": {"proxy": "http://127.0.0.1:8080"},
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_option_moves_data_to_query_string(self):
+        curl_command = "curl -G https://httpbin.org/get -d q=a"
+        expected_result = {
+            "method": "GET",
+            "url": "https://httpbin.org/get?q=a",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_data_binary(self):
+        curl_command = "curl https://httpbin.org/post --data-binary a=1"
+        expected_result = {
+            "method": "POST",
+            "url": "https://httpbin.org/post",
+            "body": "a=1",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_json_option(self):
+        curl_command = """curl https://httpbin.org/post --json '{"a": 1}'"""
+        expected_result = {
+            "method": "POST",
+            "url": "https://httpbin.org/post",
+            "headers": [
+                ("Content-Type", "application/json"),
+                ("Accept", "application/json"),
+            ],
+            "body": '{"a": 1}',
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_pseudo_header_is_dropped(self):
+        curl_command = "curl https://httpbin.org/get -H ':authority: httpbin.org'"
+        expected_result = {"method": "GET", "url": "https://httpbin.org/get"}
+        self._test_command(curl_command, expected_result)
+
     def test_ignore_unknown_options(self):
         # case 1: ignore_unknown_options=True:
         curl_command = "curl --bar --baz http://www.example.com"

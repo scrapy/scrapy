@@ -42,8 +42,15 @@ curl_parser.add_argument("url")
 curl_parser.add_argument("-H", "--header", dest="headers", action="append")
 curl_parser.add_argument("-X", "--request", dest="method")
 curl_parser.add_argument("-b", "--cookie", dest="cookies", action="append")
-curl_parser.add_argument("-d", "--data", "--data-raw", dest="data", action=DataAction)
+curl_parser.add_argument(
+    "-d", "--data", "--data-raw", "--data-binary", dest="data", action=DataAction
+)
 curl_parser.add_argument("-u", "--user", dest="auth")
+curl_parser.add_argument("-A", "--user-agent", dest="user_agent")
+curl_parser.add_argument("-e", "--referer", dest="referer")
+curl_parser.add_argument("-x", "--proxy", dest="proxy")
+curl_parser.add_argument("-G", "--get", dest="use_get", action="store_true")
+curl_parser.add_argument("--json", dest="json_data")
 
 
 safe_to_ignore_arguments = [
@@ -74,6 +81,11 @@ def _parse_headers_and_cookies(
         else:
             continue
         name = name.strip()
+        if not name:
+            # An HTTP/2 pseudo-header such as ":authority: example.com",
+            # included by some tools when copying as cURL, is not a real
+            # header and cannot be sent as one.
+            continue
         if name.title() == "Cookie":
             for name, morsel in SimpleCookie(val or "").items():
                 cookies[name] = morsel.value
@@ -92,7 +104,18 @@ def _parse_headers_and_cookies(
         user, _, password = parsed_args.auth.partition(":")
         headers.append(("Authorization", basic_auth_header(user, password)))
 
+    _append_header_unless_present(headers, "User-Agent", parsed_args.user_agent)
+    _append_header_unless_present(headers, "Referer", parsed_args.referer)
+
     return headers, cookies
+
+
+def _append_header_unless_present(
+    headers: list[tuple[str, str | bytes | None]], name: str, value: str | None
+) -> None:
+    """Append a header set by a dedicated option unless -H already set it."""
+    if value and all(existing.lower() != name.lower() for existing, _ in headers):
+        headers.append((name, value))
 
 
 _ANSI_C_QUOTED_RE = re.compile(r"\$'((?:[^'\\]|\\.)*)'", re.DOTALL)
@@ -230,15 +253,37 @@ def curl_to_request_kwargs(
 
     headers, cookies = _parse_headers_and_cookies(parsed_args)
 
+    if parsed_args.json_data is not None:
+        _append_header_unless_present(headers, "Content-Type", "application/json")
+        _append_header_unless_present(headers, "Accept", "application/json")
+
     if headers:
         result["headers"] = headers
     if cookies:
         result["cookies"] = cookies
-    if parsed_args.data:
-        result["body"] = parsed_args.data
-        if not parsed_args.method:
-            # if the "data" is specified but the "method" is not specified,
-            # the default method is 'POST'
-            result["method"] = "POST"
+    if parsed_args.proxy:
+        result["meta"] = {"proxy": parsed_args.proxy}
+    _set_body_and_method(result, parsed_args, url)
 
     return result
+
+
+def _set_body_and_method(
+    result: dict[str, Any], parsed_args: argparse.Namespace, url: str
+) -> None:
+    if parsed_args.data:
+        if parsed_args.use_get:
+            # curl -G sends the data as the URL query string and keeps the
+            # GET method unless -X says otherwise.
+            separator = "&" if "?" in url else "?"
+            result["url"] = f"{url}{separator}{parsed_args.data}"
+        else:
+            result["body"] = parsed_args.data
+            if not parsed_args.method:
+                # if the "data" is specified but the "method" is not specified,
+                # the default method is 'POST'
+                result["method"] = "POST"
+    if parsed_args.json_data is not None:
+        result["body"] = parsed_args.json_data
+        if not parsed_args.method:
+            result["method"] = "POST"
