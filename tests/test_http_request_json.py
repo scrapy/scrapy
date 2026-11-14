@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -171,6 +172,42 @@ class TestJsonRequest(TestRequestBase):
             kwargs = mock_dumps.call_args[1]
             assert kwargs["ensure_ascii"] is True
             assert kwargs["allow_nan"] is True
+
+    def test_replace_replacement_dumps_kwargs_with_data(self):
+        """Test that replacement dumps_kwargs are used when serializing new data"""
+        data1 = {"value": 1}
+        data2 = {"value": Decimal("1.25")}
+        options = {"default": str}
+        r1 = self.request_class(url="http://www.example.com/", data=data1)
+        r2 = r1.replace(data=data2, dumps_kwargs=options)
+        assert r2.body == b'{"value": "1.25"}'
+        assert r2.dumps_kwargs == {"default": str, "sort_keys": True}
+        assert r1.body == b'{"value": 1}'
+
+    def test_replace_dumps_kwargs_explicit_none(self):
+        """Test that passing dumps_kwargs=None resets dumps_kwargs to defaults"""
+        data1 = {"b": 1, "a": 2}
+        data2 = {"b": 3, "a": 4}
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data=data1,
+            dumps_kwargs={"ensure_ascii": False},
+        )
+        r2 = r1.replace(data=data2, dumps_kwargs=None)
+        assert r2.dumps_kwargs == {"sort_keys": True}
+        assert r2.body == b'{"a": 4, "b": 3}'
+
+    def test_replace_custom_dumps_subclass_compatibility(self):
+        """Test backwards compatibility for subclasses overriding _dumps with 1 arg"""
+
+        class CustomJsonRequest(JsonRequest):
+            def _dumps(self, data):
+                return json.dumps({"custom": data.get("value", 0)}, sort_keys=True)
+
+        r1 = CustomJsonRequest(url="http://www.example.com/", data={"value": 1})
+        assert r1.body == b'{"custom": 1}'
+        r2 = r1.replace(data={"value": 2}, dumps_kwargs={"default": str})
+        assert r2.body == b'{"custom": 2}'
 
     def test_replacement_both_body_and_data_warns(self):
         """Test that we get a warning if both body and data are passed"""

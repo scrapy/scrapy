@@ -70,10 +70,23 @@ class JsonRequest(Request):
                 "Both body and data passed. data will be ignored", stacklevel=2
             )
         elif not body_passed and data_passed:
-            kwargs["body"] = self._dumps(data)
+            if "dumps_kwargs" in kwargs:
+                dumps_kwargs = kwargs["dumps_kwargs"]
+                dumps_kwargs = (
+                    copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
+                )
+                dumps_kwargs.setdefault("sort_keys", True)
+            else:
+                dumps_kwargs = self._dumps_kwargs
+            try:
+                kwargs["body"] = self._dumps(data, dumps_kwargs=dumps_kwargs)
+            except TypeError:
+                kwargs["body"] = self._dumps(data)
 
         return super().replace(*args, cls=cls, **kwargs)
 
-    def _dumps(self, data: Any) -> str:
+    def _dumps(self, data: Any, dumps_kwargs: dict[str, Any] | None = None) -> str:
         """Convert to JSON"""
-        return json.dumps(data, **self._dumps_kwargs)
+        if dumps_kwargs is None:
+            dumps_kwargs = self._dumps_kwargs
+        return json.dumps(data, **dumps_kwargs)
