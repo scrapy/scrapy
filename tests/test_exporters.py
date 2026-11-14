@@ -569,6 +569,35 @@ class TestXmlItemExporterDataclass(TestXmlItemExporter):
     custom_field_item_class = CustomFieldDataclass
 
 
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-le",
+        "utf-16-be",
+        "utf-32",
+        "utf-32-le",
+        "utf-32-be",
+        "iso2022_jp",
+    ],
+)
+@pytest.mark.parametrize("indent", [None, 0, 2])
+@pytest.mark.parametrize("item_count", [0, 1, 2])
+def test_json_exporter_encoding(
+    encoding: str, indent: int | None, item_count: int
+) -> None:
+    output = BytesIO()
+    items = [{"name": "抹茶"}, {"name": "水"}][:item_count]
+    exporter = JsonItemExporter(output, encoding=encoding, indent=indent)
+    exporter.start_exporting()
+    for item in items:
+        exporter.export_item(item)
+    exporter.finish_exporting()
+    assert json.loads(output.getvalue().decode(encoding)) == items
+
+
 class TestJsonLinesItemExporter(TestBaseItemExporter):
     _expected_nested: Any = {
         "name": "Jesus",

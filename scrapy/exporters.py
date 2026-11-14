@@ -10,6 +10,7 @@ import marshal
 import pickle
 import pprint
 from abc import ABC, abstractmethod
+from codecs import getincrementalencoder
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
 from typing import TYPE_CHECKING, Any
@@ -212,29 +213,30 @@ class JsonItemExporter(BaseItemExporter):
         self._kwargs.setdefault("ensure_ascii", not self.encoding)
         self.encoder = ScrapyJSONEncoder(**self._kwargs)
         self.first_item = True
+        self._text_encoder = getincrementalencoder(self.encoding or "utf-8")()
 
     def _beautify_newline(self) -> None:
         if self.indent is not None:
-            self.file.write(b"\n")
+            self.file.write(self._text_encoder.encode("\n"))
 
     def _add_comma_after_first(self) -> None:
         if self.first_item:
             self.first_item = False
         else:
-            self.file.write(b",")
+            self.file.write(self._text_encoder.encode(","))
             self._beautify_newline()
 
     def start_exporting(self) -> None:
-        self.file.write(b"[")
+        self.file.write(self._text_encoder.encode("["))
         self._beautify_newline()
 
     def finish_exporting(self) -> None:
         self._beautify_newline()
-        self.file.write(b"]")
+        self.file.write(self._text_encoder.encode("]"))
 
     def export_item(self, item: Any) -> None:
         itemdict = dict(self.get_serialized_fields(item))
-        data = self.encoder.encode(itemdict).encode(self.encoding or "utf-8")
+        data = self._text_encoder.encode(self.encoder.encode(itemdict))
         self._add_comma_after_first()
         self.file.write(data)
 
