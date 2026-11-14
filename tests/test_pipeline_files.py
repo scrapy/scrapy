@@ -1135,6 +1135,15 @@ class TestFSFilesStore:
     def test_constructor_with_uri(self, tmp_path: Path) -> None:
         assert FSFilesStore(f"file://{tmp_path}").basedir == str(tmp_path)
 
+    def test_persist_file_streams_without_copying(self, tmp_path: Path) -> None:
+        class NoCopyBytesIO(BytesIO):
+            def getvalue(self) -> bytes:
+                raise AssertionError("persist_file must not copy the buffer")
+
+        store = FSFilesStore(tmp_path)
+        store.persist_file("full/filename", NoCopyBytesIO(b"data"), DUMMY_SPIDER_INFO)
+        assert (tmp_path / "full" / "filename").read_bytes() == b"data"
+
     def test_stat_file(self, tmp_path: Path) -> None:
         store = FSFilesStore(tmp_path)
         store.persist_file("full/filename", BytesIO(b"data"), DUMMY_SPIDER_INFO)
@@ -1628,11 +1637,13 @@ class TestGCSFilesStore:
         bucket.blob.assert_called_once_with("my_prefix/full/filename")
         assert blob.cache_control == GCSFilesStore.CACHE_CONTROL
         assert blob.metadata == {"foo": "1"}
-        blob.upload_from_string.assert_called_once_with(
-            data=b"hello",
+        blob.upload_from_file.assert_called_once_with(
+            file_obj=mock.ANY,
             content_type="image/png",
             predefined_acl=store.POLICY,
         )
+        uploaded = blob.upload_from_file.call_args.kwargs["file_obj"]
+        assert uploaded.getvalue() == b"hello"
 
     @coroutine_test
     async def test_persist_defaults(self) -> None:
@@ -1644,11 +1655,13 @@ class TestGCSFilesStore:
                 info=DUMMY_SPIDER_INFO,
             )
         )
-        blob.upload_from_string.assert_called_once_with(
-            data=b"hello",
+        blob.upload_from_file.assert_called_once_with(
+            file_obj=mock.ANY,
             content_type="application/octet-stream",
             predefined_acl=store.POLICY,
         )
+        uploaded = blob.upload_from_file.call_args.kwargs["file_obj"]
+        assert uploaded.getvalue() == b"hello"
         assert blob.metadata == {}
 
     @coroutine_test
@@ -1660,7 +1673,7 @@ class TestGCSFilesStore:
                 "full/filename", BytesIO(b"hello"), info=DUMMY_SPIDER_INFO
             )
         )
-        assert blob.upload_from_string.call_args.kwargs["timeout"] == 300
+        assert blob.upload_from_file.call_args.kwargs["timeout"] == 300
 
     @coroutine_test
     async def test_stat(self) -> None:
