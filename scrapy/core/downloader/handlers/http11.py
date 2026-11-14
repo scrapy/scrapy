@@ -984,7 +984,9 @@ class _ScrapyAgent:
         # request details
         url = urldefrag(request.url)[0]
         method = request.method.encode()
-        headers = TxHeaders(request.headers)
+        headers = TxHeaders()
+        for raw_name, raw_value in request.headers.raw:
+            headers.addRawHeader(raw_name, raw_value)
         if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
         elif isinstance(agent, _ScrapyProxyAgent):

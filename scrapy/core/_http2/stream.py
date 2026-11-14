@@ -262,8 +262,7 @@ class Stream:
         if b"Content-Length" not in self._request.headers:
             headers.append((b"Content-Length", str(len(self._request.body)).encode()))
 
-        for name, values in self._request.headers.items():
-            headers.extend((name, value) for value in values)
+        headers.extend(self._request.headers.raw)
 
         return headers
 

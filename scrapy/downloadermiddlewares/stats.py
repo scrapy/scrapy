@@ -60,7 +60,10 @@ class DownloaderStats:
         self.stats.inc_value(f"downloader/response_status_count/{response.status}")
         reslen = (
             _body_size(response)
-            + get_header_size(response.headers)
+            + sum(
+                len(name) + len(b": ") + len(value) + len(b"\r\n")
+                for name, value in response.headers.raw
+            )
             + get_status_size(response.status)
             + len(b"\r\n")  # the empty line after the headers
         )

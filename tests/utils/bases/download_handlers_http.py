@@ -700,6 +700,19 @@ class TestHttpBase(ABC):
         else:
             assert not request.headers
 
+    @coroutine_test
+    async def test_host_header_none(self, mockserver: MockServer) -> None:
+        """Suppressing the Host header keeps the one that the handler
+        generates."""
+        host_port = f"{mockserver.host}:{mockserver.port(is_secure=self.is_secure)}"
+        request = Request(
+            mockserver.url("/host", is_secure=self.is_secure),
+            headers={"Host": None},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == host_port.encode()
+
     @pytest.fixture
     def resolve_to_loopback(self, monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
         """Resolve every hostname to 127.0.0.1 for the duration of a test."""

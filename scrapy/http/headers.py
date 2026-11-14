@@ -4,8 +4,6 @@ import warnings
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
-from w3lib.http import headers_dict_to_raw
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._datatypes import CaseInsensitiveDict
 
@@ -194,8 +192,16 @@ class Headers(dict):  # type: ignore[type-arg]
             for k in self.keys()  # pylint: disable=consider-using-dict-items
         ]
 
+    @property
+    def raw(self) -> list[tuple[bytes, bytes]]:
+        """The headers as ``(name, value)`` pairs of bytes, one per value.
+
+        .. versionadded:: VERSION
+        """
+        return [(key, value) for key, values in dict.items(self) for value in values]
+
     def to_string(self) -> bytes:
-        return headers_dict_to_raw(self)
+        return b"\r\n".join(key + b": " + value for key, value in self.raw)
 
     def to_unicode_dict(self) -> CaseInsensitiveDict:
         warnings.warn(
@@ -215,7 +221,8 @@ class Headers(dict):  # type: ignore[type-arg]
         """Return headers as a list of ``(key, value)`` tuples.
 
         Multiple values are represented as multiple tuples with the same key.
-        Bytes that cannot be decoded are replaced with U+FFFD.
+        Bytes that cannot be decoded are replaced with U+FFFD. Use :attr:`raw`
+        for the exact bytes.
         """
         return [
             (
