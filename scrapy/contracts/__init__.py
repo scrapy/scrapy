@@ -10,6 +10,7 @@ from types import CoroutineType
 from typing import TYPE_CHECKING, Any, ClassVar
 from unittest import TestCase, TestResult
 
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -48,6 +49,7 @@ async def _collect_async(result: Any) -> list[Any]:
 
 
 def _run_hook(
+    contract: Contract,
     process: Callable[[Any], None],
     value: Any,
     testcase: TestCase,
@@ -56,8 +58,17 @@ def _run_hook(
     try:
         results.startTest(testcase)
         process(value)
-    except AssertionError:
+    except AssertionError as exception:
         results.addFailure(testcase, sys.exc_info())
+        spider = contract.spider
+        crawler = getattr(spider, "crawler", None)
+        if crawler is not None:
+            crawler.signals.send_catch_log(
+                signals.contract_failed,
+                contract=contract,
+                exception=exception,
+                spider=spider,
+            )
     except Exception:
         results.addError(testcase, sys.exc_info())
     else:
@@ -93,6 +104,7 @@ class Contract:
         self.testcase_pre = _create_testcase(method, f"@{self.name} pre-hook")
         self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
         self.args: tuple[str, ...] = args
+        self.spider: Spider | None = None
 
     def add_pre_hook(self, request: Request, results: TestResult) -> Request:
         if hasattr(self, "pre_process"):
@@ -107,7 +119,7 @@ class Contract:
                 async def async_wrapper(
                     response: Response, **cb_kwargs: Any
                 ) -> list[Any]:
-                    _run_hook(pre_process, response, testcase, results)
+                    _run_hook(self, pre_process, response, testcase, results)
                     return await _collect_async(cb(response, **cb_kwargs))
 
                 request.callback = async_wrapper
@@ -115,7 +127,7 @@ class Contract:
 
                 @wraps(cb)
                 def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
-                    _run_hook(pre_process, response, testcase, results)
+                    _run_hook(self, pre_process, response, testcase, results)
                     return _collect(cb(response, **cb_kwargs))
 
                 request.callback = wrapper
@@ -136,7 +148,7 @@ class Contract:
                     response: Response, **cb_kwargs: Any
                 ) -> list[Any]:
                     output = await _collect_async(cb(response, **cb_kwargs))
-                    _run_hook(post_process, output, testcase, results)
+                    _run_hook(self, post_process, output, testcase, results)
                     return output
 
                 request.callback = async_wrapper
@@ -145,7 +157,7 @@ class Contract:
                 @wraps(cb)
                 def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
                     output = _collect(cb(response, **cb_kwargs))
-                    _run_hook(post_process, output, testcase, results)
+                    _run_hook(self, post_process, output, testcase, results)
                     return output
 
                 request.callback = wrapper
@@ -248,8 +260,11 @@ class ContractsManager:
     def from_method(
         self, method: Callable[..., Any], results: TestResult
     ) -> list[Request]:
+        spider = getattr(method, "__self__", None)
         requests: list[Request] = []
         for batch in self.extract_contracts(method):
+            for contract in batch:
+                contract.spider = spider
             requests.extend(self._requests_from_batch(batch, method, results))
         return requests
 

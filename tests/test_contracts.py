@@ -6,6 +6,7 @@ from unittest import TestCase, TextTestResult, TextTestRunner
 import pytest
 from twisted.python import failure
 
+from scrapy import signals
 from scrapy.contracts import Contract, ContractsManager
 from scrapy.contracts.default import (
     CallbackKeywordArgumentsContract,
@@ -307,6 +308,17 @@ class DemoSpider(Spider):
         @returns items 0 0
         """
         return DemoItem(url=response.url)
+
+
+class ContractFailSignalSpider(Spider):
+    name = "contract_fail_signal"
+
+    def parse(self, response):
+        """
+        @url http://scrapy.org
+        @returns items 1 1
+        """
+        return []
 
 
 class CustomContractSuccessSpider(Spider):
@@ -798,6 +810,25 @@ class TestContractsManager:
 
         self.should_succeed()
         assert self.results.testsRun == 4
+
+    def test_contract_failed_signal(self):
+        crawler = get_crawler(ContractFailSignalSpider)
+        spider = ContractFailSignalSpider.from_crawler(crawler)
+        received = []
+
+        def handler(**kwargs):
+            received.append(kwargs)
+
+        crawler.signals.connect(handler, signal=signals.contract_failed)
+        request = _request(self.conman, spider.parse, self.results)
+        _call(request, ResponseMock())
+
+        self.should_fail()
+        assert len(received) == 1
+        kwargs = received[0]
+        assert isinstance(kwargs["contract"], ReturnsContract)
+        assert isinstance(kwargs["exception"], AssertionError)
+        assert kwargs["spider"] is spider
 
     def test_custom_tagged_request_contract(self):
         spider = DemoSpider()
