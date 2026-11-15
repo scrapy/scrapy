@@ -19,12 +19,12 @@ from scrapy import Spider, signals
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import BodyFileResponse, Request
 from scrapy.http.response import Response
-from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.engine import (
+from scrapy.utils._engine import (
     format_engine_status,
     get_engine_status,
     print_engine_status,
 )
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver.utils import _free_port

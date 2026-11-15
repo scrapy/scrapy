@@ -18,7 +18,7 @@ from twisted.internet.defer import fail, succeed
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.engine import print_engine_status
+from scrapy.utils._engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.trackref import print_live_refs
 
