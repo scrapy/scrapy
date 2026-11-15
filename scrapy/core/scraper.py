@@ -1,6 +1,3 @@
-"""This module implements the Scraper component which parses responses and
-extracts information from them"""
-
 from __future__ import annotations
 
 import logging
@@ -59,7 +56,7 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
+_QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
 
 
 def _set_parent_id(output: Iterable[_T], parent_id: int) -> Iterable[_T]:
@@ -83,7 +80,7 @@ class _Slot:
 
     def __init__(self, crawler: Crawler) -> None:
         self._crawler = crawler
-        self.queue: deque[QueueTuple] = deque()
+        self.queue: deque[_QueueTuple] = deque()
         self.active: set[Request] = set()
         self.itemproc_size: int = 0
         self.closing: Deferred[Spider] | None = None
@@ -96,7 +93,7 @@ class _Slot:
         self.queue.append((result, request, deferred))
         return deferred
 
-    def next_response_request_deferred(self) -> QueueTuple:
+    def next_response_request_deferred(self) -> _QueueTuple:
         result, request, deferred = self.queue.popleft()
         self.active.add(request)
         return result, request, deferred
@@ -109,38 +106,20 @@ class _Slot:
 
     @property
     def active_size(self) -> int:
-        warnings.warn(
-            "Scraper.slot.active_size is deprecated, use "
-            "ExecutionEngine.response_active_size instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         assert self._crawler.engine is not None
         return self._crawler.engine.response_active_size
 
     @property
     def max_active_size(self) -> int:
-        warnings.warn(
-            "Scraper.slot.max_active_size is deprecated, use the "
-            "RESPONSE_MAX_ACTIVE_SIZE setting instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         assert self._crawler.engine is not None
         return self._crawler.engine.downloader.middleware._max_active_size
 
     def needs_backout(self) -> bool:
-        warnings.warn(
-            "Scraper.slot.needs_backout() is deprecated, use "
-            "ExecutionEngine.needs_backout() instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         assert self._crawler.engine is not None
         return self._crawler.engine.downloader._exceeds_max_active_size()
 
 
-class Scraper:
+class _Scraper:
     def __init__(self, crawler: Crawler) -> None:
         self.slot: _Slot | None = None
         self.spidermw: SpiderMiddlewareManager = build_from_crawler(
@@ -193,11 +172,6 @@ class Scraper:
     def open_spider(
         self, spider: Spider | None = None
     ) -> Deferred[None]:  # pragma: no cover
-        warnings.warn(
-            "Scraper.open_spider() is deprecated, use open_spider_async() instead",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return deferred_from_coro(self.open_spider_async())
 
     async def open_spider_async(self) -> None:
@@ -218,11 +192,6 @@ class Scraper:
             )
 
     def close_spider(self) -> Deferred[None]:  # pragma: no cover
-        warnings.warn(
-            "Scraper.close_spider() is deprecated, use close_spider_async() instead",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return deferred_from_coro(self.close_spider_async())
 
     async def close_spider_async(self) -> None:
@@ -244,11 +213,6 @@ class Scraper:
             )
 
     def is_idle(self) -> bool:  # pragma: no cover
-        warnings.warn(
-            "Scraper.is_idle() is deprecated",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return not self.slot
 
     def _check_if_closing(self) -> None:
@@ -359,11 +323,6 @@ class Scraper:
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
     ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:  # pragma: no cover
-        warnings.warn(
-            "Scraper.call_spider() is deprecated, use call_spider_async() instead",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return deferred_from_coro(self.call_spider_async(result, request))
 
     async def call_spider_async(
@@ -433,11 +392,6 @@ class Scraper:
         request: Request,
         response: Response | Failure,
     ) -> None:  # pragma: no cover
-        warnings.warn(
-            "Scraper.handle_spider_error() is deprecated.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         assert _failure.value is not None
         self._handle_spider_error(_failure.value, request, response)
 
@@ -481,12 +435,6 @@ class Scraper:
         request: Request,
         response: Response | Failure,
     ) -> Deferred[None]:  # pragma: no cover
-        """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
-        warnings.warn(
-            "Scraper.handle_spider_output() is deprecated, use handle_spider_output_async() instead",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return deferred_from_coro(
             self.handle_spider_output_async(result, request, response)
         )
@@ -550,16 +498,6 @@ class Scraper:
     def start_itemproc(
         self, item: Any, *, response: Response | Failure | None
     ) -> Deferred[None]:  # pragma: no cover
-        """Send *item* to the item pipelines for processing.
-
-        *response* is the source of the item data. If the item does not come
-        from response data, e.g. it was hard-coded, set it to ``None``.
-        """
-        warnings.warn(
-            "Scraper.start_itemproc() is deprecated, use start_itemproc_async() instead",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
 
     def _start_itemproc_nowait(self, item: Any) -> None:
@@ -647,12 +585,15 @@ class Scraper:
             self._check_if_closing()
 
 
+_DEPRECATED_NAMES = {"QueueTuple": _QueueTuple, "Scraper": _Scraper, "Slot": _Slot}
+
+
 def __getattr__(name: str) -> Any:
-    if name == "Slot":
+    if name in _DEPRECATED_NAMES:
         warnings.warn(
-            "scrapy.core.scraper.Slot is deprecated.",
+            f"scrapy.core.scraper.{name} is deprecated.",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return _Slot
+        return _DEPRECATED_NAMES[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

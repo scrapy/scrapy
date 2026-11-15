@@ -21,6 +21,7 @@ from scrapy.exceptions import (
     DontCloseSpider,
     DownloadCancelledError,
     IgnoreRequest,
+    ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
@@ -218,7 +219,7 @@ class TestEngine(TestEngineBase):
         engine._stop_mode = "fast"
 
         enqueue_scrape = Mock()
-        engine.scraper.enqueue_scrape = enqueue_scrape  # type: ignore[method-assign]
+        engine._scraper.enqueue_scrape = enqueue_scrape  # type: ignore[method-assign]
 
         result = Failure(DownloadCancelledError("dropped during fast stop"))
         await maybe_deferred_to_future(
@@ -424,6 +425,18 @@ class TestMisuse:
                 await engine.open_spider_async()
         finally:
             await engine.close_async()
+
+
+@coroutine_test
+async def test_scraper_deprecated() -> None:
+    engine = ExecutionEngine(get_crawler(DefaultSpider))
+    try:
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="ExecutionEngine.scraper is deprecated"
+        ):
+            assert engine.scraper is engine._scraper
+    finally:
+        await engine.close_async()
 
 
 @coroutine_test
@@ -674,7 +687,7 @@ async def test_enqueue_scrape_error(
     def enqueue_scrape(self, result, request):
         raise ValueError("enqueue error")
 
-    monkeypatch.setattr("scrapy.core.engine.Scraper.enqueue_scrape", enqueue_scrape)
+    monkeypatch.setattr("scrapy.core.engine._Scraper.enqueue_scrape", enqueue_scrape)
 
     class SimpleSpider(Spider):
         name = "simple"

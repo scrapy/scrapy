@@ -22,7 +22,7 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.downloader import _start_delay_countdown
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.core.scraper import Scraper
+from scrapy.core.scraper import _Scraper
 from scrapy.exceptions import (
     CloseSpider,
     DontCloseSpider,
@@ -247,7 +247,7 @@ class ExecutionEngine:
                     stacklevel=2,
                 )
 
-            self.scraper: Scraper = Scraper(crawler)
+            self._scraper: _Scraper = _Scraper(crawler)
         except Exception:
             if hasattr(self, "downloader"):
                 self.downloader.close()
@@ -287,6 +287,18 @@ class ExecutionEngine:
         return self.downloader.middleware._total_active_size
 
     @property
+    def scraper(self) -> _Scraper:
+        warnings.warn(
+            "ExecutionEngine.scraper is deprecated. To get a spider middleware"
+            " or item pipeline instance, use Crawler.get_spider_middleware() or"
+            " Crawler.get_item_pipeline(). To get internal counters (e.g. itemproc_size)"
+            " use appropriate engine properties (e.g. ExecutionEngine.items_in_progress).",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._scraper
+
+    @property
     def requests_in_progress(self) -> frozenset[Request]:
         """A snapshot of the requests that the engine has taken and not
         finished with yet.
@@ -309,9 +321,9 @@ class ExecutionEngine:
 
         .. versionadded:: VERSION
         """
-        if self.scraper.slot is None:
+        if self._scraper.slot is None:
             return 0
-        return self.scraper.slot.itemproc_size
+        return self._scraper.slot.itemproc_size
 
     @property
     def running(self) -> bool:
@@ -490,7 +502,7 @@ class ExecutionEngine:
                     self.crawl(item_or_request)
                 else:
                     assert self._slot is not None
-                    self.scraper._start_itemproc_nowait(item_or_request)
+                    self._scraper._start_itemproc_nowait(item_or_request)
                     self._slot.nextcall.schedule()
 
     async def _start_request_processing(self) -> None:
@@ -541,7 +553,6 @@ class ExecutionEngine:
 
         See :ref:`start-requests-lazy` for an example.
         """
-        assert self.scraper.slot is not None  # typing
         return (
             not self.running
             or not self._slot
@@ -613,7 +624,7 @@ class ExecutionEngine:
             return
 
         try:
-            yield self.scraper.enqueue_scrape(result, request)
+            yield self._scraper.enqueue_scrape(result, request)
         except Exception:
             assert self.spider is not None
             logger.exception(
@@ -623,7 +634,7 @@ class ExecutionEngine:
     def spider_is_idle(self) -> bool:
         if self._slot is None:
             raise RuntimeError("Engine slot not assigned")
-        if not self.scraper.slot.is_idle():  # type: ignore[union-attr]
+        if not self._scraper.slot.is_idle():  # type: ignore[union-attr]
             return False
         if self._slot.inprogress:  # the downloader may not have these requests yet
             return False
@@ -817,13 +828,13 @@ class ExecutionEngine:
             # started also get stopped, and the request is honored once the spider
             # is open.
             try:
-                self._start = await self.scraper.spidermw.process_start()
+                self._start = await self._scraper.spidermw.process_start()
                 if hasattr(scheduler, "open"):
                     await ensure_awaitable(
                         scheduler.open(self.crawler.spider),
                         _warn=global_object_name(scheduler.open),
                     )
-                await self.scraper.open_spider_async()
+                await self._scraper.open_spider_async()
             except CloseSpider as exc:
                 await self.close_spider_async(reason=exc.reason, error=exc.error)
             stats = self.crawler.stats
@@ -1031,7 +1042,7 @@ class ExecutionEngine:
             logger.exception("Downloader close failure", extra={"spider": spider})
 
         try:
-            await self.scraper.close_spider_async()
+            await self._scraper.close_spider_async()
         except Exception:
             logger.exception("Scraper close failure", extra={"spider": spider})
 
