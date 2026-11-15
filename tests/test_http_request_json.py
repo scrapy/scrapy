@@ -186,3 +186,42 @@ class TestJsonRequest(TestRequestBase):
 
         with pytest.warns(UserWarning, match="data will be ignored"):
             r1.replace(data=data2, body=body2)
+
+    def test_replace_overrides_dumps_kwargs_for_data(self):
+        """replace(data=..., dumps_kwargs=...) uses the replacement dumps_kwargs"""
+        from decimal import Decimal
+
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"value": 1},
+            dumps_kwargs={"ensure_ascii": True},
+        )
+        r2 = r1.replace(
+            data={"value": Decimal("1.25"), "text": "ü"},
+            dumps_kwargs={"default": str, "ensure_ascii": False},
+        )
+        assert r2.body == '{"text": "ü", "value": "1.25"}'.encode()
+        assert r2.dumps_kwargs == {
+            "default": str,
+            "ensure_ascii": False,
+            "sort_keys": True,
+        }
+        # Original request options and body remain unchanged
+        assert r1.dumps_kwargs == {"ensure_ascii": True, "sort_keys": True}
+        assert r1.body == b'{"value": 1}'
+
+    def test_replace_dumps_kwargs_none_resets_to_defaults(self):
+        """replace(data=..., dumps_kwargs=None) resets serialization options"""
+        from decimal import Decimal
+
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"value": Decimal("1.25")},
+            dumps_kwargs={"default": str},
+        )
+        with pytest.raises(TypeError):
+            r1.replace(data={"value": Decimal("2.50")}, dumps_kwargs=None)
+
+        r2 = r1.replace(data={"b": 1, "a": 2}, dumps_kwargs=None)
+        assert r2.body == b'{"a": 2, "b": 1}'
+        assert r2.dumps_kwargs == {"sort_keys": True}
