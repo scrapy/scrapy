@@ -1066,7 +1066,7 @@ Sitemap: /sitemap-relative-url.xml
         crawler = get_crawler(self.spider_class, settings_dict={"ROBOTSTXT_OBEY": True})
         spider = self.spider_class.from_crawler(crawler, "example.com")
         crawler.engine = mock.MagicMock()
-        spider._signal_only_netlocs.add("www.example.com")
+        spider._signal_only_origins.add(("http", "www.example.com"))
 
         class FakeRobotParser:
             def sitemaps(self):
