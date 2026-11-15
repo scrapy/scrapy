@@ -7,8 +7,8 @@ import pytest
 from scrapy import Request, Spider
 from scrapy.http import Response
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
-from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.python import _as_async_generator, _collect_asyncgen
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -36,9 +36,9 @@ async def _process_spider_output(
 async def _process_spider_output_async(
     mw: BaseSpiderMiddleware, spider_output: list[Any]
 ) -> list[Any]:
-    return await collect_asyncgen(
+    return await _collect_asyncgen(
         mw.process_spider_output_async(
-            Response("data:,"), as_async_generator(spider_output)
+            Response("data:,"), _as_async_generator(spider_output)
         )
     )
 
@@ -46,7 +46,7 @@ async def _process_spider_output_async(
 async def _process_start(
     mw: BaseSpiderMiddleware, spider_output: list[Any]
 ) -> list[Any]:
-    return await collect_asyncgen(mw.process_start(as_async_generator(spider_output)))
+    return await _collect_asyncgen(mw.process_start(_as_async_generator(spider_output)))
 
 
 @pytest.mark.parametrize("process", [_process_spider_output, _process_start])

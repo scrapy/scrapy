@@ -25,7 +25,6 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.http.request import _active_crawler_scope
 from scrapy.pipelines import ItemPipelineManager
-from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _aiter_errback,
@@ -43,7 +42,7 @@ from scrapy.utils.misc import (
     load_object,
     warn_on_generator_with_return_value,
 )
-from scrapy.utils.python import global_object_name
+from scrapy.utils.python import _as_async_generator, global_object_name
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
@@ -507,7 +506,7 @@ class Scraper:
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            result = as_async_generator(result)
+            result = _as_async_generator(result)
         it = _aiter_errback(result, self._handle_spider_error, request, response)
         if is_asyncio_available():
             await _parallel_asyncio(

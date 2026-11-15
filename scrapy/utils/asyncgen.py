@@ -1,22 +1,17 @@
-from __future__ import annotations
+# pragma: no file cover
+import warnings
 
-from collections.abc import AsyncGenerator, AsyncIterator, Iterable
-from typing import TypeVar
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.python import _as_async_generator as as_async_generator
+from scrapy.utils.python import _collect_asyncgen as collect_asyncgen
 
-_T = TypeVar("_T")
+warnings.warn(
+    "The scrapy.utils.asyncgen module is deprecated.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
-
-async def collect_asyncgen(result: AsyncIterator[_T]) -> list[_T]:
-    return [x async for x in result]
-
-
-async def as_async_generator(
-    it: Iterable[_T] | AsyncIterator[_T],
-) -> AsyncGenerator[_T]:
-    """Wraps an iterable (sync or async) into an async generator."""
-    if isinstance(it, AsyncIterator):
-        async for r in it:
-            yield r
-    else:
-        for r in it:
-            yield r
+__all__ = [
+    "as_async_generator",
+    "collect_asyncgen",
+]

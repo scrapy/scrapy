@@ -12,9 +12,8 @@ from unittest import TestCase, TestResult
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import get_spec
+from scrapy.utils.python import _collect_asyncgen, get_spec
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -41,7 +40,7 @@ def _collect(result: Any) -> list[Any]:
 
 async def _collect_async(result: Any) -> list[Any]:
     if isinstance(result, AsyncGenerator):
-        return await collect_asyncgen(result)
+        return await _collect_asyncgen(result)
     if isinstance(result, CoroutineType):
         return await _collect_async(await result)
     return list(arg_to_iter(result))

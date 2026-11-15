@@ -7,7 +7,7 @@ import pytest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import CSVFeedSpider, Spider, XMLFeedSpider
-from scrapy.utils.asyncgen import collect_asyncgen
+from scrapy.utils.python import _collect_asyncgen
 from tests import get_testdata
 from tests.spiders import RawResponseSpider
 from tests.utils.bases.spider import TestSpiderBase
@@ -88,7 +88,7 @@ class TestXMLFeedSpider(TestSpiderBase):
                 }
 
         spider = _XMLSpider("example", iterator=iterator)
-        output = await collect_asyncgen(spider._parse(response))
+        output = await _collect_asyncgen(spider._parse(response))
         assert len(output) == 2
         assert output == [
             {
@@ -224,7 +224,7 @@ class TestCSVFeedSpider(TestSpiderBase):
                 return row
 
         spider = _CrawlSpider()
-        rows = await collect_asyncgen(spider.parse_rows(response))
+        rows = await _collect_asyncgen(spider.parse_rows(response))
         assert rows[0] == {"id": "1", "name": "alpha", "value": "foobar"}
         assert len(rows) == 4
 

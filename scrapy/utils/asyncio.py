@@ -23,7 +23,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall, deferLater
 from twisted.internet.threads import deferToThread
 
-from scrapy.utils.asyncgen import as_async_generator
+from scrapy.utils.python import _as_async_generator
 from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_installed
 
 if TYPE_CHECKING:
@@ -149,7 +149,7 @@ async def _parallel_asyncio(
             semaphore.release()
 
     async with asyncio.TaskGroup() as tg:
-        async for item in as_async_generator(iterable):
+        async for item in _as_async_generator(iterable):
             await semaphore.acquire()
             tg.create_task(work(item))
 

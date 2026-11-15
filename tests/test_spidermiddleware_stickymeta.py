@@ -8,8 +8,8 @@ from scrapy import Request, Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.spidermiddlewares.stickymeta import StickyMetaParamsMiddleware
-from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.python import _as_async_generator, _collect_asyncgen
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -27,8 +27,8 @@ async def _run_all_paths(
     """Run the spider output through every processing path of the middleware."""
     return [
         list(mw.process_spider_output(response, spider_output)),
-        await collect_asyncgen(
-            mw.process_spider_output_async(response, as_async_generator(spider_output))
+        await _collect_asyncgen(
+            mw.process_spider_output_async(response, _as_async_generator(spider_output))
         ),
     ]
 
@@ -86,7 +86,7 @@ async def test_start_requests_have_no_response() -> None:
     """Start seeds are processed with ``response=None`` and are left untouched."""
     mw = _make_mw(["param"])
     start_request = Request(TEST_URL, meta={"param": "value"})
-    processed = await collect_asyncgen(
-        mw.process_start(as_async_generator([start_request]))
+    processed = await _collect_asyncgen(
+        mw.process_start(_as_async_generator([start_request]))
     )
     assert processed[0].meta == {"param": "value"}
