@@ -1,25 +1,15 @@
-"""
-The Extension Manager
+# pragma: no file cover
+import warnings
 
-See documentation in docs/topics/extensions.rst
-"""
+from scrapy._extension import ExtensionManager
+from scrapy.exceptions import ScrapyDeprecationWarning
 
-from __future__ import annotations
+warnings.warn(
+    "The scrapy.extension module is deprecated.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
-from typing import TYPE_CHECKING, Any
-
-from scrapy.middleware import MiddlewareManager
-from scrapy.utils.conf import build_component_list
-
-if TYPE_CHECKING:
-    from scrapy.settings import Settings
-
-
-class ExtensionManager(MiddlewareManager):  # pylint: disable=abstract-method
-    component_name = "extension"
-
-    @classmethod
-    def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
-        return build_component_list(
-            settings.get_component_priority_dict_with_base("EXTENSIONS")
-        )
+__all__ = [
+    "ExtensionManager",
+]
