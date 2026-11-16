@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 
 from scrapy import Request, Spider
-from scrapy.core import scraper as scraper_module
-from scrapy.core.scraper import _QueueTuple, _Scraper, _Slot
+from scrapy.core._scraper import Scraper
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -32,7 +31,7 @@ async def test_scraper_exception(
 ) -> None:
     crawler = get_crawler(SimpleSpider)
     monkeypatch.setattr(
-        "scrapy.core.engine._Scraper.handle_spider_output_async",
+        "scrapy.core.engine.Scraper.handle_spider_output_async",
         lambda *args, **kwargs: 1 / 0,
     )
     await crawler.crawl_async(url=mockserver.url("/"))
@@ -41,14 +40,14 @@ async def test_scraper_exception(
 
 @coroutine_test
 async def test_open_spider_without_spider() -> None:
-    scraper = _Scraper(get_crawler(DefaultSpider))
+    scraper = Scraper(get_crawler(DefaultSpider))
     with pytest.raises(RuntimeError, match=r"called before Crawler\.spider is set"):
         await scraper.open_spider_async()
 
 
 @inline_callbacks_test
 def test_enqueue_scrape_without_slot() -> Generator[Deferred[Any], Any, None]:
-    scraper = _Scraper(get_crawler(DefaultSpider))
+    scraper = Scraper(get_crawler(DefaultSpider))
     with pytest.raises(RuntimeError, match="Scraper slot not assigned"):
         yield scraper.enqueue_scrape(Response("data:,"), Request("data:,"))
 
@@ -57,7 +56,7 @@ def test_enqueue_scrape_without_slot() -> Generator[Deferred[Any], Any, None]:
 async def test_enqueue_scrape_wrong_type(caplog: pytest.LogCaptureFixture) -> None:
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
-    scraper = _Scraper(crawler)
+    scraper = Scraper(crawler)
     await scraper.open_spider_async()
     try:
         await maybe_deferred_to_future(
@@ -78,7 +77,7 @@ async def test_call_spider_sets_request_on_response() -> None:
 
     crawler = get_crawler(ParsingSpider)
     crawler.spider = crawler._create_spider()
-    scraper = _Scraper(crawler)
+    scraper = Scraper(crawler)
     response = Response("data:,")
     request = Request("data:,")
     output = await scraper.call_spider_async(response, request)
@@ -140,15 +139,6 @@ async def test_none_in_callback_output() -> None:
     assert crawler.stats.get_value("item_scraped_count") == 2
 
 
-@pytest.mark.parametrize(
-    ("name", "obj"),
-    [("QueueTuple", _QueueTuple), ("Scraper", _Scraper), ("Slot", _Slot)],
-)
-def test_deprecated_names(name: str, obj: object) -> None:
-    with pytest.warns(ScrapyDeprecationWarning, match=f"{name} is deprecated"):
-        assert getattr(scraper_module, name) is obj
-
-
 @coroutine_test
 async def test_slot_deprecated_attributes() -> None:
     values: dict[str, Any] = {}
@@ -178,8 +168,3 @@ async def test_slot_deprecated_attributes() -> None:
         "max_active_size": 1,
         "needs_backout": True,
     }
-
-
-def test_missing_name() -> None:
-    with pytest.raises(AttributeError):
-        scraper_module.Foo

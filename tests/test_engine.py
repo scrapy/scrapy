@@ -687,7 +687,7 @@ async def test_enqueue_scrape_error(
     def enqueue_scrape(self, result, request):
         raise ValueError("enqueue error")
 
-    monkeypatch.setattr("scrapy.core.engine._Scraper.enqueue_scrape", enqueue_scrape)
+    monkeypatch.setattr("scrapy.core.engine.Scraper.enqueue_scrape", enqueue_scrape)
 
     class SimpleSpider(Spider):
         name = "simple"

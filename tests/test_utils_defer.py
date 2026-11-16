@@ -194,7 +194,7 @@ class TestParallelAsync:
     """This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
 
     parallel_async is called with the results of a callback (so an iterable of items, requests and None,
-    with arbitrary delays between values), and it uses _Scraper._process_spidermw_output as the callable
+    with arbitrary delays between values), and it uses Scraper._process_spidermw_output as the callable
     (so a callable that returns a Deferred for an item, which will fire after pipelines process it, and
     None for everything else). The concurrent task count is the CONCURRENT_ITEMS setting.
 

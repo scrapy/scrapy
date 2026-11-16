@@ -1,4 +1,5 @@
 scrapy/core/downloader/handlers/http.py
+scrapy/core/scraper.py
 scrapy/extensions/statsmailer.py
 scrapy/interfaces.py
 scrapy/mail.py

@@ -20,9 +20,9 @@ from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import signals
+from scrapy.core._scraper import Scraper
 from scrapy.core.downloader import _start_delay_countdown
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.core.scraper import _Scraper
 from scrapy.exceptions import (
     CloseSpider,
     DontCloseSpider,
@@ -247,7 +247,7 @@ class ExecutionEngine:
                     stacklevel=2,
                 )
 
-            self._scraper: _Scraper = _Scraper(crawler)
+            self._scraper: Scraper = Scraper(crawler)
         except Exception:
             if hasattr(self, "downloader"):
                 self.downloader.close()
@@ -287,7 +287,7 @@ class ExecutionEngine:
         return self.downloader.middleware._total_active_size
 
     @property
-    def scraper(self) -> _Scraper:
+    def scraper(self) -> Scraper:
         warnings.warn(
             "ExecutionEngine.scraper is deprecated. To get a spider middleware"
             " or item pipeline instance, use Crawler.get_spider_middleware() or"
