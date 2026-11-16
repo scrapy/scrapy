@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import warnings
 from http.client import responses
 from typing import TYPE_CHECKING, Self
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.python import global_object_name
 from scrapy.utils.request import request_httprepr
@@ -18,7 +19,12 @@ if TYPE_CHECKING:
 
 def get_header_size(
     headers: dict[str, list[str | bytes] | tuple[str | bytes, ...]],
-) -> int:
+) -> int:  # pragma: no cover
+    warnings.warn(
+        "The scrapy.downloadermiddlewares.stats.get_header_size() function is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     size = 0
     for key, value in headers.items():
         if isinstance(value, (list, tuple)):
