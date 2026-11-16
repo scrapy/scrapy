@@ -32,6 +32,11 @@ async def test_is_asyncio_available(reactor_pytest: str) -> None:
     assert is_asyncio_available() == (reactor_pytest != "default")
 
 
+def test_is_asyncio_available_without_running_loop(reactor_pytest: str) -> None:
+    # with --reactor=none there is neither a reactor nor a running loop here
+    assert is_asyncio_available() == (reactor_pytest != "default")
+
+
 _context_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "_context_var", default=None
 )

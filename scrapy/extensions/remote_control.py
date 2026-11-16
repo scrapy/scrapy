@@ -99,10 +99,7 @@ class RemoteControl:
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("REMOTE_CONTROL_ENABLED"):
             raise NotConfigured
-        if (
-            crawler.settings.getbool("TWISTED_REACTOR_ENABLED")
-            and not is_asyncio_available()
-        ):
+        if not is_asyncio_available():
             raise NotConfigured(
                 f"{type(self).__name__} requires the asyncio support."
                 f" You can set the REMOTE_CONTROL_ENABLED setting to False to remove this warning."
