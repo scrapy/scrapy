@@ -27,6 +27,8 @@ UNSET = object()
         ("example.com", "http://example.com.example", False),
         ("a.example", "http://nota.example", False),
         ("b.a.example", "http://notb.a.example", False),
+        ("EXAMPLE.COM", "http://example.com/1", True),
+        ("Example.com", "http://sub.example.com/1", True),
     ],
 )
 def test_process_request_domain_filtering(allowed_domain, url, allowed):
@@ -146,6 +148,8 @@ def test_process_request_invalid_domains():
         ("example.com", "http://example.com.example", False),
         ("a.example", "http://nota.example", False),
         ("b.a.example", "http://notb.a.example", False),
+        ("EXAMPLE.COM", "http://example.com/1", True),
+        ("Example.com", "http://sub.example.com/1", True),
     ],
 )
 def test_request_scheduled_domain_filtering(allowed_domain, url, allowed):
