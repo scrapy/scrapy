@@ -1,3 +1,4 @@
+scrapy/addons.py
 scrapy/core/downloader/handlers/http.py
 scrapy/core/downloader/middleware.py
 scrapy/core/spidermw.py

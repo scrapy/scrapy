@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Spider
+from scrapy._addons import AddonManager
 from scrapy._extension import ExtensionManager
-from scrapy.addons import AddonManager
 from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
