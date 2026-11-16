@@ -431,9 +431,32 @@ class TestCsvItemExporter(TestBaseItemExporter):
             errors="xmlcharrefreplace",
         )
 
-    def test_csv_dropped_fields_warning(self, caplog):
+    @pytest.mark.parametrize("include_headers_line", [True, False])
+    @pytest.mark.parametrize(
+        ("item", "expected_row"),
+        [
+            ({"age": 2, "name": "B"}, b"B,2\r\n"),
+            ({"age": 2}, b",2\r\n"),
+            ({"name": "B", "age": 2, "price": 3}, b"B,2\r\n"),
+        ],
+        ids=["reordered", "missing", "extra"],
+    )
+    def test_column_alignment(
+        self, include_headers_line: bool, item: dict[str, Any], expected_row: bytes
+    ) -> None:
         out = BytesIO()
-        exporter = CsvItemExporter(out)
+        exporter = CsvItemExporter(out, include_headers_line=include_headers_line)
+        exporter.start_exporting()
+        exporter.export_item({"name": "A", "age": 1})
+        exporter.export_item(item)
+        exporter.finish_exporting()
+        header = b"name,age\r\n" if include_headers_line else b""
+        assert out.getvalue() == header + b"A,1\r\n" + expected_row
+
+    @pytest.mark.parametrize("include_headers_line", [True, False])
+    def test_csv_dropped_fields_warning(self, caplog, include_headers_line):
+        out = BytesIO()
+        exporter = CsvItemExporter(out, include_headers_line=include_headers_line)
         exporter.start_exporting()
 
         exporter.export_item({"name": "Apple"})
