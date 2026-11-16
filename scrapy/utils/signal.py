@@ -195,6 +195,8 @@ async def _send_catch_log_asyncio(
                     ),
                     _warn=global_object_name(receiver),
                 )
+            except asyncio.CancelledError as ex:
+                result = ex
             except dont_log as ex:  # pylint: disable=catching-non-exception
                 result = ex
             except Exception as ex:

@@ -158,6 +158,64 @@ class TestSendCatchLogAsyncAsyncio(TestSendCatchLogAsync):
         return await get_from_asyncio_queue("OK")
 
 
+@pytest.mark.only_asyncio
+class TestSignalCancellation:
+    @pytest.mark.parametrize("cancel_future", [False, True])
+    @coroutine_test
+    async def test_cancelled_handler_keeps_result_pair(
+        self, cancel_future: bool
+    ) -> None:
+        test_signal = object()
+
+        async def handler() -> None:
+            if cancel_future:
+                future: asyncio.Future[None] = (
+                    asyncio.get_running_loop().create_future()
+                )
+                future.cancel()
+                await future
+            raise asyncio.CancelledError
+
+        def sibling() -> str:
+            return "OK"
+
+        dispatcher.connect(handler, signal=test_signal)
+        dispatcher.connect(sibling, signal=test_signal)
+        try:
+            result = await send_catch_log_async(test_signal)
+        finally:
+            dispatcher.disconnect(handler, signal=test_signal)
+            dispatcher.disconnect(sibling, signal=test_signal)
+        assert len(result) == 2
+        responses = dict(result)
+        assert isinstance(responses[handler], asyncio.CancelledError)
+        assert responses[sibling] == "OK"
+
+    @coroutine_test
+    async def test_sender_cancellation_propagates(self) -> None:
+        test_signal = object()
+        started = asyncio.Event()
+        stopped = asyncio.Event()
+
+        async def handler() -> None:
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                stopped.set()
+
+        dispatcher.connect(handler, signal=test_signal)
+        try:
+            task = asyncio.create_task(send_catch_log_async(test_signal))
+            await started.wait()
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            assert stopped.is_set()
+        finally:
+            dispatcher.disconnect(handler, signal=test_signal)
+
+
 class TestSendCatchLog2:
     def test_error_logged_if_deferred_not_supported(
         self, caplog: pytest.LogCaptureFixture

@@ -47,6 +47,20 @@ def get_raw_crawler(
     return Crawler(spidercls or DefaultSpider, settings)
 
 
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_cancelled_spider_opened_handler() -> None:
+    crawler = get_crawler(NoRequestsSpider)
+
+    async def handler() -> None:
+        raise asyncio.CancelledError
+
+    crawler.signals.connect(handler, signal=scrapy.signals.spider_opened)
+    await crawler.crawl_async()
+    assert crawler.stats is not None
+    assert crawler.stats.get_value("finish_reason") == "finished"
+
+
 class TestCrawler:
     def test_populate_spidercls_settings(self) -> None:
         spider_settings: dict[str, Any] = {
