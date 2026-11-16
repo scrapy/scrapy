@@ -149,6 +149,37 @@ def test_deprecated_names(name: str, obj: object) -> None:
         assert getattr(scraper_module, name) is obj
 
 
+@coroutine_test
+async def test_slot_deprecated_attributes() -> None:
+    values: dict[str, Any] = {}
+
+    class SizeSpider(Spider):
+        name = "size"
+
+        async def start(self) -> AsyncIterator[Any]:
+            yield Request("data:,a")
+
+        def parse(self, response: Response) -> None:
+            engine = self.crawler.engine
+            assert engine is not None
+            slot = engine.scraper.slot
+            assert slot is not None
+            values["response_active_size"] = engine.response_active_size
+            for name in ("active_size", "max_active_size"):
+                values[name] = getattr(slot, name)
+            values["needs_backout"] = slot.needs_backout()
+
+    crawler = get_crawler(SizeSpider, {"RESPONSE_MAX_ACTIVE_SIZE": 1})
+    with pytest.warns(ScrapyDeprecationWarning, match="scraper is deprecated"):
+        await crawler.crawl_async()
+    assert values == {
+        "response_active_size": 1,
+        "active_size": 1,
+        "max_active_size": 1,
+        "needs_backout": True,
+    }
+
+
 def test_missing_name() -> None:
     with pytest.raises(AttributeError):
         scraper_module.Foo
