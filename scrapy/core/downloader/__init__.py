@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING, Any
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Request, Spider, signals
+from scrapy.core.downloader._middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import DownloadHandlers
-from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
 from scrapy.settings import SETTINGS_PRIORITIES
