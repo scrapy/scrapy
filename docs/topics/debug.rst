@@ -228,7 +228,7 @@ format`_ that traffic analysis tools such as Wireshark understand.
 
     SSLKEYLOGFILE=/tmp/sslkeylog scrapy crawl myspider
 
-.. _NSS key log format: https://firefox-source-docs.mozilla.org/security/nss/legacy/key_log_format/index.html
+.. _NSS key log format: https://nss-crypto.org/reference/security/nss/legacy/key_log_format/index.html
 
 .. warning:: Anyone who can read the key log file can decrypt the traffic of
     the connections recorded in it, including any credentials that they carry.
