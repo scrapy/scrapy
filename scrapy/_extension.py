@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from scrapy.middleware import MiddlewareManager
+from scrapy._middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 
 if TYPE_CHECKING:

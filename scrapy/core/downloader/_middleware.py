@@ -6,9 +6,9 @@ from itertools import islice
 from typing import TYPE_CHECKING, Any
 from weakref import WeakSet, finalize
 
+from scrapy._middleware import MiddlewareManager
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import BodyFileResponse, Request, Response
-from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
     _process_pending_io,

@@ -5,6 +5,7 @@ scrapy/extension.py
 scrapy/extensions/statsmailer.py
 scrapy/interfaces.py
 scrapy/mail.py
+scrapy/middleware.py
 scrapy/utils/benchserver.py
 scrapy/utils/console.py
 scrapy/utils/datatypes.py

@@ -12,9 +12,9 @@ from warnings import warn
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
+from scrapy._middleware import MiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Response
-from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
