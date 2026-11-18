@@ -92,11 +92,11 @@ def check_stop_download(
         **kwargs,
     )
     for handler, result in signal_result:
-        if isinstance(result, Failure) and isinstance(result.value, StopDownload):
+        if isinstance(result, StopDownload):
             logger.debug(
                 f"Download stopped for {request} from signal handler {handler.__qualname__}"
             )
-            return result.value
+            return result
 
     return None
 

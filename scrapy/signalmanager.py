@@ -26,8 +26,7 @@ class SignalManager:
     def connect(
         self, receiver: Callable[..., Any], signal: object, **kwargs: Any
     ) -> None:
-        """
-        Connect a receiver function to a signal.
+        """Connect a receiver function to a signal.
 
         The signal can be any object, although Scrapy comes with some
         predefined signals that are documented in the :ref:`topics-signals`
@@ -46,10 +45,10 @@ class SignalManager:
     def disconnect(
         self, receiver: Callable[..., Any], signal: object, **kwargs: Any
     ) -> None:
-        """
-        Disconnect a receiver function from a signal. This has the
-        opposite effect of the :meth:`connect` method, and the arguments
-        are the same.
+        """Disconnect a receiver function from a signal.
+
+        This has the opposite effect of the :meth:`connect` method, and the
+        arguments are the same.
         """
         kwargs.setdefault("sender", self.sender)
         dispatcher.disconnect(receiver, signal, **kwargs)
@@ -57,11 +56,17 @@ class SignalManager:
     def send_catch_log(
         self, signal: object, **kwargs: Any
     ) -> list[tuple[Callable[..., Any], Any]]:
-        """
-        Send a signal, catch exceptions and log them.
+        """Send a signal, catch exceptions and log them.
+
+        .. versionchanged:: VERSION
+            Exceptions are returned instead of
+            :class:`~twisted.python.failure.Failure` objects.
 
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
+
+        Returns a list of ``(receiver, result)`` tuples, where *result* is the
+        return value of the receiver or the exception raised by it.
         """
         kwargs.setdefault("sender", self.sender)
         return _signal.send_catch_log(signal, **kwargs)
@@ -69,15 +74,16 @@ class SignalManager:
     def send_catch_log_deferred(
         self, signal: object, **kwargs: Any
     ) -> Deferred[list[tuple[Callable[..., Any], Any]]]:  # pragma: no cover
-        """
+        """Send a signal, catch exceptions and log them.
+
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
         handlers <signal-deferred>`.
 
-        Returns a Deferred that gets fired once all signal handlers
-        have finished. Send a signal, catch exceptions and log them.
-
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
+
+        Returns a Deferred that gets fired once all signal handlers
+        have finished.
         """
         kwargs.setdefault("sender", self.sender)
         warnings.warn(
@@ -90,19 +96,21 @@ class SignalManager:
     async def send_catch_log_async(
         self, signal: object, **kwargs: Any
     ) -> list[tuple[Callable[..., Any], Any]]:
-        """
+        """Send a signal, catch exceptions and log them.
+
+        .. versionadded:: 2.14
+
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
         handlers <signal-deferred>`.
-
-        Returns a coroutine that completes once all signal handlers
-        have finished. Send a signal, catch exceptions and log them.
 
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
 
-        .. versionadded:: 2.14
+        Returns a coroutine that completes once all signal handlers
+        have finished, with a list of ``(receiver, result)`` tuples, where
+        *result* is the return value of the receiver or the exception raised by
+        it.
         """
-        # note that this returns exceptions instead of Failures in the second tuple member
         kwargs.setdefault("sender", self.sender)
 
         # circular import
@@ -120,8 +128,7 @@ class SignalManager:
             return await _signal.send_catch_log_async(signal, **kwargs)
 
     def disconnect_all(self, signal: object, **kwargs: Any) -> None:
-        """
-        Disconnect all receivers from the given signal.
+        """Disconnect all receivers from the given signal.
 
         :param signal: the signal to disconnect from
         :type signal: object

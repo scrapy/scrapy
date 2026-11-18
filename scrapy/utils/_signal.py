@@ -1,5 +1,3 @@
-"""Helper functions for working with signals"""
-
 from __future__ import annotations
 
 import asyncio
@@ -38,9 +36,7 @@ def send_catch_log(
     *arguments: TypingAny,
     **named: TypingAny,
 ) -> list[tuple[Callable[..., TypingAny], TypingAny]]:
-    """Like ``pydispatch.robust.sendRobust()`` but it also logs errors and returns
-    Failures instead of exceptions.
-    """
+    """Like ``pydispatch.robust.sendRobust()`` but it also logs errors."""
     dont_log = named.pop("dont_log", ())
     dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
     dont_log += (StopDownload,)
@@ -58,10 +54,10 @@ def send_catch_log(
                     {"receiver": receiver},
                     extra={"spider": spider},
                 )
-        except dont_log:
-            result = Failure()
-        except Exception:
-            result = Failure()
+        except dont_log as ex:
+            result = ex
+        except Exception as ex:
+            result = ex
             logger.exception(
                 "Error caught on signal handler: %(receiver)s",
                 {"receiver": receiver},
@@ -144,7 +140,6 @@ async def send_catch_log_async(
 
     .. versionadded:: 2.14
     """
-    # note that this returns exceptions instead of Failures in the second tuple member
     if is_asyncio_available():
         return await _send_catch_log_asyncio(signal, sender, *arguments, **named)
     results = await maybe_deferred_to_future(

@@ -34,6 +34,12 @@ Backward-incompatible changes
 
     (TBD)
 
+-   :meth:`SignalManager.send_catch_log()
+    <scrapy.signalmanager.SignalManager.send_catch_log>` now returns the
+    exceptions raised by signal handlers as is instead of wrapping them into
+    :class:`~twisted.python.failure.Failure` objects.
+    (TBD)
+
 
 Scrapy 2.20.0 (2026-11-06)
 --------------------------
