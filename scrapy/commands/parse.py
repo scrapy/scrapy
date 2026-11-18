@@ -287,7 +287,7 @@ class Command(BaseRunSpiderCommand):
     ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
-            itemproc = self.pcrawler.engine.scraper.itemproc
+            itemproc = self.pcrawler.engine._scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
                 for item in items:
                     _schedule_coro(itemproc.process_item_async(item))

@@ -494,7 +494,7 @@ class Crawler:
                 "Crawler.get_item_pipeline() can only be called after the "
                 "crawl engine has been created."
             )
-        return self._get_component(cls, self.engine.scraper.itemproc.middlewares)
+        return self._get_component(cls, self.engine._scraper.itemproc.middlewares)
 
     def get_spider_middleware(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of a :ref:`spider middleware
@@ -511,7 +511,7 @@ class Crawler:
                 "Crawler.get_spider_middleware() can only be called after the "
                 "crawl engine has been created."
             )
-        return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
+        return self._get_component(cls, self.engine._scraper.spidermw.middlewares)
 
 
 class CrawlerRunnerBase(ABC):
