@@ -216,4 +216,9 @@ def get_proxy_headers(request: Request) -> tuple[tuple[str, str], ...]:
     proxy_headers = request.meta.get("proxy_headers")
     if not proxy_headers:
         return ()
-    return tuple(sorted(Headers(proxy_headers).to_tuple_list()))
+    return tuple(
+        sorted(
+            (name.decode(errors="replace"), value.decode(errors="replace"))
+            for name, value in Headers(proxy_headers).raw
+        )
+    )

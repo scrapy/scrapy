@@ -230,7 +230,7 @@ def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
     walked_func_def = False
     while todo:
         node = todo.popleft()
-        if isinstance(node, ast.FunctionDef):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             if walked_func_def:
                 continue
             walked_func_def = True

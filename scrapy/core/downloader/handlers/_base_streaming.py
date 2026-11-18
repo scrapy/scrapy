@@ -320,18 +320,17 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT])
         warning.
         """
         pairs: list[tuple[str, str]] = []
-        for name, values in self._request_headers(request).items():
-            for value in values:
-                try:
-                    pairs.append((name.decode(), value.decode()))
-                except UnicodeDecodeError:
-                    str_name = name.decode(errors="replace")
-                    logger.warning(
-                        f"The {str_name} header of {request} is not valid UTF-8,"
-                        f" which {type(self).__name__} cannot send. Sending it"
-                        f" with U+FFFD in place of the invalid bytes."
-                    )
-                    pairs.append((str_name, value.decode(errors="replace")))
+        for name, value in self._request_headers(request).raw:
+            try:
+                pairs.append((name.decode(), value.decode()))
+            except UnicodeDecodeError:
+                str_name = name.decode(errors="replace")
+                logger.warning(
+                    f"The {str_name} header of {request} is not valid UTF-8,"
+                    f" which {type(self).__name__} cannot send. Sending it"
+                    f" with U+FFFD in place of the invalid bytes."
+                )
+                pairs.append((str_name, value.decode(errors="replace")))
         return pairs
 
     def _get_bind_address_host(self) -> str | None:
