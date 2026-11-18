@@ -74,9 +74,9 @@ if TYPE_CHECKING:
 #
 # Other architecture problems:
 # * scrapy.cmdline.execute() creates an AsyncCrawlerProcess instance which
-#   immediately installs a reactor (which is maybe not thread-specific?) or an
-#   event loop (which *is* thread-specific, so the main thread will always have
-#   a (not running) loop installed.
+#   immediately installs a reactor (which is maybe not thread-specific?) or
+#   creates an event loop, which is not set as the current loop of any thread
+#   and only runs in the secondary thread.
 # * The shell uses several private members of Crawler (_create_engine(),
 #   _create_spider()) and of AsyncCrawlerProcess (_reactorless_loop).
 
