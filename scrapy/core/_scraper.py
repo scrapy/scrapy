@@ -12,7 +12,7 @@ from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
-from scrapy.core.spidermw import SpiderMiddlewareManager
+from scrapy.core._spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import (
     CloseSpider,
     DropItem,

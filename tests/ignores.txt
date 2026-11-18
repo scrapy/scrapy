@@ -1,8 +1,13 @@
+scrapy/addons.py
 scrapy/core/downloader/handlers/http.py
+scrapy/core/downloader/middleware.py
 scrapy/core/scraper.py
+scrapy/core/spidermw.py
+scrapy/extension.py
 scrapy/extensions/statsmailer.py
 scrapy/interfaces.py
 scrapy/mail.py
+scrapy/middleware.py
 scrapy/utils/benchserver.py
 scrapy/utils/console.py
 scrapy/utils/datatypes.py

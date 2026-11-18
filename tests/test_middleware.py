@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from scrapy import Spider
+from scrapy._middleware import MiddlewareManager
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.middleware import MiddlewareManager
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
