@@ -1,0 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from scrapy._middleware import MiddlewareManager
+from scrapy.utils.conf import build_component_list
+
+if TYPE_CHECKING:
+    from scrapy.settings import Settings
+
+
+class ExtensionManager(MiddlewareManager):  # pylint: disable=abstract-method
+    component_name = "extension"
+
+    @classmethod
+    def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("EXTENSIONS")
+        )

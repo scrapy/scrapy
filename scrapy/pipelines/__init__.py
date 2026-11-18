@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from twisted.internet.defer import Deferred, DeferredList, FirstError
 
+from scrapy._middleware import MiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import _maybeDeferred_coro, deferred_from_coro, ensure_awaitable

@@ -79,7 +79,7 @@ class TestAddonManager:
         settings_dict = {
             "ADDONS": {NotConfiguredAddon: 0},
         }
-        with patch("scrapy.addons.logger") as logger_mock:
+        with patch("scrapy._addons.logger") as logger_mock:
             crawler = get_crawler(settings_dict=settings_dict)
         assert not crawler.addons.addons
         logger_mock.warning.assert_called_once_with(
@@ -200,8 +200,8 @@ class TestAddonManager:
                 pass
 
         with (
-            patch("scrapy.addons.logger") as logger_mock,
-            patch("scrapy.addons.build_from_crawler") as build_from_crawler_mock,
+            patch("scrapy._addons.logger") as logger_mock,
+            patch("scrapy._addons.build_from_crawler") as build_from_crawler_mock,
         ):
             settings_dict = {
                 "ADDONS": {LoggedAddon: 1},

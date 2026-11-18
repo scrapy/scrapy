@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Spider
-from scrapy.addons import AddonManager
+from scrapy._addons import AddonManager
+from scrapy._extension import ExtensionManager
 from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader

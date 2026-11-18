@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 from twisted.internet import defer
 
-from scrapy.core.spidermw import SpiderMiddlewareManager
+from scrapy.core._spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
