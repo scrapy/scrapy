@@ -15,14 +15,17 @@ from scrapy import Request, Spider
 from scrapy._middleware import MiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Response
-from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
     _process_pending_io,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from scrapy.utils.python import _MutableAsyncChain, global_object_name
+from scrapy.utils.python import (
+    _as_async_generator,
+    _MutableAsyncChain,
+    global_object_name,
+)
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
@@ -135,7 +138,7 @@ class SpiderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstract-me
                 # stop exception handling by handing control over to the
                 # process_spider_output chain if an iterable has been returned
                 if isinstance(result, Iterable):
-                    result = as_async_generator(result)
+                    result = _as_async_generator(result)
                 return self._process_spider_output(response, result, method_index + 1)
             if result is None:
                 continue
@@ -229,7 +232,7 @@ class SpiderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstract-me
             it: Iterable[_T] | AsyncIterator[_T] = await self._process_spider_input(
                 scrape_func, response, request
             )
-            ait = it if isinstance(it, AsyncIterator) else as_async_generator(it)
+            ait = it if isinstance(it, AsyncIterator) else _as_async_generator(it)
             return await self._process_callback_output(response, ait)
         except Exception as ex:
             await _process_pending_io()
@@ -246,7 +249,7 @@ class SpiderMiddlewareManager(MiddlewareManager):  # pylint: disable=abstract-me
         # response. Exceptions from the errback itself are left to the caller,
         # which tells apart the download error from a different one.
         it: Iterable[_T] | AsyncIterator[_T] = await scrape_func(failure, request)
-        ait = it if isinstance(it, AsyncIterator) else as_async_generator(it)
+        ait = it if isinstance(it, AsyncIterator) else _as_async_generator(it)
         return await self._process_callback_output(None, ait)
 
     async def process_start(

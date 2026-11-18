@@ -14,10 +14,10 @@ from scrapy.core._spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
-from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.python import _collect_asyncgen
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -83,7 +83,7 @@ class TestProcessSpiderExceptionInvalidOutput(TestSpiderMiddleware):
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
         it = await self._scrape_response()
         with pytest.raises(_InvalidOutput):
-            await collect_asyncgen(it)
+            await _collect_asyncgen(it)
 
 
 class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
@@ -104,7 +104,7 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
         it = await self._scrape_response()
         with pytest.raises(ZeroDivisionError):
-            await collect_asyncgen(it)
+            await _collect_asyncgen(it)
 
     @coroutine_test
     async def test_response_refcounting(self):
@@ -120,7 +120,7 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
         gc.disable()
         try:
             with pytest.raises(ZeroDivisionError):
-                await collect_asyncgen(it)
+                await _collect_asyncgen(it)
             del it
             assert ref() is None
         finally:
@@ -174,7 +174,7 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     ) -> None:
         result = await self._get_middleware_result(*mw_classes, start_index=start_index)
         assert isinstance(result, AsyncIterator)
-        result_list = await collect_asyncgen(result)
+        result_list = await _collect_asyncgen(result)
         assert len(result_list) == self.RESULT_COUNT
         assert isinstance(result_list[0], self.ITEM_TYPE)
 
@@ -297,7 +297,7 @@ class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
         """Simple mw"""
         start = await self._get_processed_start(self.MW_SIMPLE)
         assert isasyncgen(start)
-        start_list = await collect_asyncgen(start)
+        start_list = await _collect_asyncgen(start)
         assert len(start_list) == self.RESULT_COUNT
         assert isinstance(start_list[0], self.ITEM_TYPE)
 
@@ -495,7 +495,7 @@ class TestDeprecatedSpiderArg(TestSpiderMiddleware):
         ):
             self.mwman._add_middleware(DeprecatedSpiderArgMiddleware1())
         it = await self._scrape_response()
-        await collect_asyncgen(it)
+        await _collect_asyncgen(it)
 
     @coroutine_test
     async def test_deprecated_mwman_spider_arg(self):

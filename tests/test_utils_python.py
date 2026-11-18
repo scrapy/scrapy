@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import pytest
 
-from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import _aiter_errback
 from scrapy.utils.python import (
+    _as_async_generator,
+    _collect_asyncgen,
     _looks_like_import_path,
     _MutableAsyncChain,
     binary_is_text,
@@ -55,12 +56,12 @@ class TestMutableAsyncChain:
 
     @coroutine_test
     async def test_mutableasyncchain(self):
-        m = _MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
+        m = _MutableAsyncChain(self.g1(), _as_async_generator(range(3, 7)))
         m.extend(self.g2())
         m.extend(self.g3())
 
         assert await anext(m) == 0
-        results = await collect_asyncgen(m)
+        results = await _collect_asyncgen(m)
         assert results == list(range(1, 10))
 
     @coroutine_test
@@ -69,7 +70,7 @@ class TestMutableAsyncChain:
         m.extend(self.g4())
         m.extend(self.g3())
 
-        results = await collect_asyncgen(_aiter_errback(m, lambda _: None))
+        results = await _collect_asyncgen(_aiter_errback(m, lambda _: None))
         assert results == list(range(5))
 
 
@@ -264,3 +265,17 @@ def test_without_none_values(
     value: Mapping[_KT, _VT] | Iterable[_KT], expected: dict[_KT, _VT] | Iterable[_KT]
 ) -> None:
     assert without_none_values(value) == expected
+
+
+@coroutine_test
+async def test_as_async_generator():
+    ag = _as_async_generator(range(42))
+    results = [i async for i in ag]
+    assert results == list(range(42))
+
+
+@coroutine_test
+async def test_collect_asyncgen():
+    ag = _as_async_generator(range(42))
+    results = await _collect_asyncgen(ag)
+    assert results == list(range(42))

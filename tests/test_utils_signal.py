@@ -8,13 +8,13 @@ from pydispatch import dispatcher
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
-from scrapy.utils.signal import (
+from scrapy.utils._signal import (
     send_catch_log,
     send_catch_log_async,
     send_catch_log_deferred,
 )
+from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.test import get_from_asyncio_queue
 from tests.utils.decorators import coroutine_test
 

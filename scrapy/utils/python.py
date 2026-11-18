@@ -10,7 +10,7 @@ import re
 import sys
 import warnings
 import weakref
-from collections.abc import AsyncIterator, Iterable, Mapping
+from collections.abc import AsyncGenerator, AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, Self, TypeVar, overload
@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, Self, TypeVar, ov
 from formerly import deprecated_class
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -342,7 +341,7 @@ async def _async_chain(
     *iterables: Iterable[_T] | AsyncIterator[_T],
 ) -> AsyncIterator[_T]:
     for it in iterables:
-        async for o in as_async_generator(it):
+        async for o in _as_async_generator(it):
             yield o
 
 
@@ -397,3 +396,19 @@ def _iter_exc_causes(exc: BaseException) -> Iterable[BaseException]:
         seen.add(id(cur))
         yield cur
         cur = cur.__cause__ or cur.__context__
+
+
+async def _collect_asyncgen(result: AsyncIterator[_T]) -> list[_T]:
+    return [x async for x in result]
+
+
+async def _as_async_generator(
+    it: Iterable[_T] | AsyncIterator[_T],
+) -> AsyncGenerator[_T]:
+    """Wraps an iterable (sync or async) into an async generator."""
+    if isinstance(it, AsyncIterator):
+        async for r in it:
+            yield r
+    else:
+        for r in it:
+            yield r

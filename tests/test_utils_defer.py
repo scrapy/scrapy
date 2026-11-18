@@ -15,7 +15,6 @@ from twisted.internet.interfaces import IReadDescriptor
 from twisted.internet.task import Cooperator
 from zope.interface import implementer
 
-from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
     _aiter_errback,
@@ -28,6 +27,7 @@ from scrapy.utils.defer import (
     maybeDeferred_coro,
     mustbe_deferred,
 )
+from scrapy.utils.python import _as_async_generator, _collect_asyncgen
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
@@ -84,7 +84,7 @@ class TestAiterErrback:
                 yield x
 
         errors: list[Exception] = []
-        out = await collect_asyncgen(_aiter_errback(itergood(), errors.append))
+        out = await _collect_asyncgen(_aiter_errback(itergood(), errors.append))
         assert out == list(range(10))
         assert not errors
 
@@ -97,7 +97,7 @@ class TestAiterErrback:
                 yield x
 
         errors: list[Exception] = []
-        out = await collect_asyncgen(_aiter_errback(iterbad(), errors.append))
+        out = await _collect_asyncgen(_aiter_errback(iterbad(), errors.append))
         assert out == [0, 1, 2, 3, 4]
         assert len(errors) == 1
         assert isinstance(errors[0], ZeroDivisionError)
@@ -244,7 +244,7 @@ class TestParallelAsync:
     @staticmethod
     def get_async_iterable(length: int) -> AsyncGenerator[int, None]:
         # simulate a simple callback without delays between results
-        return as_async_generator(range(length))
+        return _as_async_generator(range(length))
 
     @staticmethod
     async def get_async_iterable_with_delays(length: int) -> AsyncGenerator[int, None]:

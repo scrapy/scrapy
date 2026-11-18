@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider
-from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import _is_awaitable, deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.python import _collect_asyncgen
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Coroutine, Iterable
@@ -66,7 +66,7 @@ async def _await_spider_output(result: Any) -> Any:
     it is awaitable, or collecting it into a list if it is an asynchronous
     iterator."""
     if isinstance(result, AsyncIterator):
-        return await collect_asyncgen(result)
+        return await _collect_asyncgen(result)
     if _is_awaitable(result):
         return await result
     return result

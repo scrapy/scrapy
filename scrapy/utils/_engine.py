@@ -1,0 +1,47 @@
+from __future__ import annotations
+
+# used in global tests code
+from time import time  # noqa: F401
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from scrapy.core.engine import ExecutionEngine
+
+
+def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, object]]:
+    """Return a report of the current engine status"""
+    tests = [
+        "time()-engine.start_time",
+        "len(engine.downloader.active)",
+        "engine.spider.name",
+        "engine.spider_is_idle()",
+        "engine.state",
+        "len(engine.requests_in_progress)",
+        "len(engine.scheduler.dqs or [])",
+        "len(engine.scheduler.mqs)",
+        "engine.response_active_size",
+        "engine.items_in_progress",
+    ]
+
+    checks: list[tuple[str, object]] = []
+    for test in tests:
+        try:
+            checks += [(test, eval(test))]  # noqa: S307
+        except Exception as e:
+            checks += [(test, f"{type(e).__name__} (exception)")]
+
+    return checks
+
+
+def format_engine_status(engine: ExecutionEngine) -> str:
+    checks = get_engine_status(engine)
+    s = "Execution engine status\n\n"
+    for test, result in checks:
+        s += f"{test:<47} : {result}\n"
+    s += "\n"
+
+    return s
+
+
+def print_engine_status(engine: ExecutionEngine) -> None:
+    print(format_engine_status(engine))

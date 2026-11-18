@@ -17,10 +17,10 @@ from scrapy.pipelines.media import (
     MediaPipeline,
     _MediaRequestFiltered,
 )
+from scrapy.utils._signal import disconnect_all
 from scrapy.utils.defer import _process_pending_io
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test

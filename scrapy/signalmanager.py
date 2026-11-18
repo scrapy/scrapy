@@ -11,7 +11,7 @@ from twisted.internet.defer import Deferred
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import _active_crawler_scope
-from scrapy.utils import signal as _signal
+from scrapy.utils import _signal
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.python import global_object_name
 
