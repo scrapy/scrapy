@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
 
     from scrapy import Spider
+    from scrapy.http import Headers
 
 
 class Command(ScrapyCommand):
@@ -55,10 +56,9 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def _print_headers(self, headers: dict[bytes, list[bytes]], prefix: bytes) -> None:
-        for key, values in headers.items():
-            for value in values:
-                self._print_bytes(prefix + b" " + key + b": " + value)
+    def _print_headers(self, headers: Headers, prefix: bytes) -> None:
+        for key, value in headers.raw:
+            self._print_bytes(prefix + b" " + key + b": " + value)
 
     def _print_response(self, response: Response, opts: Namespace) -> None:
         if opts.headers:

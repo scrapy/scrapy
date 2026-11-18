@@ -204,11 +204,7 @@ class HttpxDownloadHandler(_Base):
             )
         client = self._get_client(proxy, get_proxy_headers(request))
         # httpx sends bytes as they are but encodes str values as ASCII.
-        headers = [
-            (name, value)
-            for name, values in self._request_headers(request).items()
-            for value in values
-        ]
+        headers = self._request_headers(request).raw
 
         try:
             async with client.stream(

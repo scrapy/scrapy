@@ -592,7 +592,7 @@ headers_received
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
     :param headers: the headers received by the download handler
-    :type headers: :class:`scrapy.http.headers.Headers` object
+    :type headers: :class:`scrapy.http.Headers` object
 
     :param body_length: expected size of the response body, in bytes
     :type body_length: `int`

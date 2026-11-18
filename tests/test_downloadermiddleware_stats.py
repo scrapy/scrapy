@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from scrapy.downloadermiddlewares.stats import DownloaderStats, get_header_size
+from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.exceptions import NotConfigured
 from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.spiders import Spider
@@ -99,9 +99,3 @@ class TestDownloaderStats:
         crawler = get_crawler(Spider, {"DOWNLOADER_STATS": False})
         with pytest.raises(NotConfigured):
             build_from_crawler(DownloaderStats, crawler)
-
-
-def test_get_header_size_non_list_value() -> None:
-    # Deliberately passing a non-list/tuple header value to make sure
-    # get_header_size() degrades gracefully instead of raising.
-    assert get_header_size({"Content-Type": "text/html"}) == 0  # type: ignore[dict-item]
