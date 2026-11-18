@@ -503,6 +503,39 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "ImportError" not in log
         assert "ERROR: " not in log
 
+    def test_reactorless_start_running_loop(self) -> None:
+        """start() raises inside a running event loop without breaking that
+        loop or the process, which can still be started later."""
+        log = self.run_script("reactorless_start_running_loop.py")
+        assert (
+            "start() failed: AsyncCrawlerProcess.start() cannot be called while"
+            " an asyncio event loop is running in the same thread."
+        ) in log
+        assert "The running loop still works" in log
+        assert "Spider closed (finished)" in log
+        assert "Traceback" not in log
+
+    def test_reactorless_two_processes(self) -> None:
+        """Processes created before either of them starts use separate event
+        loops."""
+        log = self.run_script("reactorless_two_processes.py")
+        assert log.count("Spider closed (finished)") == 2
+        assert "Traceback" not in log
+
+    def test_reactorless_current_loop(self) -> None:
+        """The process doesn't use or change the current event loop of the
+        thread."""
+        log = self.run_script("reactorless_current_loop.py")
+        assert "Running in the current loop: False" in log
+        assert "Current loop kept: True" in log
+        assert "Current loop closed: False" in log
+
+    @pytest.mark.requires_uvloop
+    def test_reactorless_custom_loop(self) -> None:
+        log = self.run_script("reactorless_custom_loop.py")
+        assert "Running loop: uvloop.Loop" in log
+        assert "Spider closed (finished)" in log
+
     def test_reactorless_telnetconsole_default(self) -> None:
         """By default TWISTED_REACTOR_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
         log = self.run_script("reactorless_simple.py")  # no need for a separate script

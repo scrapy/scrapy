@@ -4,8 +4,6 @@ import warnings
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
-from w3lib.http import headers_dict_to_raw
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._datatypes import CaseInsensitiveDict
 
@@ -17,7 +15,30 @@ _RawValue: TypeAlias = bytes | str | int
 
 
 class Headers(dict):  # type: ignore[type-arg]
-    """Case insensitive http headers dictionary"""
+    """Headers of a :class:`~scrapy.Request` or a
+    :class:`~scrapy.http.Response`.
+
+    *seq* is a mapping of header names to values, or an iterable of
+    ``(name, value)`` pairs. Names and values can be :class:`bytes` or
+    :class:`str`, and values can also be :class:`int`. A value can be a list,
+    for a header with several values, or ``None``, for a header that must not
+    be sent. :class:`str` names and values are encoded with *encoding*.
+
+    Names and values are stored as :class:`bytes`. Lookups are
+    case-insensitive; the first spelling of a name is stored.
+
+    If several values of a header are stored, ``headers[name]`` and :meth:`get`
+    return the last one, :meth:`getlist` returns all of them, and
+    ``del headers[name]`` removes all of them. :attr:`raw` and
+    :meth:`to_tuple_list` return all values of all headers.
+
+    A header set to ``None`` stays in the headers without a value:
+    ``name in headers`` is ``True`` and ``headers[name]`` is ``None``. It is
+    not sent, and components that add default headers, such as
+    :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware` and
+    :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`,
+    do not add it.
+    """
 
     def __init__(
         self,
@@ -50,6 +71,10 @@ class Headers(dict):  # type: ignore[type-arg]
         return key in self
 
     def setdefault(self, key: str | bytes, def_val: Any = None) -> Any:
+        """Set the *key* header to *def_val* if the header is missing.
+
+        A header set to ``None`` is not considered missing.
+        """
         return dict.setdefault(self, self._normkey(key), self._normvalue(def_val))
 
     @classmethod
@@ -144,6 +169,8 @@ class Headers(dict):  # type: ignore[type-arg]
             return None
 
     def get(self, key: str | bytes, def_val: Any = None) -> bytes | None:
+        """Return the last value of the *key* header, or *def_val* as
+        :class:`bytes` if the header is missing or set to ``None``."""
         values = cast("list[bytes] | None", dict.get(self, self._normkey(key)))
         if not values:
             # The header is missing, or it was set to None so that it is not
@@ -154,6 +181,11 @@ class Headers(dict):  # type: ignore[type-arg]
     def getlist(
         self, key: str | bytes, def_val: _RawValue | Iterable[_RawValue] | None = None
     ) -> list[bytes]:
+        """Return the values of the *key* header as a list of :class:`bytes`.
+
+        If the header is missing, return *def_val* as such a list instead, or
+        an empty list if *def_val* is ``None``.
+        """
         try:
             return cast("list[bytes]", dict.__getitem__(self, self._normkey(key)))
         except KeyError:
@@ -194,8 +226,18 @@ class Headers(dict):  # type: ignore[type-arg]
             for k in self.keys()  # pylint: disable=consider-using-dict-items
         ]
 
+    @property
+    def raw(self) -> list[tuple[bytes, bytes]]:
+        """The headers as ``(name, value)`` pairs of bytes, one per value.
+
+        .. versionadded:: VERSION
+        """
+        return [(key, value) for key, values in dict.items(self) for value in values]
+
     def to_string(self) -> bytes:
-        return headers_dict_to_raw(self)
+        """Return the headers as :class:`bytes`, with one ``name: value`` line
+        per value and CRLF between lines."""
+        return b"\r\n".join(key + b": " + value for key, value in self.raw)
 
     def to_unicode_dict(self) -> CaseInsensitiveDict:
         warnings.warn(
@@ -215,7 +257,8 @@ class Headers(dict):  # type: ignore[type-arg]
         """Return headers as a list of ``(key, value)`` tuples.
 
         Multiple values are represented as multiple tuples with the same key.
-        Bytes that cannot be decoded are replaced with U+FFFD.
+        Bytes that cannot be decoded are replaced with U+FFFD. Use :attr:`raw`
+        for the exact bytes.
         """
         return [
             (

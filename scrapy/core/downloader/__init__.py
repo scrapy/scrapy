@@ -375,7 +375,7 @@ class Downloader:
         )
         # A response that is still being scraped is not garbage yet.
         scraping = bool(
-            engine and engine.scraper.slot and not engine.scraper.slot.is_idle()
+            engine and engine._scraper.slot and not engine._scraper.slot.is_idle()
         )
         if (
             self.active

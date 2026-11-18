@@ -3855,7 +3855,7 @@ New features
     (:gh:`7249`, :gh:`7263`)
 
 -   Added
-    :meth:`Headers.to_tuple_list() <scrapy.http.headers.Headers.to_tuple_list>`
+    :meth:`Headers.to_tuple_list() <scrapy.http.Headers.to_tuple_list>`
     that returns headers as a list of ``(key, value)`` tuples.
     (:gh:`7239`)
 

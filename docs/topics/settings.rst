@@ -509,11 +509,11 @@ class to be used.
 
 Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
 
-.. caution:: Please be aware that, when using a non-default event loop
-    (either defined via :setting:`ASYNCIO_EVENT_LOOP` or installed with
-    :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will call
-    :func:`asyncio.set_event_loop`, which will set the specified event loop
-    as the current loop for the current OS thread.
+.. caution:: Please be aware that, when using a Twisted reactor with a
+    non-default event loop (either defined via :setting:`ASYNCIO_EVENT_LOOP` or
+    installed with :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will
+    call :func:`asyncio.set_event_loop`, which will set the specified event
+    loop as the current loop for the current OS thread.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
