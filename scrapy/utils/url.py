@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 import warnings
 from typing import TYPE_CHECKING, TypeAlias
-from urllib.parse import ParseResult, urljoin, urlunparse
+from urllib.parse import ParseResult, urljoin, urlsplit, urlunparse
 
 import w3lib.url
 from w3lib.url import any_to_uri, parse_url, safe_url_string
@@ -23,6 +23,10 @@ if TYPE_CHECKING:
     from scrapy.http import Request, Response
 
 UrlT: TypeAlias = str | bytes | ParseResult
+
+
+def _is_url(url: str, *, schemes: Iterable[str]) -> bool:
+    return urlsplit(url).scheme.lower() in schemes
 
 
 def _parse_url(url: UrlT | Request | Response) -> ParseResult:

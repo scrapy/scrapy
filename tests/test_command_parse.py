@@ -204,10 +204,23 @@ class MyPipeline:
             encoding="utf-8",
         )
 
+        (proj_mod_path / "downloadhandler.py").write_text(
+            """
+from scrapy.http import Response
+
+
+class CustomDownloadHandler:
+    async def download_request(self, request):
+        return Response(request.url, body=b"", request=request)
+""",
+            encoding="utf-8",
+        )
+
         with (proj_mod_path / "settings.py").open("a", encoding="utf-8") as f:
             f.write(
                 f"""
 ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
+DOWNLOAD_HANDLERS = {{"custom": "{self.project_name}.downloadhandler.CustomDownloadHandler"}}
 """
             )
 
@@ -244,6 +257,27 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             "parse", "--spider", self.spider_name, "not-a-url", cwd=proj_path
         )
         assert code != 0
+
+    def test_custom_scheme(self, proj_path: Path) -> None:
+        returncode, out, err = proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "custom://example.com",
+            cwd=proj_path,
+        )
+        assert returncode == 0, err
+        assert "{'foo': 'bar'}" in out
+
+    @pytest.mark.parametrize("scheme", ["ftp", "custom"])
+    def test_disabled_scheme(self, scheme: str, proj_path: Path) -> None:
+        self._append_settings(
+            proj_path / self.project_name,
+            f"\nDOWNLOAD_HANDLERS[{scheme!r}] = None\n",
+        )
+        returncode, out, _ = proc("parse", f"{scheme}://example.com", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
 
     def test_curl(self, proj_path: Path, mockserver: MockServer) -> None:
         _, _, stderr = proc(
@@ -601,7 +635,9 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         content = '[\n{},\n{"foo": "bar"}\n]'
         assert file_path.read_text(encoding="utf-8") == content
 
-    @pytest.mark.parametrize("args", [(), ("not-a-url",), ("a:b", "c:d")])
+    @pytest.mark.parametrize(
+        "args", [(), ("not-a-url",), ("unknown://example.com",), ("a:b", "c:d")]
+    )
     def test_bad_arguments(self, args: tuple[str, ...], proj_path: Path) -> None:
         returncode, out, _ = proc("parse", *args, cwd=proj_path)
         assert returncode == 2
