@@ -229,16 +229,16 @@ def curl_to_request_kwargs(
     result: dict[str, Any] = {"method": method.upper(), "url": url}
 
     headers, cookies = _parse_headers_and_cookies(parsed_args)
-
-    if headers:
-        result["headers"] = headers
     if cookies:
         result["cookies"] = cookies
-    if parsed_args.data:
+    if parsed_args.data is not None:
         result["body"] = parsed_args.data
+        if not any(name.lower() == "content-type" for name, _ in headers):
+            headers.append(("Content-Type", "application/x-www-form-urlencoded"))
         if not parsed_args.method:
             # if the "data" is specified but the "method" is not specified,
             # the default method is 'POST'
             result["method"] = "POST"
-
+    if headers:
+        result["headers"] = headers
     return result
