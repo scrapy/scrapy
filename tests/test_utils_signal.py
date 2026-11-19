@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class TestSendCatchLog:
     # whether the function being tested returns exceptions or failures
-    returns_exceptions: bool = False
+    returns_exceptions: bool = True
 
     @coroutine_test
     async def test_send_catch_log(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -94,6 +94,8 @@ class TestSendCatchLog:
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogDeferred(TestSendCatchLog):
+    returns_exceptions = False
+
     def _get_result(self, signal: Any, *a: Any, **kw: Any) -> Any:
         return send_catch_log_deferred(signal, *a, **kw)
 
@@ -125,8 +127,6 @@ class TestSendCatchLogDeferredAsyncio(TestSendCatchLogDeferred):
 
 
 class TestSendCatchLogAsync(TestSendCatchLog):
-    returns_exceptions = True
-
     def _get_result(self, signal, *a, **kw):
         return deferred_from_coro(send_catch_log_async(signal, *a, **kw))
 

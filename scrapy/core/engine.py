@@ -673,7 +673,7 @@ class ExecutionEngine:
             dont_log=IgnoreRequest,
         )
         for _, result in request_scheduled_result:
-            if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
+            if isinstance(result, IgnoreRequest):
                 return
         assert self._slot is not None
         if request.meta.get(
@@ -882,12 +882,7 @@ class ExecutionEngine:
         res = self.signals.send_catch_log(
             signals.spider_idle, spider=self.spider, dont_log=expected_ex
         )
-        detected_ex = {
-            ex: x.value
-            for _, x in res
-            for ex in expected_ex
-            if isinstance(x, Failure) and isinstance(x.value, ex)
-        }
+        detected_ex = {ex: x for _, x in res for ex in expected_ex if isinstance(x, ex)}
         if DontCloseSpider in detected_ex:
             return
         if self.spider_is_idle():
