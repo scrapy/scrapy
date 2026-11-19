@@ -107,6 +107,16 @@ class CustomDownloadHandler:
         _, out, _ = proc("fetch", "custom://example.com", cwd=proj_path)
         assert out.strip() == "Works"
 
+    @pytest.mark.parametrize("scheme", ["ftp", "custom"])
+    def test_disabled_scheme(self, scheme: str, proj_path: Path) -> None:
+        self._append_settings(
+            proj_path / self.project_name,
+            f"\nDOWNLOAD_HANDLERS[{scheme!r}] = None\n",
+        )
+        returncode, out, _ = proc("fetch", f"{scheme}://example.com", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
+
     def test_spider(self, proj_path: Path, mockserver: MockServer) -> None:
         _, out, err = proc(
             "fetch", "--spider", "myspider", mockserver.url("/echo"), cwd=proj_path

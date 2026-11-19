@@ -269,6 +269,16 @@ DOWNLOAD_HANDLERS = {{"custom": "{self.project_name}.downloadhandler.CustomDownl
         assert returncode == 0, err
         assert "{'foo': 'bar'}" in out
 
+    @pytest.mark.parametrize("scheme", ["ftp", "custom"])
+    def test_disabled_scheme(self, scheme: str, proj_path: Path) -> None:
+        self._append_settings(
+            proj_path / self.project_name,
+            f"\nDOWNLOAD_HANDLERS[{scheme!r}] = None\n",
+        )
+        returncode, out, _ = proc("parse", f"{scheme}://example.com", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
+
     def test_curl(self, proj_path: Path, mockserver: MockServer) -> None:
         _, _, stderr = proc(
             "parse",
@@ -625,7 +635,9 @@ DOWNLOAD_HANDLERS = {{"custom": "{self.project_name}.downloadhandler.CustomDownl
         content = '[\n{},\n{"foo": "bar"}\n]'
         assert file_path.read_text(encoding="utf-8") == content
 
-    @pytest.mark.parametrize("args", [(), ("not-a-url",), ("a:b", "c:d")])
+    @pytest.mark.parametrize(
+        "args", [(), ("not-a-url",), ("unknown://example.com",), ("a:b", "c:d")]
+    )
     def test_bad_arguments(self, args: tuple[str, ...], proj_path: Path) -> None:
         returncode, out, _ = proc("parse", *args, cwd=proj_path)
         assert returncode == 2

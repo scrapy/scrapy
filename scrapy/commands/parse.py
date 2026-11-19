@@ -9,7 +9,12 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, overload
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 
-from scrapy.commands import BaseRunSpiderCommand, _add_curl_option, _request_from_curl
+from scrapy.commands import (
+    BaseRunSpiderCommand,
+    _add_curl_option,
+    _is_valid_url_arg,
+    _request_from_curl,
+)
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
 from scrapy.utils import _colorize
@@ -17,7 +22,6 @@ from scrapy.utils.defer import _aiter_errback, _schedule_coro, deferred_from_cor
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import _collect_asyncgen
 from scrapy.utils.spider import spidercls_for_request
-from scrapy.utils.url import _is_url
 
 if TYPE_CHECKING:
     import argparse
@@ -414,9 +418,7 @@ class Command(BaseRunSpiderCommand):
             request = _request_from_curl(opts.curl)
         else:
             assert self.settings is not None
-            if len(args) != 1 or not _is_url(
-                args[0], schemes=self.settings.getwithbase("DOWNLOAD_HANDLERS")
-            ):
+            if not _is_valid_url_arg(args, self.settings):
                 raise UsageError
             request = Request(args[0])
         url = request.url
