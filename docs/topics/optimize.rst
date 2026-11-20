@@ -92,9 +92,23 @@ CPU
     CPU-bound code blocks that single thread for too long; lower
     :setting:`EVENT_LOOP_LAG_THRESHOLD` to catch shorter stalls.
 
-    Use a sampling profiler, such as py-spy_, to find out which code is
-    spending that CPU. :ref:`Selectors <topics-selectors>` and item pipelines
-    are the usual answer.
+    Use a sampling profiler to find out which code is spending that CPU.
+    :ref:`Selectors <topics-selectors>` and item pipelines are the usual
+    answer.
+
+    On Python 3.15 and higher, the standard library :mod:`profiling.sampling`
+    module can attach to a crawl that is already running, which is what you
+    need when a crawl only slows down after hours:
+
+    .. code-block:: bash
+
+        python -m profiling.sampling attach --flamegraph -d 30 -o cpu.html 1234
+
+    That samples process 1234 for 30 seconds and writes a flame graph to
+    :file:`cpu.html`. Reading the stacks of a running process requires
+    elevated permissions on most operating systems.
+
+    On lower Python versions, use py-spy_.
 
     .. _py-spy: https://github.com/benfred/py-spy
 
