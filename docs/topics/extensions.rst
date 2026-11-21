@@ -365,9 +365,8 @@ This extension logs the following configurable sections:
     The :setting:`PERIODIC_LOG_TIMING_ENABLED` setting determines whether or
     not to show this section.
 
-This extension logs data at the start, then on a fixed time interval
-configurable through the :setting:`LOGSTATS_INTERVAL` setting, and finally
-right before the crawl ends.
+This extension logs data on a fixed time interval configurable through the
+:setting:`LOGSTATS_INTERVAL` setting, and right before the crawl ends.
 
 
 Example extension configuration:
