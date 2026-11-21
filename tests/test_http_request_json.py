@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -186,3 +187,25 @@ class TestJsonRequest(TestRequestBase):
 
         with pytest.warns(UserWarning, match="data will be ignored"):
             r1.replace(data=data2, body=body2)
+
+    def test_replace_new_dumps_kwargs(self):
+        """Test that replacement dumps_kwargs are used when replace is called with new data"""
+        data1 = {"name1": "value1"}
+        data2 = {"value": Decimal("1.25")}
+        r1 = self.request_class(url="http://www.example.com/", data=data1)
+        r2 = r1.replace(data=data2, dumps_kwargs={"default": str})
+        assert r2.body == b'{"value": "1.25"}'
+        assert r2.dumps_kwargs == {"default": str, "sort_keys": True}
+
+    def test_replace_override_dumps_kwargs(self):
+        data1 = {"text": "caf\u00e9"}
+        data2 = {"text": "caf\u00e9"}
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data=data1,
+            dumps_kwargs={"ensure_ascii": True},
+        )
+        assert r1.body == b'{"text": "caf\\u00e9"}'
+        r2 = r1.replace(data=data2, dumps_kwargs={"ensure_ascii": False})
+        assert r2.body == '{"text": "caf\u00e9"}'.encode("utf-8")
+        assert r2.dumps_kwargs["ensure_ascii"] is False
