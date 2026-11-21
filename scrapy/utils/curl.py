@@ -233,8 +233,17 @@ def curl_to_request_kwargs(
         result["cookies"] = cookies
     if parsed_args.data is not None:
         result["body"] = parsed_args.data
-        if not any(name.lower() == "content-type" for name, _ in headers):
+        content_type_headers = [
+            (name, value) for name, value in headers if name.lower() == "content-type"
+        ]
+        if not content_type_headers:
             headers.append(("Content-Type", "application/x-www-form-urlencoded"))
+        elif any(value is None for _, value in content_type_headers):
+            headers = [
+                (name, value)
+                for name, value in headers
+                if not (name.lower() == "content-type" and value is None)
+            ]
         if not parsed_args.method:
             # if the "data" is specified but the "method" is not specified,
             # the default method is 'POST'

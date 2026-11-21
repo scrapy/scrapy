@@ -461,3 +461,12 @@ class TestCurlToRequestKwargs:
     def test_empty_command_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("")
+
+    def test_post_data_suppresses_content_type(self):
+        curl_command = "curl 'https://www.example.org/' -H 'Content-Type:' -d 'a=1'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1",
+        }
+        self._test_command(curl_command, expected_result)
