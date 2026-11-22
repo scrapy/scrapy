@@ -603,8 +603,11 @@ Sitemap: /sitemap-relative-url.xml
         assert isinstance(crawler.spider, _Spider)
         assert len(crawler.spider.robots_txt_requests) == 1
 
-    def test_parse_sitemap_empty_body(self, caplog: pytest.LogCaptureFixture) -> None:
-        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
+    @pytest.mark.parametrize("body", [b"", b"   \n  ", b"<!-- a comment -->"])
+    def test_parse_sitemap_empty_body(
+        self, body: bytes, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=body)
         spider = self.spider_class("example.com")
 
         caplog.clear()
