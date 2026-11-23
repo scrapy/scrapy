@@ -6,6 +6,14 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._sitemap import Sitemap, sitemap_urls_from_robots
 
 
+def test_sitemap_no_root_element():
+    """Whitespace-only or comment-only bodies must raise a clear ValueError
+    instead of a bare StopIteration."""
+    for body in (b"   \n  ", b"<!-- a comment -->"):
+        with pytest.raises(ValueError, match="empty or has no root element"):
+            Sitemap(body)
+
+
 def test_sitemap():
     s = Sitemap(
         b"""<?xml version="1.0" encoding="UTF-8"?>

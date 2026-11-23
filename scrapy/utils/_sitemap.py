@@ -40,7 +40,15 @@ class Sitemap:
             remove_pis=True,
             events=("start", "end"),
         )
-        _, root = next(self.xmliter)
+        try:
+            _, root = next(self.xmliter)
+        except StopIteration:
+            # With recover=True, lxml yields no events at all for documents
+            # without a root element that it cannot surface as a syntax
+            # error (e.g. whitespace-only or comment-only input).
+            raise ValueError(
+                "The sitemap is empty or has no root element"
+            ) from None
         self.type = self._get_tag_name(root)
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
