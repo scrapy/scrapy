@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 import logging
 import re
 import signal
@@ -1084,6 +1085,22 @@ async def test_async_crawler_process_force_stop_reactorless_without_loop(
     crawler = crawler_process.create_crawler(DefaultSpider)
 
     await crawler.stop_async(mode="force")
+
+
+def test_async_crawler_process_unstarted_reactorless_loop_closed(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False, "LOG_INSTALL_ROOT_HANDLER": False},
+    )
+    loop = crawler_process._reactorless_loop
+    assert loop is not None
+    del crawler_process
+    gc.collect()
+    assert loop.is_closed()
 
 
 @pytest.mark.only_asyncio

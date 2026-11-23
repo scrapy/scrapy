@@ -6,6 +6,7 @@ import logging
 import pprint
 import signal
 import warnings
+import weakref
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
@@ -1069,6 +1070,14 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
 
+def _close_reactorless(
+    loop: asyncio.AbstractEventLoop, hook: ReactorImportHook
+) -> None:
+    # loop.close() can raise, so we uninstall the hook first
+    uninstall_reactor_import_hook(hook)
+    loop.close()
+
+
 class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     """
     A class to run multiple scrapy crawlers in a process simultaneously.
@@ -1109,7 +1118,6 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
         self._reactorless_loop: asyncio.AbstractEventLoop | None = None
-        self._reactor_import_hook: ReactorImportHook | None = None
         # The event loop, or the reactor with its event loop, is set up here
         # and not in start(), because crawl() needs it to create tasks.
         # The ASYNCIO_EVENT_LOOP setting cannot be overridden by add-ons and
@@ -1127,7 +1135,13 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             self._reactorless_loop = (
                 load_object(loop_path)() if loop_path else asyncio.new_event_loop()
             )
-            self._reactor_import_hook = install_reactor_import_hook()
+            # Also covers instances that are never started.
+            self._close_reactorless = weakref.finalize(
+                self,
+                _close_reactorless,
+                self._reactorless_loop,
+                install_reactor_import_hook(),
+            )
         elif is_reactor_installed():
             # The user could install a reactor before this class is instantiated.
             # We need to make sure the reactor is the correct one and the loop
@@ -1284,13 +1298,9 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.run_until_complete(loop.shutdown_default_executor())
         finally:
-            # loop.close() can raise, so we uninstall the hook first
-            if self._reactor_import_hook:  # pragma: no branch
-                uninstall_reactor_import_hook(self._reactor_import_hook)
-                self._reactor_import_hook = None
             self._reactorless_main_task = None
-            loop.close()
             self._reactorless_loop = None
+            self._close_reactorless()
 
     @staticmethod
     def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
