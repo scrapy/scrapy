@@ -432,7 +432,7 @@ Stack trace dump extension
 Dumps information about the running process when a `SIGQUIT`_ or `SIGUSR2`_
 signal is received. The information dumped is the following:
 
-1. engine status (using ``scrapy.utils.engine.get_engine_status()``)
+1. values of various engine internals
 2. live references (see :ref:`topics-leaks-trackrefs`)
 3. stack trace of all threads
 

@@ -16,8 +16,8 @@ from scrapy.http import Headers, Request, Response
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
+from scrapy.utils._signal import disconnect_all
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:

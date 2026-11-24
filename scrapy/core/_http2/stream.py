@@ -21,6 +21,7 @@ from scrapy.exceptions import (
 from scrapy.http.headers import Headers
 from scrapy.utils._download_handlers import (
     check_stop_download,
+    get_headers_warnsize_msg,
     get_maxsize_msg,
     get_warnsize,
     get_warnsize_msg,
@@ -261,8 +262,7 @@ class Stream:
         if b"Content-Length" not in self._request.headers:
             headers.append((b"Content-Length", str(len(self._request.body)).encode()))
 
-        for name, values in self._request.headers.items():
-            headers.extend((name, value) for value in values)
+        headers.extend(self._request.headers.raw)
 
         return headers
 
@@ -377,6 +377,19 @@ class Stream:
                 self._response["status"] = int(value)
             else:
                 self._response["headers"].appendlist(name, value)
+
+        # DOWNLOAD_HEADERS_MAXSIZE is enforced by the HPACK decoder, which has
+        # no equivalent hook for a warning, so the warning happens here instead,
+        # using the same accounting that RFC 9113 §6.5.2 defines.
+        headers_warnsize = self._protocol.headers_warnsize
+        if headers_warnsize:
+            headers_size = sum(len(name) + len(value) + 32 for name, value in headers)
+            if headers_size > headers_warnsize:
+                logger.warning(
+                    get_headers_warnsize_msg(
+                        headers_size, headers_warnsize, self._request.url
+                    )
+                )
 
         expected_size = int(self._response["headers"].get(b"Content-Length", -1))
 

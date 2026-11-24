@@ -15,7 +15,7 @@ import traceback
 from pdb import Pdb
 from typing import TYPE_CHECKING, Self
 
-from scrapy.utils.engine import format_engine_status
+from scrapy.utils._engine import format_engine_status
 from scrapy.utils.trackref import format_live_refs
 
 if TYPE_CHECKING:

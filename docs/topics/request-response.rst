@@ -45,7 +45,7 @@ Request objects
 
     .. attribute:: Request.headers
 
-        A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
+        A dictionary-like (:class:`scrapy.http.Headers`) object which contains
         the request headers.
 
         .. versionchanged:: 2.20.0
@@ -1299,10 +1299,10 @@ Response objects
 
     .. attribute:: Response.headers
 
-        A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
+        A dictionary-like (:class:`scrapy.http.Headers`) object which contains
         the response headers. Values can be accessed using
-        :meth:`~scrapy.http.headers.Headers.get` to return the last header value with
-        the specified name or :meth:`~scrapy.http.headers.Headers.getlist` to return
+        :meth:`~scrapy.http.Headers.get` to return the last header value with
+        the specified name or :meth:`~scrapy.http.Headers.getlist` to return
         all header values with the specified name. For example, this call will give you
         all cookies in the headers:
 
@@ -1639,3 +1639,10 @@ Other functions related to responses
 ====================================
 
 .. autofunction:: scrapy.utils.response.response_from_dict
+
+
+Headers objects
+===============
+
+.. autoclass:: Headers
+    :members: get, getlist, raw, setdefault, to_string, to_tuple_list

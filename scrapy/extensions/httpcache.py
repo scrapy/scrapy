@@ -12,7 +12,7 @@ from typing import IO, TYPE_CHECKING, Any, Concatenate, cast
 from urllib.parse import quote
 from weakref import WeakKeyDictionary
 
-from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
+from w3lib.http import headers_raw_to_dict
 
 from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
@@ -382,7 +382,7 @@ class FilesystemCacheStorage:
         with self._open(rpath / "pickled_meta", "wb") as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(rpath / "response_headers", "wb") as f:
-            f.write(headers_dict_to_raw(response.headers))
+            f.write(response.headers.to_string())
         with self._open(rpath / "response_body", "wb") as f:
             f.write(response.body)
         data = {
@@ -393,7 +393,7 @@ class FilesystemCacheStorage:
         with self._open(rpath / "response_data", "wb") as f:
             pickle.dump(data, f, protocol=4)
         with self._open(rpath / "request_headers", "wb") as f:
-            f.write(headers_dict_to_raw(request.headers))
+            f.write(request.headers.to_string())
         with self._open(rpath / "request_body", "wb") as f:
             f.write(request.body)
 

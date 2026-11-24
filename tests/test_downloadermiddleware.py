@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 from twisted.internet.defer import Deferred, succeed
 
-from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.downloader._middleware import DownloaderMiddlewareManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import (
     CloseSpider,

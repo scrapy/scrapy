@@ -68,6 +68,7 @@ def test_get_base_url() -> None:
 def test_response_status_message():
     assert response_status_message(200) == "200 OK"
     assert response_status_message(404) == "404 Not Found"
+    assert response_status_message(429) == "429 Too Many Requests"
     assert response_status_message(573) == "573 Unknown Status"
 
 

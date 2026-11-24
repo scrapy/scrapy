@@ -6,6 +6,7 @@ import logging
 import pprint
 import signal
 import warnings
+import weakref
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
@@ -13,10 +14,10 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Spider
-from scrapy.addons import AddonManager
+from scrapy._addons import AddonManager
+from scrapy._extension import ExtensionManager
 from scrapy.core.engine import EngineState, ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
@@ -40,7 +41,6 @@ from scrapy.utils.reactor import (
     _is_asyncio_reactor_installed,
     install_reactor,
     is_reactor_installed,
-    set_asyncio_event_loop,
     verify_installed_asyncio_event_loop,
     verify_installed_reactor,
 )
@@ -495,7 +495,7 @@ class Crawler:
                 "Crawler.get_item_pipeline() can only be called after the "
                 "crawl engine has been created."
             )
-        return self._get_component(cls, self.engine.scraper.itemproc.middlewares)
+        return self._get_component(cls, self.engine._scraper.itemproc.middlewares)
 
     def get_spider_middleware(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of a :ref:`spider middleware
@@ -512,7 +512,7 @@ class Crawler:
                 "Crawler.get_spider_middleware() can only be called after the "
                 "crawl engine has been created."
             )
-        return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
+        return self._get_component(cls, self.engine._scraper.spidermw.middlewares)
 
 
 class CrawlerRunnerBase(ABC):
@@ -1070,6 +1070,14 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
 
+def _close_reactorless(
+    loop: asyncio.AbstractEventLoop, hook: ReactorImportHook
+) -> None:
+    # loop.close() can raise, so we uninstall the hook first
+    uninstall_reactor_import_hook(hook)
+    loop.close()
+
+
 class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     """
     A class to run multiple scrapy crawlers in a process simultaneously.
@@ -1088,7 +1096,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
     When the :setting:`TWISTED_REACTOR_ENABLED` setting is set to ``True``,
     this class installs a reactor and uses it, otherwise it requires a reactor
-    to not be installed but installs an asyncio event loop and uses it.
+    to not be installed and creates its own asyncio event loop.
 
     :param install_root_handler: whether to install root logging handler
         (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
@@ -1110,10 +1118,8 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
         self._reactorless_loop: asyncio.AbstractEventLoop | None = None
-        self._reactor_import_hook: ReactorImportHook | None = None
-        # We want the asyncio event loop to be installed early, so that it's
-        # always the correct one. And as we do that, we can also install the
-        # reactor here.
+        # The event loop, or the reactor with its event loop, is set up here
+        # and not in start(), because crawl() needs it to create tasks.
         # The ASYNCIO_EVENT_LOOP setting cannot be overridden by add-ons and
         # spiders when using AsyncCrawlerProcess.
         loop_path = self.settings["ASYNCIO_EVENT_LOOP"]
@@ -1122,8 +1128,20 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                 raise RuntimeError(
                     "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
                 )
-            self._reactorless_loop = set_asyncio_event_loop(loop_path)
-            self._reactor_import_hook = install_reactor_import_hook()
+            # This loop is not set as the current loop of the thread, so that
+            # it doesn't affect other code, and each AsyncCrawlerProcess
+            # instance has its own loop. User code will still receive it from
+            # get_running_loop().
+            self._reactorless_loop = (
+                load_object(loop_path)() if loop_path else asyncio.new_event_loop()
+            )
+            # Also covers instances that are never started.
+            self._close_reactorless = weakref.finalize(
+                self,
+                _close_reactorless,
+                self._reactorless_loop,
+                install_reactor_import_hook(),
+            )
         elif is_reactor_installed():
             # The user could install a reactor before this class is instantiated.
             # We need to make sure the reactor is the correct one and the loop
@@ -1137,7 +1155,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         self._reactorless_main_task: asyncio.Future[None] | None = None
 
     def _get_event_loop(self) -> asyncio.AbstractEventLoop:
-        # crawl() can be called before start() runs the loop installed by
+        # crawl() can be called before start() runs the loop created by
         # __init__().
         if self._reactorless_loop is not None:
             return self._reactorless_loop
@@ -1240,6 +1258,13 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         # 7. _close_loop() cancels all pending tasks (including
         #    _shutdown_graceful_reactorless()), does finalization and calls loop.close()
 
+        if _has_running_loop():
+            raise RuntimeError(
+                "AsyncCrawlerProcess.start() cannot be called while an asyncio"
+                " event loop is running in the same thread. You can use"
+                " AsyncCrawlerRunner to run spiders in that loop."
+            )
+
         loop = self._reactorless_loop
         assert loop
 
@@ -1273,14 +1298,9 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.run_until_complete(loop.shutdown_default_executor())
         finally:
-            # loop.close() can raise, so we uninstall the hook first
-            if self._reactor_import_hook:  # pragma: no branch
-                uninstall_reactor_import_hook(self._reactor_import_hook)
-                self._reactor_import_hook = None
             self._reactorless_main_task = None
-            asyncio.set_event_loop(None)
-            loop.close()
             self._reactorless_loop = None
+            self._close_reactorless()
 
     @staticmethod
     def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:

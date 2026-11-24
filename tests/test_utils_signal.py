@@ -8,13 +8,13 @@ from pydispatch import dispatcher
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
-from scrapy.utils.signal import (
+from scrapy.utils._signal import (
     send_catch_log,
     send_catch_log_async,
     send_catch_log_deferred,
 )
+from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.test import get_from_asyncio_queue
 from tests.utils.decorators import coroutine_test
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class TestSendCatchLog:
     # whether the function being tested returns exceptions or failures
-    returns_exceptions: bool = False
+    returns_exceptions: bool = True
 
     @coroutine_test
     async def test_send_catch_log(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -94,6 +94,8 @@ class TestSendCatchLog:
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogDeferred(TestSendCatchLog):
+    returns_exceptions = False
+
     def _get_result(self, signal: Any, *a: Any, **kw: Any) -> Any:
         return send_catch_log_deferred(signal, *a, **kw)
 
@@ -125,8 +127,6 @@ class TestSendCatchLogDeferredAsyncio(TestSendCatchLogDeferred):
 
 
 class TestSendCatchLogAsync(TestSendCatchLog):
-    returns_exceptions = True
-
     def _get_result(self, signal, *a, **kw):
         return deferred_from_coro(send_catch_log_async(signal, *a, **kw))
 

@@ -7,8 +7,8 @@ import pytest
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.depth import DepthMiddleware
 from scrapy.spiders import Spider
-from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.python import _as_async_generator, _collect_asyncgen
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -89,8 +89,8 @@ async def test_process_spider_output_async_no_response(
 ) -> None:
     result = [Request("https://example.com")]
 
-    out = await collect_asyncgen(
-        mw.process_spider_output_async(None, as_async_generator(result))
+    out = await _collect_asyncgen(
+        mw.process_spider_output_async(None, _as_async_generator(result))
     )
     assert out == result
     assert "depth" not in out[0].meta

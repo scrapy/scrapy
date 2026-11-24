@@ -66,7 +66,7 @@ async def test_exception_scraper(
     engine = ExecutionEngine(crawler)
     crawler.engine = engine
     await engine.open_spider_async()
-    engine.scraper.slot = None
+    engine._scraper.slot = None
     await engine.close_spider_async()
     assert "Scraper close failure" in caplog.text
 

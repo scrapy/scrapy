@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from scrapy.downloadermiddlewares.stats import DownloaderStats, get_header_size
+from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.exceptions import NotConfigured
 from scrapy.http import BodyFileResponse, Request, Response
 from scrapy.spiders import Spider
@@ -66,6 +66,18 @@ class TestDownloaderStats:
         self.mw.process_response(self.req, res)
         self.assertStatsEqual("downloader/response_bytes", len(raw_response))
 
+    @pytest.mark.parametrize(
+        ("status", "raw_response"),
+        [
+            (429, b"HTTP/1.1 429 Too Many Requests\r\n\r\nbody"),
+            (599, b"HTTP/1.1 599 \r\n\r\nbody"),
+        ],
+    )
+    def test_response_bytes_status(self, status: int, raw_response: bytes) -> None:
+        res = Response("http://scrapytest.org", status=status, body=b"body")
+        self.mw.process_response(self.req, res)
+        self.assertStatsEqual("downloader/response_bytes", len(raw_response))
+
     def test_response_bytes_body_file(self, tmp_path: Path) -> None:
         body_file = tmp_path / "body"
         body_file.write_bytes(b"body")
@@ -87,9 +99,3 @@ class TestDownloaderStats:
         crawler = get_crawler(Spider, {"DOWNLOADER_STATS": False})
         with pytest.raises(NotConfigured):
             build_from_crawler(DownloaderStats, crawler)
-
-
-def test_get_header_size_non_list_value() -> None:
-    # Deliberately passing a non-list/tuple header value to make sure
-    # get_header_size() degrades gracefully instead of raising.
-    assert get_header_size({"Content-Type": "text/html"}) == 0  # type: ignore[dict-item]

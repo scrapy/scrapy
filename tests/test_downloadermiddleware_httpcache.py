@@ -16,7 +16,7 @@ import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import signals
-from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.downloader._middleware import DownloaderMiddlewareManager
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.extensions.httpcache import DummyPolicy, rfc1123_to_epoch

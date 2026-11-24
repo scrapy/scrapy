@@ -17,10 +17,10 @@ from scrapy.pipelines.media import (
     MediaPipeline,
     _MediaRequestFiltered,
 )
+from scrapy.utils._signal import disconnect_all
 from scrapy.utils.defer import _process_pending_io
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -568,6 +568,38 @@ class TestBuildFromCrawler:
         assert pipe.crawler == self.crawler
         assert pipe._fingerprinter
         assert pipe._from_crawler_called
+
+
+class MediaDownloadedErrorPipeline(MockedMediaPipeline):
+    def media_downloaded(
+        self,
+        response: Response,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        *,
+        item: Any = None,
+    ) -> FileInfo:
+        self._mockcalled.append("media_downloaded")
+        raise ValueError("foo")
+
+
+class TestMediaDownloadedError(TestBaseMediaPipeline):
+    pipeline_class = MediaDownloadedErrorPipeline
+
+    @coroutine_test
+    async def test_error_skips_media_failed(self):
+        url = "https://example.com"
+        req = Request(url, meta={"response": Response(url)})
+        new_item = await self.pipe.process_item({"requests": req})
+        ((ok, failure),) = new_item["results"]
+        assert ok is False
+        assert isinstance(failure.value, ValueError)
+        assert self.mocked_pipe._mockcalled == [
+            "get_media_requests",
+            "media_to_download",
+            "media_downloaded",
+            "item_completed",
+        ]
 
 
 class MediaFailedNonePipeline(MockedMediaPipeline):

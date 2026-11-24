@@ -248,6 +248,34 @@ def test_to_string(headers: list[tuple[str, str | None]], expected: bytes) -> No
     assert Headers(headers).to_string() == expected
 
 
+@pytest.mark.parametrize(
+    ("headers", "expected"),
+    [
+        ([], []),
+        ([("X-Removed", None)], []),
+        (
+            [
+                ("Content-Type", "text/html"),
+                ("set-cookie", "a=1"),
+                ("X-Removed", None),
+                ("Set-Cookie", "b=2"),
+            ],
+            [
+                (b"Content-Type", b"text/html"),
+                (b"set-cookie", b"a=1"),
+                (b"set-cookie", b"b=2"),
+            ],
+        ),
+        ([(b"X-\xff", b"caf\xe9")], [(b"X-\xff", b"caf\xe9")]),
+    ],
+)
+def test_raw(
+    headers: list[tuple[str | bytes, str | bytes | None]],
+    expected: list[tuple[bytes, bytes]],
+) -> None:
+    assert Headers(headers).raw == expected
+
+
 def test_to_unicode_dict_undecodable() -> None:
     h = Headers({b"Public-Key-Pins": b'pin-sha256=\x94"a"', b"X-\xff": b"ok"})
     with pytest.warns(ScrapyDeprecationWarning, match="to_unicode_dict"):

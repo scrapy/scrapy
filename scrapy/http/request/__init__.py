@@ -153,9 +153,9 @@ class Request(object_ref):
 
     *method* is the HTTP method of the request.
 
-    *headers* are the request headers. Header values can be strings, for
-    single-valued headers, or lists, for multi-valued headers. Headers with a
-    ``None`` value are not sent.
+    *headers* are the request headers, in any form that
+    :class:`~scrapy.http.Headers` accepts. Headers with a ``None`` value are
+    not sent.
 
     .. caution:: The :ref:`cookie middleware <cookies>` ignores cookies set
         through the ``Cookie`` header. Use *cookies* instead.
@@ -166,8 +166,8 @@ class Request(object_ref):
     as a list of dicts with a cookie each. See :ref:`cookies`.
 
     *encoding* is used to percent-encode *url*, unless the
-    :reqmeta:`verbatim_url` request meta key is set, and to encode *body* if it
-    is a string.
+    :reqmeta:`verbatim_url` request meta key is set, to encode *body* if it is
+    a string, and to encode string header names and values.
 
     *flags* is a list of labels for the request, which are included in log
     messages about it.

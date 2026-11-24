@@ -1,0 +1,211 @@
+from __future__ import annotations
+
+import asyncio
+import logging
+from collections.abc import Awaitable, Callable, Generator, Sequence
+from typing import Any as TypingAny
+from typing import cast
+
+from pydispatch.dispatcher import (
+    Anonymous,
+    Any,
+    disconnect,
+    getAllReceivers,
+    liveReceivers,
+)
+from pydispatch.robustapply import robustApply
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
+from twisted.python.failure import Failure
+
+from scrapy.exceptions import StopDownload
+from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.defer import (
+    _maybeDeferred_coro,
+    ensure_awaitable,
+    maybe_deferred_to_future,
+)
+from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import global_object_name
+
+logger = logging.getLogger(__name__)
+
+
+def send_catch_log(
+    signal: TypingAny = Any,
+    sender: TypingAny = Anonymous,
+    *arguments: TypingAny,
+    **named: TypingAny,
+) -> list[tuple[Callable[..., TypingAny], TypingAny]]:
+    """Like ``pydispatch.robust.sendRobust()`` but it also logs errors."""
+    dont_log = named.pop("dont_log", ())
+    dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
+    dont_log += (StopDownload,)
+    spider = named.get("spider")
+    responses: list[tuple[Callable[..., TypingAny], TypingAny]] = []
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+        result: TypingAny
+        try:
+            response = robustApply(
+                receiver, *arguments, signal=signal, sender=sender, **named
+            )
+            if isinstance(response, Deferred):
+                logger.error(
+                    "Cannot return deferreds from signal handler: %(receiver)s",
+                    {"receiver": receiver},
+                    extra={"spider": spider},
+                )
+        except dont_log as ex:
+            result = ex
+        except Exception as ex:
+            result = ex
+            logger.exception(
+                "Error caught on signal handler: %(receiver)s",
+                {"receiver": receiver},
+                extra={"spider": spider},
+            )
+        else:
+            result = response
+        responses.append((receiver, result))
+    return responses
+
+
+def send_catch_log_deferred(
+    signal: TypingAny = Any,
+    sender: TypingAny = Anonymous,
+    *arguments: TypingAny,
+    **named: TypingAny,
+) -> Deferred[list[tuple[Callable[..., TypingAny], TypingAny]]]:
+    """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
+    <signal-deferred>`.
+
+    Returns a deferred that gets fired once all signal handlers have finished.
+    """
+    return _send_catch_log_deferred(signal, sender, *arguments, **named)
+
+
+@inlineCallbacks
+def _send_catch_log_deferred(
+    signal: TypingAny,
+    sender: TypingAny,
+    *arguments: TypingAny,
+    **named: TypingAny,
+) -> Generator[
+    Deferred[TypingAny], TypingAny, list[tuple[Callable[..., TypingAny], TypingAny]]
+]:
+    def logerror(failure: Failure, recv: TypingAny) -> Failure:
+        if dont_log is None or not isinstance(failure.value, dont_log):
+            logger.error(
+                "Error caught on signal handler: %(receiver)s",
+                {"receiver": recv},
+                exc_info=failure_to_exc_info(failure),
+                extra={"spider": spider},
+            )
+        return failure
+
+    dont_log = named.pop("dont_log", None)
+    spider = named.get("spider")
+    dfds: list[Deferred[tuple[TypingAny, TypingAny]]] = []
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+        d: Deferred[TypingAny] = _maybeDeferred_coro(
+            robustApply,
+            True,
+            receiver,
+            *arguments,
+            signal=signal,
+            sender=sender,
+            **named,
+        )
+        d.addErrback(logerror, receiver)
+
+        d2: Deferred[tuple[TypingAny, TypingAny]] = d.addBoth(
+            lambda result, recv: (recv, result), receiver
+        )
+
+        dfds.append(d2)
+
+    results = yield DeferredList(dfds)
+    return [result[1] for result in results]
+
+
+async def send_catch_log_async(
+    signal: TypingAny = Any,
+    sender: TypingAny = Anonymous,
+    *arguments: TypingAny,
+    **named: TypingAny,
+) -> list[tuple[Callable[..., TypingAny], TypingAny]]:
+    """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
+    <signal-deferred>`.
+
+    Returns a coroutine that completes once all signal handlers have finished.
+
+    .. versionadded:: 2.14
+    """
+    if is_asyncio_available():
+        return await _send_catch_log_asyncio(signal, sender, *arguments, **named)
+    results = await maybe_deferred_to_future(
+        _send_catch_log_deferred(signal, sender, *arguments, **named)
+    )
+    return [
+        (receiver, result.value if isinstance(result, Failure) else result)
+        for receiver, result in results
+    ]
+
+
+async def _send_catch_log_asyncio(
+    signal: TypingAny = Any,
+    sender: TypingAny = Anonymous,
+    *arguments: TypingAny,
+    **named: TypingAny,
+) -> list[tuple[Callable[..., TypingAny], TypingAny]]:
+    """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
+    <signal-deferred>`.
+
+    Returns a coroutine that completes once all signal handlers have finished.
+
+    This function requires an installed asyncio reactor or a running asyncio
+    event loop.
+
+    .. versionadded:: 2.14
+    """
+    dont_log = named.pop("dont_log", ())
+    dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
+    spider = named.get("spider")
+    handlers: list[Awaitable[TypingAny]] = []
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+
+        async def handler(
+            receiver: Callable[..., TypingAny],
+        ) -> tuple[Callable[..., TypingAny], TypingAny]:
+            result: TypingAny
+            try:
+                result = await ensure_awaitable(
+                    robustApply(
+                        receiver, *arguments, signal=signal, sender=sender, **named
+                    ),
+                    _warn=global_object_name(receiver),
+                )
+            except dont_log as ex:  # pylint: disable=catching-non-exception
+                result = ex
+            except Exception as ex:
+                logger.exception(
+                    "Error caught on signal handler: %(receiver)s",
+                    {"receiver": receiver},
+                    extra={"spider": spider},
+                )
+                result = ex
+            return (receiver, result)
+
+        handlers.append(handler(receiver))
+
+    return cast(
+        "list[tuple[Callable[..., TypingAny], TypingAny]]",
+        await asyncio.gather(*handlers, return_exceptions=True),
+    )
+
+
+def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:
+    """Disconnect all signal handlers. Useful for cleaning up after running
+    tests.
+    """
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+        disconnect(receiver, signal=signal, sender=sender)

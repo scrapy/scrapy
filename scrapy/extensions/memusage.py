@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING, Self
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.utils._engine import get_engine_status
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import _schedule_coro
-from scrapy.utils.engine import get_engine_status
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:

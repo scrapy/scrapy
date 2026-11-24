@@ -271,6 +271,33 @@ Disallow: /some/randome/page.html
         assert "Robotstxt address not found" in caplog.text
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
 
+    @pytest.mark.parametrize(
+        "follow_up_url",
+        ["http://site.local/robots.txt", "https://site.local/robots.txt"],
+    )
+    @pytest.mark.parametrize("fails", [False, True])
+    @coroutine_test
+    async def test_robotstxt_request_retried_or_redirected(
+        self, follow_up_url: str, fails: bool
+    ) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        request = Request("http://site.local/robots.txt")
+        await middleware.process_request(request)
+        follow_up = request.replace(url=follow_up_url)
+        await self.assertNotIgnored(follow_up, middleware)
+        blocked = Request("http://site.local/blocked")
+        if fails:
+            err = CannotResolveHostError("Robotstxt address not found")
+            await middleware.process_exception(follow_up, err)
+            await self.assertNotIgnored(blocked, middleware)
+        else:
+            body = b"User-agent: *\nDisallow: /blocked\n"
+            response = TextResponse(follow_up_url, body=body)
+            await middleware.process_response(follow_up, response)
+            await self.assertIgnored(blocked, middleware)
+        assert not self.crawler.engine.download_async.called
+
     @coroutine_test
     async def test_robotstxt_process_exception_ignores_unrelated_request(
         self,
@@ -358,6 +385,31 @@ Disallow: /some/randome/page.html
         robotsreq = self.crawler.engine.download_async.call_args_list[0][0][0]
         assert robotsreq.meta["download_handler"] == "named"
         assert robotsreq.meta["is_robotstxt_request"] is True
+
+    @pytest.mark.parametrize("ignored_first", [False, True])
+    @coroutine_test
+    async def test_robotstxt_per_scheme(self, ignored_first: bool) -> None:
+        allowed_url = "http://site.local/blocked"
+        ignored_url = "https://site.local/blocked"
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        robots = {
+            "http://site.local/robots.txt": b"User-agent: *\nDisallow:\n",
+            "https://site.local/robots.txt": b"User-agent: *\nDisallow: /blocked\n",
+        }
+
+        async def return_response(request: Request) -> Response:
+            return TextResponse(request.url, body=robots[request.url])
+
+        self.crawler.engine.download_async.side_effect = return_response
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        if ignored_first:
+            await self.assertIgnored(Request(ignored_url), middleware)
+            await self.assertNotIgnored(Request(allowed_url), middleware)
+        else:
+            await self.assertNotIgnored(Request(allowed_url), middleware)
+            await self.assertIgnored(Request(ignored_url), middleware)
+        calls = self.crawler.engine.download_async.call_args_list
+        assert sorted(call[0][0].url for call in calls) == sorted(robots)
 
     async def assertNotIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware

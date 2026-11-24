@@ -4,7 +4,7 @@ import json
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy import Spider
-from scrapy.addons import AddonManager
+from scrapy._addons import AddonManager
 from scrapy.commands import ScrapyCommand
 from scrapy.crawler import Crawler
 from scrapy.exceptions import UsageError

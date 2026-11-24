@@ -11,7 +11,6 @@ import pytest
 from twisted.internet.defer import Deferred
 
 import scrapy.utils.asyncio
-from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     _parallel_asyncio,
@@ -20,6 +19,7 @@ from scrapy.utils.asyncio import (
     sleep,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.python import _as_async_generator
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -29,6 +29,11 @@ if TYPE_CHECKING:
 @coroutine_test
 async def test_is_asyncio_available(reactor_pytest: str) -> None:
     # the result should depend only on the pytest --reactor argument
+    assert is_asyncio_available() == (reactor_pytest != "default")
+
+
+def test_is_asyncio_available_without_running_loop(reactor_pytest: str) -> None:
+    # with --reactor=none there is neither a reactor nor a running loop here
     assert is_asyncio_available() == (reactor_pytest != "default")
 
 
@@ -84,7 +89,7 @@ class TestParallelAsyncio:
     @staticmethod
     def get_async_iterable(length: int) -> AsyncGenerator[int, None]:
         # simulate a simple callback without delays between results
-        return as_async_generator(range(length))
+        return _as_async_generator(range(length))
 
     @staticmethod
     async def get_async_iterable_with_delays(length: int) -> AsyncGenerator[int, None]:

@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING, Any
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Request, Spider, signals
+from scrapy.core.downloader._middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import DownloadHandlers
-from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
 from scrapy.settings import SETTINGS_PRIORITIES
@@ -375,7 +375,7 @@ class Downloader:
         )
         # A response that is still being scraped is not garbage yet.
         scraping = bool(
-            engine and engine.scraper.slot and not engine.scraper.slot.is_idle()
+            engine and engine._scraper.slot and not engine._scraper.slot.is_idle()
         )
         if (
             self.active

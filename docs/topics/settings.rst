@@ -509,11 +509,11 @@ class to be used.
 
 Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
 
-.. caution:: Please be aware that, when using a non-default event loop
-    (either defined via :setting:`ASYNCIO_EVENT_LOOP` or installed with
-    :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will call
-    :func:`asyncio.set_event_loop`, which will set the specified event loop
-    as the current loop for the current OS thread.
+.. caution:: Please be aware that, when using a Twisted reactor with a
+    non-default event loop (either defined via :setting:`ASYNCIO_EVENT_LOOP` or
+    installed with :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will
+    call :func:`asyncio.set_event_loop`, which will set the specified event
+    loop as the current loop for the current OS thread.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
@@ -1321,6 +1321,70 @@ non-zero handler-specific value will be used instead.
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers.
+
+.. setting:: DOWNLOAD_HEADERS_MAXSIZE
+
+DOWNLOAD_HEADERS_MAXSIZE
+------------------------
+
+.. versionadded:: VERSION
+
+Default: ``393216`` (384 KiB)
+
+The maximum response header size (in bytes) allowed. Responses with bigger
+headers are aborted and raise
+:exc:`~scrapy.exceptions.ResponseHeadersTooLargeError`.
+
+This limit applies to the response head as a whole, i.e. to the status line
+plus every header line, rather than to individual headers. That mirrors what
+web browsers do; the default value matches the limit of Firefox_, the most
+lenient of them.
+
+Use ``0`` to disable this limit.
+
+.. _Firefox: https://searchfox.org/mozilla-central/search?q=network.http.max_response_header_size
+
+.. note::
+
+    Over HTTP/2 this limit is applied as
+    ``SETTINGS_MAX_HEADER_LIST_SIZE``, which `RFC 9113 §6.5.2`_ defines in
+    terms of the uncompressed size of every header field plus an overhead of 32
+    bytes each, rather than in terms of the bytes read from the connection.
+    Web browsers use the same value for both protocols regardless of that
+    difference, and so does Scrapy.
+
+.. _RFC 9113 §6.5.2: https://datatracker.ietf.org/doc/html/rfc9113#section-6.5.2
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all handlers. See :ref:`download-handlers-ref`.
+
+.. setting:: DOWNLOAD_HEADERS_WARNSIZE
+
+DOWNLOAD_HEADERS_WARNSIZE
+-------------------------
+
+.. versionadded:: VERSION
+
+Default: ``262144`` (256 KiB)
+
+If the size of the headers of a response exceeds this value, a warning will be
+logged about it. The default value matches the limit of Chromium_, the least
+lenient of the web browsers used as a reference for
+:setting:`DOWNLOAD_HEADERS_MAXSIZE`, so that responses that some web browsers
+would reject are reported even though Scrapy accepts them.
+
+Use ``0`` to disable this limit.
+
+.. _Chromium: https://source.chromium.org/chromium/chromium/src/+/main:net/http/http_stream_parser.h
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all handlers. See :ref:`download-handlers-ref`.
 
 .. setting:: DOWNLOAD_MAXSIZE
 .. reqmeta:: download_maxsize
