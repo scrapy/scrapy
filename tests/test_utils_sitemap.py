@@ -339,3 +339,31 @@ def test_sitemap_non_string_tag():
     """
     results = list(Sitemap(b"<url>&k;"))
     assert results == []
+
+
+@pytest.mark.parametrize(
+    "xmltext",
+    [
+        b"   \n  ",
+        b"<!-- a comment -->",
+        b"   <!-- a comment -->   \n <!-- another -->   ",
+        b'<?xml version="1.0"?>',
+        b'<?xml version="1.0"?><!-- comment -->',
+        b'<?xml version="1.0"?>\n  \n<!-- comment -->\n',
+        b'<?xml version="1.0"?><?some-pi foo?>',
+    ],
+)
+def test_sitemap_empty_whitespace_or_comments(xmltext: bytes) -> None:
+    with pytest.raises(ValueError, match="Empty sitemap: whitespace or comments only"):
+        Sitemap(xmltext)
+
+
+def test_sitemap_empty_whitespace_or_comments_str() -> None:
+    with (
+        pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing `str` type as `xmltext` is deprecated",
+        ),
+        pytest.raises(ValueError, match="Empty sitemap: whitespace or comments only"),
+    ):
+        Sitemap("   \n  ")
