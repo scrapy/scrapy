@@ -20,7 +20,7 @@ date.py
 
 Converts a date string to a YYYY-MM-DD one suitable for ``DateField``
 
-**Decision**: Obsolete. ``DateField`` doesn't exists anymore.
+**Decision**: Obsolete. ``DateField`` doesn't exist anymore.
 
 extraction.py
 =============
@@ -29,12 +29,13 @@ extraction.py
 -----------
 
 This adaptor tries to extract data from the given locations. Any
-``XPathSelector`` in it will be extracted, and any other data  will be added
+``XPathSelector`` in it will be extracted, and any other data will be added
 as-is to the result.
 
 **Decision**: Obsolete. Functionality included in ``XpathLoader``.
 
 ``ExtractImageLinks``
+---------------------
 
 This adaptor may receive either XPathSelectors pointing to the desired
 locations for finding image urls, or just a list of XPath expressions (which
@@ -65,7 +66,7 @@ This adaptor removes the root tag of the given string/unicode, if it's found.
 ------------------
 
 Factory that returns an adaptor for removing/replacing each escape character in
-the ``wich_ones`` parameter found in the given value.
+the ``which_ones`` parameter found in the given value.
 
 **Decision**: XXX
 
@@ -121,7 +122,7 @@ Removes any index that evaluates to None from the provided iterable. E.g:
 ``delist``
 ----------
 
-This factory returns and adaptor that joins an iterable with the specified
+This factory returns an adaptor that joins an iterable with the specified
 delimiter.
 
 **Decision**: Obsolete. Functionality included in reducers.
