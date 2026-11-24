@@ -339,3 +339,18 @@ def test_sitemap_non_string_tag():
     """
     results = list(Sitemap(b"<url>&k;"))
     assert results == []
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"   \n  ",
+        b"<!-- a comment -->",
+        b"\n<!-- one -->\n<!-- two -->\n",
+        b"not xml at all",
+    ],
+)
+def test_sitemap_without_root_element(body: bytes) -> None:
+    s = Sitemap(body)
+    assert s.type == ""
+    assert list(s) == []
