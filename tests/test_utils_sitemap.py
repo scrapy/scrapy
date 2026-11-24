@@ -41,6 +41,13 @@ def test_sitemap():
     ]
 
 
+@pytest.mark.parametrize("body", (b"   \n  ", b"<!-- a comment -->"))
+def test_sitemap_without_root(body: bytes) -> None:
+    s = Sitemap(body)
+    assert s.type == ""
+    assert list(s) == []
+
+
 def test_sitemap_str():
     xmltext = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
