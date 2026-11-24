@@ -892,19 +892,29 @@ class FeedExporter:
         if slot._skipped:
             return
 
-        if slot.itemcount:
-            # Normal case
-            await slot.finish_exporting()
-        elif slot.store_empty and slot.batch_id == 1:
-            # Need to store the empty file
-            await slot.start_exporting()
-            await slot.finish_exporting()
-        else:
-            # In this case, the file is not stored, so no processing is required.
+        slot_type = type(slot.storage).__name__
+        try:
+            if slot.itemcount:
+                # Normal case
+                await slot.finish_exporting()
+            elif slot.store_empty and slot.batch_id == 1:
+                # Need to store the empty file
+                await slot.start_exporting()
+                await slot.finish_exporting()
+            else:
+                # In this case, the file is not stored, so no processing is required.
+                return
+        except Exception:
+            logger.exception(
+                "Error exporting the empty %s feed in: %s",
+                slot.format,
+                slot.uri,
+                extra={"spider": spider},
+            )
+            self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
             return
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        slot_type = type(slot.storage).__name__
         self.crawler.stats.inc_value(
             f"feedexport/item_count/{slot_type}", slot.itemcount
         )

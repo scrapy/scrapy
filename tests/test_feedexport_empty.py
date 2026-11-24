@@ -9,7 +9,15 @@ import pytest
 from w3lib.url import file_uri_to_path
 
 from tests.utils.decorators import coroutine_test
-from tests.utils.feedexport import export_by_format, unique_path
+from unittest import mock
+
+from tests.utils.feedexport import (
+    crawl_items,
+    export_by_format,
+    path_to_url,
+    printf_escape,
+    unique_path,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,6 +41,31 @@ class LogOnStoreFileStorage:
     def store(self, file):
         self.logger.info("Storage.store is called")
         file.close()
+
+
+@coroutine_test
+async def test_store_empty_open_error(
+    mockserver: MockServer, tmp_path: Path
+) -> None:
+    """A feed that cannot be opened is counted as failed instead of escaping as
+    an asyncio task exception, which the crawl never reports."""
+    settings = {
+        "FEEDS": {
+            printf_escape(path_to_url(unique_path(tmp_path))): {"format": "json"},
+        },
+        "FEED_STORE_EMPTY": True,
+    }
+
+    def open_(spider):
+        raise PermissionError(13, "Permission denied")
+
+    with mock.patch(
+        "scrapy.extensions.feedexport.FileFeedStorage.open",
+        side_effect=open_,
+    ):
+        crawler = await crawl_items(mockserver, [], settings)
+
+    assert crawler.stats.get_value("feedexport/failed_count/FileFeedStorage") == 1
 
 
 @pytest.mark.parametrize("fmt", ["json", "jsonlines", "xml", "csv"])
