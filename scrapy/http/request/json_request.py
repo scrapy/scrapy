@@ -23,9 +23,7 @@ class JsonRequest(Request):
     def __init__(
         self, *args: Any, dumps_kwargs: dict[str, Any] | None = None, **kwargs: Any
     ) -> None:
-        dumps_kwargs = copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
-        dumps_kwargs.setdefault("sort_keys", True)
-        self._dumps_kwargs: dict[str, Any] = dumps_kwargs
+        self._dumps_kwargs: dict[str, Any] = self._normalize_dumps_kwargs(dumps_kwargs)
 
         body_passed = kwargs.get("body") is not None
         data: Any = kwargs.pop("data", None)
@@ -70,10 +68,23 @@ class JsonRequest(Request):
                 "Both body and data passed. data will be ignored", stacklevel=2
             )
         elif not body_passed and data_passed:
-            kwargs["body"] = self._dumps(data)
+            if "dumps_kwargs" in kwargs:
+                dumps_kwargs = self._normalize_dumps_kwargs(kwargs["dumps_kwargs"])
+                kwargs["body"] = self._dumps(data, dumps_kwargs=dumps_kwargs)
+            else:
+                kwargs["body"] = self._dumps(data)
 
         return super().replace(*args, cls=cls, **kwargs)
 
-    def _dumps(self, data: Any) -> str:
+    @staticmethod
+    def _normalize_dumps_kwargs(
+        dumps_kwargs: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        normalized = copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
+        normalized.setdefault("sort_keys", True)
+        return normalized
+
+    def _dumps(self, data: Any, *, dumps_kwargs: dict[str, Any] | None = None) -> str:
         """Convert to JSON"""
-        return json.dumps(data, **self._dumps_kwargs)
+        kwargs = self._dumps_kwargs if dumps_kwargs is None else dumps_kwargs
+        return json.dumps(data, **kwargs)

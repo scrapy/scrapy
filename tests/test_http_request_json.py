@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -186,3 +187,42 @@ class TestJsonRequest(TestRequestBase):
 
         with pytest.warns(UserWarning, match="data will be ignored"):
             r1.replace(data=data2, body=body2)
+
+    def test_replace_override_dumps_kwargs_with_data(self):
+        """Replacement dumps_kwargs should be used when serializing replacement data."""
+        r1 = self.request_class(url="http://www.example.com/", data={"value": 1})
+        options = {"default": str}
+        r2 = r1.replace(data={"value": Decimal("1.25")}, dumps_kwargs=options)
+
+        assert r2.body == b'{"value": "1.25"}'
+        assert r2.dumps_kwargs == {"default": str, "sort_keys": True}
+        assert options == {"default": str}
+        assert r1.body == b'{"value": 1}'
+        assert r1.dumps_kwargs == {"sort_keys": True}
+
+        r3 = r1.replace(data={"b": 1, "a": 2}, dumps_kwargs={"sort_keys": False})
+        assert r3.body == b'{"b": 1, "a": 2}'
+        assert r3.dumps_kwargs == {"sort_keys": False}
+
+    @pytest.mark.parametrize("replacement_kwargs", [None, {}])
+    def test_replace_reset_dumps_kwargs_with_data(self, replacement_kwargs):
+        """Passing None or {} as dumps_kwargs should reset serialization options."""
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"é": 1},
+            dumps_kwargs={"ensure_ascii": False},
+        )
+        r2 = r1.replace(data={"é": 2}, dumps_kwargs=replacement_kwargs)
+
+        assert r2.body == b'{"\\u00e9": 2}'
+        assert r2.dumps_kwargs == {"sort_keys": True}
+        assert r1.dumps_kwargs == {"ensure_ascii": False, "sort_keys": True}
+
+    def test_replace_dumps_kwargs_without_data(self):
+        """Passing dumps_kwargs without data preserves body and updates dumps_kwargs."""
+        r1 = self.request_class(url="http://www.example.com/", data={"a": 1})
+        r2 = r1.replace(dumps_kwargs={"indent": 2})
+
+        assert r2.body == r1.body
+        assert r2.dumps_kwargs == {"indent": 2, "sort_keys": True}
+        assert r1.dumps_kwargs == {"sort_keys": True}
