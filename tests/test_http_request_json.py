@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -186,3 +187,42 @@ class TestJsonRequest(TestRequestBase):
 
         with pytest.warns(UserWarning, match="data will be ignored"):
             r1.replace(data=data2, body=body2)
+
+    def test_replace_data_with_new_dumps_kwargs(self):
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"value": 1},
+            dumps_kwargs={"ensure_ascii": True},
+        )
+        r2 = r1.replace(
+            data={"value": Decimal("1.25"), "text": "café"},
+            dumps_kwargs={"default": str, "ensure_ascii": False},
+        )
+        assert r2.body == '{"text": "café", "value": "1.25"}'.encode()
+        assert r2.dumps_kwargs == {
+            "default": str,
+            "ensure_ascii": False,
+            "sort_keys": True,
+        }
+        assert r1.dumps_kwargs == {"ensure_ascii": True, "sort_keys": True}
+
+    def test_replace_data_with_dumps_kwargs_sort_keys_false(self):
+        r1 = self.request_class(url="http://www.example.com/", data={"a": 1})
+        r2 = r1.replace(
+            data={"b": 2, "a": 1},
+            dumps_kwargs={"sort_keys": False},
+        )
+        assert r2.body == b'{"b": 2, "a": 1}'
+        assert r2.dumps_kwargs == {"sort_keys": False}
+
+    def test_replace_data_with_dumps_kwargs_none_resets_options(self):
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"value": Decimal("1.25")},
+            dumps_kwargs={"default": str},
+        )
+        with pytest.raises(TypeError):
+            r1.replace(data={"value": Decimal("2.50")}, dumps_kwargs=None)
+        r2 = r1.replace(data={"b": 2, "a": 1}, dumps_kwargs=None)
+        assert r2.body == b'{"a": 1, "b": 2}'
+        assert r2.dumps_kwargs == {"sort_keys": True}

@@ -70,7 +70,8 @@ class JsonRequest(Request):
                 "Both body and data passed. data will be ignored", stacklevel=2
             )
         elif not body_passed and data_passed:
-            kwargs["body"] = self._dumps(data)
+            kwargs["body"] = None
+            kwargs["data"] = data
 
         return super().replace(*args, cls=cls, **kwargs)
 
