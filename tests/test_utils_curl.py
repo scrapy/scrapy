@@ -237,6 +237,7 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "POST",
             "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": (
                 "excerptLength=200&enableDidYouMean=true&sortCriteria=ffirstz3"
                 "2xnamez32x201740686%20ascending&queryFunctions=%5B%5D&ranking"
@@ -250,6 +251,7 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "POST",
             "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": '{"$filters":"Filter!"}',
         }
         self._test_command(curl_command, expected_result)
@@ -259,7 +261,41 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "POST",
             "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": "$top=10&$skip=5",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_sets_default_content_type(self):
+        curl_command = "curl 'https://www.example.org/' -d 'a=1'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
+            "body": "a=1",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_empty_data(self):
+        curl_command = "curl 'https://www.example.org/' -d ''"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
+            "body": "",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_preserves_explicit_content_type(self):
+        curl_command = (
+            "curl 'https://www.example.org/' "
+            "-H 'content-type: application/json' -d '{\"a\":1}'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "headers": [("content-type", "application/json")],
+            "body": '{"a":1}',
         }
         self._test_command(curl_command, expected_result)
 
@@ -270,6 +306,7 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "POST",
             "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": "a=1&b=2&c=3",
         }
         self._test_command(curl_command, expected_result)
@@ -281,6 +318,7 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "POST",
             "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": "a=1&b=2&c=3",
         }
         self._test_command(curl_command, expected_result)
@@ -292,6 +330,7 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "POST",
             "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": "a=1&b=2",
         }
         self._test_command(curl_command, expected_result)
@@ -332,6 +371,7 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "POST",
             "url": "https://www.example.org/",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": body,
         }
         self._test_command(curl_command, expected_result)
@@ -354,6 +394,7 @@ class TestCurlToRequestKwargs:
         expected_result = {
             "method": "GET",
             "url": "http://httpbin.org/anything",
+            "headers": [("Content-Type", "application/x-www-form-urlencoded")],
             "body": "asdf",
         }
         self._test_command(curl_command, expected_result)
@@ -420,3 +461,12 @@ class TestCurlToRequestKwargs:
     def test_empty_command_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("")
+
+    def test_post_data_suppresses_content_type(self):
+        curl_command = "curl 'https://www.example.org/' -H 'Content-Type:' -d 'a=1'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1",
+        }
+        self._test_command(curl_command, expected_result)
