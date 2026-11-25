@@ -92,9 +92,10 @@ CPU
     CPU-bound code blocks that single thread for too long; lower
     :setting:`EVENT_LOOP_LAG_THRESHOLD` to catch shorter stalls.
 
-    Use a sampling profiler, such as py-spy_, to find out which code is
-    spending that CPU. :ref:`Selectors <topics-selectors>` and item pipelines
-    are the usual answer.
+    Use a sampling profiler, such as py-spy_, or the standard library
+    :mod:`profiling.sampling` module on Python 3.15 and higher, to find out
+    which code is spending that CPU. :ref:`Selectors <topics-selectors>` and
+    item pipelines are the usual answer.
 
     .. _py-spy: https://github.com/benfred/py-spy
 
