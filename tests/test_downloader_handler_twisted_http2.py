@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import CancelledError, Deferred, DeferredList
 from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
 from scrapy.exceptions import (
     DownloadFailedError,
+    DownloadTimeoutError,
     NotConfigured,
     UnsupportedURLSchemeError,
 )
@@ -21,6 +22,8 @@ from scrapy.http import Request
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+from tests.mockserver.proxy_stalling import StallingProxy
+from tests.utils import ipv6_loopback_available
 from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
@@ -37,6 +40,8 @@ from tests.utils.bases.download_handlers_http import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
 
@@ -81,13 +86,30 @@ def test_pool_keeps_newer_connection() -> None:
     from scrapy.core._http2.agent import H2ConnectionPool  # noqa: PLC0415
 
     pool = H2ConnectionPool(get_crawler())
-    key = (b"https", b"example.com", 443, None)
+    key = (b"https", b"example.com", 443, None, None)
     old, new = Mock(), Mock()
     old_lost: Deferred[None] = Deferred()
     pool.put_connection(old, key, old_lost)
     pool.put_connection(new, key, Deferred())
     old_lost.callback(None)
     assert pool._connections[key] is new
+
+
+def test_pool_cancel_while_failing_waiting_requests() -> None:
+    from scrapy.core._http2.agent import H2ConnectionPool  # noqa: PLC0415
+
+    pool = H2ConnectionPool(get_crawler())
+    key = (b"https", b"example.com", 443, None, None)
+    connecting: Deferred[Any] = Deferred()
+    endpoint = Mock(connect=Mock(return_value=connecting))
+    first = pool.get_connection(key, Mock(), endpoint)
+    second = pool.get_connection(key, Mock(), endpoint)
+    first.addErrback(lambda _: second.cancel())
+    failures: list[Failure] = []
+    second.addErrback(failures.append)
+    connecting.errback(ConnectionRefusedError())
+    assert len(failures) == 1
+    assert failures[0].check(CancelledError)
 
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
@@ -168,14 +190,21 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
                 await download_handler.download_request(request)
 
     @coroutine_test
-    async def test_download_proxy(self, mockserver: MockServer) -> None:
-        request = Request(
-            mockserver.url("/text", is_secure=self.is_secure),
-            meta={"proxy": "https://example.com:8080"},
-        )
-        async with self.get_dh() as download_handler:
-            with pytest.raises(NotImplementedError):
-                await download_handler.download_request(request)
+    async def test_download_proxy_does_not_reuse_direct_connection(
+        self, mockserver: MockServer
+    ) -> None:
+        url = mockserver.url("/text", is_secure=self.is_secure)
+        with StallingProxy() as proxy:
+            async with self.get_dh() as download_handler:
+                response = await download_handler.download_request(Request(url))
+                assert response.status == 200
+                request = Request(
+                    url, meta={"proxy": proxy.url, "download_timeout": 0.2}
+                )
+                with pytest.raises(DownloadTimeoutError):
+                    await download_handler.download_request(request)
+                connection = await proxy.wait_for_connection()
+                assert connection.request.startswith(b"CONNECT ")
 
     @coroutine_test
     async def test_download_pushed_stream(self, mockserver: MockServer) -> None:
@@ -216,15 +245,24 @@ class TestHttp2WithCrawler(H2DownloadHandlerMixin, TestHttpWithCrawlerBase):
     is_secure = True
 
 
-@pytest.mark.skip(reason="Proxy support is not implemented yet")
 class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
+    handler_supports_http_dest = False
+
+
+class TestHttp2HttpsProxy(TestHttp2Proxy):
     is_secure = True
 
 
-@pytest.mark.skip(reason="Proxy support is not implemented yet")
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(H2DownloadHandlerMixin, TestMitmProxyBase):
-    pass
+    handler_supports_http_dest = False
+
+
+@pytest.mark.skipif(
+    not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+)
+class TestMitmProxyIPv6(TestMitmProxy):
+    proxy_host = "::1"
 
 
 @pytest.mark.requires_internet

@@ -199,7 +199,7 @@ individual handler docs for more differences:
    * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
      - Reactor, :ref:`twisted-http2 <extras>` extra
      - 2
-     - None
+     - HTTP
      - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Not applicable
      - ``cryptography``
@@ -337,7 +337,7 @@ Features and limitations
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 =========================== ================================================
-HTTP proxies                No (not implemented)
+HTTP proxies                Yes
 SOCKS proxies               No (not supported by the library)
 HTTP/2                      Yes
 Bad header handling         Not applicable (HTTP/2 only)
@@ -346,6 +346,9 @@ Per-request ``bindaddress`` Yes
 :reqmeta:`body_file`        No (not implemented)
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
+
+.. versionchanged:: VERSION
+   HTTP proxies are now supported.
 
 Other limitations:
 

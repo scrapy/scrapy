@@ -262,7 +262,16 @@ class Stream:
         if b"Content-Length" not in self._request.headers:
             headers.append((b"Content-Length", str(len(self._request.body)).encode()))
 
-        headers.extend(self._request.headers.raw)
+        if self._request.meta.get("proxy"):
+            # The proxy got it with the CONNECT request that opened the tunnel,
+            # and the destination must not see it.
+            headers.extend(
+                (name, value)
+                for name, value in self._request.headers.raw
+                if name.lower() != b"proxy-authorization"
+            )
+        else:
+            headers.extend(self._request.headers.raw)
 
         return headers
 

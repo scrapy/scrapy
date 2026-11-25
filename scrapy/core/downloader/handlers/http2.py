@@ -11,6 +11,7 @@ from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
 from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers._base_http import BaseHttpDownloadHandler
+from scrapy.core.downloader.handlers.http11 import _get_tunnel_proxy_conf
 from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
@@ -63,6 +64,7 @@ class H2DownloadHandler(BaseHttpDownloadHandler):
             pool=self._pool,
             bind_address=self._bind_address,
             crawler=self._crawler,
+            headers_maxsize=self._headers_maxsize,
         )
         assert self._crawler.spider
         try:
@@ -88,26 +90,33 @@ class _ScrapyH2Agent:
         connect_timeout: int = 10,
         bind_address: str | tuple[str, int] | None = None,
         crawler: Crawler | None = None,
+        headers_maxsize: int = 0,
     ) -> None:
         self._context_factory = context_factory
         self._connect_timeout = connect_timeout
         self._bind_address = bind_address
         self._pool = pool
         self._crawler = crawler
+        self._headers_maxsize = headers_maxsize
 
     def _get_agent(self, request: Request, timeout: float | None) -> H2Agent:
         from twisted.internet import reactor
 
-        if request.meta.get("proxy"):
-            raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
         bind_address = request.meta.get("bindaddress") or self._bind_address
         bind_address = normalize_bind_address(bind_address)
+        # Only HTTPS is downloaded, so a proxy is always reached through a
+        # CONNECT tunnel, as HTTP11DownloadHandler does for HTTPS.
+        proxy_conf = (
+            _get_tunnel_proxy_conf(request) if request.meta.get("proxy") else None
+        )
         return H2Agent(
             reactor=reactor,
             context_factory=self._context_factory,
             connect_timeout=timeout,
             bind_address=bind_address,
             pool=self._pool,
+            proxy_conf=proxy_conf,
+            headers_maxsize=self._headers_maxsize,
         )
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:

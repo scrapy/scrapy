@@ -5,11 +5,13 @@ from typing import TYPE_CHECKING, TypeAlias
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
+from twisted.internet.endpoints import wrapClientTLS
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
 from twisted.web.error import SchemeNotSupported
 
 from scrapy.core._http2.protocol import H2ClientFactory, H2ClientProtocol
 from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFactory
+from scrapy.core.downloader.handlers.http11 import _get_tunnel_endpoint, _ProxyConf
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
@@ -22,7 +24,9 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-ConnectionKey: TypeAlias = tuple[bytes, bytes, int, tuple[str, int] | None]
+ConnectionKey: TypeAlias = tuple[
+    bytes, bytes, int, tuple[str, int] | None, _ProxyConf | None
+]
 
 
 class H2ConnectionPool:
@@ -38,6 +42,8 @@ class H2ConnectionPool:
         self._pending_requests: dict[
             ConnectionKey, deque[Deferred[H2ClientProtocol]]
         ] = {}
+        # The connection attempts that the pending requests are waiting for
+        self._connecting: dict[ConnectionKey, Deferred[H2ClientProtocol]] = {}
 
         self._tls_verbose_logging: bool = crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
@@ -78,6 +84,7 @@ class H2ConnectionPool:
             tls_verbose_logging=self._tls_verbose_logging,
         )
         conn_d: Deferred[H2ClientProtocol] = endpoint.connect(factory)
+        self._connecting[key] = conn_d
         d = self._pending_request(key)
         conn_d.addCallback(self.put_connection, key, conn_lost_deferred)
         conn_d.addErrback(self._connection_failed, key)
@@ -89,10 +96,21 @@ class H2ConnectionPool:
 
         Cancelling it takes it out of the queue, so that the connection, once
         established or found unreachable, only fires the deferreds of the
-        requests that are still waiting for it.
+        requests that are still waiting for it. Cancelling the last one also
+        cancels the connection attempt.
         """
         pending_requests = self._pending_requests[key]
-        d: Deferred[H2ClientProtocol] = Deferred(pending_requests.remove)
+        connecting = self._connecting[key]
+
+        def cancel(d: Deferred[H2ClientProtocol]) -> None:
+            pending_requests.remove(d)
+            if not pending_requests:
+                # Otherwise a connection that never gets established, e.g. a
+                # proxy that never answers CONNECT, stays open and later
+                # requests for the same key keep waiting for it.
+                connecting.cancel()
+
+        d: Deferred[H2ClientProtocol] = Deferred(cancel)
         pending_requests.append(d)
         return d
 
@@ -123,6 +141,7 @@ class H2ConnectionPool:
         conn_lost_deferred: Deferred[None],
     ) -> H2ClientProtocol:
         self._connections[key] = conn
+        self._connecting.pop(key, None)
         conn_lost_deferred.addCallback(self._remove_connection, key, conn)
 
         # Now as we have established a proper HTTP/2 connection
@@ -137,6 +156,7 @@ class H2ConnectionPool:
     def _connection_failed(self, failure: Failure, key: ConnectionKey) -> None:
         """Fail the requests waiting for a connection that could not be
         established, and let a later request try to connect again."""
+        self._connecting.pop(key, None)
         pending_requests = self._pending_requests.pop(key)
         while pending_requests:
             d = pending_requests.popleft()
@@ -164,25 +184,50 @@ class H2Agent:
         context_factory: _PolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
         bind_address: tuple[str, int] | None = None,
+        proxy_conf: _ProxyConf | None = None,
+        headers_maxsize: int = 0,
     ) -> None:
         self._reactor = reactor
         self._pool = pool
+        # Only the TLS session with the destination negotiates h2, not the
+        # one with an https:// proxy.
+        self._proxy_context_factory = context_factory
         self._context_factory = _AcceptableProtocolsContextFactory(
             context_factory, acceptable_protocols=[b"h2"]
         )
         self.endpoint_factory = _StandardEndpointFactory(
             self._reactor, self._context_factory, connect_timeout, bind_address
         )
+        self._proxy_conf = proxy_conf
+        self._headers_maxsize = headers_maxsize
 
     def get_endpoint(self, uri: URI) -> IStreamClientEndpoint:
-        return self.endpoint_factory.endpointForURI(uri)
+        if self._proxy_conf is None:
+            return self.endpoint_factory.endpointForURI(uri)
+        endpoint = _get_tunnel_endpoint(
+            self._reactor,
+            self._proxy_conf,
+            uri,
+            self._proxy_context_factory,
+            self.endpoint_factory._connectTimeout,
+            self.endpoint_factory._bindAddress,
+            self._headers_maxsize,
+        )
+        creator = self._context_factory.creatorForNetloc(uri.host, uri.port)
+        return wrapClientTLS(creator, endpoint)
 
     def get_key(self, uri: URI) -> ConnectionKey:
         """
         Arguments:
             uri - URI obtained directly from request URL
         """
-        return uri.scheme, uri.host, uri.port, self.endpoint_factory._bindAddress
+        return (
+            uri.scheme,
+            uri.host,
+            uri.port,
+            self.endpoint_factory._bindAddress,
+            self._proxy_conf,
+        )
 
     def request(self, request: Request, spider: Spider) -> Deferred[Response]:
         uri = URI.fromBytes(bytes(request.url, encoding="utf-8"))

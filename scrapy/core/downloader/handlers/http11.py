@@ -11,7 +11,16 @@ from functools import partial
 from io import BytesIO
 from pathlib import Path
 from time import monotonic
-from typing import TYPE_CHECKING, Any, BinaryIO, NotRequired, TypedDict, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    BinaryIO,
+    NotRequired,
+    TypeAlias,
+    TypedDict,
+    TypeVar,
+    cast,
+)
 from urllib.parse import urldefrag
 
 from twisted.internet import ssl
@@ -752,6 +761,88 @@ class _BindAddressAgent(Agent):
         )
 
 
+_ProxyConf: TypeAlias = tuple[str, int, tuple[tuple[str, str], ...], bool]
+
+
+def _get_tunnel_proxy_conf(request: Request) -> _ProxyConf:
+    """Return the ``(host, port, headers, tls)`` of the proxy in the ``proxy``
+    meta key of *request*, for opening a CONNECT tunnel through it.
+
+    ``headers`` are the headers to send to the proxy with the CONNECT request,
+    and ``tls`` is whether the proxy itself is reached over TLS (an
+    ``https://`` proxy).
+    """
+    proxy = add_http_if_no_scheme(request.meta["proxy"])
+    proxy_parsed = urlparse_cached(proxy)
+    proxy_host = proxy_parsed.hostname
+    assert proxy_host is not None
+    proxy_port = proxy_parsed.port
+    if not proxy_port:
+        proxy_port = 443 if proxy_parsed.scheme == "https" else 80
+    proxy_headers = get_proxy_headers(request)
+    proxyAuth = request.headers.get(b"Proxy-Authorization", None)
+    if proxyAuth and not any(
+        name == "Proxy-Authorization" for name, _ in proxy_headers
+    ):
+        proxy_headers = (
+            ("Proxy-Authorization", proxyAuth.decode()),
+            *proxy_headers,
+        )
+    return proxy_host, proxy_port, proxy_headers, proxy_parsed.scheme == "https"
+
+
+def _get_tunnel_endpoint(
+    reactor: ReactorBase,
+    proxy_conf: _ProxyConf,
+    uri: URI,
+    context_factory: _PolicyForHTTPS,
+    connect_timeout: float,
+    bind_address: tuple[str, int] | None,
+    headers_maxsize: int,
+) -> _TunnelEndpoint:
+    """Return an endpoint that connects to the proxy in *proxy_conf* and opens
+    a CONNECT tunnel to the host and port of *uri* through it.
+
+    The TLS session with the destination is not part of it: wrap the endpoint
+    with :func:`~twisted.internet.endpoints.wrapClientTLS` to negotiate it
+    inside the tunnel.
+    """
+    proxyHost, proxyPort, proxyHeaders, proxyTLS = proxy_conf
+    # Reach a proxy given as a name through a HostnameEndpoint, the same
+    # endpoint Twisted's Agent uses: it resolves the name with
+    # reactor.nameResolver and picks the address family from the result, so
+    # proxies that only have AAAA records work, given an IPv6-capable
+    # TWISTED_DNS_RESOLVER. A literal IPv6 address skips name resolution
+    # instead, as the default resolver would fail to resolve it.
+    endpoint: IStreamClientEndpoint = (
+        TCP6ClientEndpoint(reactor, proxyHost, proxyPort, connect_timeout, bind_address)
+        if _is_ipv6_literal(proxyHost)
+        else HostnameEndpoint(
+            reactor,
+            proxyHost,
+            proxyPort,
+            timeout=connect_timeout,
+            bindAddress=bind_address,
+        )
+    )
+    if proxyTLS:
+        # Set up TLS with the proxy itself, so that the CONNECT request and
+        # the tunneled traffic are sent over it (TLS-in-TLS).
+        proxyCreator = context_factory.creatorForNetloc(
+            proxyHost.encode("ascii"), proxyPort
+        )
+        endpoint = wrapClientTLS(proxyCreator, endpoint)
+    return _TunnelEndpoint(
+        endpoint,
+        uri.host,
+        uri.port,
+        proxyHost,
+        proxyPort,
+        proxyHeaders,
+        headers_maxsize,
+    )
+
+
 class _TunnelingAgent(_BindAddressAgent):
     """An agent that tunnels HTTPS downloads through a proxy using HTTP
     CONNECT. It may look strange that we have chosen to subclass Agent and not
@@ -769,7 +860,7 @@ class _TunnelingAgent(_BindAddressAgent):
         self,
         *,
         reactor: ReactorBase,
-        proxyConf: tuple[str, int, tuple[tuple[str, str], ...], bool],
+        proxyConf: _ProxyConf,
         contextFactory: _PolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
@@ -777,47 +868,18 @@ class _TunnelingAgent(_BindAddressAgent):
         headersMaxsize: int = 0,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
-        self._proxyConf: tuple[str, int, tuple[tuple[str, str], ...], bool] = proxyConf
+        self._proxyConf: _ProxyConf = proxyConf
         self._contextFactory: _PolicyForHTTPS = contextFactory
         self._headersMaxsize: int = headersMaxsize
 
     def _getEndpoint(self, uri: URI) -> IStreamClientEndpoint:
-        proxyHost, proxyPort, proxyHeaders, proxyTLS = self._proxyConf
-        timeout = self._endpointFactory._connectTimeout
-        bindAddress = self._endpointFactory._bindAddress
-        # Reach a proxy given as a name through a HostnameEndpoint, the same
-        # endpoint Twisted's Agent uses: it resolves the name with
-        # reactor.nameResolver and picks the address family from the result, so
-        # proxies that only have AAAA records work, given an IPv6-capable
-        # TWISTED_DNS_RESOLVER. A literal IPv6 address skips name resolution
-        # instead, as the default resolver would fail to resolve it.
-        endpoint: IStreamClientEndpoint = (
-            TCP6ClientEndpoint(
-                self._reactor, proxyHost, proxyPort, timeout, bindAddress
-            )
-            if _is_ipv6_literal(proxyHost)
-            else HostnameEndpoint(
-                self._reactor,
-                proxyHost,
-                proxyPort,
-                timeout=timeout,
-                bindAddress=bindAddress,
-            )
-        )
-        if proxyTLS:
-            # Set up TLS with the proxy itself, so that the CONNECT request and
-            # the tunneled traffic are sent over it (TLS-in-TLS).
-            proxyCreator = self._contextFactory.creatorForNetloc(
-                proxyHost.encode("ascii"), proxyPort
-            )
-            endpoint = wrapClientTLS(proxyCreator, endpoint)
-        endpoint = _TunnelEndpoint(
-            endpoint,
-            uri.host,
-            uri.port,
-            proxyHost,
-            proxyPort,
-            proxyHeaders,
+        endpoint = _get_tunnel_endpoint(
+            self._reactor,
+            self._proxyConf,
+            uri,
+            self._contextFactory,
+            self._endpointFactory._connectTimeout,
+            self._endpointFactory._bindAddress,
             self._headersMaxsize,
         )
         # Set proper Server Name Indication extension for the destination.
@@ -927,31 +989,10 @@ class _ScrapyAgent:
         proxy = request.meta.get("proxy")
         if proxy:
             proxy = add_http_if_no_scheme(proxy)
-            proxy_parsed = urlparse_cached(proxy)
-            proxy_host = proxy_parsed.hostname
-            proxy_port = proxy_parsed.port
-            if not proxy_port:
-                proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
-                assert proxy_host is not None
-                proxy_headers = get_proxy_headers(request)
-                proxyAuth = request.headers.get(b"Proxy-Authorization", None)
-                if proxyAuth and not any(
-                    name == "Proxy-Authorization" for name, _ in proxy_headers
-                ):
-                    proxy_headers = (
-                        ("Proxy-Authorization", proxyAuth.decode()),
-                        *proxy_headers,
-                    )
-                proxyConf = (
-                    proxy_host,
-                    proxy_port,
-                    proxy_headers,
-                    proxy_parsed.scheme == "https",
-                )
                 return _TunnelingAgent(
                     reactor=reactor,
-                    proxyConf=proxyConf,
+                    proxyConf=_get_tunnel_proxy_conf(request),
                     contextFactory=self._contextFactory,
                     connectTimeout=timeout,
                     bindAddress=bindaddress,

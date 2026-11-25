@@ -2035,6 +2035,12 @@ class TestHttpProxyBase(ABC):
     is_secure = False
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
+    # whether the handler supports plain HTTP destinations
+    handler_supports_http_dest: bool = True
+
+    def _skip_http_dest(self) -> None:
+        if not self.handler_supports_http_dest:
+            pytest.skip("Plain HTTP destinations are not supported")
 
     @property
     @abstractmethod
@@ -2061,6 +2067,7 @@ class TestHttpProxyBase(ABC):
     async def test_download_with_proxy(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
+        self._skip_http_dest()
         http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
         request = Request("http://example.com", meta={"proxy": http_proxy})
         async with self.get_dh() as download_handler:
@@ -2073,6 +2080,8 @@ class TestHttpProxyBase(ABC):
     async def test_download_without_proxy(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
+        if not self.is_secure:
+            self._skip_http_dest()
         request = Request(
             proxy_mockserver.url("/path/to/resource", is_secure=self.is_secure)
         )
@@ -2122,6 +2131,7 @@ class TestHttpProxyBase(ABC):
     async def test_download_with_proxy_without_http_scheme(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
+        self._skip_http_dest()
         http_proxy = f"{proxy_mockserver.host}:{proxy_mockserver.port()}"
         request = Request("http://example.com", meta={"proxy": http_proxy})
         async with self.get_dh() as download_handler:
@@ -2142,6 +2152,8 @@ class TestMitmProxyBase(ABC):
     proxy_host: str = "127.0.0.1"
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
+    # whether the handler supports plain HTTP destinations
+    handler_supports_http_dest: bool = True
 
     @property
     @abstractmethod
@@ -2149,6 +2161,8 @@ class TestMitmProxyBase(ABC):
         raise NotImplementedError
 
     def _maybe_skip(self, proxy_kind: str, https_dest: bool) -> None:
+        if not https_dest and not self.handler_supports_http_dest:
+            pytest.skip("Plain HTTP destinations are not supported")
         if proxy_kind == "socks5" and not self.handler_supports_socks:
             pytest.skip("SOCKS proxies are not supported")
         if (
