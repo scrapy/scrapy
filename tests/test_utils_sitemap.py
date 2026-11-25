@@ -348,6 +348,7 @@ def test_sitemap_non_string_tag():
         b"<!-- a comment -->",
         b"\n<!-- one -->\n<!-- two -->\n",
         b"not xml at all",
+        b"<?xml version='1.0' encoding='UTF-8'?>",
     ],
 )
 def test_sitemap_without_root_element(body: bytes) -> None:

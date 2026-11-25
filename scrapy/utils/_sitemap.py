@@ -43,9 +43,6 @@ class Sitemap:
         try:
             _, root = next(self.xmliter)
         except StopIteration:
-            # No root element: the body is only whitespace, comments or text
-            # that the recovering parser discarded. An empty type makes callers
-            # treat it like any other document that is not a sitemap.
             self.type = ""
             return
         self.type = self._get_tag_name(root)

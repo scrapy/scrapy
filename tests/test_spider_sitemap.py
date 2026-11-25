@@ -621,11 +621,10 @@ Sitemap: /sitemap-relative-url.xml
             )
         ]
 
-    @pytest.mark.parametrize("body", [b"   \n  ", b"<!-- a comment -->"])
     def test_parse_sitemap_without_root_element(
-        self, body: bytes, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=body)
+        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"   \n  ")
         spider = self.spider_class("example.com")
 
         caplog.clear()
