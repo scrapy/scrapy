@@ -118,9 +118,10 @@ Enhancements
 - Add a mimetype parameter to ``MailSender.send()`` (:gh:`602`)
 - Generalize file pipeline log messages (:gh:`622`)
 - Replace unencodeable codepoints with html entities in SGMLLinkExtractor (:gh:`565`)
-- Converted SEP documents to rst format (:gh:`629`, :gh:`630`,
-  :gh:`638`, :gh:`632`, :gh:`636`, :gh:`640`, :gh:`635`,
-  :gh:`634`, :gh:`639`, :gh:`637`, :gh:`631`, :gh:`633`,
+- Converted `SEP documents
+  <https://github.com/scrapy/scrapy/tree/49ed471a611d81ee5d55834ee95827f7ae3992bc/sep>`__
+  to rst format (:gh:`629`, :gh:`630`, :gh:`638`, :gh:`632`, :gh:`636`,
+  :gh:`640`, :gh:`635`, :gh:`634`, :gh:`639`, :gh:`637`, :gh:`631`, :gh:`633`,
   :gh:`641`, :gh:`642`)
 - Tests and docs for clickdata's nr index in FormRequest (:gh:`646`, :gh:`645`)
 - Allow to disable a downloader handler just like any other component (:gh:`650`)
@@ -137,7 +138,9 @@ Enhancements
 - Support case-insensitive domains in ``url_is_from_any_domain()`` (:gh:`693`)
 - Remove pep8 warnings in project and spider templates (:gh:`698`)
 - Tests and docs for ``request_fingerprint`` function (:gh:`597`)
-- Update SEP-19 for GSoC project ``per-spider settings`` (:gh:`705`)
+- Update `SEP-19
+  <https://github.com/scrapy/scrapy/blob/49ed471a611d81ee5d55834ee95827f7ae3992bc/sep/sep-019.rst>`__
+  for GSoC project ``per-spider settings`` (:gh:`705`)
 - Set exit code to non-zero when contracts fails (:gh:`727`)
 - Add a setting to control what class is instantiated as Downloader component
   (:gh:`738`)
@@ -846,7 +849,9 @@ New features and improvements
 API changes
 ~~~~~~~~~~~
 
-- Change ``Spider.domain_name`` to ``Spider.name`` (SEP-012, :rev:`1975`)
+- Change ``Spider.domain_name`` to ``Spider.name`` (`SEP-012
+  <https://github.com/scrapy/scrapy/blob/49ed471a611d81ee5d55834ee95827f7ae3992bc/sep/sep-012.rst>`__,
+  :rev:`1975`)
 - ``Response.encoding`` is now the detected encoding (:rev:`1961`)
 - ``HttpErrorMiddleware`` now returns None or raises an exception (:rev:`2006` | #157)
 - ``scrapy.command`` modules relocation (:rev:`2035`, :rev:`2036`, :rev:`2037`)
