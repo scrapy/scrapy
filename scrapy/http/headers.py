@@ -40,6 +40,13 @@ class Headers(dict):  # type: ignore[type-arg]
     do not add it.
     """
 
+    _lower_keys: dict[bytes, bytes]
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
+        obj = super().__new__(cls)
+        obj._lower_keys = {}
+        return obj
+
     def __init__(
         self,
         seq: Mapping[str, Any]
@@ -54,10 +61,21 @@ class Headers(dict):  # type: ignore[type-arg]
             self.update(seq)
 
     def __setitem__(self, key: str | bytes, value: Any) -> None:
-        dict.__setitem__(self, self._normkey(key), self._normvalue(value))
+        key_bytes = self._tobytes(key)
+        norm_val = self._normvalue(value)
+        if not dict.__contains__(self, key_bytes):
+            lower_key = key_bytes.lower()
+            existing = self._lower_keys.get(lower_key)
+            if existing is not None:
+                key_bytes = existing
+            else:
+                self._lower_keys[lower_key] = key_bytes
+        dict.__setitem__(self, key_bytes, norm_val)
 
     def __delitem__(self, key: str | bytes) -> None:
-        dict.__delitem__(self, self._normkey(key))
+        norm_key = self._normkey(key)
+        dict.__delitem__(self, norm_key)
+        self._lower_keys.pop(norm_key.lower(), None)
 
     def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
         return dict.__contains__(self, self._normkey(key))
@@ -75,7 +93,17 @@ class Headers(dict):  # type: ignore[type-arg]
 
         A header set to ``None`` is not considered missing.
         """
-        return dict.setdefault(self, self._normkey(key), self._normvalue(def_val))
+        key_bytes = self._tobytes(key)
+        if dict.__contains__(self, key_bytes):
+            return dict.__getitem__(self, key_bytes)
+        lower_key = key_bytes.lower()
+        existing = self._lower_keys.get(lower_key)
+        if existing is not None:
+            return dict.__getitem__(self, existing)
+        norm_val = self._normvalue(def_val)
+        self._lower_keys[lower_key] = key_bytes
+        dict.__setitem__(self, key_bytes, norm_val)
+        return norm_val
 
     @classmethod
     def fromkeys(  # type: ignore[override]
@@ -90,7 +118,20 @@ class Headers(dict):  # type: ignore[type-arg]
         return cls((k, value) for k in keys)
 
     def pop(self, key: str | bytes, *args: Any) -> Any:
-        return dict.pop(self, self._normkey(key), *args)
+        norm_key = self._normkey(key)
+        if dict.__contains__(self, norm_key):
+            self._lower_keys.pop(norm_key.lower(), None)
+            return dict.pop(self, norm_key)
+        return dict.pop(self, norm_key, *args)
+
+    def popitem(self) -> tuple[bytes, list[bytes]]:
+        key, value = dict.popitem(self)
+        self._lower_keys.pop(key.lower(), None)
+        return key, value
+
+    def clear(self) -> None:
+        dict.clear(self)
+        self._lower_keys.clear()
 
     def update(  # type: ignore[override]
         self,
@@ -100,26 +141,34 @@ class Headers(dict):  # type: ignore[type-arg]
     ) -> None:
         items = seq.items() if isinstance(seq, Mapping) else seq
         iseq: dict[bytes, list[bytes]] = {}
-        # normkey() only sees keys already stored, so keys from seq that differ
-        # only in case are mapped to a single spelling here.
-        spellings: dict[bytes, bytes] = {}
+        new_lower_keys: dict[bytes, bytes] = {}
+        lower_keys = self._lower_keys
+        tobytes = self._tobytes
+        normvalue = self._normvalue
         for k, v in items:
-            key = self._normkey(k)
-            key = spellings.setdefault(key.lower(), key)
-            iseq.setdefault(key, []).extend(self._normvalue(v))
+            key_bytes = tobytes(k)
+            lower_key = key_bytes.lower()
+            existing = lower_keys.get(lower_key)
+            if existing is not None:
+                key = existing
+            else:
+                key = new_lower_keys.setdefault(lower_key, key_bytes)
+            values = normvalue(v)
+            bucket = iseq.get(key)
+            if bucket is None:
+                iseq[key] = values
+            else:
+                bucket.extend(values)
         dict.update(self, iseq)
+        if new_lower_keys:
+            lower_keys.update(new_lower_keys)
 
     def _normkey(self, key: str | bytes) -> bytes:
         """Normalize key to bytes, matching the case of an existing key if any."""
         key = self._tobytes(key)
         if dict.__contains__(self, key):
             return key
-        lower_key = key.lower()
-        existing_key: bytes
-        for existing_key in dict.keys(self):
-            if existing_key.lower() == lower_key:
-                return existing_key
-        return key
+        return self._lower_keys.get(key.lower(), key)
 
     def normkey(self, key: str | bytes) -> bytes:  # pragma: no cover
         warnings.warn(
@@ -131,17 +180,15 @@ class Headers(dict):  # type: ignore[type-arg]
 
     def _normvalue(self, value: _RawValue | Iterable[_RawValue]) -> list[bytes]:
         """Normalize values to bytes."""
-        _value: Iterable[_RawValue]
+        if isinstance(value, bytes):
+            return [value]
+        if isinstance(value, str):
+            return [value.encode(self.encoding)]
         if value is None:
-            _value = []
-        elif isinstance(value, (str, bytes)):
-            _value = [value]
-        elif hasattr(value, "__iter__"):
-            _value = value
-        else:
-            _value = [value]
-
-        return [self._tobytes(x) for x in _value]
+            return []
+        if hasattr(value, "__iter__"):
+            return [self._tobytes(x) for x in value]
+        return [self._tobytes(value)]
 
     def normvalue(
         self, value: _RawValue | Iterable[_RawValue]
@@ -175,6 +222,8 @@ class Headers(dict):  # type: ignore[type-arg]
         if not values:
             # The header is missing, or it was set to None so that it is not
             # sent; neither has a value to return.
+            if def_val is None:
+                return None
             values = self._normvalue(def_val)
         return values[-1] if values else None
 
@@ -218,13 +267,10 @@ class Headers(dict):  # type: ignore[type-arg]
         self[key] = lst
 
     def items(self) -> Iterable[tuple[bytes, list[bytes]]]:  # type: ignore[override]
-        return ((k, self.getlist(k)) for k in self.keys())
+        return dict.items(self)
 
     def values(self) -> list[bytes | None]:  # type: ignore[override]
-        return [
-            self[k]
-            for k in self.keys()  # pylint: disable=consider-using-dict-items
-        ]
+        return [v[-1] if v else None for v in dict.values(self)]
 
     @property
     def raw(self) -> list[tuple[bytes, bytes]]:

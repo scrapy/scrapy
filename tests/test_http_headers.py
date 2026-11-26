@@ -292,3 +292,37 @@ def test_to_tuple_list_undecodable() -> None:
         ("Public-Key-Pins", 'pin-sha256=�"a"'),
         ("X-�", "ok"),
     ]
+
+
+def test_clear_and_popitem_reset_key_case() -> None:
+    h = Headers({"Content-Type": "text/html", "Accept": "*/*", "X-Empty": None})
+    assert h.values() == [b"text/html", b"*/*", None]
+    h.pop("X-Empty")
+    key, value = h.popitem()
+    assert (key, value) == (b"Accept", [b"*/*"])
+    assert "accept" not in h
+    h["ACCEPT"] = "application/json"
+    assert list(h.keys()) == [b"Content-Type", b"ACCEPT"]
+
+    h.clear()
+    assert not h
+    assert "content-type" not in h
+    h["content-type"] = "text/plain"
+    assert list(h.keys()) == [b"content-type"]
+
+
+def test_setdefault_existing_different_case() -> None:
+    h = Headers({"Content-Type": "text/html"})
+    assert h.setdefault("content-type", "text/plain") == [b"text/html"]
+    assert list(h.keys()) == [b"Content-Type"]
+
+
+def test_pickle_preserves_case_insensitive_lookup() -> None:
+    import pickle
+
+    h = Headers({"Content-Type": "text/html", "X-Custom": ["a", "b"]})
+    restored = pickle.loads(pickle.dumps(h))
+    assert restored == h
+    assert restored.get("content-type") == b"text/html"
+    restored["CONTENT-TYPE"] = "text/plain"
+    assert list(restored.keys()) == [b"Content-Type", b"X-Custom"]
