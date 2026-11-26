@@ -863,7 +863,7 @@ class TestBenchCommand:
             "-s",
             "LOGSTATS_INTERVAL=0.001",
             "-s",
-            "CLOSESPIDER_TIMEOUT=0.01",
+            "CLOSESPIDER_TIMEOUT=0.1",
         ]
         if not use_reactor:
             args += ["-s", "TWISTED_REACTOR_ENABLED=False"]
