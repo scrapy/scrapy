@@ -9,6 +9,8 @@ from pathlib import Path
 from shutil import copytree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 
+import pytest
+
 import scrapy
 from scrapy.commands.startproject import IGNORE
 from scrapy.utils.test import get_testenv
@@ -36,6 +38,17 @@ class TestStartprojectCommand:
         assert call("startproject", self.project_name, cwd=tmp_path) == 1
         assert call("startproject", "wrong---project---name") == 1
         assert call("startproject", "sys") == 1
+
+    @pytest.mark.parametrize("project_name", ["class", "for"])
+    def test_rejects_python_keyword(self, tmp_path: Path, project_name: str) -> None:
+        exit_code, output, _ = proc("startproject", project_name, cwd=tmp_path)
+        assert exit_code == 1
+        assert f"Project name {project_name!r} is a Python keyword" in output
+        assert not (tmp_path / project_name).exists()
+
+    def test_allows_soft_keyword(self, tmp_path: Path) -> None:
+        assert call("startproject", "match", cwd=tmp_path) == 0
+        self._assert_files_exist(tmp_path / "match", "match")
 
     def test_startproject_with_project_dir(self, tmp_path: Path) -> None:
         # with a dir arg creates the project in the specified dir

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import string
 from importlib.util import find_spec
+from keyword import iskeyword
 from pathlib import Path
 from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
@@ -52,6 +53,8 @@ class Command(ScrapyCommand):
                 "Error: Project names must begin with a letter and contain"
                 " only\nletters, numbers and underscores"
             )
+        elif iskeyword(project_name):
+            print(f"Error: Project name {project_name!r} is a Python keyword")
         elif _module_exists(project_name):
             print(f"Error: Module {project_name!r} already exists")
         else:
