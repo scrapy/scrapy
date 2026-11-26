@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -171,6 +172,23 @@ class TestJsonRequest(TestRequestBase):
             kwargs = mock_dumps.call_args[1]
             assert kwargs["ensure_ascii"] is True
             assert kwargs["allow_nan"] is True
+
+    def test_replace_with_new_dumps_kwargs(self):
+        """Test that dumps_kwargs passed to replace serialize the new data"""
+        r1 = self.request_class(url="http://www.example.com/", data={"name": "value"})
+        r2 = r1.replace(data={"value": Decimal("1.25")}, dumps_kwargs={"default": str})
+        assert r2.body == b'{"value": "1.25"}'
+        assert r2.dumps_kwargs == {"default": str, "sort_keys": True}
+
+    def test_replace_overrides_dumps_kwargs(self):
+        """Test that dumps_kwargs passed to replace override the original ones"""
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"name": "value"},
+            dumps_kwargs={"ensure_ascii": True},
+        )
+        r2 = r1.replace(data={"name": "ü"}, dumps_kwargs={"ensure_ascii": False})
+        assert r2.body == '{"name": "ü"}'.encode()
 
     def test_replacement_both_body_and_data_warns(self):
         """Test that we get a warning if both body and data are passed"""
