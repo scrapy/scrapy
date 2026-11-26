@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+from shlex import quote
 from typing import TYPE_CHECKING, Any, Protocol, Self
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
@@ -244,6 +245,11 @@ def _decode_cookie(cookie: VerboseCookie, request: Request) -> dict[str, str] | 
     return decoded
 
 
+def _single_quote(value: str) -> str:
+    """Quote *value* for a POSIX shell, always using single quotes."""
+    return "'" + value.replace("'", "'\\''") + "'"
+
+
 def request_to_curl(request: Request) -> str:
     """
     Converts a :class:`~scrapy.Request` object to a curl command.
@@ -251,24 +257,21 @@ def request_to_curl(request: Request) -> str:
     :param request: Request object to be converted
     :return: string containing the curl command
     """
-    method = request.method
+    args = ["curl", "-X", request.method, quote(request.url)]
 
-    data = f"--data-raw '{request.body.decode()}'" if request.body else ""
+    if request.body:
+        args += ["--data-raw", _single_quote(request.body.decode())]
 
-    header_args: list[str] = []
     for name, values in request.headers.items():
         str_name = name.decode(errors="replace")
         if not values:
             # "Remove an internal header by giving a replacement without
             # content on the right side of the colon, as in: -H "Host:"."
             # (which is how Scrapy handles empty headers)
-            header_args.append(f"-H '{str_name}:'")
+            args += ["-H", _single_quote(f"{str_name}:")]
         for value in values:
             str_value = value.decode(errors="replace")
-            header_args.append(f"-H '{str_name}: {str_value}'")
-    headers = " ".join(header_args)
-
-    url = request.url
+            args += ["-H", _single_quote(f"{str_name}: {str_value}")]
 
     cookie_list: list[VerboseCookie] = _to_verbose_cookies(request.cookies)
     pairs = [
@@ -276,7 +279,7 @@ def request_to_curl(request: Request) -> str:
         for c in cookie_list
         if (decoded := _decode_cookie(c, request)) is not None
     ]
-    cookies = f"--cookie '{'; '.join(pairs)}'" if pairs else ""
+    if pairs:
+        args += ["--cookie", _single_quote("; ".join(pairs))]
 
-    curl_cmd = f"curl -X {method} {url} {data} {headers} {cookies}".strip()
-    return " ".join(curl_cmd.split())
+    return " ".join(args)
