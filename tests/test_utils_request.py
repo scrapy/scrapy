@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import shlex
+import shutil
+import subprocess
 from hashlib import sha1
 from typing import TYPE_CHECKING, Any, Protocol
 from weakref import WeakKeyDictionary
@@ -542,6 +545,65 @@ class TestRequestToCurl:
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
         )
         self._test_request(request_object, expected_curl_command)
+
+    def test_url_with_shell_characters(self) -> None:
+        request_object = Request("https://www.example.com/?a=1&b=2")
+        expected_curl_command = "curl -X GET 'https://www.example.com/?a=1&b=2'"
+        self._test_request(request_object, expected_curl_command)
+
+    def test_quotes_and_whitespace(self) -> None:
+        request_object = Request(
+            "https://www.example.com",
+            method="POST",
+            body="it's  a\nbody",
+            headers={"X-Quote": "it's"},
+            cookies={"foo": "it's"},
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.example.com/"
+            " --data-raw 'it'\\''s  a\nbody'"
+            " -H 'X-Quote: it'\\''s'"
+            " --cookie 'foo=it'\\''s'"
+        )
+        self._test_request(request_object, expected_curl_command)
+        assert shlex.split(expected_curl_command) == [
+            "curl",
+            "-X",
+            "POST",
+            "https://www.example.com/",
+            "--data-raw",
+            "it's  a\nbody",
+            "-H",
+            "X-Quote: it's",
+            "--cookie",
+            "foo=it's",
+        ]
+
+    @pytest.mark.skipif(shutil.which("sh") is None, reason="requires a POSIX shell")
+    def test_posix_shell_argv(self) -> None:
+        request_object = Request(
+            "https://www.example.com/?a=1&b=2",
+            method="POST",
+            body='it\'s  two  spaces\nnew line $HOME $(echo x) `echo y` "q" \\',
+            headers={"X-Test": "it's $HOME `id`"},
+            cookies={"foo": "a  b; $x"},
+        )
+        # The shell function stands in for curl and prints one argument per NUL.
+        script = 'curl() { printf "%s\\0" "$@"; }\n' + request_to_curl(request_object)
+        output = subprocess.run(
+            ["sh", "-c", script], check=True, capture_output=True
+        ).stdout.decode()
+        assert output.split("\0")[:-1] == [
+            "-X",
+            "POST",
+            "https://www.example.com/?a=1&b=2",
+            "--data-raw",
+            'it\'s  two  spaces\nnew line $HOME $(echo x) `echo y` "q" \\',
+            "-H",
+            "X-Test: it's $HOME `id`",
+            "--cookie",
+            "foo=a  b; $x",
+        ]
 
     def test_request_to_curl_method(self) -> None:
         request_object = Request(
