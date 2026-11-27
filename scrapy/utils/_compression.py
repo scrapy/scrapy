@@ -89,12 +89,17 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     _check_max_size(decompressed_size, max_size)
     output_stream = BytesIO()
     output_stream.write(first_chunk)
-    # Anything left in unconsumed_tail once the stream has ended is not part of
-    # it, and feeding it back would neither consume it nor produce output.
-    while decompressor.unconsumed_tail and not decompressor.eof:
+    # zlib can hold back output after consuming all input, so keep going until
+    # the stream ends. Anything left in unconsumed_tail once it has ended is not
+    # part of it, and feeding it back would neither consume it nor produce
+    # output.
+    while not decompressor.eof:
         output_chunk = decompressor.decompress(
             decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
         )
+        if not output_chunk and not decompressor.unconsumed_tail:
+            # The input is truncated.
+            break
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
