@@ -4,9 +4,12 @@ import sys
 from argparse import Namespace  # noqa: TC003
 from typing import TYPE_CHECKING, Any
 
-from w3lib.url import is_url
-
-from scrapy.commands import ScrapyCommand, _add_curl_option, _request_from_curl
+from scrapy.commands import (
+    ScrapyCommand,
+    _add_curl_option,
+    _is_valid_url_arg,
+    _request_from_curl,
+)
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
 from scrapy.utils._datatypes import SequenceExclude
@@ -83,7 +86,8 @@ class Command(ScrapyCommand):
                 dont_filter=True,
             )
         else:
-            if len(args) != 1 or not is_url(args[0]):
+            assert self.settings is not None
+            if not _is_valid_url_arg(args, self.settings):
                 raise UsageError
             request = Request(
                 args[0],

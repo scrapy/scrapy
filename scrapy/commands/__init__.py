@@ -21,7 +21,8 @@ from scrapy.http import Request
 from scrapy.spiderloader import get_spider_loader
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.deprecate import method_is_overridden
-from scrapy.utils.python import global_object_name
+from scrapy.utils.python import global_object_name, without_none_values
+from scrapy.utils.url import _is_url
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,6 +33,13 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _is_valid_url_arg(args: list[str], settings: Settings) -> bool:
+    return len(args) == 1 and _is_url(
+        args[0],
+        schemes=without_none_values(settings.getwithbase("DOWNLOAD_HANDLERS")),
+    )
 
 
 def _add_curl_option(parser: argparse.ArgumentParser) -> None:
