@@ -621,6 +621,25 @@ Sitemap: /sitemap-relative-url.xml
             )
         ]
 
+    def test_parse_sitemap_without_root_element(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"   \n  ")
+        spider = self.spider_class("example.com")
+
+        caplog.clear()
+        with caplog.at_level(WARNING):
+            results = list(spider._parse_sitemap(r))
+
+        assert not results
+        assert caplog.record_tuples == [
+            (
+                "scrapy.spiders.sitemap",
+                WARNING,
+                "Ignoring invalid sitemap: <200 http://www.example.com/sitemap.xml>",
+            )
+        ]
+
     def test_parse_sitemap_not_sitemap(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
     <some attr="string">

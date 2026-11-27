@@ -40,7 +40,11 @@ class Sitemap:
             remove_pis=True,
             events=("start", "end"),
         )
-        _, root = next(self.xmliter)
+        try:
+            _, root = next(self.xmliter)
+        except StopIteration:
+            self.type = ""
+            return
         self.type = self._get_tag_name(root)
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
