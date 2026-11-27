@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
@@ -70,6 +70,17 @@ async def test_stats_calculations(crawler: Crawler, stats: StatsCollector) -> No
     logstats.spider_closed(crawler.spider, "test reason")
     assert stats.get_value("responses_per_minute") == 172.9
     assert stats.get_value("items_per_minute") == 116.4
+
+
+def test_stats_calculations_long_crawl(crawler: Crawler, stats: StatsCollector) -> None:
+    logstats = build_from_crawler(LogStats, crawler)
+    start = datetime.fromtimestamp(1655100172).astimezone(UTC)
+    stats.set_value("start_time", start)
+    stats.set_value("finish_time", start + timedelta(hours=25))
+    assert crawler.spider
+    logstats.spider_closed(crawler.spider, "test reason")
+    assert stats.get_value("responses_per_minute") == pytest.approx(4802 / 1500)
+    assert stats.get_value("items_per_minute") == pytest.approx(3201 / 1500)
 
 
 def test_stats_calculations_no_time(crawler: Crawler, stats: StatsCollector) -> None:

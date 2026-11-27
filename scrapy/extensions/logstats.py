@@ -85,7 +85,7 @@ class LogStats:
         if not start_time or not finish_time:
             return None, None
 
-        mins_elapsed = (finish_time - start_time).seconds / 60
+        mins_elapsed = (finish_time - start_time).total_seconds() / 60
 
         if mins_elapsed == 0:
             return None, None
