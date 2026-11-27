@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -186,3 +187,20 @@ class TestJsonRequest(TestRequestBase):
 
         with pytest.warns(UserWarning, match="data will be ignored"):
             r1.replace(data=data2, body=body2)
+
+    def test_replace_override_dumps_kwargs(self):
+        r1 = self.request_class(
+            url="http://www.example.com/",
+            data={"value": 1},
+            dumps_kwargs={"indent": 4},
+        )
+        options = {"default": str}
+        r2 = r1.replace(data={"value": Decimal("1.25")}, dumps_kwargs=options)
+        assert r2.body == b'{"value": "1.25"}'
+        assert r2.dumps_kwargs == {"default": str, "sort_keys": True}
+        assert options == {"default": str}
+        assert r1.dumps_kwargs == {"indent": 4, "sort_keys": True}
+
+        r3 = r1.replace(data={"b": 1, "a": 2}, dumps_kwargs=None)
+        assert r3.body == b'{"a": 2, "b": 1}'
+        assert r3.dumps_kwargs == {"sort_keys": True}
