@@ -265,9 +265,10 @@ class S3FilesStore:
 
     async def close(self) -> None:
         """Close the underlying aiobotocore client, if one was created."""
-        if self._aio_client is not None:
-            await self._aio_client_cm.__aexit__(None, None, None)
-            self._aio_client = self._aio_client_cm = None
+        async with self._aio_client_lock:
+            if self._aio_client is not None:
+                await self._aio_client_cm.__aexit__(None, None, None)
+                self._aio_client = self._aio_client_cm = None
 
     def _onsuccess(self, boto_key: dict[str, Any]) -> StatInfo:
         last_modified = boto_key["LastModified"]
