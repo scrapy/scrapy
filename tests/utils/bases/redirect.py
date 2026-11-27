@@ -69,6 +69,23 @@ class TestRedirectBase(ABC):
         r = self.mw.process_response(req, rsp)
         assert isinstance(r, Request)
 
+    @pytest.mark.parametrize(
+        ("paths", "skipped"),
+        [
+            (["/a", "/a"], [True]),
+            (["/a?x=1&y=2", "/a?y=2&x=1"], [True]),
+            (["/a", "/b", "/c"], [False, False]),
+            (["/a", "/b", "/a", "/b"], [False, True, True]),
+        ],
+    )
+    def test_redirect_loop(self, paths: list[str], skipped: list[bool]) -> None:
+        request = Request(f"https://a.example{paths[0]}")
+        for path, skip in zip(paths[1:], skipped, strict=True):
+            response = self.get_response(request, f"https://a.example{path}")
+            request = self.mw.process_response(request, response)
+            assert isinstance(request, Request)
+            assert request.meta.pop("skip_dupefilter_once", False) is skip
+
     def test_post(self):
         url = "http://www.example.com/302"
         url2 = "http://www.example.com/redirected2"
