@@ -63,10 +63,12 @@ class JsonRequest(Request):
                 "Both body and data passed. data will be ignored", stacklevel=2
             )
         elif not body_passed and data_passed:
-            kwargs["body"] = self._dumps(data)
+            kwargs["body"] = self._dumps(data, dumps_kwargs=kwargs.get("dumps_kwargs"))
 
         return super().replace(*args, cls=cls, **kwargs)
 
-    def _dumps(self, data: Any) -> str:
+    def _dumps(self, data: Any, dumps_kwargs: dict[str, Any] | None = None) -> str:
         """Convert to JSON"""
-        return json.dumps(data, **self._dumps_kwargs)
+        return json.dumps(
+            data, **(dumps_kwargs if dumps_kwargs is not None else self._dumps_kwargs)
+        )
