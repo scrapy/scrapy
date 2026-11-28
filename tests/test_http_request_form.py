@@ -68,9 +68,29 @@ class TestFormRequest(TestRequestBase):
         ):
             self.request_class.from_response(response)
 
-    def test_empty_formdata(self):
-        r1 = self.request_class("http://www.example.com", formdata={})
-        assert r1.body == b""
+    @pytest.mark.parametrize("formdata", [{}, [], (), iter(())])
+    @pytest.mark.parametrize("method", [None, "POST", "GET"])
+    def test_empty_formdata(self, formdata, method):
+        kwargs = {} if method is None else {"method": method}
+        request = self.request_class(
+            "https://example.com/action?old=value#fragment", formdata=formdata, **kwargs
+        )
+        assert request.method == (method or "POST")
+        assert request.body == b""
+        if method == "GET":
+            assert request.url == "https://example.com/action#fragment"
+            assert b"Content-Type" not in request.headers
+        else:
+            assert request.url == "https://example.com/action?old=value#fragment"
+            assert (
+                request.headers[b"Content-Type"] == b"application/x-www-form-urlencoded"
+            )
+
+    def test_none_formdata_keeps_request_defaults(self):
+        request = self.request_class("https://example.com/?old=value", formdata=None)
+        assert request.method == "GET"
+        assert request.url == "https://example.com/?old=value"
+        assert b"Content-Type" not in request.headers
 
     def test_formdata_overrides_querystring(self):
         data = (("a", "one"), ("a", "two"), ("b", "2"))
@@ -332,9 +352,9 @@ class TestFormRequest(TestRequestBase):
         assert request.method == "GET"
         request = FormRequest.from_response(response, method="POST")
         assert request.method == "POST"
-        # an explicit method=None skips form-method normalization
+        # An explicit None lets FormRequest choose its default method.
         request = FormRequest.from_response(response, method=None)
-        assert request.method == "NONE"
+        assert request.method == "POST"
 
     def test_from_response_override_url(self):
         response = _buildresponse(

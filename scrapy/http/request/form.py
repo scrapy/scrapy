@@ -90,12 +90,12 @@ class FormRequest(Request):
     def __init__(
         self, *args: Any, formdata: FormdataType = None, **kwargs: Any
     ) -> None:
-        if formdata and kwargs.get("method") is None:
+        if formdata is not None and kwargs.get("method") is None:
             kwargs["method"] = "POST"
 
         super().__init__(*args, **kwargs)
 
-        if formdata:
+        if formdata is not None:
             items = formdata.items() if isinstance(formdata, Mapping) else formdata
             form_query_str = _urlencode(items, self.encoding)
             if self.method == "POST":
